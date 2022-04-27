@@ -1,0 +1,23 @@
+apply plugin: 'java-gradle-plugin'
+apply plugin: 'groovy'
+
+dependencies {
+    implementation project(':gradle-jdks-distributions')
+    implementation 'com.palantir.baseline:gradle-baseline-java'
+
+    compileOnly 'org.immutables:value::annotations'
+    annotationProcessor 'org.immutables:value'
+
+    testImplementation 'com.netflix.nebula:nebula-test'
+}
+
+gradlePlugin {
+    plugins {
+        jdks {
+            id = 'com.palantir.jdks'
+            displayName = 'Palantir JDK Auto-provisioning Plugin'
+            description = 'Auto-provisions specific versions of JDKs'
+            implementationClass = 'com.palantir.gradle.jdks.JdksPlugin'
+        }
+    }
+}

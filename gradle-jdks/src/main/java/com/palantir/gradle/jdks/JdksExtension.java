@@ -1,0 +1,53 @@
+/*
+ * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ */
+
+package com.palantir.gradle.jdks;
+
+import groovy.lang.Closure;
+import groovy.lang.DelegatesTo;
+import javax.inject.Inject;
+import org.gradle.api.Action;
+import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.ProviderFactory;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
+
+public abstract class JdksExtension {
+    protected abstract MapProperty<JdkDistributionName, JdkDistributionExtension> getJdkDistributions();
+
+    protected abstract MapProperty<JavaLanguageVersion, JdkExtension> getJdks();
+
+    @Inject
+    protected abstract ProviderFactory getProviderFactory();
+
+    @Inject
+    protected abstract ObjectFactory getObjectFactory();
+
+    public final void jdk(JavaLanguageVersion javaLanguageVersion, Action<JdkExtension> action) {
+        JdkExtension jdkExtension = getJdks()
+                .getting(javaLanguageVersion)
+                .orElse(getProviderFactory().provider(() -> {
+                    JdkExtension newJdkExtension = getObjectFactory().newInstance(JdkExtension.class);
+                    getJdks().put(javaLanguageVersion, newJdkExtension);
+                    return newJdkExtension;
+                }))
+                .get();
+
+        action.execute(jdkExtension);
+    }
+
+    public final void jdk(int javaLanguageVersion, @DelegatesTo(JdkExtension.class) Closure closure) {
+        jdk(JavaLanguageVersion.of(javaLanguageVersion), ConfigureUtil.toAction(closure));
+    }
+
+    public final void jdkDistribution(
+            JdkDistributionName jdkDistributionName, Action<JdkDistributionExtension> action) {
+        action.execute(getJdkDistributions().getting(jdkDistributionName).get());
+    }
+
+    public final void jdkDistribution(
+            String distributionName, @DelegatesTo(JdkDistributionExtension.class) Closure closure) {
+        jdkDistribution(JdkDistributionName.fromStringThrowing(distributionName), ConfigureUtil.toAction(closure));
+    }
+}

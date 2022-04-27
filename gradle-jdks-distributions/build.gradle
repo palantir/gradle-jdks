@@ -1,0 +1,8 @@
+apply plugin: 'java'
+
+dependencies {
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+}

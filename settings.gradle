@@ -1,0 +1,4 @@
+rootProject.name = 'gradle-jdks-root'
+
+include 'gradle-jdks'
+include 'gradle-jdks-distributions'
