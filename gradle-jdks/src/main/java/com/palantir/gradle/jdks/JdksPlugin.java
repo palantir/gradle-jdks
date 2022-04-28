@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
@@ -41,31 +40,6 @@ public final class JdksPlugin implements Plugin<Project> {
 
         rootProject.getPluginManager().apply(BaselineJavaVersions.class);
 
-        Function<JavaLanguageVersion, JavaInstallationMetadata> blah = javaLanguageVersion -> {
-            JdkExtension jdkExtension =
-                    jdksExtension.getJdks().getting(javaLanguageVersion).get();
-
-            String version = jdkExtension.getJdkVersion().get();
-            JdkDistributionName jdkDistributionName =
-                    jdkExtension.getDistributionName().get();
-
-            Path jdk = jdkManager.jdk(JdkSpec.builder()
-                    .distributionName(jdkDistributionName)
-                    .release(JdkRelease.builder().version(version).build())
-                    .build());
-
-            return GradleJdksJavaInstallationMetadata.builder()
-                    .installationPath(rootProject
-                            .getLayout()
-                            .dir(rootProject.provider(jdk::toFile))
-                            .get())
-                    .javaRuntimeVersion(version)
-                    .languageVersion(javaLanguageVersion)
-                    .jvmVersion(version)
-                    .vendor(jdkDistributionName.uiName())
-                    .build();
-        };
-
         rootProject
                 .getExtensions()
                 .getByType(BaselineJavaVersionsExtension.class)
@@ -73,7 +47,10 @@ public final class JdksPlugin implements Plugin<Project> {
                 .putAll(rootProject.provider(() -> {
                     Map<JavaLanguageVersion, JavaInstallationMetadata> ret = new HashMap<>();
                     jdksExtension.getJdks().get().forEach((javaLanguageVersion, jdkExtension) -> {
-                        ret.put(javaLanguageVersion, blah.apply(javaLanguageVersion));
+                        ret.put(
+                                javaLanguageVersion,
+                                javaInstallationForLanguageVersion(
+                                        rootProject, jdksExtension, jdkManager, javaLanguageVersion));
                     });
 
                     return ret;
@@ -95,5 +72,35 @@ public final class JdksPlugin implements Plugin<Project> {
         });
 
         return jdksExtension;
+    }
+
+    private ImmutableGradleJdksJavaInstallationMetadata javaInstallationForLanguageVersion(
+            Project rootProject,
+            JdksExtension jdksExtension,
+            JdkManager jdkManager,
+            JavaLanguageVersion javaLanguageVersion) {
+
+        JdkExtension jdkExtension =
+                jdksExtension.getJdks().getting(javaLanguageVersion).get();
+
+        String version = jdkExtension.getJdkVersion().get();
+        JdkDistributionName jdkDistributionName =
+                jdkExtension.getDistributionName().get();
+
+        Path jdk = jdkManager.jdk(JdkSpec.builder()
+                .distributionName(jdkDistributionName)
+                .release(JdkRelease.builder().version(version).build())
+                .build());
+
+        return GradleJdksJavaInstallationMetadata.builder()
+                .installationPath(rootProject
+                        .getLayout()
+                        .dir(rootProject.provider(jdk::toFile))
+                        .get())
+                .javaRuntimeVersion(version)
+                .languageVersion(javaLanguageVersion)
+                .jvmVersion(version)
+                .vendor(jdkDistributionName.uiName())
+                .build();
     }
 }
