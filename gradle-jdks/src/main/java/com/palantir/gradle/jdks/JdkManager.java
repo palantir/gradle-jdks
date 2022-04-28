@@ -5,6 +5,7 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -15,6 +16,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileTree;
+import org.gradle.process.ExecResult;
 
 public final class JdkManager {
     private final Project project;
@@ -50,8 +52,12 @@ public final class JdkManager {
                 copy.into(temporaryJdkPath);
             });
 
+            Path javaHome = findJavaHome(temporaryJdkPath);
+
+            jdkSpec.caCerts().caCerts().forEach(caCertFile -> addCaCert(javaHome, caCertFile));
+
             try {
-                Files.move(findJavaHome(temporaryJdkPath), diskPath, StandardCopyOption.ATOMIC_MOVE);
+                Files.move(javaHome, diskPath, StandardCopyOption.ATOMIC_MOVE);
             } catch (FileAlreadyExistsException e) {
                 // This means another process has successfully installed this JDK, and we can just use their one.
                 return diskPath;
@@ -64,6 +70,35 @@ public final class JdkManager {
             project.delete(delete -> {
                 delete.delete(temporaryJdkPath.toFile());
             });
+        }
+    }
+
+    private void addCaCert(Path javaHome, Path caCertFile) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        ExecResult keytoolResult = project.exec(exec -> {
+            exec.setCommandLine(
+                    "bin/keytool",
+                    "-import",
+                    "-trustcacerts",
+                    "-file",
+                    caCertFile.toAbsolutePath(),
+                    "-cacerts",
+                    "-storepass",
+                    "changeit",
+                    "-noprompt");
+
+            exec.environment("JAVA_HOME", javaHome);
+            exec.setWorkingDir(javaHome);
+            exec.setStandardOutput(output);
+            exec.setErrorOutput(output);
+            exec.setIgnoreExitValue(true);
+        });
+
+        if (keytoolResult.getExitValue() != 0) {
+            throw new RuntimeException(String.format(
+                    "Failed to add ca cert '%s' to java installation at '%s'. Keytool output:\n\n",
+                    caCertFile.toAbsolutePath(), javaHome));
         }
     }
 
