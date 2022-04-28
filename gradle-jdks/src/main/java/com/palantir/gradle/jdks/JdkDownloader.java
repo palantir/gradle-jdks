@@ -7,6 +7,7 @@ package com.palantir.gradle.jdks;
 import java.nio.file.Path;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.repositories.IvyArtifactRepository.MetadataSources;
 
 final class JdkDownloader {
 
@@ -25,7 +26,7 @@ final class JdkDownloader {
             ivy.setName(jdkGroup);
             ivy.setUrl(jdkBaseUrl);
             ivy.patternLayout(patternLayout -> patternLayout.artifact("[module].[ext]"));
-            ivy.metadataSources(metadataSources -> metadataSources.artifact());
+            ivy.metadataSources(MetadataSources::artifact);
             ivy.content(repositoryContentDescriptor -> {
                 repositoryContentDescriptor.includeGroup(jdkGroup);
             });

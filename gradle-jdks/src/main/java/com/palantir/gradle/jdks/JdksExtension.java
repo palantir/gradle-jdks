@@ -40,6 +40,7 @@ public abstract class JdksExtension {
         action.execute(jdkExtension);
     }
 
+    @SuppressWarnings("RawTypes")
     public final void jdk(int javaLanguageVersion, @DelegatesTo(JdkExtension.class) Closure closure) {
         jdk(JavaLanguageVersion.of(javaLanguageVersion), ConfigureUtil.toAction(closure));
     }
@@ -49,6 +50,7 @@ public abstract class JdksExtension {
         action.execute(getJdkDistributions().getting(jdkDistributionName).get());
     }
 
+    @SuppressWarnings("RawTypes")
     public final void jdkDistribution(
             String distributionName, @DelegatesTo(JdkDistributionExtension.class) Closure closure) {
         jdkDistribution(JdkDistributionName.fromStringThrowing(distributionName), ConfigureUtil.toAction(closure));

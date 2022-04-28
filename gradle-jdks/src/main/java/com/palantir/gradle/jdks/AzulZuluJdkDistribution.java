@@ -56,7 +56,7 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
     }
 
     static ZuluVersionSplit splitCombinedVersion(String combinedVersion) {
-        String[] split = combinedVersion.split("-");
+        String[] split = combinedVersion.split("-", -1);
 
         if (split.length != 2) {
             throw new IllegalArgumentException(

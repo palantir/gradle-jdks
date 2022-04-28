@@ -6,7 +6,7 @@ org.junit.jupiter:* = 5.8.2
 org.assertj:assertj-core = 3.22.0
 
 # dependency-upgrader:OFF
-com.palantir.baseline:* = 999
+com.palantir.baseline:* = 4.119.0
 # dependency-upgrader:ON
 
 # conflict resolution
