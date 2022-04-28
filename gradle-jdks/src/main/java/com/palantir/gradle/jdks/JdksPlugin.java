@@ -50,7 +50,7 @@ public final class JdksPlugin implements Plugin<Project> {
                         ret.put(
                                 javaLanguageVersion,
                                 javaInstallationForLanguageVersion(
-                                        rootProject, jdkExtension, jdkManager, javaLanguageVersion));
+                                        rootProject, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion));
                     });
 
                     return ret;
@@ -74,8 +74,9 @@ public final class JdksPlugin implements Plugin<Project> {
         return jdksExtension;
     }
 
-    private ImmutableGradleJdksJavaInstallationMetadata javaInstallationForLanguageVersion(
+    private GradleJdksJavaInstallationMetadata javaInstallationForLanguageVersion(
             Project rootProject,
+            JdksExtension jdksExtension,
             JdkExtension jdkExtension,
             JdkManager jdkManager,
             JavaLanguageVersion javaLanguageVersion) {
