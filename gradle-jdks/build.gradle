@@ -21,3 +21,7 @@ gradlePlugin {
         }
     }
 }
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.errorprone.disable 'JavaxInjectOnAbstractMethod'
+}

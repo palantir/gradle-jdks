@@ -8,6 +8,7 @@ import groovy.lang.Closure;
 import org.gradle.api.Action;
 
 final class ConfigureUtil {
+    @SuppressWarnings("RawTypes")
     public static <T> Action<T> toAction(Closure closure) {
         return item -> {
             closure.setDelegate(item);
