@@ -4,8 +4,8 @@
 
 package com.palantir.gradle.jdks;
 
+import java.util.Locale;
 import java.util.Set;
-import org.gradle.internal.os.OperatingSystem;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -14,18 +14,19 @@ interface JdkRelease {
 
     @Value.Default
     default Os os() {
-        OperatingSystem operatingSystem = OperatingSystem.current();
-        if (operatingSystem.isMacOsX()) {
+        String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+        if (osName.startsWith("mac")) {
             return Os.MACOS;
         }
-        if (operatingSystem.isLinux()) {
+        if (osName.startsWith("linux")) {
             return Os.LINUX;
         }
-        if (operatingSystem.isWindows()) {
+
+        if (osName.startsWith("windows")) {
             return Os.WINDOWS;
         }
 
-        throw new UnsupportedOperationException("Cannot get platform for operating system " + operatingSystem);
+        throw new UnsupportedOperationException("Cannot get platform for operating system " + osName);
     }
 
     @Value.Default
