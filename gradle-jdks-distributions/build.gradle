@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'com.palantir.external-publish-jar'
 
 dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations'

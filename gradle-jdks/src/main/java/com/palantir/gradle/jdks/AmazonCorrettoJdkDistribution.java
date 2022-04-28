@@ -31,7 +31,7 @@ final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     }
 
     private static String extractMajorVersion(String version) {
-        String[] split = version.split("\\.");
+        String[] split = version.split("\\.", -1);
 
         if (split.length == 0) {
             throw new IllegalArgumentException(String.format(

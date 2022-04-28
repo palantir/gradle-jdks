@@ -50,7 +50,7 @@ public final class JdksPlugin implements Plugin<Project> {
                         ret.put(
                                 javaLanguageVersion,
                                 javaInstallationForLanguageVersion(
-                                        rootProject, jdksExtension, jdkManager, javaLanguageVersion));
+                                        rootProject, jdkExtension, jdkManager, javaLanguageVersion));
                     });
 
                     return ret;
@@ -76,12 +76,9 @@ public final class JdksPlugin implements Plugin<Project> {
 
     private ImmutableGradleJdksJavaInstallationMetadata javaInstallationForLanguageVersion(
             Project rootProject,
-            JdksExtension jdksExtension,
+            JdkExtension jdkExtension,
             JdkManager jdkManager,
             JavaLanguageVersion javaLanguageVersion) {
-
-        JdkExtension jdkExtension =
-                jdksExtension.getJdks().getting(javaLanguageVersion).get();
 
         String version = jdkExtension.getJdkVersion().get();
         JdkDistributionName jdkDistributionName =
