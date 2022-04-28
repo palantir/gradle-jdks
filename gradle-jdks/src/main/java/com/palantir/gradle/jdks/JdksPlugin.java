@@ -90,7 +90,7 @@ public final class JdksPlugin implements Plugin<Project> {
         Path jdk = jdkManager.jdk(JdkSpec.builder()
                 .distributionName(jdkDistributionName)
                 .release(JdkRelease.builder().version(version).build())
-                .caCerts(CaCerts.from(jdksExtension.getCaCerts().getFiles()))
+                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
                 .build());
 
         return GradleJdksJavaInstallationMetadata.builder()

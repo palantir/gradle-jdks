@@ -7,28 +7,31 @@ package com.palantir.gradle.jdks;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import org.immutables.value.Value;
 
 @Value.Immutable
 interface CaCerts {
-    Set<Path> caCerts();
+    SortedMap<String, File> caCerts();
 
     default String combinedInSortedOrder() {
-        return caCerts().stream()
-                // Must sort to keep hashes consistent!
-                .sorted()
-                .map(file -> {
-                    try {
-                        return Files.readString(file);
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to read file " + file, e);
-                    }
-                })
-                .collect(Collectors.joining("\n"));
+        StringBuilder stringBuilder = new StringBuilder();
+
+        caCerts().forEach((alias, caCertFile) -> {
+            stringBuilder.append(alias);
+            stringBuilder.append(": ");
+            try {
+                stringBuilder.append(Files.readString(caCertFile.toPath()));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read file " + caCertFile, e);
+            }
+            stringBuilder.append('\n');
+        });
+
+        return stringBuilder.toString();
     }
 
     class Builder extends ImmutableCaCerts.Builder {}
@@ -37,9 +40,9 @@ interface CaCerts {
         return new Builder();
     }
 
-    static CaCerts from(Collection<File> caCerts) {
-        return builder()
-                .caCerts(caCerts.stream().map(File::toPath).collect(Collectors.toSet()))
-                .build();
+    static CaCerts from(Map<String, File> caCerts) {
+        SortedMap<String, File> sortedMap = new TreeMap<>(Comparator.naturalOrder());
+        sortedMap.putAll(caCerts);
+        return builder().caCerts(sortedMap).build();
     }
 }

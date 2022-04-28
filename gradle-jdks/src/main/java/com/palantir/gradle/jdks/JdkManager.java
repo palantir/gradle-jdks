@@ -6,7 +6,9 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,7 +56,9 @@ public final class JdkManager {
 
             Path javaHome = findJavaHome(temporaryJdkPath);
 
-            jdkSpec.caCerts().caCerts().forEach(caCertFile -> addCaCert(javaHome, caCertFile));
+            jdkSpec.caCerts().caCerts().forEach((name, caCertFile) -> {
+                addCaCert(javaHome, name, caCertFile);
+            });
 
             try {
                 Files.move(javaHome, diskPath, StandardCopyOption.ATOMIC_MOVE);
@@ -70,35 +74,6 @@ public final class JdkManager {
             project.delete(delete -> {
                 delete.delete(temporaryJdkPath.toFile());
             });
-        }
-    }
-
-    private void addCaCert(Path javaHome, Path caCertFile) {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-
-        ExecResult keytoolResult = project.exec(exec -> {
-            exec.setCommandLine(
-                    "bin/keytool",
-                    "-import",
-                    "-trustcacerts",
-                    "-file",
-                    caCertFile.toAbsolutePath(),
-                    "-cacerts",
-                    "-storepass",
-                    "changeit",
-                    "-noprompt");
-
-            exec.environment("JAVA_HOME", javaHome);
-            exec.setWorkingDir(javaHome);
-            exec.setStandardOutput(output);
-            exec.setErrorOutput(output);
-            exec.setIgnoreExitValue(true);
-        });
-
-        if (keytoolResult.getExitValue() != 0) {
-            throw new RuntimeException(String.format(
-                    "Failed to add ca cert '%s' to java installation at '%s'. Keytool output:\n\n",
-                    caCertFile.toAbsolutePath(), javaHome));
         }
     }
 
@@ -128,6 +103,37 @@ public final class JdkManager {
                     .getParent();
         } catch (IOException e) {
             throw new RuntimeException("Failed to find java home in " + temporaryJdkPath, e);
+        }
+    }
+
+    private void addCaCert(Path javaHome, String alias, File caCertFile) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        ExecResult keytoolResult = project.exec(exec -> {
+            exec.setCommandLine(
+                    "bin/keytool",
+                    "-import",
+                    "-trustcacerts",
+                    "-file",
+                    caCertFile.getAbsolutePath(),
+                    "-alias",
+                    alias,
+                    "-cacerts",
+                    "-storepass",
+                    "changeit",
+                    "-noprompt");
+
+            exec.environment("JAVA_HOME", javaHome);
+            exec.setWorkingDir(javaHome);
+            exec.setStandardOutput(output);
+            exec.setErrorOutput(output);
+            exec.setIgnoreExitValue(true);
+        });
+
+        if (keytoolResult.getExitValue() != 0) {
+            throw new RuntimeException(String.format(
+                    "Failed to add ca cert '%s' to java installation at '%s'. Keytool output: %s\n\n",
+                    caCertFile.getAbsolutePath(), javaHome, output.toString(StandardCharsets.UTF_8)));
         }
     }
 }

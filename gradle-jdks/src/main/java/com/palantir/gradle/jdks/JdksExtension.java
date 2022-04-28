@@ -6,9 +6,9 @@ package com.palantir.gradle.jdks;
 
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
+import java.io.File;
 import javax.inject.Inject;
 import org.gradle.api.Action;
-import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.ProviderFactory;
@@ -19,7 +19,7 @@ public abstract class JdksExtension {
 
     protected abstract MapProperty<JavaLanguageVersion, JdkExtension> getJdks();
 
-    protected abstract ConfigurableFileCollection getCaCerts();
+    public abstract MapProperty<String, File> getCaCerts();
 
     @Inject
     protected abstract ProviderFactory getProviderFactory();
@@ -52,9 +52,5 @@ public abstract class JdksExtension {
     public final void jdkDistribution(
             String distributionName, @DelegatesTo(JdkDistributionExtension.class) Closure closure) {
         jdkDistribution(JdkDistributionName.fromStringThrowing(distributionName), ConfigureUtil.toAction(closure));
-    }
-
-    public final void caCert(Object caCertFile) {
-        getCaCerts().from(caCertFile);
     }
 }
