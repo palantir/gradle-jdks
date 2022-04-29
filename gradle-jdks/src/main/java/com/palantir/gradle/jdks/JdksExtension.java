@@ -20,6 +20,7 @@ import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import javax.inject.Inject;
 import org.gradle.api.Action;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.ProviderFactory;
@@ -29,6 +30,8 @@ public abstract class JdksExtension {
     protected abstract MapProperty<JdkDistributionName, JdkDistributionExtension> getJdkDistributions();
 
     protected abstract MapProperty<JavaLanguageVersion, JdkExtension> getJdks();
+
+    public abstract DirectoryProperty getJdkStorageLocation();
 
     @Inject
     protected abstract ProviderFactory getProviderFactory();

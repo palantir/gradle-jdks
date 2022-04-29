@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.extensions.BaselineJavaVersionsExtension;
 import com.palantir.baseline.plugins.BaselineJavaVersions;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,13 +41,7 @@ public final class JdksPlugin implements Plugin<Project> {
 
         JdkManager jdkManager = new JdkManager(
                 rootProject.getProject(),
-                rootProject
-                        .getLayout()
-                        .getBuildDirectory()
-                        .dir("jdks")
-                        .get()
-                        .getAsFile()
-                        .toPath(),
+                jdksExtension.getJdkStorageLocation(),
                 jdkDistributions,
                 new JdkDownloaders(rootProject, jdksExtension));
 
@@ -71,6 +66,13 @@ public final class JdksPlugin implements Plugin<Project> {
 
     private JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
         JdksExtension jdksExtension = rootProject.getExtensions().create("jdks", JdksExtension.class);
+
+        jdksExtension
+                .getJdkStorageLocation()
+                .set(rootProject
+                        .getLayout()
+                        .dir(rootProject.provider(
+                                () -> new File(System.getProperty("user.home"), ".gradle/caches/gradle-jdks"))));
 
         Arrays.stream(JdkDistributionName.values()).forEach(jdkDistributionName -> {
             JdkDistributionExtension jdkDistributionExtension =

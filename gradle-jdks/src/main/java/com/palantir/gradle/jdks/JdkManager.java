@@ -26,16 +26,21 @@ import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
 import org.gradle.api.file.FileTree;
+import org.gradle.api.provider.Provider;
 
 public final class JdkManager {
     private final Project project;
-    private final Path storageLocation;
+    private final Provider<Directory> storageLocation;
     private final JdkDistributions jdkDistributions;
     private final JdkDownloaders jdkDownloaders;
 
     JdkManager(
-            Project project, Path storageLocation, JdkDistributions jdkDistributions, JdkDownloaders jdkDownloaders) {
+            Project project,
+            Provider<Directory> storageLocation,
+            JdkDistributions jdkDistributions,
+            JdkDownloaders jdkDownloaders) {
         this.project = project;
         this.storageLocation = storageLocation;
         this.jdkDistributions = jdkDistributions;
@@ -43,8 +48,13 @@ public final class JdkManager {
     }
 
     public Path jdk(JdkSpec jdkSpec) {
-        Path diskPath = storageLocation.resolve(String.format(
-                "%s-%s-%s", jdkSpec.distributionName(), jdkSpec.release().version(), jdkSpec.consistentShortHash()));
+        Path diskPath = storageLocation
+                .get()
+                .getAsFile()
+                .toPath()
+                .resolve(String.format(
+                        "%s-%s-%s",
+                        jdkSpec.distributionName(), jdkSpec.release().version(), jdkSpec.consistentShortHash()));
 
         if (Files.exists(diskPath)) {
             return diskPath;
