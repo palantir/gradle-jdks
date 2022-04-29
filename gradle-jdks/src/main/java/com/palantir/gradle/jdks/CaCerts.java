@@ -18,13 +18,13 @@ package com.palantir.gradle.jdks;
 
 import java.util.Comparator;
 import java.util.Map;
-import java.util.SortedMap;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 import org.immutables.value.Value;
 
 @Value.Immutable
 interface CaCerts {
-    SortedMap<String, String> caCerts();
+    NavigableMap<String, String> caCerts();
 
     default String combinedInSortedOrder() {
         StringBuilder stringBuilder = new StringBuilder();
@@ -43,7 +43,7 @@ interface CaCerts {
     }
 
     static CaCerts from(Map<String, String> caCerts) {
-        SortedMap<String, String> sortedMap = new TreeMap<>(Comparator.naturalOrder());
+        NavigableMap<String, String> sortedMap = new TreeMap<>(Comparator.naturalOrder());
         sortedMap.putAll(caCerts);
         return builder().caCerts(sortedMap).build();
     }
