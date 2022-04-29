@@ -1,5 +1,17 @@
 /*
  * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.palantir.gradle.jdks;
@@ -17,17 +29,22 @@ import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
 import org.gradle.api.file.FileTree;
+import org.gradle.api.provider.Provider;
 import org.gradle.process.ExecResult;
 
 public final class JdkManager {
     private final Project project;
-    private final Path storageLocation;
+    private final Provider<Directory> storageLocation;
     private final JdkDistributions jdkDistributions;
     private final JdkDownloaders jdkDownloaders;
 
     JdkManager(
-            Project project, Path storageLocation, JdkDistributions jdkDistributions, JdkDownloaders jdkDownloaders) {
+            Project project,
+            Provider<Directory> storageLocation,
+            JdkDistributions jdkDistributions,
+            JdkDownloaders jdkDownloaders) {
         this.project = project;
         this.storageLocation = storageLocation;
         this.jdkDistributions = jdkDistributions;
@@ -35,8 +52,13 @@ public final class JdkManager {
     }
 
     public Path jdk(JdkSpec jdkSpec) {
-        Path diskPath = storageLocation.resolve(String.format(
-                "%s-%s-%s", jdkSpec.distributionName(), jdkSpec.release().version(), jdkSpec.consistentShortHash()));
+        Path diskPath = storageLocation
+                .get()
+                .getAsFile()
+                .toPath()
+                .resolve(String.format(
+                        "%s-%s-%s",
+                        jdkSpec.distributionName(), jdkSpec.release().version(), jdkSpec.consistentShortHash()));
 
         if (Files.exists(diskPath)) {
             return diskPath;
