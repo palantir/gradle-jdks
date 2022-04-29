@@ -67,9 +67,7 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
         '''.stripIndent(true), subprojectDir
 
         when:
-        def result = runTasksSuccessfully('printJavaVersion', '--warning-mode=all')
-        println result.standardError
-        def stdout = result.standardOutput
+        def stdout = runTasksSuccessfully('printJavaVersion').standardOutput
 
         then:
         stdout.contains 'version: 11.0.14.1, vendor: Azul Systems, Inc.'
