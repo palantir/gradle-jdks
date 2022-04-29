@@ -19,12 +19,17 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
                     distribution = 'azul-zulu'
                     jdkVersion = '11.54.25-11.0.14.1'    
                 }
+            
+                jdkStorageLocation = layout.buildDirectory.dir('jdks')
             }
             
             javaVersions {
                 libraryTarget = 11
             }
-            
+        '''.stripIndent(true)
+
+        // language=gradle
+        def subprojectDir = addSubproject 'subproject', '''
             apply plugin: 'java-library'
             
             task printJavaVersion(type: JavaExec) {
@@ -41,21 +46,18 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
             public final class PrintJavaVersion {
                 public static void main(String... args) {
-                    System.out.println(String.format(
-                            "version: %s, vendor: %s",
+                    System.out.printf(
+                            "version: %s, vendor: %s%n",
                             System.getProperty("java.version"),
-                            System.getProperty("java.vendor")));
+                            System.getProperty("java.vendor"));
                 }
             }
-        '''.stripIndent(true)
+        '''.stripIndent(true), subprojectDir
 
         when:
-
-        def stdout = runTasksSuccessfully(
-                'printJavaVersion',
-                // TODO: avoid resolving from root configuration somehow, removed in Gradle 8
-                '--warning-mode=none')
-                .standardOutput
+        def result = runTasksSuccessfully('printJavaVersion', '--warning-mode=all')
+        println result.standardError
+        def stdout = result.standardOutput
 
         then:
         stdout.contains 'version: 11.0.14.1, vendor: Azul Systems, Inc.'
