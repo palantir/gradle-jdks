@@ -28,15 +28,16 @@ interface JdkSpec {
 
     JdkRelease release();
 
-    // Later: CA certs
+    CaCerts caCerts();
 
     default String consistentShortHash() {
         String infoBlock = String.format(
-                String.join("\n", "Distribution: %s", "Version: %s", "Os: %s", "Arch: %s"),
+                String.join("\n", "Distribution: %s", "Version: %s", "Os: %s", "Arch: %s", "CaCerts: %s"),
                 distributionName().uiName(),
                 release().version(),
                 release().os(),
-                release().arch());
+                release().arch(),
+                caCerts().combinedInSortedOrder());
 
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

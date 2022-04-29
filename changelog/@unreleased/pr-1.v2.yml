@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Provide a way to add CA certs to all installed JDKs.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/1

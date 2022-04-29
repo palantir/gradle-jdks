@@ -31,6 +31,8 @@ public abstract class JdksExtension {
 
     protected abstract MapProperty<JavaLanguageVersion, JdkExtension> getJdks();
 
+    public abstract MapProperty<String, String> getCaCerts();
+
     public abstract DirectoryProperty getJdkStorageLocation();
 
     @Inject
