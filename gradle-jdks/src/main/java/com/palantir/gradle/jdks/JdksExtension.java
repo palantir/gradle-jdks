@@ -18,7 +18,6 @@ package com.palantir.gradle.jdks;
 
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
-import java.io.File;
 import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.file.DirectoryProperty;
@@ -32,7 +31,7 @@ public abstract class JdksExtension {
 
     protected abstract MapProperty<JavaLanguageVersion, JdkExtension> getJdks();
 
-    public abstract MapProperty<String, File> getCaCerts();
+    public abstract MapProperty<String, String> getCaCerts();
 
     public abstract DirectoryProperty getJdkStorageLocation();
 

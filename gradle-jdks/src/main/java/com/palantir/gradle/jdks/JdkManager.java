@@ -17,8 +17,8 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
@@ -128,7 +128,7 @@ public final class JdkManager {
         }
     }
 
-    private void addCaCert(Path javaHome, String alias, File caCertFile) {
+    private void addCaCert(Path javaHome, String alias, String caCert) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
         ExecResult keytoolResult = project.exec(exec -> {
@@ -136,8 +136,6 @@ public final class JdkManager {
                     "bin/keytool",
                     "-import",
                     "-trustcacerts",
-                    "-file",
-                    caCertFile.getAbsolutePath(),
                     "-alias",
                     alias,
                     "-cacerts",
@@ -147,6 +145,7 @@ public final class JdkManager {
 
             exec.environment("JAVA_HOME", javaHome);
             exec.setWorkingDir(javaHome);
+            exec.setStandardInput(new ByteArrayInputStream(caCert.getBytes(StandardCharsets.UTF_8)));
             exec.setStandardOutput(output);
             exec.setErrorOutput(output);
             exec.setIgnoreExitValue(true);
@@ -155,7 +154,7 @@ public final class JdkManager {
         if (keytoolResult.getExitValue() != 0) {
             throw new RuntimeException(String.format(
                     "Failed to add ca cert '%s' to java installation at '%s'. Keytool output: %s\n\n",
-                    caCertFile.getAbsolutePath(), javaHome, output.toString(StandardCharsets.UTF_8)));
+                    alias, javaHome, output.toString(StandardCharsets.UTF_8)));
         }
     }
 }
