@@ -39,16 +39,13 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
                 libraryTarget = 11
             }
         '''.stripIndent(true)
-
-        // language=gradle
-        def subprojectDir = addSubproject 'subproject', '''
-            apply plugin: 'java-library'
-        '''.stripIndent(true)
     }
 
     def 'can download + run an Azul Zulu JDK'() {
         // language=gradle
-        buildFile << '''            
+        def subprojectDir = addSubproject 'subproject', '''
+            apply plugin: 'java-library'
+            
             task printJavaVersion(type: JavaExec) {
                 classpath = sourceSets.main.runtimeClasspath
                 mainClass = 'foo.PrintJavaVersion'
@@ -109,6 +106,8 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
             jdks {
                 caCerts.put 'Our_Amazon_CA_Cert_1', file('amazon-root-ca-1.pem')
             }
+            
+            apply plugin: 'java-library'
 
             task printCaTruststoreAliases(type: JavaExec) {
                 classpath = sourceSets.main.runtimeClasspath
@@ -138,11 +137,7 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
         when:
 
-        def stdout = runTasksSuccessfully(
-                'printCaTruststoreAliases',
-                // TODO: avoid resolving from root configuration somehow, removed in Gradle 8
-                '--warning-mode=none')
-                .standardOutput
+        def stdout = runTasksSuccessfully('printCaTruststoreAliases').standardOutput
 
         then:
         stdout.contains amazonRootCa1Serial
