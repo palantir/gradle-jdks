@@ -16,10 +16,17 @@
 
 package com.palantir.gradle.jdks;
 
-public final class ZuluVersionUtils {
-    public static String combineZuluVersions(String zuluVersion, String javaVersion) {
-        return zuluVersion + "-" + javaVersion;
-    }
+import static org.assertj.core.api.Assertions.assertThat;
 
-    private ZuluVersionUtils() {}
+import com.palantir.gradle.jdks.AzulZuluJdkDistribution.ZuluVersionSplit;
+import org.junit.jupiter.api.Test;
+
+class AzulZuluJdkDistributionTest {
+    @Test
+    void zulu_version_combination_survives_roundtrip() {
+        ZuluVersionSplit versionSplit = AzulZuluJdkDistribution.splitCombinedVersion(
+                ZuluVersionUtils.combineZuluVersions("11.22.33", "11.0.1"));
+        assertThat(versionSplit.javaVersion()).isEqualTo("11.0.1");
+        assertThat(versionSplit.zuluVersion()).isEqualTo("11.22.33");
+    }
 }

@@ -11,6 +11,8 @@ dependencies {
     annotationProcessor 'org.immutables:value'
 
     testImplementation 'com.netflix.nebula:nebula-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
 }
 
 gradlePlugin {
