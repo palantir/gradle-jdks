@@ -39,11 +39,23 @@ final class DelayedConfigurableMap<K, V> {
     }
 
     public void configure(K key, Action<V> value) {
+        checkNotFinialized();
+
         configurations.add(providerFactory.provider(() -> Map.of(key, value)));
     }
 
     public void configureLater(Provider<Map<K, Action<V>>> values) {
+        checkNotFinialized();
+
         configurations.add(values);
+    }
+
+    private void checkNotFinialized() {
+        if (configuredValue.isPresent()) {
+            throw new IllegalStateException(String.format(
+                    "This %s has been finialized by calling get(). It cannot be configured any more.",
+                    DelayedConfigurableMap.class.getSimpleName()));
+        }
     }
 
     public Map<K, V> get() {

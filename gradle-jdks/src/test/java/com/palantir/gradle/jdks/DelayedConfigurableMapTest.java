@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -110,6 +111,22 @@ class DelayedConfigurableMapTest {
         assertThat(delayedConfigurableMap.get())
                 .containsExactlyInAnyOrderEntriesOf(
                         Map.of("aaa", new Extension(3), "bbb", new Extension(5), "ccc", new Extension(6)));
+    }
+
+    @Test
+    void errors_out_if_you_try_to_configure_after_setting() {
+        assertThat(delayedConfigurableMap.get()).isEmpty();
+
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> {
+            delayedConfigurableMap.configure("hey", extension -> extension.number = 3);
+        });
+
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> {
+            delayedConfigurableMap.configureLater(
+                    providerFactory.provider(() -> Map.of("hey", extension -> extension.number = 3)));
+        });
+
+        assertThat(delayedConfigurableMap.get()).isEmpty();
     }
 
     private static final class Extension {
