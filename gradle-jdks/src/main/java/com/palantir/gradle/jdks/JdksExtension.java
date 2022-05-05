@@ -18,18 +18,26 @@ package com.palantir.gradle.jdks;
 
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
+import java.util.Map;
 import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class JdksExtension {
-    protected abstract MapProperty<JdkDistributionName, JdkDistributionExtension> getJdkDistributions();
+    private final DelayedConfigurableMap<JdkDistributionName, JdkDistributionExtension> jdkDistributions;
+    private final DelayedConfigurableMap<JavaLanguageVersion, JdkExtension> jdks;
 
-    protected abstract MapProperty<JavaLanguageVersion, JdkExtension> getJdks();
+    public JdksExtension() {
+        this.jdkDistributions = new DelayedConfigurableMap<>(
+                getProviderFactory(), () -> getObjectFactory().newInstance(JdkDistributionExtension.class));
+        this.jdks = new DelayedConfigurableMap<>(
+                getProviderFactory(), () -> getObjectFactory().newInstance(JdkExtension.class));
+    }
 
     public abstract MapProperty<String, String> getCaCerts();
 
@@ -41,17 +49,12 @@ public abstract class JdksExtension {
     @Inject
     protected abstract ObjectFactory getObjectFactory();
 
-    public final void jdk(JavaLanguageVersion javaLanguageVersion, Action<JdkExtension> action) {
-        JdkExtension jdkExtension = getJdks()
-                .getting(javaLanguageVersion)
-                .orElse(getProviderFactory().provider(() -> {
-                    JdkExtension newJdkExtension = getObjectFactory().newInstance(JdkExtension.class);
-                    getJdks().put(javaLanguageVersion, newJdkExtension);
-                    return newJdkExtension;
-                }))
-                .get();
+    public final void jdks(Provider<Map<JavaLanguageVersion, Action<JdkExtension>>> actions) {
+        jdks.configureLater(actions);
+    }
 
-        action.execute(jdkExtension);
+    public final void jdk(JavaLanguageVersion javaLanguageVersion, Action<JdkExtension> action) {
+        jdks.configure(javaLanguageVersion, action);
     }
 
     @SuppressWarnings("RawTypes")
@@ -59,14 +62,26 @@ public abstract class JdksExtension {
         jdk(JavaLanguageVersion.of(javaLanguageVersion), ConfigureUtil.toAction(closure));
     }
 
+    public final void jdkDistributions(Provider<Map<JdkDistributionName, Action<JdkDistributionExtension>>> actions) {
+        jdkDistributions.configureLater(actions);
+    }
+
     public final void jdkDistribution(
             JdkDistributionName jdkDistributionName, Action<JdkDistributionExtension> action) {
-        action.execute(getJdkDistributions().getting(jdkDistributionName).get());
+        jdkDistributions.configure(jdkDistributionName, action);
     }
 
     @SuppressWarnings("RawTypes")
     public final void jdkDistribution(
             String distributionName, @DelegatesTo(JdkDistributionExtension.class) Closure closure) {
         jdkDistribution(JdkDistributionName.fromStringThrowing(distributionName), ConfigureUtil.toAction(closure));
+    }
+
+    public final Provider<Map<JdkDistributionName, JdkDistributionExtension>> getJdkDistributions() {
+        return jdkDistributions.getAsProvider();
+    }
+
+    public final Provider<Map<JavaLanguageVersion, JdkExtension>> getJdks() {
+        return jdks.getAsProvider();
     }
 }

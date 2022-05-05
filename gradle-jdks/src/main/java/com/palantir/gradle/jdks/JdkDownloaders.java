@@ -43,8 +43,8 @@ final class JdkDownloaders {
                         jdkDistributionName,
                         jdksExtension
                                 .getJdkDistributions()
-                                .getting(jdkDistributionName)
                                 .get()
+                                .get(jdkDistributionName)
                                 .getBaseUrl()
                                 .get()));
     }
