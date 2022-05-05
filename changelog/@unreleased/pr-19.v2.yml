@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Allow lazy configuration of JDKs
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/19
