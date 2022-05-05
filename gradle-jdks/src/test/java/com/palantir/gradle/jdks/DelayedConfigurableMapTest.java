@@ -137,9 +137,13 @@ class DelayedConfigurableMapTest {
         }
 
         @Override
-        @SuppressWarnings("checkstyle:EqualsHashCode")
         public boolean equals(Object obj) {
             return number == ((Extension) obj).number;
+        }
+
+        @Override
+        public int hashCode() {
+            return number;
         }
 
         @Override
