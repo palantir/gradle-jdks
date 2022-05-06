@@ -19,7 +19,6 @@ package com.palantir.gradle.jdks;
 import com.palantir.baseline.extensions.BaselineJavaVersionsExtension;
 import com.palantir.baseline.plugins.BaselineJavaVersions;
 import java.io.File;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -96,17 +95,14 @@ public final class JdksPlugin implements Plugin<Project> {
         JdkDistributionName jdkDistributionName =
                 jdkExtension.getDistributionName().get();
 
-        Path jdk = jdkManager.jdk(JdkSpec.builder()
-                .distributionName(jdkDistributionName)
-                .release(JdkRelease.builder().version(version).build())
-                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
-                .build());
-
         return GradleJdksJavaInstallationMetadata.builder()
-                .installationPath(rootProject
-                        .getLayout()
-                        .dir(rootProject.provider(jdk::toFile))
-                        .get())
+                .installationPathProvider(rootProject.getLayout().dir(rootProject.provider(() -> jdkManager
+                        .jdk(JdkSpec.builder()
+                                .distributionName(jdkDistributionName)
+                                .release(JdkRelease.builder().version(version).build())
+                                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
+                                .build())
+                        .toFile())))
                 .javaRuntimeVersion(version)
                 .languageVersion(javaLanguageVersion)
                 .jvmVersion(version)
