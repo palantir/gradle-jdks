@@ -12,4 +12,4 @@ com.palantir.baseline:* = 4.119.0
 # conflict resolution
 com.google.code.findbugs:jsr305 = 3.0.2
 com.google.errorprone:error_prone_annotations = 2.11.0
-org.checkerframework:checker-qual = 3.21.4
+org.checkerframework:checker-qual = 3.22.0
