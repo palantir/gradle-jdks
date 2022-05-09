@@ -43,13 +43,6 @@ final class JdkDownloader {
                 repositoryContentDescriptor.includeGroup(jdkGroup);
             });
         });
-
-        //        rootProject
-        //                .getRepositories()
-        //                .matching(repo -> !repo.getName().equals(jdkGroup))
-        //                .configureEach(artifactRepository -> {
-        //                    artifactRepository.content(content -> content.excludeGroup(jdkGroup));
-        //                });
     }
 
     public Path downloadJdkPath(JdkPath jdKPath) {
