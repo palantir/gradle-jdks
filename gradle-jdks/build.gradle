@@ -23,6 +23,12 @@ gradlePlugin {
             description = 'Auto-provisions specific versions of JDKs'
             implementationClass = 'com.palantir.gradle.jdks.JdksPlugin'
         }
+        jdksPalantirCa {
+            id = 'com.palantir.jdks.palantir-ca'
+            displayName = 'Palantir JDK CA Auto-provisioning Plugin'
+            description = 'Auto-provisions Palantir CA for JDKs'
+            implementationClass = 'com.palantir.gradle.jdks.PalantirCaPlugin'
+        }
     }
 }
 
