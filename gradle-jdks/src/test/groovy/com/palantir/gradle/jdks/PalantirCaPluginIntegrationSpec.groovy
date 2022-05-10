@@ -18,9 +18,9 @@ package com.palantir.gradle.jdks
 
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
-import org.junit.jupiter.api.Disabled
+import spock.lang.Ignore
 
-@Disabled("Does not work on CI")
+@Ignore("Does not work on CI")
 class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
 
     def 'can add ca certs to a JDK'() {
