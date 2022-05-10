@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import java.util.Locale;
 import java.util.Set;
 import org.immutables.value.Value;
 
@@ -26,19 +25,7 @@ interface JdkRelease {
 
     @Value.Default
     default Os os() {
-        String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-        if (osName.startsWith("mac")) {
-            return Os.MACOS;
-        }
-        if (osName.startsWith("linux")) {
-            return Os.LINUX;
-        }
-
-        if (osName.startsWith("windows")) {
-            return Os.WINDOWS;
-        }
-
-        throw new UnsupportedOperationException("Cannot get platform for operating system " + osName);
+        return Os.current();
     }
 
     @Value.Default
@@ -58,12 +45,6 @@ interface JdkRelease {
         }
 
         throw new UnsupportedOperationException("Cannot get architecture for " + osArch);
-    }
-
-    enum Os {
-        MACOS,
-        LINUX,
-        WINDOWS
     }
 
     enum Arch {

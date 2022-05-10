@@ -18,8 +18,12 @@ package com.palantir.gradle.jdks;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -53,9 +57,21 @@ final class PalantirCaPlugin implements Plugin<Project> {
     }
 
     private String readPalantirRootCaFromSystemTruststore(Project rootProject) {
-        byte[] multipleCertificateBytes = macosSystemCertificates(rootProject);
+        return selectPalantirCertificate(systemCertificates(rootProject));
+    }
 
-        return selectPalantirCertificate(multipleCertificateBytes);
+    private byte[] systemCertificates(Project rootProject) {
+        Os currentOs = Os.current();
+
+        switch (currentOs) {
+            case MACOS:
+                return macosSystemCertificates(rootProject);
+            case LINUX:
+                return linuxSystemCertificates();
+            default:
+                throw new UnsupportedOperationException(
+                        currentOs + " is not currently supported for automatic Palantir CA discovery");
+        }
     }
 
     private byte[] macosSystemCertificates(Project rootProject) {
@@ -83,6 +99,16 @@ final class PalantirCaPlugin implements Plugin<Project> {
         }
 
         return output.toByteArray();
+    }
+
+    private byte[] linuxSystemCertificates() {
+        Path caCertificatePath = Paths.get("/etc/ssl/certs");
+
+        try {
+            return Files.readAllBytes(caCertificatePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read CA certs from " + caCertificatePath, e);
+        }
     }
 
     private String selectPalantirCertificate(byte[] multipleCertificateBytes) {

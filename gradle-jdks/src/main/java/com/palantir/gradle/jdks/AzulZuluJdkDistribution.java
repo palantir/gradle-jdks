@@ -18,7 +18,6 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.JdkRelease.Arch;
-import com.palantir.gradle.jdks.JdkRelease.Os;
 import org.immutables.value.Value;
 
 final class AzulZuluJdkDistribution implements JdkDistribution {
