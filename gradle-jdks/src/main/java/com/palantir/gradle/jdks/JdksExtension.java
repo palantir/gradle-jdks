@@ -16,27 +16,26 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.baseline.plugins.javaversions.LazilyConfiguredMapping;
+import com.palantir.baseline.plugins.javaversions.LazilyConfiguredMapping.LazyValues;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
-import java.util.Map;
+import java.util.Optional;
 import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
-import org.gradle.api.provider.Provider;
-import org.gradle.api.provider.ProviderFactory;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class JdksExtension {
-    private final DelayedConfigurableMap<JdkDistributionName, JdkDistributionExtension> jdkDistributions;
-    private final DelayedConfigurableMap<JavaLanguageVersion, JdkExtension> jdks;
+    private final LazilyConfiguredMapping<JdkDistributionName, JdkDistributionExtension> jdkDistributions;
+    private final LazilyConfiguredMapping<JavaLanguageVersion, JdkExtension> jdks;
 
     public JdksExtension() {
-        this.jdkDistributions = new DelayedConfigurableMap<>(
-                getProviderFactory(), () -> getObjectFactory().newInstance(JdkDistributionExtension.class));
-        this.jdks = new DelayedConfigurableMap<>(
-                getProviderFactory(), () -> getObjectFactory().newInstance(JdkExtension.class));
+        this.jdkDistributions =
+                new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkDistributionExtension.class));
+        this.jdks = new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkExtension.class));
     }
 
     public abstract MapProperty<String, String> getCaCerts();
@@ -44,17 +43,14 @@ public abstract class JdksExtension {
     public abstract DirectoryProperty getJdkStorageLocation();
 
     @Inject
-    protected abstract ProviderFactory getProviderFactory();
-
-    @Inject
     protected abstract ObjectFactory getObjectFactory();
 
-    public final void jdks(Provider<Map<JavaLanguageVersion, Action<JdkExtension>>> actions) {
-        jdks.configureLater(actions);
+    public final void jdks(LazyJdks lazyJdks) {
+        jdks.put(lazyJdks);
     }
 
     public final void jdk(JavaLanguageVersion javaLanguageVersion, Action<JdkExtension> action) {
-        jdks.configure(javaLanguageVersion, action);
+        jdks.put(javaLanguageVersion, action);
     }
 
     @SuppressWarnings("RawTypes")
@@ -62,13 +58,13 @@ public abstract class JdksExtension {
         jdk(JavaLanguageVersion.of(javaLanguageVersion), ConfigureUtil.toAction(closure));
     }
 
-    public final void jdkDistributions(Provider<Map<JdkDistributionName, Action<JdkDistributionExtension>>> actions) {
-        jdkDistributions.configureLater(actions);
+    public final void jdkDistributions(LazyJdkDistributions lazyJdkDistributions) {
+        jdkDistributions.put(lazyJdkDistributions);
     }
 
     public final void jdkDistribution(
             JdkDistributionName jdkDistributionName, Action<JdkDistributionExtension> action) {
-        jdkDistributions.configure(jdkDistributionName, action);
+        jdkDistributions.put(jdkDistributionName, action);
     }
 
     @SuppressWarnings("RawTypes")
@@ -77,11 +73,18 @@ public abstract class JdksExtension {
         jdkDistribution(JdkDistributionName.fromStringThrowing(distributionName), ConfigureUtil.toAction(closure));
     }
 
-    public final Provider<Map<JdkDistributionName, JdkDistributionExtension>> getJdkDistributions() {
-        return jdkDistributions.getAsProvider();
+    public final JdkDistributionExtension jdkDistributionFor(JdkDistributionName jdkDistributionName) {
+        return jdkDistributions
+                .get(jdkDistributionName)
+                .orElseThrow(() -> new RuntimeException(
+                        String.format("No configuration for JdkDistribution " + jdkDistributionName)));
     }
 
-    public final Provider<Map<JavaLanguageVersion, JdkExtension>> getJdks() {
-        return jdks.getAsProvider();
+    public final Optional<JdkExtension> jdkFor(JavaLanguageVersion javaLanguageVersion) {
+        return jdks.get(javaLanguageVersion);
     }
+
+    public interface LazyJdkDistributions extends LazyValues<JdkDistributionName, JdkDistributionExtension> {}
+
+    public interface LazyJdks extends LazyValues<JavaLanguageVersion, JdkExtension> {}
 }

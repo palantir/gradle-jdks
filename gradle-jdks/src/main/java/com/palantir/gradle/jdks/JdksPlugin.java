@@ -20,11 +20,8 @@ import com.palantir.baseline.extensions.BaselineJavaVersionsExtension;
 import com.palantir.baseline.plugins.BaselineJavaVersions;
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public final class JdksPlugin implements Plugin<Project> {
@@ -49,18 +46,10 @@ public final class JdksPlugin implements Plugin<Project> {
         rootProject
                 .getExtensions()
                 .getByType(BaselineJavaVersionsExtension.class)
-                .getJdks()
-                .putAll(rootProject.provider(() -> {
-                    Map<JavaLanguageVersion, JavaInstallationMetadata> ret = new HashMap<>();
-                    jdksExtension.getJdks().get().forEach((javaLanguageVersion, jdkExtension) -> {
-                        ret.put(
-                                javaLanguageVersion,
-                                javaInstallationForLanguageVersion(
-                                        rootProject, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion));
-                    });
-
-                    return ret;
-                }));
+                .jdks(javaLanguageVersion -> jdksExtension
+                        .jdkFor(javaLanguageVersion)
+                        .map(jdkExtension -> javaInstallationForLanguageVersion(
+                                rootProject, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion)));
     }
 
     private JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
