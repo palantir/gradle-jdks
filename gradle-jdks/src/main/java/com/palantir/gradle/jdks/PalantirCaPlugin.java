@@ -53,6 +53,12 @@ final class PalantirCaPlugin implements Plugin<Project> {
     }
 
     private String readPalantirRootCaFromSystemTruststore(Project rootProject) {
+        byte[] multipleCertificateBytes = macosSystemCertificates(rootProject);
+
+        return selectPalantirCertificate(multipleCertificateBytes);
+    }
+
+    private byte[] macosSystemCertificates(Project rootProject) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ByteArrayOutputStream error = new ByteArrayOutputStream();
 
@@ -76,10 +82,14 @@ final class PalantirCaPlugin implements Plugin<Project> {
                     output.toString(StandardCharsets.UTF_8)));
         }
 
+        return output.toByteArray();
+    }
+
+    private String selectPalantirCertificate(byte[] multipleCertificateBytes) {
         try {
             CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
             Collection<? extends Certificate> certificates =
-                    certificateFactory.generateCertificates(new ByteArrayInputStream(output.toByteArray()));
+                    certificateFactory.generateCertificates(new ByteArrayInputStream(multipleCertificateBytes));
 
             Certificate palantirCert = certificates.stream()
                     .filter(cert -> PALANTIR_3RD_GEN_SERIAL.equals(((X509Certificate) cert).getSerialNumber()))
