@@ -18,9 +18,8 @@ package com.palantir.gradle.jdks
 
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
-import spock.lang.Ignore
 
-@Ignore("Does not work on CI")
+//@Ignore("Does not work on CI")
 class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
 
     def 'can add ca certs to a JDK'() {
@@ -71,7 +70,7 @@ class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
 
         when:
 
-        def stdout = runTasksSuccessfully('printCaTruststoreAliases', '--warning-mode=none').standardOutput
+        def stdout = runTasksSuccessfully('printCaTruststoreAliases').standardOutput
 
         def palantir3rdGenCaSerial = '18126334688741185161'
 
