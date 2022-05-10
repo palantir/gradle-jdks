@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Palantir CA Plugin to automatically add Palantir CA certs to JDK truststores.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/23
