@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.LazilyConfiguredMapping;
-import com.palantir.baseline.plugins.javaversions.LazilyConfiguredMapping.LazyValues;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import java.util.Optional;
@@ -46,7 +45,7 @@ public abstract class JdksExtension {
     protected abstract ObjectFactory getObjectFactory();
 
     public final void jdks(LazyJdks lazyJdks) {
-        jdks.put(lazyJdks);
+        jdks.put(lazyJdks::configureJdkFor);
     }
 
     public final void jdk(JavaLanguageVersion javaLanguageVersion, Action<JdkExtension> action) {
@@ -59,7 +58,7 @@ public abstract class JdksExtension {
     }
 
     public final void jdkDistributions(LazyJdkDistributions lazyJdkDistributions) {
-        jdkDistributions.put(lazyJdkDistributions);
+        jdkDistributions.put(lazyJdkDistributions::configureJdkDistributionFor);
     }
 
     public final void jdkDistribution(
@@ -84,7 +83,11 @@ public abstract class JdksExtension {
         return jdks.get(javaLanguageVersion);
     }
 
-    public interface LazyJdkDistributions extends LazyValues<JdkDistributionName, JdkDistributionExtension> {}
+    public interface LazyJdkDistributions {
+        Optional<Action<JdkDistributionExtension>> configureJdkDistributionFor(JdkDistributionName jdkDistributionName);
+    }
 
-    public interface LazyJdks extends LazyValues<JavaLanguageVersion, JdkExtension> {}
+    public interface LazyJdks {
+        Optional<Action<JdkExtension>> configureJdkFor(JavaLanguageVersion javaLanguageVersion);
+    }
 }
