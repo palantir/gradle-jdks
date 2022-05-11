@@ -36,20 +36,17 @@ public final class JdksPlugin implements Plugin<Project> {
         JdksExtension jdksExtension = extension(rootProject, jdkDistributions);
 
         JdkManager jdkManager = new JdkManager(
-                rootProject.getProject(),
-                jdksExtension.getJdkStorageLocation(),
-                jdkDistributions,
-                new JdkDownloaders(rootProject, jdksExtension));
+                jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension));
 
         rootProject.getPluginManager().apply(BaselineJavaVersions.class);
 
         rootProject
                 .getExtensions()
                 .getByType(BaselineJavaVersionsExtension.class)
-                .jdks(javaLanguageVersion -> jdksExtension
-                        .jdkFor(javaLanguageVersion)
+                .jdks((javaLanguageVersion, project) -> jdksExtension
+                        .jdkFor(javaLanguageVersion, project)
                         .map(jdkExtension -> javaInstallationForLanguageVersion(
-                                rootProject, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion)));
+                                project, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion)));
     }
 
     private JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
@@ -74,7 +71,7 @@ public final class JdksPlugin implements Plugin<Project> {
     }
 
     private GradleJdksJavaInstallationMetadata javaInstallationForLanguageVersion(
-            Project rootProject,
+            Project project,
             JdksExtension jdksExtension,
             JdkExtension jdkExtension,
             JdkManager jdkManager,
@@ -85,12 +82,17 @@ public final class JdksPlugin implements Plugin<Project> {
                 jdkExtension.getDistributionName().get();
 
         return GradleJdksJavaInstallationMetadata.builder()
-                .installationPathProvider(rootProject.getLayout().dir(rootProject.provider(() -> jdkManager
-                        .jdk(JdkSpec.builder()
-                                .distributionName(jdkDistributionName)
-                                .release(JdkRelease.builder().version(version).build())
-                                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
-                                .build())
+                .installationPathProvider(project.getLayout().dir(project.provider(() -> jdkManager
+                        .jdk(
+                                project,
+                                JdkSpec.builder()
+                                        .distributionName(jdkDistributionName)
+                                        .release(JdkRelease.builder()
+                                                .version(version)
+                                                .build())
+                                        .caCerts(CaCerts.from(
+                                                jdksExtension.getCaCerts().get()))
+                                        .build())
                         .toFile())))
                 .javaRuntimeVersion(version)
                 .languageVersion(javaLanguageVersion)

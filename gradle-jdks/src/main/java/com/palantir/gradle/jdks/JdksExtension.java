@@ -22,14 +22,15 @@ import groovy.lang.DelegatesTo;
 import java.util.Optional;
 import javax.inject.Inject;
 import org.gradle.api.Action;
+import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class JdksExtension {
-    private final LazilyConfiguredMapping<JdkDistributionName, JdkDistributionExtension> jdkDistributions;
-    private final LazilyConfiguredMapping<JavaLanguageVersion, JdkExtension> jdks;
+    private final LazilyConfiguredMapping<JdkDistributionName, JdkDistributionExtension, Void> jdkDistributions;
+    private final LazilyConfiguredMapping<JavaLanguageVersion, JdkExtension, Project> jdks;
 
     public JdksExtension() {
         this.jdkDistributions =
@@ -58,7 +59,8 @@ public abstract class JdksExtension {
     }
 
     public final void jdkDistributions(LazyJdkDistributions lazyJdkDistributions) {
-        jdkDistributions.put(lazyJdkDistributions::configureJdkDistributionFor);
+        jdkDistributions.put((jdkDistributionName, _ignored) ->
+                lazyJdkDistributions.configureJdkDistributionFor(jdkDistributionName));
     }
 
     public final void jdkDistribution(
@@ -74,13 +76,13 @@ public abstract class JdksExtension {
 
     public final JdkDistributionExtension jdkDistributionFor(JdkDistributionName jdkDistributionName) {
         return jdkDistributions
-                .get(jdkDistributionName)
+                .get(jdkDistributionName, null)
                 .orElseThrow(() -> new RuntimeException(
                         String.format("No configuration for JdkDistribution " + jdkDistributionName)));
     }
 
-    public final Optional<JdkExtension> jdkFor(JavaLanguageVersion javaLanguageVersion) {
-        return jdks.get(javaLanguageVersion);
+    public final Optional<JdkExtension> jdkFor(JavaLanguageVersion javaLanguageVersion, Project project) {
+        return jdks.get(javaLanguageVersion, project);
     }
 
     public interface LazyJdkDistributions {
@@ -88,6 +90,6 @@ public abstract class JdksExtension {
     }
 
     public interface LazyJdks {
-        Optional<Action<JdkExtension>> configureJdkFor(JavaLanguageVersion javaLanguageVersion);
+        Optional<Action<JdkExtension>> configureJdkFor(JavaLanguageVersion javaLanguageVersion, Project project);
     }
 }
