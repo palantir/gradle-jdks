@@ -25,7 +25,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.gradle.api.Project;
@@ -78,7 +77,7 @@ public final class JdkManager {
             });
 
             try {
-                Files.move(javaHome, diskPath, StandardCopyOption.ATOMIC_MOVE);
+                Files.move(javaHome, diskPath);
             } catch (FileAlreadyExistsException e) {
                 // This means another process has successfully installed this JDK, and we can just use their one.
                 return diskPath;
