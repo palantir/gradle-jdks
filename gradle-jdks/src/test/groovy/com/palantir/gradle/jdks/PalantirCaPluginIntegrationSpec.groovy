@@ -19,13 +19,13 @@ package com.palantir.gradle.jdks
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
 
-//@Ignore("Does not work on CI")
 class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
 
     def 'can add ca certs to a JDK'() {
         // language=gradle
         buildFile << '''
-            apply plugin: 'com.palantir.jdks.palantir-ca'
+            // Can't do strict as open source CI does not have the Palantir CA
+            com.palantir.gradle.jdks.PalantirCa.applyToRootProject(rootProject, false)
     
             jdks {
                 jdk(11) {
@@ -55,15 +55,19 @@ class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
             package foo;
 
             import java.io.File;
-            import java.security.KeyStore;import java.security.cert.X509Certificate;
+            import java.security.KeyStore;
+            import java.security.cert.X509Certificate;
             
             public final class OutputCaCerts {
                 public static void main(String... args) throws Exception {
                     KeyStore keyStore = KeyStore.getInstance(
                             new File(System.getProperty("java.home"), "lib/security/cacerts"),
                             "changeit".toCharArray());
-                    System.out.println(
-                            ((X509Certificate) keyStore.getCertificate("Palantir3rdGenRootCa")).getSerialNumber());
+                    X509Certificate palantirCert = ((X509Certificate) keyStore.getCertificate("Palantir3rdGenRootCa"));
+
+                    if (palantirCert != null) {
+                        System.out.println(palantirCert.getSerialNumber());
+                    }
                 }
             }
         '''.stripIndent(true)
@@ -72,10 +76,13 @@ class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
 
         def stdout = runTasksSuccessfully('printCaTruststoreAliases').standardOutput
 
-        def palantir3rdGenCaSerial = '18126334688741185161'
+        def palantir3rdGenCaSerial = '1812633468874f1185161'
 
         then:
-        stdout.contains palantir3rdGenCaSerial
+        // Open source CI does not have the Palantir CA
+        if (System.getenv("CI") == null) {
+            assert stdout.contains(palantir3rdGenCaSerial)
+        }
     }
 
     @Override
