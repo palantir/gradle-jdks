@@ -19,33 +19,36 @@ package com.palantir.gradle.jdks;
 import java.util.HashMap;
 import java.util.Map;
 import org.gradle.api.Project;
+import org.immutables.value.Value;
 
 final class JdkDownloaders {
-    private final Map<JdkDistributionName, JdkDownloader> jdkDownloaders = new HashMap<>();
+    private final Map<JdkDownloadersCacheKey, JdkDownloader> jdkDownloaders = new HashMap<>();
 
-    private final Project rootProject;
     private final JdksExtension jdksExtension;
 
-    JdkDownloaders(Project rootProject, JdksExtension jdksExtension) {
-        if (rootProject != rootProject.getRootProject()) {
-            throw new IllegalArgumentException("Must pass in the root project");
-        }
-
-        this.rootProject = rootProject;
+    JdkDownloaders(JdksExtension jdksExtension) {
         this.jdksExtension = jdksExtension;
     }
 
-    public JdkDownloader jdkDownloaderFor(JdkDistributionName jdkDistributionName) {
+    public JdkDownloader jdkDownloaderFor(Project project, JdkDistributionName jdkDistributionName) {
         return jdkDownloaders.computeIfAbsent(
-                jdkDistributionName,
+                ImmutableJdkDownloadersCacheKey.builder()
+                        .project(project)
+                        .jdkDistributionName(jdkDistributionName)
+                        .build(),
                 _ignored -> new JdkDownloader(
-                        rootProject,
+                        project,
                         jdkDistributionName,
                         jdksExtension
-                                .getJdkDistributions()
-                                .getting(jdkDistributionName)
-                                .get()
+                                .jdkDistributionFor(jdkDistributionName)
                                 .getBaseUrl()
                                 .get()));
+    }
+
+    @Value.Immutable
+    interface JdkDownloadersCacheKey {
+        Project project();
+
+        JdkDistributionName jdkDistributionName();
     }
 }

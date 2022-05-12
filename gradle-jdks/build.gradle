@@ -4,7 +4,8 @@ apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.external-publish-gradle-plugin'
 
 dependencies {
-    implementation project(':gradle-jdks-distributions')
+    api project(':gradle-jdks-distributions')
+
     implementation 'com.palantir.baseline:gradle-baseline-java'
 
     compileOnly 'org.immutables:value::annotations'
@@ -13,6 +14,8 @@ dependencies {
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
 }
 
 gradlePlugin {

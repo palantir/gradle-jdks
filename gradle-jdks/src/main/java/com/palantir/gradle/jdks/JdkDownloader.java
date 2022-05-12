@@ -23,18 +23,14 @@ import org.gradle.api.artifacts.repositories.IvyArtifactRepository.MetadataSourc
 
 final class JdkDownloader {
 
-    private final Project rootProject;
+    private final Project project;
     private final String jdkGroup;
 
-    JdkDownloader(Project rootProject, JdkDistributionName jdkDistributionName, String jdkBaseUrl) {
-        this.rootProject = rootProject;
+    JdkDownloader(Project project, JdkDistributionName jdkDistributionName, String jdkBaseUrl) {
+        this.project = project;
         this.jdkGroup = jdkDistributionName.uiName() + "-jdk";
 
-        if (rootProject != rootProject.getRootProject()) {
-            throw new IllegalArgumentException("Must pass in the root project");
-        }
-
-        rootProject.getRepositories().ivy(ivy -> {
+        project.getRepositories().ivy(ivy -> {
             ivy.setName(jdkGroup);
             ivy.setUrl(jdkBaseUrl);
             ivy.patternLayout(patternLayout -> patternLayout.artifact("[module].[ext]"));
@@ -43,20 +39,11 @@ final class JdkDownloader {
                 repositoryContentDescriptor.includeGroup(jdkGroup);
             });
         });
-
-        rootProject
-                .getRepositories()
-                .matching(repo -> !repo.getName().equals(jdkGroup))
-                .configureEach(artifactRepository -> {
-                    artifactRepository.content(content -> content.excludeGroup(jdkGroup));
-                });
     }
 
     public Path downloadJdkPath(JdkPath jdKPath) {
-        Configuration configuration = rootProject
-                .getConfigurations()
-                .detachedConfiguration(rootProject
-                        .getDependencies()
+        Configuration configuration = project.getConfigurations()
+                .detachedConfiguration(project.getDependencies()
                         .create(String.format("%s:%s:@%s", jdkGroup, jdKPath.filename(), jdKPath.extension())));
         return configuration.resolve().iterator().next().toPath();
     }
