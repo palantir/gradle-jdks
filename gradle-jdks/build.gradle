@@ -26,11 +26,19 @@ gradlePlugin {
             description = 'Auto-provisions specific versions of JDKs'
             implementationClass = 'com.palantir.gradle.jdks.JdksPlugin'
         }
-        jdksPalantirCa {
-            id = 'com.palantir.jdks.palantir-ca'
-            displayName = 'Palantir JDK CA Auto-provisioning Plugin'
-            description = 'Auto-provisions Palantir CA for JDKs'
-            implementationClass = 'com.palantir.gradle.jdks.PalantirCaPlugin'
+
+        palantirCaLenient {
+            id = 'com.palantir.jdks.palantir-ca.lenient'
+            displayName = 'Palantir JDK CA Auto-provisioning Plugin Lenient'
+            description = 'Auto-provisions Palantir CA for JDKs that will not fail if the certificate can\'t be found'
+            implementationClass = 'com.palantir.gradle.jdks.PalantirCaPluginLenient'
+        }
+
+        palantirCaStrict {
+            id = 'com.palantir.jdks.palantir-ca.strict'
+            displayName = 'Palantir JDK CA Auto-provisioning Plugin Strict'
+            description = 'Auto-provisions Palantir CA for JDKs that will fail if the certificate can\'t be found'
+            implementationClass = 'com.palantir.gradle.jdks.PalantirCaPluginStrict'
         }
     }
 }

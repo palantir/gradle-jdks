@@ -25,21 +25,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
-import org.gradle.api.Plugin;
+import java.util.Optional;
 import org.gradle.api.Project;
 import org.gradle.process.ExecResult;
 
-final class PalantirCaPlugin implements Plugin<Project> {
+final class PalantirCa {
     private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
 
-    @Override
-    public void apply(Project rootProject) {
+    public static void applyToRootProject(Project rootProject, boolean strict) {
         if (rootProject.getRootProject() != rootProject) {
             throw new IllegalArgumentException(
                     "com.palantir.jdks.palantir-ca must be applied to the root project only");
@@ -51,16 +51,21 @@ final class PalantirCaPlugin implements Plugin<Project> {
                 .getExtensions()
                 .getByType(JdksExtension.class)
                 .getCaCerts()
-                .put(
-                        "Palantir3rdGenRootCa",
-                        rootProject.provider(() -> readPalantirRootCaFromSystemTruststore(rootProject)));
+                .put("Palantir3rdGenRootCa", rootProject.provider(() -> {
+                    Optional<String> possibleCert = readPalantirRootCaFromSystemTruststore(rootProject);
+                    if (strict && possibleCert.isEmpty()) {
+                        throw new RuntimeException(
+                                "Could not find Palantir 3rd Gen Root CA from macos system truststore");
+                    }
+                    return possibleCert.orElse(null);
+                }));
     }
 
-    private String readPalantirRootCaFromSystemTruststore(Project rootProject) {
+    private static Optional<String> readPalantirRootCaFromSystemTruststore(Project rootProject) {
         return selectPalantirCertificate(systemCertificates(rootProject));
     }
 
-    private byte[] systemCertificates(Project rootProject) {
+    private static byte[] systemCertificates(Project rootProject) {
         Os currentOs = Os.current();
 
         switch (currentOs) {
@@ -74,7 +79,7 @@ final class PalantirCaPlugin implements Plugin<Project> {
         }
     }
 
-    private byte[] macosSystemCertificates(Project rootProject) {
+    private static byte[] macosSystemCertificates(Project rootProject) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ByteArrayOutputStream error = new ByteArrayOutputStream();
 
@@ -101,7 +106,7 @@ final class PalantirCaPlugin implements Plugin<Project> {
         return output.toByteArray();
     }
 
-    private byte[] linuxSystemCertificates() {
+    private static byte[] linuxSystemCertificates() {
         Path caCertificatePath = Paths.get("/etc/ssl/certs");
 
         try {
@@ -111,26 +116,32 @@ final class PalantirCaPlugin implements Plugin<Project> {
         }
     }
 
-    private String selectPalantirCertificate(byte[] multipleCertificateBytes) {
+    private static Optional<String> selectPalantirCertificate(byte[] multipleCertificateBytes) {
+        return parseCerts(multipleCertificateBytes).stream()
+                .filter(cert -> PALANTIR_3RD_GEN_SERIAL.equals(((X509Certificate) cert).getSerialNumber()))
+                .findFirst()
+                .map(PalantirCa::encodeCertificate);
+    }
+
+    private static Collection<? extends Certificate> parseCerts(byte[] multipleCertificateBytes) {
         try {
             CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-            Collection<? extends Certificate> certificates =
-                    certificateFactory.generateCertificates(new ByteArrayInputStream(multipleCertificateBytes));
+            return certificateFactory.generateCertificates(new ByteArrayInputStream(multipleCertificateBytes));
+        } catch (CertificateException e) {
+            throw new RuntimeException("Failed to read certificate", e);
+        }
+    }
 
-            Certificate palantirCert = certificates.stream()
-                    .filter(cert -> PALANTIR_3RD_GEN_SERIAL.equals(((X509Certificate) cert).getSerialNumber()))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException(
-                            "Could not find Palantir 3rd Gen Root CA from macos system truststore"));
-
-            Base64.Encoder encoder = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8));
+    private static String encodeCertificate(Certificate palantirCert) {
+        Base64.Encoder encoder = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8));
+        try {
             return String.join(
                     "\n",
                     "-----BEGIN CERTIFICATE-----",
                     encoder.encodeToString(palantirCert.getEncoded()),
                     "-----END CERTIFICATE-----");
-        } catch (CertificateException e) {
-            throw new RuntimeException("Failed to read certificate", e);
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException("Could not convert Palantir cert back to regular", e);
         }
     }
 }
