@@ -16,11 +16,20 @@
 
 package com.palantir.gradle.jdks;
 
+import org.gradle.api.file.Directory;
+import org.gradle.api.provider.Provider;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.immutables.value.Value;
 
 @Value.Immutable
 abstract class GradleJdksJavaInstallationMetadata implements JavaInstallationMetadata {
+    protected abstract Provider<Directory> installationPathProvider();
+
+    @Override
+    public Directory getInstallationPath() {
+        return installationPathProvider().get();
+    }
+
     public static final class Builder extends ImmutableGradleJdksJavaInstallationMetadata.Builder {}
 
     public static Builder builder() {

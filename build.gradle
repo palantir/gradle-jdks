@@ -25,8 +25,8 @@ version gitVersion()
 
 allprojects {
     repositories {
-        gradlePluginPortal()
         mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+        gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
     }
 
     group 'com.palantir.gradle.jdks'

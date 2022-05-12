@@ -18,40 +18,38 @@ package com.palantir.gradle.jdks;
 
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
+import java.util.Optional;
 import javax.inject.Inject;
 import org.gradle.api.Action;
+import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
-import org.gradle.api.provider.ProviderFactory;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class JdksExtension {
-    protected abstract MapProperty<JdkDistributionName, JdkDistributionExtension> getJdkDistributions();
+    private final LazilyConfiguredMapping<JdkDistributionName, JdkDistributionExtension, Void> jdkDistributions;
+    private final LazilyConfiguredMapping<JavaLanguageVersion, JdkExtension, Project> jdks;
 
-    protected abstract MapProperty<JavaLanguageVersion, JdkExtension> getJdks();
+    public JdksExtension() {
+        this.jdkDistributions =
+                new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkDistributionExtension.class));
+        this.jdks = new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkExtension.class));
+    }
 
     public abstract MapProperty<String, String> getCaCerts();
 
     public abstract DirectoryProperty getJdkStorageLocation();
 
     @Inject
-    protected abstract ProviderFactory getProviderFactory();
-
-    @Inject
     protected abstract ObjectFactory getObjectFactory();
 
-    public final void jdk(JavaLanguageVersion javaLanguageVersion, Action<JdkExtension> action) {
-        JdkExtension jdkExtension = getJdks()
-                .getting(javaLanguageVersion)
-                .orElse(getProviderFactory().provider(() -> {
-                    JdkExtension newJdkExtension = getObjectFactory().newInstance(JdkExtension.class);
-                    getJdks().put(javaLanguageVersion, newJdkExtension);
-                    return newJdkExtension;
-                }))
-                .get();
+    public final void jdks(LazyJdks lazyJdks) {
+        jdks.put(lazyJdks::configureJdkFor);
+    }
 
-        action.execute(jdkExtension);
+    public final void jdk(JavaLanguageVersion javaLanguageVersion, Action<JdkExtension> action) {
+        jdks.put(javaLanguageVersion, action);
     }
 
     @SuppressWarnings("RawTypes")
@@ -59,14 +57,38 @@ public abstract class JdksExtension {
         jdk(JavaLanguageVersion.of(javaLanguageVersion), ConfigureUtil.toAction(closure));
     }
 
+    public final void jdkDistributions(LazyJdkDistributions lazyJdkDistributions) {
+        jdkDistributions.put((jdkDistributionName, _ignored) ->
+                lazyJdkDistributions.configureJdkDistributionFor(jdkDistributionName));
+    }
+
     public final void jdkDistribution(
             JdkDistributionName jdkDistributionName, Action<JdkDistributionExtension> action) {
-        action.execute(getJdkDistributions().getting(jdkDistributionName).get());
+        jdkDistributions.put(jdkDistributionName, action);
     }
 
     @SuppressWarnings("RawTypes")
     public final void jdkDistribution(
             String distributionName, @DelegatesTo(JdkDistributionExtension.class) Closure closure) {
         jdkDistribution(JdkDistributionName.fromStringThrowing(distributionName), ConfigureUtil.toAction(closure));
+    }
+
+    public final JdkDistributionExtension jdkDistributionFor(JdkDistributionName jdkDistributionName) {
+        return jdkDistributions
+                .get(jdkDistributionName, null)
+                .orElseThrow(() -> new RuntimeException(
+                        String.format("No configuration for JdkDistribution " + jdkDistributionName)));
+    }
+
+    public final Optional<JdkExtension> jdkFor(JavaLanguageVersion javaLanguageVersion, Project project) {
+        return jdks.get(javaLanguageVersion, project);
+    }
+
+    public interface LazyJdkDistributions {
+        Optional<Action<JdkDistributionExtension>> configureJdkDistributionFor(JdkDistributionName jdkDistributionName);
+    }
+
+    public interface LazyJdks {
+        Optional<Action<JdkExtension>> configureJdkFor(JavaLanguageVersion javaLanguageVersion, Project project);
     }
 }

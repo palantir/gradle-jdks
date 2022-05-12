@@ -35,23 +35,17 @@ import org.gradle.api.provider.Provider;
 import org.gradle.process.ExecResult;
 
 public final class JdkManager {
-    private final Project project;
     private final Provider<Directory> storageLocation;
     private final JdkDistributions jdkDistributions;
     private final JdkDownloaders jdkDownloaders;
 
-    JdkManager(
-            Project project,
-            Provider<Directory> storageLocation,
-            JdkDistributions jdkDistributions,
-            JdkDownloaders jdkDownloaders) {
-        this.project = project;
+    JdkManager(Provider<Directory> storageLocation, JdkDistributions jdkDistributions, JdkDownloaders jdkDownloaders) {
         this.storageLocation = storageLocation;
         this.jdkDistributions = jdkDistributions;
         this.jdkDownloaders = jdkDownloaders;
     }
 
-    public Path jdk(JdkSpec jdkSpec) {
+    public Path jdk(Project project, JdkSpec jdkSpec) {
         Path diskPath = storageLocation
                 .get()
                 .getAsFile()
@@ -65,21 +59,22 @@ public final class JdkManager {
         }
 
         JdkPath jdkPath = jdkDistributions.get(jdkSpec.distributionName()).path(jdkSpec.release());
-        Path jdkArchive =
-                jdkDownloaders.jdkDownloaderFor(jdkSpec.distributionName()).downloadJdkPath(jdkPath);
+        Path jdkArchive = jdkDownloaders
+                .jdkDownloaderFor(project, jdkSpec.distributionName())
+                .downloadJdkPath(jdkPath);
 
         Path temporaryJdkPath = Paths.get(
                 diskPath + ".in-progress-" + UUID.randomUUID().toString().substring(0, 8));
         try {
             project.copy(copy -> {
-                copy.from(unpackTree(jdkPath.extension(), jdkArchive));
+                copy.from(unpackTree(project, jdkPath.extension(), jdkArchive));
                 copy.into(temporaryJdkPath);
             });
 
             Path javaHome = findJavaHome(temporaryJdkPath);
 
             jdkSpec.caCerts().caCerts().forEach((name, caCertFile) -> {
-                addCaCert(javaHome, name, caCertFile);
+                addCaCert(project, javaHome, name, caCertFile);
             });
 
             try {
@@ -99,7 +94,7 @@ public final class JdkManager {
         }
     }
 
-    private FileTree unpackTree(Extension extension, Path path) {
+    private FileTree unpackTree(Project project, Extension extension, Path path) {
         switch (extension) {
             case ZIP:
                 return project.zipTree(path.toFile());
@@ -128,7 +123,7 @@ public final class JdkManager {
         }
     }
 
-    private void addCaCert(Path javaHome, String alias, String caCert) {
+    private void addCaCert(Project project, Path javaHome, String alias, String caCert) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
         ExecResult keytoolResult = project.exec(exec -> {
