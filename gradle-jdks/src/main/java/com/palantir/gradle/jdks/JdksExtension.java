@@ -31,18 +31,20 @@ public abstract class JdksExtension {
     private final LazilyConfiguredMapping<JdkDistributionName, JdkDistributionExtension, Void> jdkDistributions;
     private final LazilyConfiguredMapping<JavaLanguageVersion, JdkExtension, Project> jdks;
 
-    public JdksExtension() {
-        this.jdkDistributions =
-                new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkDistributionExtension.class));
-        this.jdks = new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkExtension.class));
-    }
-
     public abstract MapProperty<String, String> getCaCerts();
 
     public abstract DirectoryProperty getJdkStorageLocation();
 
     @Inject
     protected abstract ObjectFactory getObjectFactory();
+
+    public JdksExtension() {
+        this.jdkDistributions =
+                new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkDistributionExtension.class));
+        this.jdks = new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkExtension.class));
+        this.getCaCerts().finalizeValueOnRead();
+        this.getJdkStorageLocation().finalizeValueOnRead();
+    }
 
     public final void jdks(LazyJdks lazyJdks) {
         jdks.put(lazyJdks::configureJdkFor);
