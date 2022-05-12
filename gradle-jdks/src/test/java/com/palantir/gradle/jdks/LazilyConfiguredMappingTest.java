@@ -73,11 +73,11 @@ class LazilyConfiguredMappingTest {
         lazilyConfiguredMapping.get("abc", 'c');
 
         assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> {
-            lazilyConfiguredMapping.put("foo", extension -> {});
+            lazilyConfiguredMapping.put("foo", _extension -> {});
         });
 
         assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> {
-            lazilyConfiguredMapping.put((_key, _additionalData) -> Optional.of(extension -> {}));
+            lazilyConfiguredMapping.put((_key, _additionalData) -> Optional.of(_extension -> {}));
         });
     }
 
