@@ -4,7 +4,8 @@ apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.external-publish-gradle-plugin'
 
 dependencies {
-    implementation project(':gradle-jdks-distributions')
+    api project(':gradle-jdks-distributions')
+
     implementation 'com.palantir.baseline:gradle-baseline-java'
 
     compileOnly 'org.immutables:value::annotations'
