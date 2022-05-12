@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.baseline.plugins.javaversions.LazilyConfiguredMapping;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import java.util.Optional;
