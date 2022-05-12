@@ -27,7 +27,6 @@ allprojects {
     repositories {
         gradlePluginPortal()
         mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-        mavenLocal()
     }
 
     group 'com.palantir.gradle.jdks'
