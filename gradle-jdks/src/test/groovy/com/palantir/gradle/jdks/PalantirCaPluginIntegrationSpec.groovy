@@ -76,7 +76,7 @@ class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
 
         def stdout = runTasksSuccessfully('printCaTruststoreAliases').standardOutput
 
-        def palantir3rdGenCaSerial = '1812633468874f1185161'
+        def palantir3rdGenCaSerial = '18126334688741185161'
 
         then:
         // Open source CI does not have the Palantir CA
