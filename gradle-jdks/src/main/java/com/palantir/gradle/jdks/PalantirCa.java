@@ -36,7 +36,7 @@ import java.util.Optional;
 import org.gradle.api.Project;
 import org.gradle.process.ExecResult;
 
-final class PalantirCa {
+public final class PalantirCa {
     private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
 
     public static void applyToRootProject(Project rootProject, boolean strict) {
@@ -144,4 +144,6 @@ final class PalantirCa {
             throw new RuntimeException("Could not convert Palantir cert back to regular", e);
         }
     }
+
+    private PalantirCa() {}
 }
