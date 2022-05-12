@@ -16,8 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.baseline.extensions.BaselineJavaVersionsExtension;
-import com.palantir.baseline.plugins.BaselineJavaVersions;
+import com.palantir.baseline.plugins.javaversions.BaselineJavaVersions;
+import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import java.io.File;
 import java.util.Arrays;
 import org.gradle.api.Plugin;

@@ -19,13 +19,12 @@ package com.palantir.gradle.jdks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import com.palantir.baseline.plugins.javaversions.LazilyConfiguredMapping;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class LazilyConfiguredMappingTest {
-    private final com.palantir.baseline.plugins.javaversions.LazilyConfiguredMapping<String, Extension, Character>
-            lazilyConfiguredMapping = new LazilyConfiguredMapping<>(() -> new Extension(0));
+    private final LazilyConfiguredMapping<String, Extension, Character> lazilyConfiguredMapping =
+            new LazilyConfiguredMapping<>(() -> new Extension(0));
 
     @Test
     void empty_mapping_returns_optional_empty() {
