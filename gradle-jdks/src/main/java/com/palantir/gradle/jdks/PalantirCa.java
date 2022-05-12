@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.gradle.api.Project;
+import org.gradle.api.provider.Property;
 import org.gradle.process.ExecResult;
 
 public final class PalantirCa {
@@ -47,18 +48,22 @@ public final class PalantirCa {
 
         rootProject.getPluginManager().apply(JdksPlugin.class);
 
+        // Use Property rather than just provider to memoize expensive security shell out
+        Property<String> palantirCertProperty = rootProject.getObjects().property(String.class);
+        palantirCertProperty.finalizeValueOnRead();
+        palantirCertProperty.set(rootProject.provider(() -> {
+            Optional<String> possibleCert = readPalantirRootCaFromSystemTruststore(rootProject);
+            if (strict && possibleCert.isEmpty()) {
+                throw new RuntimeException("Could not find Palantir 3rd Gen Root CA from macos system truststore");
+            }
+            return possibleCert.orElse(null);
+        }));
+
         rootProject
                 .getExtensions()
                 .getByType(JdksExtension.class)
                 .getCaCerts()
-                .put("Palantir3rdGenRootCa", rootProject.provider(() -> {
-                    Optional<String> possibleCert = readPalantirRootCaFromSystemTruststore(rootProject);
-                    if (strict && possibleCert.isEmpty()) {
-                        throw new RuntimeException(
-                                "Could not find Palantir 3rd Gen Root CA from macos system truststore");
-                    }
-                    return possibleCert.orElse(null);
-                }));
+                .put("Palantir3rdGenRootCa", palantirCertProperty);
     }
 
     private static Optional<String> readPalantirRootCaFromSystemTruststore(Project rootProject) {
