@@ -112,7 +112,7 @@ public final class PalantirCa {
     }
 
     private static byte[] linuxSystemCertificates() {
-        Path caCertificatePath = Paths.get("/etc/ssl/certs");
+        Path caCertificatePath = Paths.get("/etc/ssl/certs/ca-certificates.crt");
 
         try {
             return Files.readAllBytes(caCertificatePath);
