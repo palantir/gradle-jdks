@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: 'Do not atomically move the java home directory to avoid `Could not
+    move java home: Directory not empty` exceptions'
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/29
