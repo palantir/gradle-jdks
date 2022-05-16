@@ -8,7 +8,7 @@ org.mockito:* = 4.5.1
 com.palantir.gradle.utils:* = 0.1.0
 
 # dependency-upgrader:OFF
-com.palantir.baseline:* = 4.133.0
+com.palantir.baseline:* = 4.139.0
 # dependency-upgrader:ON
 
 # conflict resolution
