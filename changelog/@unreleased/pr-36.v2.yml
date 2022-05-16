@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Use non conflicting baseline verison
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/36
