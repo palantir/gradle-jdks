@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import java.util.Locale;
 import java.util.Set;
 import org.immutables.value.Value;
 
@@ -30,7 +31,7 @@ interface JdkRelease {
 
     @Value.Default
     default Arch arch() {
-        String osArch = System.getProperty("os.arch");
+        String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
 
         if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
             return Arch.X86_64;
