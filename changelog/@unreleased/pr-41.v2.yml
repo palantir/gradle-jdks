@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: The Azul JDK distribution uses tar.gz everywhere except windows, matching
+    available distributions from the Azul CDN
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/41
