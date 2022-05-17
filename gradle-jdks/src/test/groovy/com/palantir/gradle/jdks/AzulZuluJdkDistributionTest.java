@@ -29,4 +29,30 @@ class AzulZuluJdkDistributionTest {
         assertThat(versionSplit.javaVersion()).isEqualTo("11.0.1");
         assertThat(versionSplit.zuluVersion()).isEqualTo("11.22.33");
     }
+
+    @Test
+    void jdk_path_linux_x86_64() {
+        AzulZuluJdkDistribution distribution = new AzulZuluJdkDistribution();
+        String version = ZuluVersionUtils.combineZuluVersions("11.56.19", "11.0.15");
+        JdkPath path = distribution.path(JdkRelease.builder()
+                .arch(JdkRelease.Arch.X86_64)
+                .os(Os.LINUX)
+                .version(version)
+                .build());
+        assertThat(path.filename()).isEqualTo("zulu11.56.19-ca-jdk11.0.15-linux_x64");
+        assertThat(path.extension()).isEqualTo(JdkPath.Extension.TARGZ);
+    }
+
+    @Test
+    void jdk_path_windows_x86_64() {
+        AzulZuluJdkDistribution distribution = new AzulZuluJdkDistribution();
+        String version = ZuluVersionUtils.combineZuluVersions("11.56.19", "11.0.15");
+        JdkPath path = distribution.path(JdkRelease.builder()
+                .arch(JdkRelease.Arch.X86_64)
+                .os(Os.WINDOWS)
+                .version(version)
+                .build());
+        assertThat(path.filename()).isEqualTo("zulu11.56.19-ca-jdk11.0.15-win_x64");
+        assertThat(path.extension()).isEqualTo(JdkPath.Extension.ZIP);
+    }
 }
