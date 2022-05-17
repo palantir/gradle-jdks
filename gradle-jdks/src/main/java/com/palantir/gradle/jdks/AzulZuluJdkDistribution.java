@@ -37,7 +37,10 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
                 os(jdkRelease.os()),
                 arch(jdkRelease.arch()));
 
-        return JdkPath.builder().filename(filename).extension(Extension.ZIP).build();
+        return JdkPath.builder()
+                .filename(filename)
+                .extension(extension(jdkRelease.os()))
+                .build();
     }
 
     private static String os(Os os) {
@@ -64,6 +67,18 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
         }
 
         throw new UnsupportedOperationException("Case " + arch + " not implemented");
+    }
+
+    private static Extension extension(Os operatingSystem) {
+        switch (operatingSystem) {
+            case MACOS:
+                // fall-through
+            case LINUX:
+                return Extension.TARGZ;
+            case WINDOWS:
+                return Extension.ZIP;
+        }
+        throw new UnsupportedOperationException("Unknown OS: " + operatingSystem);
     }
 
     static ZuluVersionSplit splitCombinedVersion(String combinedVersion) {
