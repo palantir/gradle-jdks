@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Prevent `Cannot get architecture for x86_64` errors on macos.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/40
