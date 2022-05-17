@@ -78,7 +78,7 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
             case WINDOWS:
                 return Extension.ZIP;
         }
-        throw new IllegalArgumentException("Unknown OS: " + operatingSystem);
+        throw new UnsupportedOperationException("Unknown OS: " + operatingSystem);
     }
 
     static ZuluVersionSplit splitCombinedVersion(String combinedVersion) {
