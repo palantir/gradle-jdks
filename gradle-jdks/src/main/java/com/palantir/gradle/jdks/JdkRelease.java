@@ -32,7 +32,7 @@ interface JdkRelease {
     default Arch arch() {
         String osArch = System.getProperty("os.arch");
 
-        if (Set.of("x64", "amd64").contains(osArch)) {
+        if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
             return Arch.X86_64;
         }
 
