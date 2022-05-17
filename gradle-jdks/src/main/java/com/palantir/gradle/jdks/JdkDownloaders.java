@@ -16,13 +16,13 @@
 
 package com.palantir.gradle.jdks;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.gradle.api.Project;
 import org.immutables.value.Value;
 
 final class JdkDownloaders {
-    private final Map<JdkDownloadersCacheKey, JdkDownloader> jdkDownloaders = new HashMap<>();
+    private final ConcurrentMap<JdkDownloadersCacheKey, JdkDownloader> jdkDownloaders = new ConcurrentHashMap<>();
 
     private final JdksExtension jdksExtension;
 

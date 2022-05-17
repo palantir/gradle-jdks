@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Fix `ConcurrentModificationException` from `JdkDownloaders`.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/39
