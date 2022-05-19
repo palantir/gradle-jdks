@@ -38,7 +38,9 @@ public final class JdksPlugin implements Plugin<Project> {
         JdkManager jdkManager = new JdkManager(
                 jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension));
 
-        rootProject.getPluginManager().apply(BaselineJavaVersions.class);
+        if (!rootProject.getPluginManager().hasPlugin("com.palantir.baseline-java-versions")) {
+            rootProject.getPluginManager().apply(BaselineJavaVersions.class);
+        }
 
         rootProject
                 .getExtensions()
