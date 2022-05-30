@@ -20,9 +20,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.immutables.value.Value;
@@ -46,15 +48,22 @@ enum Os {
         }
 
         if (osName.startsWith("linux")) {
-            return linuxLibc();
+            return linuxLibcFromLdd();
         }
 
         throw new UnsupportedOperationException("Cannot get platform for operating system " + osName);
     }
 
-    private static Os linuxLibc() {
+    private static Os linuxLibcFromLdd() {
+        return linuxLibcFromLdd(UnaryOperator.identity());
+    }
+
+    // Visible for testing
+    static Os linuxLibcFromLdd(UnaryOperator<List<String>> argTransformer) {
         try {
-            Process process = new ProcessBuilder().command("ldd", "--version").start();
+            Process process = new ProcessBuilder()
+                    .command(argTransformer.apply(List.of("ldd", "--version")))
+                    .start();
 
             // Extremely frustratingly, musl `ldd` exits with code 1 on --version, and prints to stderr, unlike the more
             // reasonable glibc, which exits with code 0 and prints to stdout. So we concat stdout and stderr together,
