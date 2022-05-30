@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,41 +46,45 @@ enum Os {
         }
 
         if (osName.startsWith("linux")) {
-            String lddVersionOutputLowercase = lddVersionOutput().toLowerCase(Locale.ROOT);
-
-            if (lddVersionOutputLowercase.contains("glibc")) {
-                return Os.LINUX_GLIBC;
-            }
-
-            if (lddVersionOutputLowercase.contains("musl")) {
-                return Os.LINUX_MUSL;
-            }
-
-            throw new UnsupportedOperationException(
-                    "Cannot work out libc used by this OS. ldd output was: " + lddVersionOutputLowercase);
+            return linuxLibc();
         }
 
         throw new UnsupportedOperationException("Cannot get platform for operating system " + osName);
     }
 
-    private static String lddVersionOutput() {
+    private static Os linuxLibc() {
         try {
             Process process = new ProcessBuilder().command("ldd", "--version").start();
 
-            String firstLine = new BufferedReader(new InputStreamReader(process.getInputStream())).readLine();
+            // Extremely frustratingly, musl `ldd` exits with code 1 on --version, and prints to stderr, unlike the more
+            // reasonable glibc, which exits with code 0 and prints to stdout. So we concat stdout and stderr together,
+            // check the output for the correct strings, then fail if we can't find it.
+            String lowercaseOutput = (readAllInput(process.getInputStream()) + "\n"
+                            + readAllInput(process.getErrorStream()))
+                    .toLowerCase(Locale.ROOT);
 
             int secondsToWait = 5;
             if (!process.waitFor(secondsToWait, TimeUnit.SECONDS)) {
-                throw new RuntimeException("ldd failed to run within " + secondsToWait + " seconds");
+                throw new RuntimeException(
+                        "ldd failed to run within " + secondsToWait + " seconds. Output: " + lowercaseOutput);
             }
 
-            if (process.exitValue() != 0) {
+            if (lowercaseOutput.contains("glibc")) {
+                return Os.LINUX_GLIBC;
+            }
+
+            if (lowercaseOutput.contains("musl")) {
+                return Os.LINUX_MUSL;
+            }
+
+            if (!Set.of(0, 1).contains(process.exitValue())) {
                 throw new RuntimeException(String.format(
-                        "Failed to run ldd - exited with exit code %d. Stderr: %s.",
-                        process.exitValue(), readAllInput(process.getErrorStream())));
+                        "Failed to run ldd - exited with exit code %d. Output: %s.",
+                        process.exitValue(), lowercaseOutput));
             }
 
-            return firstLine;
+            throw new UnsupportedOperationException(
+                    "Cannot work out libc used by this OS. ldd output was: " + lowercaseOutput);
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
