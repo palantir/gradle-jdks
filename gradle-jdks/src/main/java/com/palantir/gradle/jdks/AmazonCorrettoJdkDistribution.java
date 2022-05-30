@@ -37,12 +37,14 @@ final class AmazonCorrettoJdkDistribution implements JdkDistribution {
                 .build();
     }
 
-    private static String os(JdkRelease jdkRelease) {
-        switch (jdkRelease.os()) {
+    private static String os(Os os) {
+        switch (os) {
             case MACOS:
                 return "macosx";
-            case LINUX:
+            case LINUX_GLIBC:
                 return "linux";
+            case LINUX_MUSL:
+                return "alpine-linux";
             case WINDOWS:
                 return "windows";
         }
@@ -53,7 +55,8 @@ final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     private static Extension extension(Os os) {
         switch (os) {
             case MACOS:
-            case LINUX:
+            case LINUX_GLIBC:
+            case LINUX_MUSL:
                 return Extension.TARGZ;
             case WINDOWS:
                 return Extension.ZIP;

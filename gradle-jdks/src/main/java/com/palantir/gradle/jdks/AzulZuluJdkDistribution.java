@@ -18,7 +18,6 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.JdkRelease.Arch;
-import java.util.Optional;
 import org.immutables.value.Value;
 
 final class AzulZuluJdkDistribution implements JdkDistribution {
@@ -32,11 +31,10 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
         ZuluVersionSplit zuluVersionSplit = splitCombinedVersion(jdkRelease.version());
 
         String filename = String.format(
-                "zulu%s-ca-jdk%s-%s%s_%s",
+                "zulu%s-ca-jdk%s-%s_%s",
                 zuluVersionSplit.zuluVersion(),
                 zuluVersionSplit.javaVersion(),
                 os(jdkRelease.os()),
-                libc(jdkRelease.libc()),
                 arch(jdkRelease.arch()));
 
         return JdkPath.builder()
@@ -45,27 +43,14 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
                 .build();
     }
 
-    private static String libc(Optional<Libc> possibleLibc) {
-        return possibleLibc
-                .map(libc -> {
-                    switch (libc) {
-                        case GLIBC:
-                            return "";
-                        case MUSL:
-                            return "_musl";
-                    }
-
-                    throw new UnsupportedOperationException("Case " + libc + " not implemented");
-                })
-                .orElse("");
-    }
-
     private static String os(Os os) {
         switch (os) {
             case MACOS:
                 return "macosx";
-            case LINUX:
+            case LINUX_GLIBC:
                 return "linux";
+            case LINUX_MUSL:
+                return "linux_musl";
             case WINDOWS:
                 return "win";
         }
@@ -89,8 +74,8 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
     private static Extension extension(Os operatingSystem) {
         switch (operatingSystem) {
             case MACOS:
-                // fall-through
-            case LINUX:
+            case LINUX_GLIBC:
+            case LINUX_MUSL:
                 return Extension.TARGZ;
             case WINDOWS:
                 return Extension.ZIP;

@@ -21,7 +21,8 @@ import org.immutables.value.Value;
 
 enum Os {
     MACOS,
-    LINUX,
+    LINUX_GLIBC,
+    LINUX_MUSL,
     WINDOWS;
 
     @Value.Default
@@ -31,7 +32,7 @@ enum Os {
             return Os.MACOS;
         }
         if (osName.startsWith("linux")) {
-            return Os.LINUX;
+            return isGlibc() ? Os.LINUX_GLIBC : Os.LINUX_MUSL;
         }
 
         if (osName.startsWith("windows")) {
@@ -39,5 +40,22 @@ enum Os {
         }
 
         throw new UnsupportedOperationException("Cannot get platform for operating system " + osName);
+    }
+
+    private static boolean isGlibc() {
+        try {
+            GlibcProbe.gnu_get_libc_version();
+            return true;
+        } catch (UnsatisfiedLinkError e) {
+            return false;
+        }
+    }
+
+    private static final class GlibcProbe {
+        static {
+            System.loadLibrary("c");
+        }
+
+        public static native String gnu_get_libc_version();
     }
 }

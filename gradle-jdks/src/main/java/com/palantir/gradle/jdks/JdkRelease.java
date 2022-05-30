@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Set;
 import org.immutables.value.Value;
 
@@ -47,11 +46,6 @@ interface JdkRelease {
         }
 
         throw new UnsupportedOperationException("Cannot get architecture for " + osArch);
-    }
-
-    @Value.Lazy
-    default Optional<Libc> libc() {
-        return Libc.forOs(os());
     }
 
     enum Arch {
