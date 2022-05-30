@@ -28,12 +28,8 @@ final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     @Override
     public JdkPath path(JdkRelease jdkRelease) {
         String filename = String.format(
-                "%s/java-%s-amazon-corretto-%s-%s-%s",
-                jdkRelease.version(),
-                extractMajorVersion(jdkRelease.version()),
-                jdkRelease.version(),
-                os(jdkRelease.os()),
-                arch(jdkRelease.arch()));
+                "%s/amazon-corretto-%s-%s-%s",
+                jdkRelease.version(), jdkRelease.version(), os(jdkRelease.os()), arch(jdkRelease.arch()));
 
         return JdkPath.builder()
                 .filename(filename)
@@ -41,23 +37,14 @@ final class AmazonCorrettoJdkDistribution implements JdkDistribution {
                 .build();
     }
 
-    private static String extractMajorVersion(String version) {
-        String[] split = version.split("\\.", -1);
-
-        if (split.length == 0) {
-            throw new IllegalArgumentException(String.format(
-                    "Expected that there was at least one version segment for %s. Was %d", version, split.length));
-        }
-
-        return split[0];
-    }
-
     private static String os(Os os) {
         switch (os) {
             case MACOS:
                 return "macosx";
-            case LINUX:
+            case LINUX_GLIBC:
                 return "linux";
+            case LINUX_MUSL:
+                return "alpine-linux";
             case WINDOWS:
                 return "windows";
         }
@@ -68,7 +55,8 @@ final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     private static Extension extension(Os os) {
         switch (os) {
             case MACOS:
-            case LINUX:
+            case LINUX_GLIBC:
+            case LINUX_MUSL:
                 return Extension.TARGZ;
             case WINDOWS:
                 return Extension.ZIP;

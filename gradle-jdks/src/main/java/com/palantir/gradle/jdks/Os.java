@@ -16,28 +16,92 @@
 
 package com.palantir.gradle.jdks;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.immutables.value.Value;
 
 enum Os {
     MACOS,
-    LINUX,
+    LINUX_GLIBC,
+    LINUX_MUSL,
     WINDOWS;
 
     @Value.Default
     public static Os current() {
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+
         if (osName.startsWith("mac")) {
             return Os.MACOS;
-        }
-        if (osName.startsWith("linux")) {
-            return Os.LINUX;
         }
 
         if (osName.startsWith("windows")) {
             return Os.WINDOWS;
         }
 
+        if (osName.startsWith("linux")) {
+            return linuxLibcFromLdd();
+        }
+
         throw new UnsupportedOperationException("Cannot get platform for operating system " + osName);
+    }
+
+    private static Os linuxLibcFromLdd() {
+        return linuxLibcFromLdd(UnaryOperator.identity());
+    }
+
+    // Visible for testing
+    static Os linuxLibcFromLdd(UnaryOperator<List<String>> argTransformer) {
+        try {
+            Process process = new ProcessBuilder()
+                    .command(argTransformer.apply(List.of("ldd", "--version")))
+                    .start();
+
+            // Extremely frustratingly, musl `ldd` exits with code 1 on --version, and prints to stderr, unlike the more
+            // reasonable glibc, which exits with code 0 and prints to stdout. So we concat stdout and stderr together,
+            // check the output for the correct strings, then fail if we can't find it.
+            String lowercaseOutput = (readAllInput(process.getInputStream()) + "\n"
+                            + readAllInput(process.getErrorStream()))
+                    .toLowerCase(Locale.ROOT);
+
+            int secondsToWait = 5;
+            if (!process.waitFor(secondsToWait, TimeUnit.SECONDS)) {
+                throw new RuntimeException(
+                        "ldd failed to run within " + secondsToWait + " seconds. Output: " + lowercaseOutput);
+            }
+
+            if (lowercaseOutput.contains("glibc")) {
+                return Os.LINUX_GLIBC;
+            }
+
+            if (lowercaseOutput.contains("musl")) {
+                return Os.LINUX_MUSL;
+            }
+
+            if (!Set.of(0, 1).contains(process.exitValue())) {
+                throw new RuntimeException(String.format(
+                        "Failed to run ldd - exited with exit code %d. Output: %s.",
+                        process.exitValue(), lowercaseOutput));
+            }
+
+            throw new UnsupportedOperationException(
+                    "Cannot work out libc used by this OS. ldd output was: " + lowercaseOutput);
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String readAllInput(InputStream inputStream) {
+        try (Stream<String> lines = new BufferedReader(new InputStreamReader(inputStream)).lines()) {
+            return lines.collect(Collectors.joining("\n"));
+        }
     }
 }

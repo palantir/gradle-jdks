@@ -69,7 +69,7 @@ public final class PalantirCa {
         switch (currentOs) {
             case MACOS:
                 return macosSystemCertificates(rootProject);
-            case LINUX:
+            case LINUX_GLIBC:
                 return linuxSystemCertificates();
             default:
                 throw new UnsupportedOperationException(
