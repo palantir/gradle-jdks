@@ -16,7 +16,11 @@
 
 package com.palantir.gradle.jdks;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import org.immutables.value.Value;
 
 enum Os {
@@ -28,35 +32,51 @@ enum Os {
     @Value.Default
     public static Os current() {
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+
         if (osName.startsWith("mac")) {
             return Os.MACOS;
-        }
-        if (osName.startsWith("linux")) {
-            return isGlibc() ? Os.LINUX_GLIBC : Os.LINUX_MUSL;
         }
 
         if (osName.startsWith("windows")) {
             return Os.WINDOWS;
         }
 
+        if (osName.startsWith("linux")) {
+            String lddVersionFirstLine = lddVersionFirstLine().toLowerCase(Locale.ROOT);
+
+            if (lddVersionFirstLine.contains("glibc")) {
+                return Os.LINUX_GLIBC;
+            }
+
+            if (lddVersionFirstLine.contains("musl")) {
+                return Os.LINUX_MUSL;
+            }
+
+            throw new UnsupportedOperationException(
+                    "Cannot work out libc used by this OS. First line of ldd was: " + lddVersionFirstLine);
+        }
+
         throw new UnsupportedOperationException("Cannot get platform for operating system " + osName);
     }
 
-    private static boolean isGlibc() {
-        System.loadLibrary("C");
+    private static String lddVersionFirstLine() {
         try {
-            GlibcProbe.gnu_get_libc_version();
-            return true;
-        } catch (UnsatisfiedLinkError e) {
-            return false;
-        }
-    }
+            Process process = new ProcessBuilder().command("ldd", "--version").start();
 
-    private static final class GlibcProbe {
-        static {
-            System.loadLibrary("C");
-        }
+            String firstLine = new BufferedReader(new InputStreamReader(process.getInputStream())).readLine();
 
-        public static native String gnu_get_libc_version();
+            int secondsToWait = 5;
+            if (!process.waitFor(secondsToWait, TimeUnit.SECONDS)) {
+                throw new RuntimeException("ldd failed to run within " + secondsToWait + " seconds");
+            }
+
+            if (process.exitValue() != 0) {
+                throw new RuntimeException("Failed to run ldd - exited with exit code " + process.exitValue());
+            }
+
+            return firstLine;
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
