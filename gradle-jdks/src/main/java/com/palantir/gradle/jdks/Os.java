@@ -43,7 +43,7 @@ enum Os {
     }
 
     private static boolean isGlibc() {
-        System.loadLibrary("libc6");
+        System.loadLibrary("C");
         try {
             GlibcProbe.gnu_get_libc_version();
             return true;
@@ -54,7 +54,7 @@ enum Os {
 
     private static final class GlibcProbe {
         static {
-            System.loadLibrary("libc6");
+            System.loadLibrary("C");
         }
 
         public static native String gnu_get_libc_version();
