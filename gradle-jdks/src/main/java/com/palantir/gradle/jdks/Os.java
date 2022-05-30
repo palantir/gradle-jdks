@@ -43,6 +43,7 @@ enum Os {
     }
 
     private static boolean isGlibc() {
+        System.loadLibrary("libc");
         try {
             GlibcProbe.gnu_get_libc_version();
             return true;
