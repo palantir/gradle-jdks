@@ -2,6 +2,11 @@ apply plugin: 'java-gradle-plugin'
 apply plugin: 'groovy'
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.external-publish-gradle-plugin'
+apply plugin: 'org.unbroken-dome.test-sets'
+
+testSets {
+    integTest
+}
 
 dependencies {
     api project(':gradle-jdks-distributions')
