@@ -53,7 +53,7 @@ enum Os {
 
     private static final class GlibcProbe {
         static {
-            System.loadLibrary("c");
+            System.loadLibrary("libc");
         }
 
         public static native String gnu_get_libc_version();
