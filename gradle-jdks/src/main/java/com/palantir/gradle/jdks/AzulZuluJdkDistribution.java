@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.JdkRelease.Arch;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 final class AzulZuluJdkDistribution implements JdkDistribution {
@@ -31,16 +32,32 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
         ZuluVersionSplit zuluVersionSplit = splitCombinedVersion(jdkRelease.version());
 
         String filename = String.format(
-                "zulu%s-ca-jdk%s-%s_%s",
+                "zulu%s-ca-jdk%s-%s%s_%s",
                 zuluVersionSplit.zuluVersion(),
                 zuluVersionSplit.javaVersion(),
                 os(jdkRelease.os()),
+                libc(jdkRelease.libc()),
                 arch(jdkRelease.arch()));
 
         return JdkPath.builder()
                 .filename(filename)
                 .extension(extension(jdkRelease.os()))
                 .build();
+    }
+
+    private static String libc(Optional<Libc> possibleLibc) {
+        return possibleLibc
+                .map(libc -> {
+                    switch (libc) {
+                        case GLIBC:
+                            return "";
+                        case MUSL:
+                            return "_musl";
+                    }
+
+                    throw new UnsupportedOperationException("Case " + libc + " not implemented");
+                })
+                .orElse("");
     }
 
     private static String os(Os os) {
