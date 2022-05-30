@@ -18,9 +18,12 @@ package com.palantir.gradle.jdks;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.immutables.value.Value;
 
 enum Os {
@@ -42,24 +45,24 @@ enum Os {
         }
 
         if (osName.startsWith("linux")) {
-            String lddVersionFirstLine = lddVersionFirstLine().toLowerCase(Locale.ROOT);
+            String lddVersionOutputLowercase = lddVersionOutput().toLowerCase(Locale.ROOT);
 
-            if (lddVersionFirstLine.contains("glibc")) {
+            if (lddVersionOutputLowercase.contains("glibc")) {
                 return Os.LINUX_GLIBC;
             }
 
-            if (lddVersionFirstLine.contains("musl")) {
+            if (lddVersionOutputLowercase.contains("musl")) {
                 return Os.LINUX_MUSL;
             }
 
             throw new UnsupportedOperationException(
-                    "Cannot work out libc used by this OS. First line of ldd was: " + lddVersionFirstLine);
+                    "Cannot work out libc used by this OS. ldd output was: " + lddVersionOutputLowercase);
         }
 
         throw new UnsupportedOperationException("Cannot get platform for operating system " + osName);
     }
 
-    private static String lddVersionFirstLine() {
+    private static String lddVersionOutput() {
         try {
             Process process = new ProcessBuilder().command("ldd", "--version").start();
 
@@ -71,12 +74,20 @@ enum Os {
             }
 
             if (process.exitValue() != 0) {
-                throw new RuntimeException("Failed to run ldd - exited with exit code " + process.exitValue());
+                throw new RuntimeException(String.format(
+                        "Failed to run ldd - exited with exit code %d. Stderr: %s.",
+                        process.exitValue(), readAllInput(process.getErrorStream())));
             }
 
             return firstLine;
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static String readAllInput(InputStream inputStream) {
+        try (Stream<String> lines = new BufferedReader(new InputStreamReader(inputStream)).lines()) {
+            return lines.collect(Collectors.joining("\n"));
         }
     }
 }
