@@ -8,6 +8,8 @@ testSets {
     integTest
 }
 
+tasks.build.dependsOn tasks.integTest
+
 dependencies {
     api project(':gradle-jdks-distributions')
 
