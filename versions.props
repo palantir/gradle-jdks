@@ -3,7 +3,7 @@ com.fasterxml.jackson.core:jackson-databind = 2.13.2.1
 com.fasterxml.jackson.core:* = 2.13.3
 com.netflix.nebula:nebula-test = 10.1.0
 org.junit.jupiter:* = 5.8.2
-org.assertj:assertj-core = 3.22.0
+org.assertj:assertj-core = 3.23.0
 org.mockito:* = 4.6.0
 com.palantir.gradle.utils:* = 0.1.0
 
