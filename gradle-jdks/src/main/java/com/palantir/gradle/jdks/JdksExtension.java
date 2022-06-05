@@ -31,10 +31,8 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 public abstract class JdksExtension {
     private final LazilyConfiguredMapping<JdkDistributionName, JdkDistributionExtension, Void> jdkDistributions;
     private final LazilyConfiguredMapping<JavaLanguageVersion, JdkExtension, Project> jdks;
-
-    public abstract MapProperty<String, String> getCaCerts();
-
-    public abstract DirectoryProperty getJdkStorageLocation();
+    private final MapProperty<String, String> caCerts;
+    private final DirectoryProperty jdkStorageLocation;
 
     @Inject
     protected abstract ObjectFactory getObjectFactory();
@@ -43,8 +41,27 @@ public abstract class JdksExtension {
         this.jdkDistributions =
                 new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkDistributionExtension.class));
         this.jdks = new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkExtension.class));
+        // there is an extremely subtle race condition whereby a property can be mid finalization in one
+        // worker thread, and being read from another worker thread, and if the finalization happens just
+        // as the other thread is already reading, it can cause very infrequent build failure. While
+        // the build failure itself is extremely rare, on very large builds with larger worker pools, these
+        // errors occur enough times that it is significant
+        // tracing the source of this race condition is difficult, so to just mitigate the problem,
+        // these two properties have had their methods synchronized (which arguably gradle should probably
+        // do since it's known that Property access is racy)
+        this.caCerts = new SynchronizedMapProperty<>(getObjectFactory().mapProperty(String.class, String.class));
+        this.jdkStorageLocation =
+                new SynchronizedDirectoryProperty(getObjectFactory().directoryProperty());
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
+    }
+
+    public final MapProperty<String, String> getCaCerts() {
+        return caCerts;
+    }
+
+    public final DirectoryProperty getJdkStorageLocation() {
+        return jdkStorageLocation;
     }
 
     public final void jdks(LazyJdks lazyJdks) {
