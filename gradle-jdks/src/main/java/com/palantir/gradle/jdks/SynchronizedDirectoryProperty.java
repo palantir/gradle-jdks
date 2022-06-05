@@ -70,8 +70,8 @@ final class SynchronizedDirectoryProperty implements DirectoryProperty {
     }
 
     @Override
-    public synchronized Provider<Directory> dir(String s) {
-        return delegate.dir(s);
+    public synchronized Provider<Directory> dir(String str) {
+        return delegate.dir(str);
     }
 
     @Override
@@ -80,8 +80,8 @@ final class SynchronizedDirectoryProperty implements DirectoryProperty {
     }
 
     @Override
-    public synchronized Provider<RegularFile> file(String s) {
-        return delegate.file(s);
+    public synchronized Provider<RegularFile> file(String str) {
+        return delegate.file(str);
     }
 
     @Override
@@ -105,11 +105,6 @@ final class SynchronizedDirectoryProperty implements DirectoryProperty {
     }
 
     @Override
-    public synchronized Provider<Directory> getLocationOnly() {
-        return delegate.getLocationOnly();
-    }
-
-    @Override
     public synchronized void set(@Nullable Directory directory) {
         delegate.set(directory);
     }
@@ -117,6 +112,11 @@ final class SynchronizedDirectoryProperty implements DirectoryProperty {
     @Override
     public synchronized void set(Provider<? extends Directory> provider) {
         delegate.set(provider);
+    }
+
+    @Override
+    public synchronized Provider<Directory> getLocationOnly() {
+        return delegate.getLocationOnly();
     }
 
     @Override

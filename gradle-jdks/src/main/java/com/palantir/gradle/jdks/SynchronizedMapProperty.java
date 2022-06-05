@@ -37,8 +37,8 @@ final class SynchronizedMapProperty<K, V> implements MapProperty<K, V> {
     }
 
     @Override
-    public synchronized Provider<V> getting(K k) {
-        return delegate.getting(k);
+    public synchronized Provider<V> getting(K key) {
+        return delegate.getting(key);
     }
 
     @Override
@@ -62,13 +62,13 @@ final class SynchronizedMapProperty<K, V> implements MapProperty<K, V> {
     }
 
     @Override
-    public synchronized void put(K k, V v) {
-        delegate.put(k, v);
+    public synchronized void put(K key, V value) {
+        delegate.put(key, value);
     }
 
     @Override
-    public synchronized void put(K k, Provider<? extends V> provider) {
-        delegate.put(k, provider);
+    public synchronized void put(K key, Provider<? extends V> provider) {
+        delegate.put(key, provider);
     }
 
     @Override
