@@ -48,15 +48,22 @@ public final class PalantirCa {
 
         rootProject.getPluginManager().apply(JdksPlugin.class);
 
-        rootProject.getExtensions().getByType(JdksExtension.class).getCaCerts().putAll(rootProject.provider(() -> {
-            Optional<String> possibleCert = readPalantirRootCaFromSystemTruststore(rootProject);
-            if (strict && possibleCert.isEmpty()) {
-                throw new RuntimeException("Could not find Palantir 3rd Gen Root CA from macos system truststore");
-            }
-            return possibleCert
-                    .map(cert -> Map.of("Palantir3rdGenRootCa", cert))
-                    .orElseGet(Map::of);
-        }));
+        rootProject
+                .getExtensions()
+                .getByType(JdksExtension.class)
+                .getCaCerts()
+                .putAll(rootProject
+                        .provider(() -> {
+                            Optional<String> possibleCert = readPalantirRootCaFromSystemTruststore(rootProject);
+                            if (strict && possibleCert.isEmpty()) {
+                                throw new RuntimeException(
+                                        "Could not find Palantir 3rd Gen Root CA from macos system truststore");
+                            }
+                            return possibleCert
+                                    .map(cert -> Map.of("Palantir3rdGenRootCa", cert))
+                                    .orElseGet(Map::of);
+                        })
+                        .get());
     }
 
     private static Optional<String> readPalantirRootCaFromSystemTruststore(Project rootProject) {
