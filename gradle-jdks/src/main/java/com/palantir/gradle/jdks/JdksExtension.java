@@ -49,9 +49,10 @@ public abstract class JdksExtension {
         // tracing the source of this race condition is difficult, so to just mitigate the problem,
         // these two properties have had their methods synchronized (which arguably gradle should probably
         // do since it's known that Property access is racy)
-        this.caCerts = new SynchronizedMapProperty<>(getObjectFactory().mapProperty(String.class, String.class));
-        this.jdkStorageLocation =
-                new SynchronizedDirectoryProperty(getObjectFactory().directoryProperty());
+        this.caCerts = SynchronizedInterface.synchronizeAllInterfaceMethods(
+                MapProperty.class, getObjectFactory().mapProperty(String.class, String.class));
+        this.jdkStorageLocation = SynchronizedInterface.synchronizeAllInterfaceMethods(
+                DirectoryProperty.class, getObjectFactory().directoryProperty());
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
     }
