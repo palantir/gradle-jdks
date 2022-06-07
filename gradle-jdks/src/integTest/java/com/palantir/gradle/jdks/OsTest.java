@@ -26,8 +26,13 @@ import org.junit.jupiter.api.Test;
 
 class OsTest {
     @Test
-    void glibc_system_is_identified() {
+    void modern_glibc_system_is_identified() {
         assertThat(Os.linuxLibcFromLdd(execInDocker("ubuntu:20.04"))).isEqualTo(Os.LINUX_GLIBC);
+    }
+
+    @Test
+    void old_glibc_system_is_identified() {
+        assertThat(Os.linuxLibcFromLdd(execInDocker("centos:7"))).isEqualTo(Os.LINUX_GLIBC);
     }
 
     @Test
