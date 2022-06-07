@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Handler older glibc in libc autodetection
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/55
