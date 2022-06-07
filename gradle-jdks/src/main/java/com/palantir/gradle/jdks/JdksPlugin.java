@@ -57,7 +57,7 @@ public final class JdksPlugin implements Plugin<Project> {
                 .set(rootProject
                         .getLayout()
                         .dir(rootProject.provider(
-                                () -> new File(System.getProperty("user.home"), ".gradle/caches/gradle-jdks"))));
+                                () -> new File(System.getProperty("user.home"), ".gradle/gradle-jdks"))));
 
         Arrays.stream(JdkDistributionName.values()).forEach(jdkDistributionName -> {
             jdksExtension.jdkDistribution(jdkDistributionName, jdkDistributionExtension -> {
