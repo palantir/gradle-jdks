@@ -78,7 +78,7 @@ enum Os {
                         "ldd failed to run within " + secondsToWait + " seconds. Output: " + lowercaseOutput);
             }
 
-            if (lowercaseOutput.contains("glibc")) {
+            if (lowercaseOutput.contains("glibc") || lowercaseOutput.contains("gnu libc")) {
                 return Os.LINUX_GLIBC;
             }
 
