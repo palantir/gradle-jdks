@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: Move default JDK storage location from `~/.gradle/caches/gradle-jdks`
+    to `~/.gradle/gradle-jdks` to avoid caching the same data twice in CI.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/56
