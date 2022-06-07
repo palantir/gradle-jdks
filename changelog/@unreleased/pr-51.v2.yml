@@ -1,0 +1,9 @@
+type: fix
+fix:
+  description: |-
+    Synchronize Directory and Map property to avoid multithreading issues, particularly:
+
+    > \> Failed to calculate the value of extension 'jdks' property 'jdkStorageLocation'.
+    > \> This property is in an unexpected state.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/51
