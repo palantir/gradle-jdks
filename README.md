@@ -20,10 +20,10 @@ Gradle has a built-in concept of [auto-provisioning Java Toolchains](https://doc
 
 `gradle-jdks` solves all of these problems. Provisioned JDKs:
 
-1. Allows you to choose your favoured JDK vendor.
-2. Use the same version on dev machines, in CI and in prod.
-3. Automatically add JDK CA certificates.
-4. Point to an internal mirror for JDKs.
+1. **Allows you to choose your favoured JDK vendor.**
+2. **Use the same version on dev machines, in CI and in prod.**
+3. **Automatically add JDK CA certificates.**
+4. **Point to an internal mirror for JDKs.**
 
 ## Usage
 
