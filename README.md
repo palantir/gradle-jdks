@@ -83,7 +83,7 @@ jdks {
       -----BEGIN CERTIFICATE-----
       // snip
       -----END CERTIFICATE-----
-   '''.stripIndent()
+   '''.stripIndent(true)
    
    // Optional: Where to store the JDKs on disk. You almost certainly
    //           do not need to change this. 
