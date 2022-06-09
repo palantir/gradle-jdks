@@ -18,10 +18,10 @@ Gradle has a built-in concept of [auto-provisioning Java Toolchains](https://doc
    1. There's a [Gradle property you can set to change to server base uri](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning:~:text=org.gradle.jvm.toolchain.install.adoptopenjdk.baseUri), but this still leaves you writing and maintaining a service that replicates the adoptium api.
    2. An internal corporate mirror can be 100x faster than a public one, especially for CI builds.
 
-`gradle-jdks` solves all of these problems. Provisioned JDKs:
+`gradle-jdks` solves all of these problems:
 
-1. **Allows you to choose your favoured JDK vendor.**
-2. **Use the same version on dev machines, in CI and in prod.**
+1. **You can choose your favoured JDK vendor.**
+2. **Use the same JDK version on dev machines, in CI and in prod.**
 3. **Automatically add JDK CA certificates.**
 4. **Point to an internal mirror for JDKs.**
 
@@ -125,7 +125,7 @@ New JDK distributions are easily added - you just need to:
 If you run you gradle invocation with `--info --rerun-tasks`, the JDK will be visible in the output:
 
 ```
-$ ./gradlew compileJava -i --rerun-tasks
+$ ./gradlew compileJava --info --rerun-tasks
 > Task :my-project:compileJava
 Compiling with toolchain '/Users/username/.gradle/gradle-jdks/azul-zulu-17.34.19-17.0.3-a3ceab47882436a6'.
 ```
