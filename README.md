@@ -4,25 +4,30 @@ Automatically provision specific versions of JDKs for Gradle tasks that require 
 
 ## Motivation
 
-Gradle has a built-in concept of [auto-provisioning Java Toolchains](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning), however it's lacking in some aspects:
+Gradle has a built-in concept of [auto-provisioning Java Toolchains](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning), which will automatically install JDKs if they do not exist on system running Gradle, however it's lacking in some aspects:
 
-1. **It always uses AdoptOpenJDK/Adoptium.**
-   1. You may prefer a different JDK vendor. We use Azul Zulu for [their MTS support](https://www.azul.com/products/azul-support-roadmap/). We would like to develop and test with the same JDK we use in prod. 
+1. **Gradle always uses AdoptOpenJDK/Adoptium.**
+   1. You may prefer a different JDK vendor. We use Azul Zulu for [their MTS support](https://www.azul.com/products/azul-support-roadmap/). It is important to us to develop and test with the same JDK we use in prod. 
    2. Adoptium does not provide macos `aarch64` for Java 11, which we need for Apple Silicon Macbooks.
 2. **Once Gradle finds an appropriate JDK on disk for that Java language version, it is always used and never updated.**
    1. As a company with tens of millions of lines of Java, we often bump into JVM bugs. It's highly desirable we test and deploy using the exact same version of JDKs.
    2. Similarly, it's important to us that the exact same JDK versions are used on local machines as well as CI.
 3. **Gradle does not handle JDK CA certificates.**
-   1. Many companies use a TLS interception when network calls are made outside their corporate network. Gradle provides no way to install the relevant CA certificates into auto-provisioned JDKs to enable working in such an environment.  
+   1. Many companies use TLS interception when network calls are made outside their corporate network. Gradle provides no way to install the relevant CA certificates into auto-provisioned JDKs. This means they cannot be used in such an environment, or require manual patching.  
 4. **You cannot easily set up a mirror for auto-provisioned JDK downloads.**
-   1. There's a Gradle property you can set to change to server base uri, but this still leaves you writing and maintaining a service to serve the adoptium api.
+   1. There's a [Gradle property you can set to change to server base uri](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning:~:text=org.gradle.jvm.toolchain.install.adoptopenjdk.baseUri), but this still leaves you writing and maintaining a service that replicates the adoptium api.
    2. An internal corporate mirror can be 100x faster than a public one, especially for CI builds.
 
-`gradle-jdks` solves all of these problems.
+`gradle-jdks` solves all of these problems. Provisioned JDKs:
+
+1. Allows you to choose your favoured JDK vendor.
+2. Use the same version on dev machines, in CI and in prod.
+3. Automatically add JDK CA certificates.
+4. Point to an internal mirror for JDKs.
 
 ## Usage
 
-**Note:** Palantirians - you probably shouldn't use this plugin directly - either use `gradle-jdks-latest` for OSS or `gradle-jdks-internal` for non-OSS which will set everything up for you.
+_**Palantirians:** you probably shouldn't use this plugin directly - either use [`gradle-jdks-latest`](https://github.com/palantir/gradle-jdks-latest) for OSS or `gradle-jdks-internal` for internal projects which will set everything up for you._
 
 First, you must apply the plugin. In the **root project**, Either use the new plugin syntax:
 
@@ -53,7 +58,7 @@ Next up comes configuring the JDKs plugin:
 ```gradle
 jdks {
    // Required: For each Java major version you use, you need to specify
-   //           a distribution and version
+   //           a distribution and version.
    jdk(11) {
       distribution = 'azul-zulu'
       jdkVersion = '11.54.25-11.0.14.1'
@@ -81,13 +86,13 @@ jdks {
    '''.stripIndent()
    
    // Optional: Where to store the JDKs on disk. You almost certainly
-   //           do not wish to change this. 
+   //           do not need to change this. 
    // Default:  $HOME/.gradle/gradle-jdks
    jdkStorageLocation = System.getProperty("user.home") + '/custom/location'
 }
 ```
 
-Behind the scenes, `gradle-jdks` applies [`com.palantir.baseline-java-versions` (another gradle plugin)](https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions) to handle configuring the Java language versions. **You will need to configure this plugin as well** like below to tell it what Java language versions.
+Behind the scenes, `gradle-jdks` applies [`com.palantir.baseline-java-versions` (another gradle plugin - more docs in link)](https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions) to handle configuring the Java language versions. **You will need to configure this plugin as well** like below to tell it what Java language versions:
 
 ```gradle
 // Read the docs at https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions
@@ -97,14 +102,23 @@ javaVersions {
 }
 ```
 
-[**Supported JDK distribution can be found here.**](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks-distributions/src/main/java/com/palantir/gradle/jdks/JdkDistributionName.java#L26). New JDK distributions are easily added - you just need to add an entry there then add a `JdkDistribution` ([example](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/main/java/com/palantir/gradle/jdks/AzulZuluJdkDistribution.java)). PRs are welcome.
+## What JDK distributions are supported?
+
+[**Supported JDK distribution can be found here.**](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks-distributions/src/main/java/com/palantir/gradle/jdks/JdkDistributionName.java#L26)
+
+New JDK distributions are easily added - you just need to:
+1. Add an entry to [`JdkDistributionName`](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks-distributions/src/main/java/com/palantir/gradle/jdks/JdkDistributionName.java#L26)
+2. Add a `JdkDistribution` - [Azul Zulu example](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/main/java/com/palantir/gradle/jdks/AzulZuluJdkDistribution.java).
+3. Add the JDK distribution [here](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdkDistributions.java#L22).
+4. Write some tests to check the path is being built correctly - [Azul Zulu example](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/test/groovy/com/palantir/gradle/jdks/AzulZuluJdkDistributionTest.java)
+5. Make a PR.
 
 ## What does this not do?
 
 1. **Run the Gradle wrapper/daemon with a certain JDK**
-   1. This plugin will only run common tasks that require JDKs, like `JavaCompile`, `JavaExec`, `GroovyCompile` etc (the aforementioned `com.palantir.baseline-java-versions` does this).
-   2. The daemon itself still requires a preinstalled JDK.
-   3. In future, we hope to implement this feature, although there it is not currently scheduled to be worked on.
+   * This plugin will only run common tasks that require JDKs, like `JavaCompile`, `JavaExec`, `GroovyCompile` etc (the aforementioned `com.palantir.baseline-java-versions` does this).
+   * The daemon itself still requires a preinstalled JDK.
+   * In future, we hope to implement this feature, although there it is not currently scheduled to be worked on.
 
 ## How can I see what JDK tasks are running with?
 
@@ -115,3 +129,7 @@ $ ./gradlew compileJava -i --rerun-tasks
 > Task :my-project:compileJava
 Compiling with toolchain '/Users/username/.gradle/gradle-jdks/azul-zulu-17.34.19-17.0.3-a3ceab47882436a6'.
 ```
+
+## Related projects
+
+* [`gradle-jdks-latest`](https://github.com/palantir/gradle-jdks-latest) applies this plugin and configures some reasonably new JDKs - really only for Palantir use.
