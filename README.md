@@ -92,7 +92,9 @@ jdks {
 }
 ```
 
-Behind the scenes, `gradle-jdks` applies [`com.palantir.baseline-java-versions` (another gradle plugin - more docs in link)](https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions) to handle configuring the Java language versions. **You will need to configure this plugin as well** like below to tell it what Java language versions:
+Behind the scenes, `gradle-jdks` applies [`com.palantir.baseline-java-versions` (another gradle plugin - more docs in link)](https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions) to handle configuring the Java language versions. **You will need to configure this plugin as well** to tell it what Java language versions:
+
+Whilst eating food,  
 
 ```gradle
 // Read the docs at https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions
