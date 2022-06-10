@@ -21,7 +21,7 @@ Gradle has a built-in concept of [auto-provisioning Java Toolchains](https://doc
 `gradle-jdks` solves all of these problems:
 
 1. **You can choose your favoured JDK vendor.**
-2. **Use the same JDK version on dev machines, in CI and in prod.**
+2. **Use the same JDK version for representative, reproducible builds on dev machines and in CI**
 3. **Automatically add JDK CA certificates.**
 4. **Point to an internal mirror for JDKs.**
 
@@ -94,8 +94,6 @@ jdks {
 
 Behind the scenes, `gradle-jdks` applies [`com.palantir.baseline-java-versions` (another gradle plugin - more docs in link)](https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions) to handle configuring the Java language versions. **You will need to configure this plugin as well** to tell it what Java language versions:
 
-Whilst eating food,  
-
 ```gradle
 // Read the docs at https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions
 javaVersions {
@@ -134,4 +132,4 @@ Compiling with toolchain '/Users/username/.gradle/gradle-jdks/azul-zulu-17.34.19
 
 ## Related projects
 
-* [`gradle-jdks-latest`](https://github.com/palantir/gradle-jdks-latest) applies this plugin and configures some reasonably new JDKs - really only for Palantir use.
+* [`gradle-jdks-latest`](https://github.com/palantir/gradle-jdks-latest) applies this plugin and configures the latest JDK releases - primarily exists for Palantir use, enforcing consistency across our open-source projects.
