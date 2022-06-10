@@ -1,6 +1,6 @@
 # gradle-jdks
 
-Automatically provision specific versions of JDKs for Gradle tasks that require JDKs (`JavaCompile`, `JavaExec` etc) . Choose from a variety of different JDK vendors which can be automatically installed on multiple OSs.
+Automatically provision specific versions of JDKs for Gradle tasks that require JDKs (`JavaCompile`, `Test`, `JavaExec` etc) . Choose from a variety of different JDK vendors which can be automatically installed on multiple OSs.
 
 ## Motivation
 
@@ -21,7 +21,7 @@ Gradle has a built-in concept of [auto-provisioning Java Toolchains](https://doc
 `gradle-jdks` solves all of these problems:
 
 1. **You can choose your favoured JDK vendor.**
-2. **Use the same JDK version for representative, reproducible builds on dev machines and in CI**
+2. **Use the same JDK version for representative, reproducible builds on dev machines and in CI.**
 3. **Automatically add JDK CA certificates.**
 4. **Point to an internal mirror for JDKs.**
 
@@ -110,15 +110,15 @@ New JDK distributions are easily added - you just need to:
 1. Add an entry to [`JdkDistributionName`](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks-distributions/src/main/java/com/palantir/gradle/jdks/JdkDistributionName.java#L26)
 2. Add a `JdkDistribution` - [Azul Zulu example](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/main/java/com/palantir/gradle/jdks/AzulZuluJdkDistribution.java).
 3. Add the JDK distribution [here](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdkDistributions.java#L22).
-4. Write some tests to check the path is being built correctly - [Azul Zulu example](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/test/groovy/com/palantir/gradle/jdks/AzulZuluJdkDistributionTest.java)
+4. Write some tests to check the path is being built correctly - [Azul Zulu example](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/test/groovy/com/palantir/gradle/jdks/AzulZuluJdkDistributionTest.java).
 5. Make a PR.
 
 ## What does this not do?
 
 1. **Run the Gradle wrapper/daemon with a certain JDK**
-   * This plugin will only run common tasks that require JDKs, like `JavaCompile`, `JavaExec`, `GroovyCompile` etc (the aforementioned `com.palantir.baseline-java-versions` does this).
+   * This plugin will only run common tasks that require JDKs, like `JavaCompile`, `Test`, `JavaExec`, `GroovyCompile` etc (the aforementioned `com.palantir.baseline-java-versions` does this).
    * The daemon itself still requires a preinstalled JDK.
-   * In future, we hope to implement this feature, although there it is not currently scheduled to be worked on.
+   * In future, we hope to implement this feature, although it is not currently scheduled to be worked on.
 
 ## How can I see what JDK tasks are running with?
 
