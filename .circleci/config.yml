@@ -93,12 +93,13 @@ jobs:
     #   CIRCLE_TEST_REPORTS: C:\Users\circleci\junit
     #   CIRCLE_ARTIFACTS: C:\Users\circleci\artifacts
     steps:
-      - checkout
       - run: |
           New-Item -ItemType "directory" -Path "C:\Users\circleci\junit", "C:\Users\circleci\artifacts"
           choco install zulu11
           $Env:JAVA_HOME = "C:\Program Files\Zulu\zulu-11"
           echo $Env:JAVA_HOME
+      # Avoid default git behavior of transforming \n to \r\n on windows
+      - run: git config --global core.autocrlf false
       - checkout
       - restore_cache: { key: 'windows-gradle-wrapper-v1-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}' }
       - restore_cache: { key: 'windows-dependencies-v1-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}' }
