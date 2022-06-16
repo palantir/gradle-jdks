@@ -109,7 +109,7 @@ public final class JdkManager {
             return files.filter(file -> Files.isRegularFile(file)
                             // macos JDKs have a `bin/java` symlink to `Contents/Home/bin/java`
                             && !Files.isSymbolicLink(file)
-                            && file.endsWith(Paths.get("bin/java")))
+                            && file.endsWith(Paths.get("bin/" + SystemTools.java())))
                     .findFirst()
                     // JAVA_HOME/bin/java
                     .orElseThrow(() -> new RuntimeException("Failed to find java home in " + temporaryJdkPath))
@@ -127,7 +127,7 @@ public final class JdkManager {
 
         ExecResult keytoolResult = project.exec(exec -> {
             exec.setCommandLine(
-                    "bin/keytool",
+                    "bin/" + SystemTools.keytool(),
                     "-import",
                     "-trustcacerts",
                     "-alias",
