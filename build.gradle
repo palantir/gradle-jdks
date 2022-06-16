@@ -5,7 +5,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.palantir.gradle.jdks:gradle-jdks:0.16.0'
+        classpath 'com.palantir.gradle.jdks:gradle-jdks:0.18.0'
         classpath 'com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.1.0'
         classpath 'org.unbroken-dome.gradle-plugins:gradle-testsets-plugin:4.0.0'
         classpath 'com.palantir.gradle.externalpublish:gradle-external-publish-plugin:1.11.0'
