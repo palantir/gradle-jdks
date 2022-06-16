@@ -102,7 +102,7 @@ jobs:
       - checkout
       - restore_cache: { key: 'windows-gradle-wrapper-v1-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}' }
       - restore_cache: { key: 'windows-dependencies-v1-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}' }
-      - run: ./gradlew.bat build --no-daemon --stacktrace -Porg.gradle.java.installations.fromEnv=JAVA_8_HOME,JAVA_11_HOME,JAVA_15_HOME,JAVA_17_HOME,JAVA_HOME
+      - run: ./gradlew.bat build --no-daemon --stacktrace
       - save_cache:
           key: 'windows-dependencies-v1-{{ checksum "versions.props" }}-{{ checksum "build.gradle" }}'
           paths: [ C:\Users\circleci\.gradle\caches ]
