@@ -21,10 +21,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.gradle.api.Project;
@@ -76,20 +78,38 @@ public final class JdkManager {
                 addCaCert(project, javaHome, name, caCertFile);
             });
 
-            try {
-                Files.move(javaHome, diskPath);
-            } catch (FileAlreadyExistsException e) {
-                // This means another process has successfully installed this JDK, and we can just use their one.
-                return diskPath;
-            } catch (IOException e) {
-                throw new RuntimeException("Could not move java home", e);
-            }
-
+            moveJavaHome(javaHome, diskPath);
             return diskPath;
         } finally {
             project.delete(delete -> {
                 delete.delete(temporaryJdkPath.toFile());
             });
+        }
+    }
+
+    private static void moveJavaHome(Path temporaryJavaHome, Path permanentJavaHome) {
+        try {
+            // Attempt an atomic move first to avoid broken partial states.
+            // Failing that, we use the replace_existing option such that
+            // the results of a successful move operation are consistent.
+            // This provides a helpful property in a race where the slower
+            // process doesn't risk attempting to use the jdk before it has
+            // been fully unpacked.
+            try {
+                Files.move(
+                        temporaryJavaHome,
+                        permanentJavaHome,
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(temporaryJavaHome, permanentJavaHome, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (FileAlreadyExistsException e) {
+            // This means another process has successfully installed this JDK, and we can just use theirs.
+            // Should be unreachable using REPLACE_EXISTING, however kept around to prevent issues with potential
+            // future refactors.
+        } catch (IOException e) {
+            throw new RuntimeException("Could not move java home", e);
         }
     }
 
