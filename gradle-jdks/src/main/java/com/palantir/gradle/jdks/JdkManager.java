@@ -62,10 +62,30 @@ public final class JdkManager {
                 .resolve(String.format(
                         "%s-%s-%s",
                         jdkSpec.distributionName(), jdkSpec.release().version(), jdkSpec.consistentShortHash()));
+        project.getLogger()
+                .debug(
+                        "Requested JDK {} {} ({})",
+                        jdkSpec.distributionName(),
+                        jdkSpec.release().version(),
+                        jdkSpec.consistentShortHash());
 
         if (Files.exists(diskPath)) {
+            project.getLogger()
+                    .debug(
+                            "JDK {} {} ({}) has already been unpacked",
+                            jdkSpec.distributionName(),
+                            jdkSpec.release().version(),
+                            jdkSpec.consistentShortHash());
             return diskPath;
         }
+
+        project.getLogger()
+                .info(
+                        "Preparing to install JDK {} {} ({}) into {}",
+                        jdkSpec.distributionName(),
+                        jdkSpec.release().version(),
+                        jdkSpec.consistentShortHash(),
+                        diskPath);
 
         JdkPath jdkPath = jdkDistributions.get(jdkSpec.distributionName()).path(jdkSpec.release());
         Path jdkArchive = jdkDownloaders
@@ -76,6 +96,13 @@ public final class JdkManager {
                 .resolve(diskPath.getFileName() + ".in-progress-"
                         + UUID.randomUUID().toString().substring(0, 8));
         try (PathLock ignored = new PathLock(diskPath)) {
+            project.getLogger()
+                    .info(
+                            "Unpacking JDK {} {} ({}) into {}",
+                            jdkSpec.distributionName(),
+                            jdkSpec.release().version(),
+                            jdkSpec.consistentShortHash(),
+                            temporaryJdkPath);
             project.copy(copy -> {
                 copy.from(unpackTree(project, jdkPath.extension(), jdkArchive));
                 copy.into(temporaryJdkPath);
@@ -84,9 +111,24 @@ public final class JdkManager {
             Path javaHome = findJavaHome(temporaryJdkPath);
 
             jdkSpec.caCerts().caCerts().forEach((name, caCertFile) -> {
+                project.getLogger()
+                        .info(
+                                "Installing certificate {} into JDK {} {} ({})",
+                                name,
+                                jdkSpec.distributionName(),
+                                jdkSpec.release().version(),
+                                jdkSpec.consistentShortHash());
                 addCaCert(project, javaHome, name, caCertFile);
             });
 
+            project.getLogger()
+                    .info(
+                            "Moving JDK {} {} ({}) home {} to {}",
+                            jdkSpec.distributionName(),
+                            jdkSpec.release().version(),
+                            jdkSpec.consistentShortHash(),
+                            javaHome,
+                            diskPath);
             moveJavaHome(javaHome, diskPath);
             return diskPath;
         } catch (IOException e) {
