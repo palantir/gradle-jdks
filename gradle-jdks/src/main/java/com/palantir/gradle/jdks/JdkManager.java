@@ -26,17 +26,16 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.provider.Provider;
@@ -87,7 +86,7 @@ public final class JdkManager {
                 addCaCert(project, javaHome, name, caCertFile);
             });
 
-            moveJavaHome(javaHome, diskPath);
+            moveJavaHome(project, javaHome, diskPath);
             return diskPath;
         } catch (IOException e) {
             throw new RuntimeException("Locking failed", e);
@@ -98,30 +97,14 @@ public final class JdkManager {
         }
     }
 
-    private static void moveJavaHome(Path temporaryJavaHome, Path permanentJavaHome) {
-        try {
-            // Attempt an atomic move first to avoid broken partial states.
-            // Failing that, we use the replace_existing option such that
-            // the results of a successful move operation are consistent.
-            // This provides a helpful property in a race where the slower
-            // process doesn't risk attempting to use the jdk before it has
-            // been fully unpacked.
-            try {
-                Files.move(
-                        temporaryJavaHome,
-                        permanentJavaHome,
-                        StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException ignored) {
-                Files.move(temporaryJavaHome, permanentJavaHome, StandardCopyOption.REPLACE_EXISTING);
+    private static void moveJavaHome(Project project, Path temporaryJavaHome, Path permanentJavaHome) {
+        project.sync(new Action<CopySpec>() {
+            @Override
+            public void execute(CopySpec copySpec) {
+                copySpec.from(temporaryJavaHome);
+                copySpec.into(permanentJavaHome);
             }
-        } catch (FileAlreadyExistsException e) {
-            // This means another process has successfully installed this JDK, and we can just use theirs.
-            // Should be unreachable using REPLACE_EXISTING, however kept around to prevent issues with potential
-            // future refactors.
-        } catch (IOException e) {
-            throw new RuntimeException("Could not move java home", e);
-        }
+        });
     }
 
     private FileTree unpackTree(Project project, Extension extension, Path path) {
