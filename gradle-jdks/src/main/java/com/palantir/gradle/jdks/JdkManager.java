@@ -96,6 +96,16 @@ public final class JdkManager {
                 .resolve(diskPath.getFileName() + ".in-progress-"
                         + UUID.randomUUID().toString().substring(0, 8));
         try (PathLock ignored = new PathLock(diskPath)) {
+            // double-check, now that we hold the lock
+            if (Files.exists(diskPath)) {
+                project.getLogger()
+                        .info(
+                                "JDK {} {} ({}) was installed while this task waited for the lock",
+                                jdkSpec.distributionName(),
+                                jdkSpec.release().version(),
+                                jdkSpec.consistentShortHash());
+                return diskPath;
+            }
             project.getLogger()
                     .info(
                             "Unpacking JDK {} {} ({}) into {}",
