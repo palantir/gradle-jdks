@@ -25,6 +25,11 @@ apply plugin: 'com.palantir.baseline'
 apply plugin: 'com.palantir.baseline-java-versions'
 apply plugin: 'com.palantir.jdks.latest'
 
+javaVersions {
+    libraryTarget = 11
+    runtime = 17
+}
+
 version gitVersion()
 
 allprojects {
@@ -39,9 +44,3 @@ allprojects {
     apply plugin: 'org.inferred.processors'
     apply plugin: 'com.palantir.java-format'
 }
-
-javaVersions {
-    libraryTarget = 11
-    runtime = 17
-}
-
