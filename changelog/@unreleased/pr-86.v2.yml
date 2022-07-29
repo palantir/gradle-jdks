@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Support Zulu bundle flags
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/86
