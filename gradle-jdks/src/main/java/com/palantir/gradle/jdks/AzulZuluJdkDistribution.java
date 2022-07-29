@@ -105,7 +105,7 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
 
         if (endOfFlags == split.size()) {
             throw new IllegalArgumentException(
-                    String.format("Expected %s to split into two versions, split into one."));
+                    String.format("Expected %s to split into two versions, split into one.", combinedVersion));
         }
 
         return ZuluVersionSplit.builder()
