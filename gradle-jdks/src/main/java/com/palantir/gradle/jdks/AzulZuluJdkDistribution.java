@@ -102,10 +102,10 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
 
     private static Extension extension(Os operatingSystem) {
         switch (operatingSystem) {
-            case MACOS:
             case LINUX_GLIBC:
             case LINUX_MUSL:
                 return Extension.TARGZ;
+            case MACOS:
             case WINDOWS:
                 return Extension.ZIP;
         }
