@@ -33,6 +33,14 @@ class AzulZuluJdkDistributionTest {
     }
 
     @Test
+    void zulu_version_combination_supports_bundle_flags() {
+        ZuluVersionSplit versionSplit = AzulZuluJdkDistribution.splitCombinedVersion(
+                ZuluVersionUtils.combineZuluVersions("19.0.21-ea", "19.0.0-ea.6"));
+        assertThat(versionSplit.zuluVersion()).isEqualTo("19.0.21-ea");
+        assertThat(versionSplit.javaVersion()).isEqualTo("19.0.0-ea.6");
+    }
+
+    @Test
     void jdk_path_linux_x86_64() {
         AzulZuluJdkDistribution distribution = new AzulZuluJdkDistribution();
         String version = ZuluVersionUtils.combineZuluVersions("11.56.19", "11.0.15");

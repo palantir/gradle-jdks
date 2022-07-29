@@ -16,11 +16,18 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.collect.ImmutableSet;
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.JdkRelease.Arch;
+import java.util.Arrays;
+import java.util.List;
 import org.immutables.value.Value;
 
 final class AzulZuluJdkDistribution implements JdkDistribution {
+    // See https://docs.azul.com/core/zulu-openjdk/versioning-and-naming for flag details.
+    private static final ImmutableSet<String> BUNDLE_FLAGS =
+            ImmutableSet.of("ea", "embvm", "cp1", "cp2", "cp3", "c2", "criu", "cr", "crac");
+
     @Override
     public String defaultBaseUrl() {
         return "https://cdn.azul.com/zulu/bin";
@@ -84,16 +91,26 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
     }
 
     static ZuluVersionSplit splitCombinedVersion(String combinedVersion) {
-        String[] split = combinedVersion.split("-", -1);
+        List<String> split = Arrays.asList(combinedVersion.split("-", -1));
 
-        if (split.length != 2) {
+        if (split.size() < 2) {
+            throw new IllegalArgumentException(String.format(
+                    "Expected %s to split into at least two parts, split into %d", combinedVersion, split.size()));
+        }
+
+        int endOfFlags = 1;
+        while (endOfFlags < split.size() && BUNDLE_FLAGS.contains(split.get(endOfFlags))) {
+            endOfFlags++;
+        }
+
+        if (endOfFlags == split.size()) {
             throw new IllegalArgumentException(
-                    String.format("Expected %s to split into two parts, split into %d", combinedVersion, split.length));
+                    String.format("Expected %s to split into two versions, split into one."));
         }
 
         return ZuluVersionSplit.builder()
-                .zuluVersion(split[0])
-                .javaVersion(split[1])
+                .zuluVersion(String.join("-", split.subList(0, endOfFlags)))
+                .javaVersion(String.join("-", split.subList(endOfFlags, split.size())))
                 .build();
     }
 
