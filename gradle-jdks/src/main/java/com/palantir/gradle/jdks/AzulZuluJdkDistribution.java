@@ -26,7 +26,17 @@ import org.immutables.value.Value;
 final class AzulZuluJdkDistribution implements JdkDistribution {
     // See https://docs.azul.com/core/zulu-openjdk/versioning-and-naming for flag details.
     private static final ImmutableSet<String> BUNDLE_FLAGS =
-            ImmutableSet.of("ea", "embvm", "cp1", "cp2", "cp3", "c2", "criu", "cr", "crac");
+            ImmutableSet.of("embvm", "cp1", "cp2", "cp3", "c2", "criu", "cr", "crac");
+    /**
+     * According to the Zulu version documentation, the -ea bundle flag is separate from the license availability flag.
+     * Empirically release contain one, or the other.
+     */
+    private static final ImmutableSet<String> AVAILABILITY_FLAGS = ImmutableSet.of("ea", "ca", "sa");
+
+    private static final ImmutableSet<String> ALL_FLAGS = ImmutableSet.<String>builder()
+            .addAll(BUNDLE_FLAGS)
+            .addAll(AVAILABILITY_FLAGS)
+            .build();
 
     @Override
     public String defaultBaseUrl() {
@@ -38,8 +48,8 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
         ZuluVersionSplit zuluVersionSplit = splitCombinedVersion(jdkRelease.version());
 
         String filename = String.format(
-                "zulu%s-ca-jdk%s-%s_%s",
-                zuluVersionSplit.zuluVersion(),
+                "zulu%s-jdk%s-%s_%s",
+                maybeAddAvailabilitySuffix(zuluVersionSplit.zuluVersion()),
                 zuluVersionSplit.javaVersion(),
                 os(jdkRelease.os()),
                 arch(jdkRelease.arch()));
@@ -48,6 +58,18 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
                 .filename(filename)
                 .extension(extension(jdkRelease.os()))
                 .build();
+    }
+
+    /**
+     * In general, we prefer to use the community availability release of Zulu. If the user specifies a subscriber
+     * release or early access release flag, we will attempt to download that.
+     */
+    private static String maybeAddAvailabilitySuffix(String zuluVersion) {
+        if (AVAILABILITY_FLAGS.stream().map(flag -> "-" + flag).anyMatch(zuluVersion::contains)) {
+            return zuluVersion;
+        } else {
+            return zuluVersion + "-ca";
+        }
     }
 
     private static String os(Os os) {
@@ -99,7 +121,7 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
         }
 
         int endOfFlags = 1;
-        while (endOfFlags < split.size() && BUNDLE_FLAGS.contains(split.get(endOfFlags))) {
+        while (endOfFlags < split.size() && ALL_FLAGS.contains(split.get(endOfFlags))) {
             endOfFlags++;
         }
 
