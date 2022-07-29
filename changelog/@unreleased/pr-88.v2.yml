@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: Omit the availability specifier if the user specified it. This enables
+    specification of ea versions.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/88
