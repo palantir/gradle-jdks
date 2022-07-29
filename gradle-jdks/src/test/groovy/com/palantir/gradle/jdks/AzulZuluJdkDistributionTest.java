@@ -70,12 +70,12 @@ class AzulZuluJdkDistributionTest {
     void jdk_path_macosx() {
         AzulZuluJdkDistribution distribution = new AzulZuluJdkDistribution();
         String version = ZuluVersionUtils.combineZuluVersions("19.0.21", "19.0.0.6");
-        JdkPath arm = distribution.path(JdkRelease.builder()
+        JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.AARCH64)
                 .os(Os.MACOS)
                 .version(version)
                 .build());
-        assertThat(arm.extension()).isEqualTo(Extension.ZIP);
+        assertThat(path.extension()).isEqualTo(Extension.ZIP);
     }
 
     @Test
