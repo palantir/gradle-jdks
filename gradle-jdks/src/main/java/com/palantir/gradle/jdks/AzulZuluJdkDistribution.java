@@ -100,12 +100,12 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
         throw new UnsupportedOperationException("Case " + arch + " not implemented");
     }
 
-    private static Extension extension(Os operatingSystem) {
+    private static Extension extension(Os operatingSystem, Arch arch) {
         switch (operatingSystem) {
-            case MACOS:
             case LINUX_GLIBC:
             case LINUX_MUSL:
                 return Extension.TARGZ;
+            case MACOS:
             case WINDOWS:
                 return Extension.ZIP;
         }
