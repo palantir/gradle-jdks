@@ -28,8 +28,12 @@ final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     @Override
     public JdkPath path(JdkRelease jdkRelease) {
         String filename = String.format(
-                "downloads/resources/%s/amazon-corretto-%s-%s-%s",
-                jdkRelease.version(), jdkRelease.version(), os(jdkRelease.os()), arch(jdkRelease.arch()));
+                "downloads/resources/%s/amazon-corretto-%s-%s-%s%s",
+                jdkRelease.version(),
+                jdkRelease.version(),
+                os(jdkRelease.os()),
+                arch(jdkRelease.arch()),
+                windowsDashJdk(jdkRelease.os()));
 
         return JdkPath.builder()
                 .filename(filename)
@@ -76,5 +80,13 @@ final class AmazonCorrettoJdkDistribution implements JdkDistribution {
         }
 
         throw new UnsupportedOperationException("Case " + arch + " not implemented");
+    }
+
+    private static String windowsDashJdk(Os os) {
+        if (os == Os.WINDOWS) {
+            return "-jdk";
+        }
+
+        return "";
     }
 }

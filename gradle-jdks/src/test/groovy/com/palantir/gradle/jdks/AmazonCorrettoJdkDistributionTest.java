@@ -23,66 +23,63 @@ import com.palantir.gradle.jdks.JdkRelease.Arch;
 import org.junit.jupiter.api.Test;
 
 class AmazonCorrettoJdkDistributionTest {
+    private final AmazonCorrettoJdkDistribution distribution = new AmazonCorrettoJdkDistribution();
+
     @Test
     void jdk_path_linux_x86_64() {
-        AzulZuluJdkDistribution distribution = new AzulZuluJdkDistribution();
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
                 .os(Os.LINUX_GLIBC)
                 .version("11.0.16.9.1")
                 .build());
-        assertThat(path.filename()).isEqualTo("zulu11.56.19-ca-jdk11.0.15-linux_x64");
+        assertThat(path.filename()).isEqualTo("downloads/resources/11.0.16.9.1/amazon-corretto-11.0.16.9.1-linux-x64");
         assertThat(path.extension()).isEqualTo(Extension.TARGZ);
     }
 
     @Test
-    void jdk_path_linux_x86_64_early_access() {
-        AzulZuluJdkDistribution distribution = new AzulZuluJdkDistribution();
-        String version = ZuluVersionUtils.combineZuluVersions("19.0.21-ea", "19.0.0-ea.6");
-        JdkPath path = distribution.path(JdkRelease.builder()
-                .arch(Arch.X86_64)
-                .os(Os.LINUX_GLIBC)
-                .version(version)
-                .build());
-        assertThat(path.filename()).isEqualTo("zulu19.0.21-ea-jdk19.0.0-ea.6-linux_x64");
-        assertThat(path.extension()).isEqualTo(Extension.TARGZ);
-    }
-
-    @Test
-    void jdk_path_macosx() {
-        AzulZuluJdkDistribution distribution = new AzulZuluJdkDistribution();
-        String version = ZuluVersionUtils.combineZuluVersions("19.0.21", "19.0.0.6");
+    void jdk_path_macosx_aarch64() {
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.AARCH64)
                 .os(Os.MACOS)
-                .version(version)
+                .version("17.0.4.9.1")
                 .build());
-        assertThat(path.extension()).isEqualTo(Extension.ZIP);
+        assertThat(path.filename())
+                .isEqualTo("downloads/resources/17.0.4.9.1/amazon-corretto-17.0.4.9.1-macosx-aarch64");
+        assertThat(path.extension()).isEqualTo(Extension.TARGZ);
+    }
+
+    @Test
+    void jdk_path_macosx_x64() {
+        JdkPath path = distribution.path(JdkRelease.builder()
+                .arch(Arch.X86_64)
+                .os(Os.MACOS)
+                .version("11.0.16.9.1")
+                .build());
+        assertThat(path.filename()).isEqualTo("downloads/resources/11.0.16.9.1/amazon-corretto-11.0.16.9.1-macosx-x64");
+        assertThat(path.extension()).isEqualTo(Extension.TARGZ);
     }
 
     @Test
     void jdk_path_musl_linux_x64_64() {
-        AzulZuluJdkDistribution distribution = new AzulZuluJdkDistribution();
-        String version = ZuluVersionUtils.combineZuluVersions("11.56.19", "11.0.15");
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
                 .os(Os.LINUX_MUSL)
-                .version(version)
+                .version("11.0.16.9.1")
                 .build());
-        assertThat(path.filename()).isEqualTo("zulu11.56.19-ca-jdk11.0.15-linux_musl_x64");
+        assertThat(path.filename())
+                .isEqualTo("downloads/resources/11.0.16.9.1/amazon-corretto-11.0.16.9.1-alpine-linux-x64");
         assertThat(path.extension()).isEqualTo(Extension.TARGZ);
     }
 
     @Test
     void jdk_path_windows_x86_64() {
-        AzulZuluJdkDistribution distribution = new AzulZuluJdkDistribution();
-        String version = ZuluVersionUtils.combineZuluVersions("11.56.19", "11.0.15");
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
                 .os(Os.WINDOWS)
-                .version(version)
+                .version("17.0.4.9.1")
                 .build());
-        assertThat(path.filename()).isEqualTo("zulu11.56.19-ca-jdk11.0.15-win_x64");
+        assertThat(path.filename())
+                .isEqualTo("downloads/resources/17.0.4.9.1/amazon-corretto-17.0.4.9.1-windows-x64-jdk");
         assertThat(path.extension()).isEqualTo(Extension.ZIP);
     }
 }
