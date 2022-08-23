@@ -22,6 +22,8 @@ import nebula.test.functional.ExecutionResult
 
 class JdksPluginIntegrationSpec extends IntegrationSpec {
     def setup() {
+        fork = true
+
         // language=gradle
         buildFile << '''
             apply plugin: 'com.palantir.jdks'
