@@ -95,7 +95,7 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
         def stdout = runTasksSuccessfully('printJavaVersion').standardOutput
 
         then:
-        stdout.contains 'version: 11.0.14.1, vendor: Azul Systems, Inc.'
+        stdout.contains 'version: 11.0.16.1, vendor: Amazon.com Inc.'
     }
 
     def 'can add ca certs to a JDK'() {
