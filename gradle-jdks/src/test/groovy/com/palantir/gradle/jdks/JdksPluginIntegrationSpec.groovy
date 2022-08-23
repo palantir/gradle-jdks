@@ -27,11 +27,6 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
             apply plugin: 'com.palantir.jdks'
             
             jdks {                
-                jdk(11) {
-                    distribution = 'azul-zulu'
-                    jdkVersion = '11.54.25-11.0.14.1'    
-                }
-            
                 jdkStorageLocation = layout.buildDirectory.dir('jdks')
             }
             
@@ -39,9 +34,7 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
                 libraryTarget = 11
             }
         '''.stripIndent(true)
-    }
 
-    def 'can download + run an Azul Zulu JDK'() {
         // language=gradle
         def subprojectDir = addSubproject 'subproject', '''
             apply plugin: 'java-library'
@@ -67,6 +60,36 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
                 }
             }
         '''.stripIndent(true), subprojectDir
+    }
+
+    def 'can download + run an Azul Zulu JDK'() {
+        // language=gradle
+        buildFile << '''
+            jdks {                
+                jdk(11) {
+                    distribution = 'azul-zulu'
+                    jdkVersion = '11.54.25-11.0.14.1'    
+                }
+            }
+        '''.stripIndent(true)
+
+        when:
+        def stdout = runTasksSuccessfully('printJavaVersion').standardOutput
+
+        then:
+        stdout.contains 'version: 11.0.14.1, vendor: Azul Systems, Inc.'
+    }
+
+    def 'can download + run an Amazon Corretto JDK'() {
+        // language=gradle
+        buildFile << '''
+            jdks {                
+                jdk(11) {
+                    distribution = 'amazon-corretto'
+                    jdkVersion = '11.0.16.9.1'    
+                }
+            }
+        '''.stripIndent(true)
 
         when:
         def stdout = runTasksSuccessfully('printJavaVersion').standardOutput

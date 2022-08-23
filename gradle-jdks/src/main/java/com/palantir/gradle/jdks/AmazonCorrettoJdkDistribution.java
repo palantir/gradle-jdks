@@ -16,25 +16,41 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.base.Splitter;
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.JdkRelease.Arch;
+import java.util.List;
 
 final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     @Override
     public String defaultBaseUrl() {
-        return "https://corretto.aws/downloads";
+        return "https://corretto.aws";
     }
 
     @Override
     public JdkPath path(JdkRelease jdkRelease) {
         String filename = String.format(
-                "%s/amazon-corretto-%s-%s-%s",
-                jdkRelease.version(), jdkRelease.version(), os(jdkRelease.os()), arch(jdkRelease.arch()));
+                "downloads/resources/%s/amazon-corretto-%s-%s-%s",
+                extractMajorVersion(jdkRelease.version()),
+                jdkRelease.version(),
+                os(jdkRelease.os()),
+                arch(jdkRelease.arch()));
 
         return JdkPath.builder()
                 .filename(filename)
                 .extension(extension(jdkRelease.os()))
                 .build();
+    }
+
+    private static String extractMajorVersion(String correttoVersion) {
+        List<String> split = Splitter.on('.').splitToList(correttoVersion);
+
+        if (split.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Failed to parse Amazon Corretto version to get major version: " + correttoVersion);
+        }
+
+        return split.get(0);
     }
 
     private static String os(Os os) {
