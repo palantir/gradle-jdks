@@ -170,8 +170,6 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
     }
 
     def 'throws exception if there is no JDK defined for a particular jdk major version'() {
-        // language=gradle
-
         when:
         def error = runTasksWithFailure('printJavaVersion').failure.cause.cause.message
 
