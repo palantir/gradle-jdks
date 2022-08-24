@@ -169,6 +169,16 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
         stdout.contains amazonRootCa1Serial
     }
 
+    def 'throws exception if there is no JDK defined for a particular jdk major version'() {
+        // language=gradle
+
+        when:
+        def error = runTasksWithFailure('printJavaVersion').failure.cause.cause.message
+
+        then:
+        error.contains "Could not find a JDK with major version 11 in project ':subproject'"
+    }
+
     @Override
     ExecutionResult runTasksSuccessfully(String... tasks) {
         def result = super.runTasks(tasks)
