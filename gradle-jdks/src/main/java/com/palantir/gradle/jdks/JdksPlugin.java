@@ -20,6 +20,7 @@ import com.palantir.baseline.plugins.javaversions.BaselineJavaVersions;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import java.io.File;
 import java.util.Arrays;
+import java.util.Optional;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
@@ -43,10 +44,19 @@ public final class JdksPlugin implements Plugin<Project> {
         rootProject
                 .getExtensions()
                 .getByType(BaselineJavaVersionsExtension.class)
-                .jdks((javaLanguageVersion, project) -> jdksExtension
-                        .jdkFor(javaLanguageVersion, project)
-                        .map(jdkExtension -> javaInstallationForLanguageVersion(
-                                project, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion)));
+                .jdks((javaLanguageVersion, project) -> {
+                    JdkExtension jdkExtension = jdksExtension
+                            .jdkFor(javaLanguageVersion, project)
+                            .orElseThrow(() -> new RuntimeException(String.format(
+                                    "Could not find a JDK with major version %s in project '%s'. "
+                                            + "Please ensure that you have configured JDKs properly for "
+                                            + "gradle-jdks as per the readme: "
+                                            + "https://github.com/palantir/gradle-jdks#usage",
+                                    javaLanguageVersion.toString(), project.getPath())));
+
+                    return Optional.of(javaInstallationForLanguageVersion(
+                            project, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion));
+                });
     }
 
     private JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
