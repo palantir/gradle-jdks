@@ -22,8 +22,6 @@ import nebula.test.functional.ExecutionResult
 
 class JdksPluginIntegrationSpec extends IntegrationSpec {
     def setup() {
-        fork = true
-
         // language=gradle
         buildFile << '''
             apply plugin: 'com.palantir.jdks'
@@ -106,6 +104,11 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
         // language=gradle
         buildFile << '''
             jdks {
+                jdk(11) {
+                    distribution = 'azul-zulu'
+                    jdkVersion = '11.54.25-11.0.14.1'    
+                }
+            
                 caCerts.put 'Our_Amazon_CA_Cert_1', """
                     -----BEGIN CERTIFICATE-----
                     MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF
