@@ -4,7 +4,7 @@ com.fasterxml.jackson.core:* = 2.13.3
 com.netflix.nebula:nebula-test = 10.1.0
 org.junit.jupiter:* = 5.9.0
 org.assertj:assertj-core = 3.23.1
-org.mockito:* = 4.7.0
+org.mockito:* = 4.8.0
 com.palantir.gradle.utils:* = 0.1.0
 
 # dependency-upgrader:OFF
