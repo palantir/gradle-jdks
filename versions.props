@@ -1,6 +1,6 @@
 org.immutables:* = 2.8.8
 com.fasterxml.jackson.core:jackson-databind = 2.13.2.1
-com.fasterxml.jackson.core:* = 2.13.3
+com.fasterxml.jackson.core:* = 2.13.4
 com.netflix.nebula:nebula-test = 10.1.0
 org.junit.jupiter:* = 5.9.1
 org.assertj:assertj-core = 3.23.1
