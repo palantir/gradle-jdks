@@ -38,6 +38,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.provider.Provider;
 import org.gradle.process.ExecResult;
@@ -116,6 +117,7 @@ public final class JdkManager {
             project.copy(copy -> {
                 copy.from(unpackTree(project, jdkPath.extension(), jdkArchive));
                 copy.into(temporaryJdkPath);
+                copy.setDuplicatesStrategy(DuplicatesStrategy.WARN);
             });
 
             Path javaHome = findJavaHome(temporaryJdkPath);
