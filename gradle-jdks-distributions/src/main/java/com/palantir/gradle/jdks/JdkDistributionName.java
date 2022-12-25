@@ -25,7 +25,8 @@ import java.util.stream.Collectors;
 
 public enum JdkDistributionName {
     AZUL_ZULU,
-    AMAZON_CORRETTO;
+    AMAZON_CORRETTO,
+    GRAALVM_CE;
 
     JdkDistributionName() {}
 

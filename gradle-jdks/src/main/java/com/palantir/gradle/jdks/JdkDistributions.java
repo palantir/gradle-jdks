@@ -24,7 +24,9 @@ final class JdkDistributions {
             JdkDistributionName.AZUL_ZULU,
             new AzulZuluJdkDistribution(),
             JdkDistributionName.AMAZON_CORRETTO,
-            new AmazonCorrettoJdkDistribution());
+            new AmazonCorrettoJdkDistribution(),
+            JdkDistributionName.GRAALVM_CE,
+            new GraalVmCeDistribution());
 
     public JdkDistribution get(JdkDistributionName jdkDistributionName) {
         return Optional.ofNullable(JDK_DISTRIBUTIONS.get(jdkDistributionName))
