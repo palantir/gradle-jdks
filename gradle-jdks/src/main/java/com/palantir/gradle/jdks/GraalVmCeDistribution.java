@@ -19,8 +19,6 @@ package com.palantir.gradle.jdks;
 import com.google.common.annotations.VisibleForTesting;
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.JdkRelease.Arch;
-import java.util.Arrays;
-import java.util.List;
 import org.immutables.value.Value;
 
 final class GraalVmCeDistribution implements JdkDistribution {
@@ -93,13 +91,6 @@ final class GraalVmCeDistribution implements JdkDistribution {
                             + "Expected Format `javaVersion.graalVersion` (e.g. 17.21.2.0 -> Java Version: 17, "
                             + "Graal Version: 21.2.0)",
                     combinedVersion));
-        }
-
-        List<String> split = Arrays.asList(combinedVersion.split("", -1));
-
-        if (split.size() < 2) {
-            throw new IllegalArgumentException(String.format(
-                    "Expected %s to split into at least two parts, split into %d", combinedVersion, split.size()));
         }
 
         return GraalVersionSplit.builder()
