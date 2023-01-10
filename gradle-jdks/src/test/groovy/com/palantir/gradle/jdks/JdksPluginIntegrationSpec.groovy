@@ -98,6 +98,24 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
         stdout.contains 'version: 11.0.16.1, vendor: Amazon.com Inc.'
     }
 
+    def 'can download + run on GraalVM Community Edition JDK'() {
+        // language=gradle
+        buildFile << '''
+            jdks {                
+                jdk(11) {
+                    distribution = 'graalvm-ce'
+                    jdkVersion = '11.22.3.0'    
+                }
+            }
+        '''.stripIndent(true)
+
+        when:
+        def stdout = runTasksSuccessfully('printJavaVersion').standardOutput
+
+        then:
+        stdout.contains 'version: 11.0.17, vendor: GraalVM Community'
+    }
+
     def 'can add ca certs to a JDK'() {
         def amazonRootCa1Serial = '143266978916655856878034712317230054538369994'
 
