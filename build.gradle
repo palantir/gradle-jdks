@@ -5,6 +5,7 @@ buildscript {
     }
 
     dependencies {
+        classpath 'com.palantir.jakartapackagealignment:jakarta-package-alignment:0.3.0'
         classpath 'com.palantir.gradle.jdks:gradle-jdks:0.28.0'
         classpath 'com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.6.0'
         classpath 'org.unbroken-dome.gradle-plugins:gradle-testsets-plugin:4.0.0'
@@ -43,4 +44,5 @@ allprojects {
 
     apply plugin: 'org.inferred.processors'
     apply plugin: 'com.palantir.java-format'
+    apply plugin: 'com.palantir.jakarta-package-alignment'
 }
