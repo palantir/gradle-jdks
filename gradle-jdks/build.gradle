@@ -35,6 +35,12 @@ gradlePlugin {
             description = 'Auto-provisions specific versions of JDKs'
             implementationClass = 'com.palantir.gradle.jdks.JdksPlugin'
         }
+        palantirCa {
+            id = 'com.palantir.jdks.palantir-ca'
+            displayName = 'Palantir CA for gradle-jdks'
+            description = 'Includes the Palantir CA from the system truststore'
+            implementationClass = 'com.palantir.gradle.jdks.PalantirCaPlugin'
+        }
     }
 }
 

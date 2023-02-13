@@ -25,7 +25,7 @@ class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
         // language=gradle
         buildFile << '''
             // Can't do strict as open source CI does not have the Palantir CA
-            com.palantir.gradle.jdks.PalantirCa.applyToRootProject(rootProject, false)
+            apply plugin: 'com.palantir.jdks.palantir-ca'
     
             jdks {
                 jdk(11) {

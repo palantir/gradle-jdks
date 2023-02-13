@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: Produce `com.palantir.jdks.palantir-ca` plugin for use by other Gradle
+    plugins to enable using open source projects from within the corporate VPN.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/161
