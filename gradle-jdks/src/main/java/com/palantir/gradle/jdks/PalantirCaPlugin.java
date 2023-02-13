@@ -41,11 +41,18 @@ import org.gradle.process.ExecResult;
 public final class PalantirCaPlugin implements Plugin<Project> {
     private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
 
-    public void apply(Project rootProject) {
-        if (rootProject.getRootProject() != rootProject) {
+    private Project rootProject;
+    private PalantirCaExtension extension;
+
+    public void apply(Project possibleRootProject) {
+        if (possibleRootProject.getRootProject() != possibleRootProject) {
             throw new IllegalArgumentException(
                     "com.palantir.jdks.palantir-ca must be applied to the root project only");
         }
+
+        rootProject = possibleRootProject;
+
+        extension = rootProject.getExtensions().create("palantirCa", PalantirCaExtension.class);
 
         rootProject.getPluginManager().apply(JdksPlugin.class);
 
@@ -53,19 +60,19 @@ public final class PalantirCaPlugin implements Plugin<Project> {
                 .getExtensions()
                 .getByType(JdksExtension.class)
                 .getCaCerts()
-                .putAll(rootProject.provider(() -> readPalantirRootCaFromSystemTruststore(rootProject)
+                .putAll(possibleRootProject.provider(() -> readPalantirRootCaFromSystemTruststore()
                         .map(cert -> Map.of("Palantir3rdGenRootCa", cert))
                         .orElseGet(() -> {
-                            rootProject.getLogger().info("Could not find Palantir CA in system truststore");
+                            log("Could not find Palantir CA in system truststore");
                             return Map.of();
                         })));
     }
 
-    private static Optional<String> readPalantirRootCaFromSystemTruststore(Project rootProject) {
-        return systemCertificates(rootProject).flatMap(PalantirCaPlugin::selectPalantirCertificate);
+    private Optional<String> readPalantirRootCaFromSystemTruststore() {
+        return systemCertificates().flatMap(PalantirCaPlugin::selectPalantirCertificate);
     }
 
-    private static Optional<byte[]> systemCertificates(Project rootProject) {
+    private Optional<byte[]> systemCertificates() {
         Os currentOs = Os.current();
 
         switch (currentOs) {
@@ -75,12 +82,10 @@ public final class PalantirCaPlugin implements Plugin<Project> {
             case LINUX_MUSL:
                 return Optional.of(linuxSystemCertificates());
             default:
-                rootProject
-                        .getLogger()
-                        .info(
-                                "Not attempting to read Palantir CA from system truststore "
-                                        + "as OS type '{}' does not yet support this",
-                                currentOs);
+                log(
+                        "Not attempting to read Palantir CA from system truststore "
+                                + "as OS type '{}' does not yet support this",
+                        currentOs);
                 return Optional.empty();
         }
     }
@@ -149,5 +154,9 @@ public final class PalantirCaPlugin implements Plugin<Project> {
         } catch (CertificateEncodingException e) {
             throw new RuntimeException("Could not convert Palantir cert back to regular", e);
         }
+    }
+
+    private void log(String format, Object... args) {
+        rootProject.getLogger().log(extension.getLogLevel().get(), format, args);
     }
 }
