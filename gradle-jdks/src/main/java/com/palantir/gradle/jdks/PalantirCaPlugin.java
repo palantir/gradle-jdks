@@ -34,13 +34,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.process.ExecResult;
 
-public final class PalantirCa {
+public final class PalantirCaPlugin implements Plugin<Project> {
     private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
 
-    public static void applyToRootProject(Project rootProject, boolean strict) {
+    public void apply(Project rootProject) {
         if (rootProject.getRootProject() != rootProject) {
             throw new IllegalArgumentException(
                     "com.palantir.jdks.palantir-ca must be applied to the root project only");
@@ -48,32 +49,39 @@ public final class PalantirCa {
 
         rootProject.getPluginManager().apply(JdksPlugin.class);
 
-        rootProject.getExtensions().getByType(JdksExtension.class).getCaCerts().putAll(rootProject.provider(() -> {
-            Optional<String> possibleCert = readPalantirRootCaFromSystemTruststore(rootProject);
-            if (strict && possibleCert.isEmpty()) {
-                throw new RuntimeException("Could not find Palantir 3rd Gen Root CA from macos system truststore");
-            }
-            return possibleCert
-                    .map(cert -> Map.of("Palantir3rdGenRootCa", cert))
-                    .orElseGet(Map::of);
-        }));
+        rootProject
+                .getExtensions()
+                .getByType(JdksExtension.class)
+                .getCaCerts()
+                .putAll(rootProject.provider(() -> readPalantirRootCaFromSystemTruststore(rootProject)
+                        .map(cert -> Map.of("Palantir3rdGenRootCa", cert))
+                        .orElseGet(() -> {
+                            rootProject.getLogger().info("Could not find Palantir CA in system truststore");
+                            return Map.of();
+                        })));
     }
 
     private static Optional<String> readPalantirRootCaFromSystemTruststore(Project rootProject) {
-        return selectPalantirCertificate(systemCertificates(rootProject));
+        return systemCertificates(rootProject).flatMap(PalantirCaPlugin::selectPalantirCertificate);
     }
 
-    private static byte[] systemCertificates(Project rootProject) {
+    private static Optional<byte[]> systemCertificates(Project rootProject) {
         Os currentOs = Os.current();
 
         switch (currentOs) {
             case MACOS:
-                return macosSystemCertificates(rootProject);
+                return Optional.of(macosSystemCertificates(rootProject));
             case LINUX_GLIBC:
-                return linuxSystemCertificates();
+            case LINUX_MUSL:
+                return Optional.of(linuxSystemCertificates());
             default:
-                throw new UnsupportedOperationException(
-                        currentOs + " is not currently supported for automatic Palantir CA discovery");
+                rootProject
+                        .getLogger()
+                        .info(
+                                "Not attempting to read Palantir CA from system truststore "
+                                        + "as OS type '{}' does not yet support this",
+                                currentOs);
+                return Optional.empty();
         }
     }
 
@@ -118,7 +126,7 @@ public final class PalantirCa {
         return parseCerts(multipleCertificateBytes).stream()
                 .filter(cert -> PALANTIR_3RD_GEN_SERIAL.equals(((X509Certificate) cert).getSerialNumber()))
                 .findFirst()
-                .map(PalantirCa::encodeCertificate);
+                .map(PalantirCaPlugin::encodeCertificate);
     }
 
     private static Collection<? extends Certificate> parseCerts(byte[] multipleCertificateBytes) {
@@ -142,6 +150,4 @@ public final class PalantirCa {
             throw new RuntimeException("Could not convert Palantir cert back to regular", e);
         }
     }
-
-    private PalantirCa() {}
 }
