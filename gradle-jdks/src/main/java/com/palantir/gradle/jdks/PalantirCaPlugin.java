@@ -118,18 +118,28 @@ public final class PalantirCaPlugin implements Plugin<Project> {
     }
 
     private Optional<byte[]> linuxSystemCertificates() {
-        Path caCertificatePath = Paths.get("/etc/ssl/certs/ca-certificates.crt");
+        List<Path> possibleCaCertificatePaths = List.of(
+                // Ubuntu/debian
+                Paths.get("/etc/ssl/certs/ca-certificates.crt"),
+                // Red hat/centos
+                Paths.get("/etc/ssl/certs/ca-bundle.crt"));
 
-        if (Files.notExists(caCertificatePath)) {
-            log("Could not find system truststore at {} in order to load Palantir CA cert", caCertificatePath);
-            return Optional.empty();
-        }
-
-        try {
-            return Optional.of(Files.readAllBytes(caCertificatePath));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read CA certs from " + caCertificatePath, e);
-        }
+        return possibleCaCertificatePaths.stream()
+                .filter(Files::exists)
+                .findFirst()
+                .map(caCertificatePath -> {
+                    try {
+                        return Files.readAllBytes(caCertificatePath);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to read CA certs from " + caCertificatePath, e);
+                    }
+                })
+                .or(() -> {
+                    log(
+                            "Could not find system truststore at any of {} in order to load Palantir CA cert",
+                            possibleCaCertificatePaths);
+                    return Optional.empty();
+                });
     }
 
     private static Optional<String> selectPalantirCertificate(byte[] multipleCertificateBytes) {
