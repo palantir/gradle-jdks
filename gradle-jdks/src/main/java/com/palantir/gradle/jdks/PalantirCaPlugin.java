@@ -80,7 +80,7 @@ public final class PalantirCaPlugin implements Plugin<Project> {
                 return Optional.of(macosSystemCertificates(rootProject));
             case LINUX_GLIBC:
             case LINUX_MUSL:
-                return Optional.of(linuxSystemCertificates());
+                return linuxSystemCertificates();
             default:
                 log(
                         "Not attempting to read Palantir CA from system truststore "
@@ -117,11 +117,16 @@ public final class PalantirCaPlugin implements Plugin<Project> {
         return output.toByteArray();
     }
 
-    private static byte[] linuxSystemCertificates() {
+    private Optional<byte[]> linuxSystemCertificates() {
         Path caCertificatePath = Paths.get("/etc/ssl/certs/ca-certificates.crt");
 
+        if (Files.notExists(caCertificatePath)) {
+            log("Could not find system truststore at {} in order to load Palantir CA cert", caCertificatePath);
+            return Optional.empty();
+        }
+
         try {
-            return Files.readAllBytes(caCertificatePath);
+            return Optional.of(Files.readAllBytes(caCertificatePath));
         } catch (IOException e) {
             throw new RuntimeException("Failed to read CA certs from " + caCertificatePath, e);
         }
