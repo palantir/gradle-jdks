@@ -80,7 +80,7 @@ public final class PalantirCaPlugin implements Plugin<Project> {
                 return Optional.of(macosSystemCertificates(rootProject));
             case LINUX_GLIBC:
             case LINUX_MUSL:
-                return Optional.of(linuxSystemCertificates());
+                return linuxSystemCertificates();
             default:
                 log(
                         "Not attempting to read Palantir CA from system truststore "
@@ -117,14 +117,29 @@ public final class PalantirCaPlugin implements Plugin<Project> {
         return output.toByteArray();
     }
 
-    private static byte[] linuxSystemCertificates() {
-        Path caCertificatePath = Paths.get("/etc/ssl/certs/ca-certificates.crt");
+    private Optional<byte[]> linuxSystemCertificates() {
+        List<Path> possibleCaCertificatePaths = List.of(
+                // Ubuntu/debian
+                Paths.get("/etc/ssl/certs/ca-certificates.crt"),
+                // Red hat/centos
+                Paths.get("/etc/ssl/certs/ca-bundle.crt"));
 
-        try {
-            return Files.readAllBytes(caCertificatePath);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read CA certs from " + caCertificatePath, e);
-        }
+        return possibleCaCertificatePaths.stream()
+                .filter(Files::exists)
+                .findFirst()
+                .map(caCertificatePath -> {
+                    try {
+                        return Files.readAllBytes(caCertificatePath);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to read CA certs from " + caCertificatePath, e);
+                    }
+                })
+                .or(() -> {
+                    log(
+                            "Could not find system truststore at any of {} in order to load Palantir CA cert",
+                            possibleCaCertificatePaths);
+                    return Optional.empty();
+                });
     }
 
     private static Optional<String> selectPalantirCertificate(byte[] multipleCertificateBytes) {
