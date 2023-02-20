@@ -1,0 +1,7 @@
+type: fix
+fix:
+  description: For the Palantir CA plugin, skip over certificates in the system truststore
+    if they contain duplicate extensions, to avoid the `Duplicate extensions not allowed`
+    error message.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/168
