@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,8 +30,9 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -149,13 +151,36 @@ public final class PalantirCaPlugin implements Plugin<Project> {
                 .map(PalantirCaPlugin::encodeCertificate);
     }
 
-    private static Collection<? extends Certificate> parseCerts(byte[] multipleCertificateBytes) {
+    @VisibleForTesting
+    static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
+        CertificateFactory certificateFactory;
         try {
-            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-            return certificateFactory.generateCertificates(new ByteArrayInputStream(multipleCertificateBytes));
+            certificateFactory = CertificateFactory.getInstance("X.509");
         } catch (CertificateException e) {
-            throw new RuntimeException("Failed to read certificate", e);
+            throw new RuntimeException("Could not make X.509 certificate factory", e);
         }
+
+        List<Certificate> certs = new ArrayList<>();
+
+        ByteArrayInputStream baos = new ByteArrayInputStream(multipleCertificateBytes);
+
+        for (int i = 0; baos.available() != 0; i++) {
+            try {
+                certs.add(certificateFactory.generateCertificate(baos));
+            } catch (CertificateException e) {
+                if (e.getMessage().contains("Duplicate extensions not allowed")) {
+                    continue;
+                }
+
+                if (e.getMessage().contains("Empty input")) {
+                    break;
+                }
+
+                throw new RuntimeException("Failed to parse cert " + i, e);
+            }
+        }
+
+        return Collections.unmodifiableList(certs);
     }
 
     private static String encodeCertificate(Certificate palantirCert) {
