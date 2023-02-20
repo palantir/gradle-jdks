@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -150,7 +151,7 @@ public final class PalantirCaPlugin implements Plugin<Project> {
                 .map(PalantirCaPlugin::encodeCertificate);
     }
 
-    // visible for testing
+    @VisibleForTesting
     static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
         CertificateFactory certificateFactory;
         try {
