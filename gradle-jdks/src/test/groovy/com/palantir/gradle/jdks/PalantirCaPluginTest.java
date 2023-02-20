@@ -19,16 +19,30 @@ package com.palantir.gradle.jdks;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 class PalantirCaPluginTest {
     @Test
-    void does_not_explode_when_given_certs_with_duplicate_extensions() throws IOException {
-        byte[] certWithDuplicateExtensions = getClass()
-                .getClassLoader()
-                .getResourceAsStream("apple-kdc-cert-with-duplicate-extension.pem")
-                .readAllBytes();
+    void handles_just_whitespace_truststore() {
+        assertThat(PalantirCaPlugin.parseCerts("         \n      ".getBytes(StandardCharsets.UTF_8)))
+                .isEmpty();
+    }
 
-        assertThat(PalantirCaPlugin.parseCerts(certWithDuplicateExtensions)).isEmpty();
+    @Test
+    void handles_whitespace_and_comments_between_certs() throws IOException {
+
+        assertThat(PalantirCaPlugin.parseCerts(certsFromResources("amazon-cas-with-whitespace-between.pem")))
+                .hasSize(3);
+    }
+
+    @Test
+    void does_not_explode_when_given_certs_with_duplicate_extensions() throws IOException {
+        assertThat(PalantirCaPlugin.parseCerts(certsFromResources("apple-kdc-cert-with-duplicate-extension.pem")))
+                .isEmpty();
+    }
+
+    private byte[] certsFromResources(String name) throws IOException {
+        return getClass().getClassLoader().getResourceAsStream(name).readAllBytes();
     }
 }

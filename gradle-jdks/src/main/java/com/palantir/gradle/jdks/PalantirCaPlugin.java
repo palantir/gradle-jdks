@@ -150,7 +150,8 @@ public final class PalantirCaPlugin implements Plugin<Project> {
                 .map(PalantirCaPlugin::encodeCertificate);
     }
 
-    public static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
+    // visible for testing
+    static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
         CertificateFactory certificateFactory;
         try {
             certificateFactory = CertificateFactory.getInstance("X.509");
@@ -168,6 +169,10 @@ public final class PalantirCaPlugin implements Plugin<Project> {
             } catch (CertificateException e) {
                 if (e.getMessage().contains("Duplicate extensions not allowed")) {
                     continue;
+                }
+
+                if (e.getMessage().contains("Empty input")) {
+                    break;
                 }
 
                 throw new RuntimeException("Failed to parse cert " + i, e);
