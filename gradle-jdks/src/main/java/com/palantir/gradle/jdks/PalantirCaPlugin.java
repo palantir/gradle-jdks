@@ -46,6 +46,7 @@ public final class PalantirCaPlugin implements Plugin<Project> {
     private Project rootProject;
     private PalantirCaExtension extension;
 
+    @Override
     public void apply(Project possibleRootProject) {
         if (possibleRootProject.getRootProject() != possibleRootProject) {
             throw new IllegalArgumentException(
