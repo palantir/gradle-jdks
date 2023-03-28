@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: Fix errors of the form `no more data allowed for version 1 certificate`
+    when the system truststore has incorrectly versioned X.509 certs in it.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/178
