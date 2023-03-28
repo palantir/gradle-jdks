@@ -173,6 +173,10 @@ public final class PalantirCaPlugin implements Plugin<Project> {
                     continue;
                 }
 
+                if (e.getMessage().contains("no more data allowed for version 1 certificate")) {
+                    continue;
+                }
+
                 if (e.getMessage().contains("Empty input")) {
                     break;
                 }

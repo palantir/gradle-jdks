@@ -42,6 +42,13 @@ class PalantirCaPluginTest {
                 .isEmpty();
     }
 
+    @Test
+    void does_not_explode_when_given_certs_with_incorrect_vesion() throws IOException {
+        assertThat(PalantirCaPlugin.parseCerts(
+                        certsFromResources("strongloop-cert-with-v3-extensions-but-v1-version.pem")))
+                .isEmpty();
+    }
+
     private byte[] certsFromResources(String name) throws IOException {
         return getClass().getClassLoader().getResourceAsStream(name).readAllBytes();
     }
