@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Use bin/javac to find JAVA_HOME instead of bin/java to avoid accidentally installing a JRE instead of a JDK.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/184
