@@ -78,7 +78,7 @@ jobs:
           name: Install Java 11
           command: |
             sudo mkdir -p /opt/java && cd /opt/java && sudo chown -R circleci:circleci .
-            curl https://cdn.azul.com/zulu/bin/zulu11.64.19-ca-jdk11.0.19-linux_x64.tar.gz | tar -xzf - -C /opt/java
+            curl https://cdn.azul.com/zulu/bin/zulu11.66.19-ca-jdk11.0.20.1-linux_x64.tar.gz | tar -xzf - -C /opt/java
             sudo ln -s /opt/java/zulu*/ /opt/java11
       - run:
           name: build-setup

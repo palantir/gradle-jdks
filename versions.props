@@ -1,10 +1,11 @@
-org.immutables:* = 2.9.3
+com.github.ben-manes.caffeine:caffeine = 3.1.8
+org.immutables:* = 2.10.0
 com.fasterxml.jackson.core:jackson-databind = 2.13.2.1
 com.fasterxml.jackson.core:* = 2.15.2
 com.netflix.nebula:nebula-test = 10.1.0
-org.junit.jupiter:* = 5.9.3
+org.junit.jupiter:* = 5.10.0
 org.assertj:assertj-core = 3.24.2
-org.mockito:* = 5.4.0
+org.mockito:* = 5.6.0
 com.palantir.gradle.utils:* = 0.1.0
 
 # dependency-upgrader:OFF
@@ -14,4 +15,4 @@ com.palantir.baseline:* = 4.139.0
 # conflict resolution
 com.google.code.findbugs:jsr305 = 3.0.2
 com.google.errorprone:error_prone_annotations = 2.11.0
-org.checkerframework:checker-qual = 3.35.0
+org.checkerframework:checker-qual = 3.39.0
