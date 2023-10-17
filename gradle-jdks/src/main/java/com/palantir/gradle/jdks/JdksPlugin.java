@@ -99,13 +99,11 @@ public final class JdksPlugin implements Plugin<Project> {
                         project,
                         JdkSpec.builder()
                                 .distributionName(jdkDistributionName)
-                                .release(JdkRelease.builder()
-                                        .version(version)
-                                        .build())
-                                .caCerts(CaCerts.from(
-                                        jdksExtension.getCaCerts().get()))
+                                .release(JdkRelease.builder().version(version).build())
+                                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
                                 .build())
                 .toFile()));
-        return GradleJdksJavaInstallationMetadata.create(javaLanguageVersion, version, version, jdkDistributionName.uiName(), installationPath);
+        return GradleJdksJavaInstallationMetadata.create(
+                javaLanguageVersion, version, version, jdkDistributionName.uiName(), installationPath);
     }
 }
