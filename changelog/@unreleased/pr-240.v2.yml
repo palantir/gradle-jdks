@@ -1,0 +1,7 @@
+type: fix
+fix:
+  description: Support Gradle 8, avoid errors of the form "ImmutableGradleJdksJavaInstallationMetadata
+    does not define or inherit an implementation of the resolved method 'abstract
+    boolean isCurrentJvm()'"
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/240
