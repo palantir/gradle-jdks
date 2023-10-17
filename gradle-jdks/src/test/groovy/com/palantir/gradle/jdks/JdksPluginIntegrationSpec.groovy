@@ -28,6 +28,10 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
         // language=gradle
         buildFile << '''
             buildscript {
+                repositories {
+                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+                }
+            
                 dependencies {
                     classpath 'com.palantir.baseline:gradle-baseline-java:5.28.0'
                 }
