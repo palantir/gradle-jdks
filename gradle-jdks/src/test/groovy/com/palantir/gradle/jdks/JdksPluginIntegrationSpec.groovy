@@ -27,6 +27,12 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
     def setup() {
         // language=gradle
         buildFile << '''
+            buildscript {
+                dependencies {
+                    classpath 'com.palantir.baseline:gradle-baseline-java:5.28.0'
+                }
+            }
+
             apply plugin: 'com.palantir.jdks'
             
             jdks {                
