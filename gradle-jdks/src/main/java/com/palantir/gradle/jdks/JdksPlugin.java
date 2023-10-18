@@ -23,6 +23,9 @@ import java.util.Arrays;
 import java.util.Optional;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
+import org.gradle.api.provider.Provider;
+import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public final class JdksPlugin implements Plugin<Project> {
@@ -80,7 +83,7 @@ public final class JdksPlugin implements Plugin<Project> {
         return jdksExtension;
     }
 
-    private GradleJdksJavaInstallationMetadata javaInstallationForLanguageVersion(
+    private JavaInstallationMetadata javaInstallationForLanguageVersion(
             Project project,
             JdksExtension jdksExtension,
             JdkExtension jdkExtension,
@@ -91,23 +94,16 @@ public final class JdksPlugin implements Plugin<Project> {
         JdkDistributionName jdkDistributionName =
                 jdkExtension.getDistributionName().get();
 
-        return GradleJdksJavaInstallationMetadata.builder()
-                .installationPathProvider(project.getLayout().dir(project.provider(() -> jdkManager
-                        .jdk(
-                                project,
-                                JdkSpec.builder()
-                                        .distributionName(jdkDistributionName)
-                                        .release(JdkRelease.builder()
-                                                .version(version)
-                                                .build())
-                                        .caCerts(CaCerts.from(
-                                                jdksExtension.getCaCerts().get()))
-                                        .build())
-                        .toFile())))
-                .javaRuntimeVersion(version)
-                .languageVersion(javaLanguageVersion)
-                .jvmVersion(version)
-                .vendor(jdkDistributionName.uiName())
-                .build();
+        Provider<Directory> installationPath = project.getLayout().dir(project.provider(() -> jdkManager
+                .jdk(
+                        project,
+                        JdkSpec.builder()
+                                .distributionName(jdkDistributionName)
+                                .release(JdkRelease.builder().version(version).build())
+                                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
+                                .build())
+                .toFile()));
+        return GradleJdksJavaInstallationMetadata.create(
+                javaLanguageVersion, version, version, jdkDistributionName.uiName(), installationPath);
     }
 }

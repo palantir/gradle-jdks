@@ -16,23 +16,46 @@
 
 package com.palantir.gradle.jdks;
 
+import java.lang.reflect.Proxy;
 import org.gradle.api.file.Directory;
 import org.gradle.api.provider.Provider;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
-import org.immutables.value.Value;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
-@Value.Immutable
-abstract class GradleJdksJavaInstallationMetadata implements JavaInstallationMetadata {
-    protected abstract Provider<Directory> installationPathProvider();
+final class GradleJdksJavaInstallationMetadata {
+    public static JavaInstallationMetadata create(
+            JavaLanguageVersion javaLanguageVersion,
+            String javaRuntimeVersion,
+            String jvmVersion,
+            String vendor,
+            Provider<Directory> installationPath) {
+        return (JavaInstallationMetadata) Proxy.newProxyInstance(
+                GradleJdksJavaInstallationMetadata.class.getClassLoader(),
+                new Class[] {JavaInstallationMetadata.class},
+                (_proxy, method, args) -> {
+                    if (args != null && args.length != 0) {
+                        throw new UnsupportedOperationException(
+                                "Unsupported method: " + method + " with " + args.length + " args");
+                    }
 
-    @Override
-    public Directory getInstallationPath() {
-        return installationPathProvider().get();
+                    switch (method.getName()) {
+                        case "getLanguageVersion":
+                            return javaLanguageVersion;
+                        case "getJavaRuntimeVersion":
+                            return javaRuntimeVersion;
+                        case "getJvmVersion":
+                            return jvmVersion;
+                        case "getVendor":
+                            return vendor;
+                        case "getInstallationPath":
+                            return installationPath.get();
+                        case "isCurrentJvm":
+                            return false;
+                    }
+
+                    throw new UnsupportedOperationException("Unsupported method: " + method);
+                });
     }
 
-    public static final class Builder extends ImmutableGradleJdksJavaInstallationMetadata.Builder {}
-
-    public static Builder builder() {
-        return new Builder();
-    }
+    private GradleJdksJavaInstallationMetadata() {}
 }

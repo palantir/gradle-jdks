@@ -18,9 +18,12 @@ package com.palantir.gradle.jdks
 
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
+import spock.lang.Unroll
 
-
+@Unroll
 class JdksPluginIntegrationSpec extends IntegrationSpec {
+    private static final List<String> GRADLE_VERSIONS = List.of("7.6.2", "8.4")
+
     def setup() {
         // language=gradle
         buildFile << '''
@@ -62,7 +65,9 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
         '''.stripIndent(true), subprojectDir
     }
 
-    def 'can download + run an Azul Zulu JDK'() {
+    def '#gradleVersionNumber: can download + run an Azul Zulu JDK'() {
+        gradleVersion = gradleVersionNumber
+
         // language=gradle
         buildFile << '''
             jdks {                
@@ -78,9 +83,14 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
         then:
         stdout.contains 'version: 11.0.14.1, vendor: Azul Systems, Inc.'
+
+        where:
+        gradleVersionNumber << GRADLE_VERSIONS
     }
 
-    def 'can download + run an Amazon Corretto JDK'() {
+    def '#gradleVersionNumber: can download + run an Amazon Corretto JDK'() {
+        gradleVersion = gradleVersionNumber
+
         // language=gradle
         buildFile << '''
             jdks {                
@@ -96,9 +106,14 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
         then:
         stdout.contains 'version: 11.0.16.1, vendor: Amazon.com Inc.'
+
+        where:
+        gradleVersionNumber << GRADLE_VERSIONS
     }
 
-    def 'can download + run on GraalVM Community Edition JDK'() {
+    def '#gradleVersionNumber: can download + run on GraalVM Community Edition JDK'() {
+        gradleVersion = gradleVersionNumber
+
         // language=gradle
         buildFile << '''
             jdks {                
@@ -114,9 +129,14 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
         then:
         stdout.contains 'version: 11.0.17, vendor: GraalVM Community'
+
+        where:
+        gradleVersionNumber << GRADLE_VERSIONS
     }
 
-    def 'can add ca certs to a JDK'() {
+    def '#gradleVersionNumber: can add ca certs to a JDK'() {
+        gradleVersion = gradleVersionNumber
+
         def amazonRootCa1Serial = '143266978916655856878034712317230054538369994'
 
         // language=gradle
@@ -166,7 +186,8 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
             package foo;
 
             import java.io.File;
-            import java.security.KeyStore;import java.security.cert.X509Certificate;
+            import java.security.KeyStore;
+            import java.security.cert.X509Certificate;
             
             public final class OutputCaCerts {
                 public static void main(String... args) throws Exception {
@@ -185,14 +206,22 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
         then:
         stdout.contains amazonRootCa1Serial
+
+        where:
+        gradleVersionNumber << GRADLE_VERSIONS
     }
 
-    def 'throws exception if there is no JDK defined for a particular jdk major version'() {
+    def '#gradleVersionNumber: throws exception if there is no JDK defined for a particular jdk major version'() {
+        gradleVersion = gradleVersionNumber
+
         when:
         def error = runTasksWithFailure('printJavaVersion').failure.cause.cause.message
 
         then:
         error.contains "Could not find a JDK with major version 11 in project ':subproject'"
+
+        where:
+        gradleVersionNumber << GRADLE_VERSIONS
     }
 
     @Override
