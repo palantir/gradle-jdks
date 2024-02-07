@@ -79,7 +79,8 @@ jobs:
       - store_artifacts: { path: ~/artifacts }
 
   build:
-    machine: { docker_layer_caching: true }
+    machine:
+      docker_layer_caching: true
     environment:
       CIRCLE_TEST_REPORTS: /home/circleci/junit
       CIRCLE_ARTIFACTS: /home/circleci/artifacts
