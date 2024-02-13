@@ -73,6 +73,19 @@ jdks {
       jdkVersion = '17.0.3.6.1'
    }
    
+   jdk(11) {
+      distribution = 'amazon-corretto'
+      jdkVersion = '17.0.3.6.1'
+      jdkVersions {
+          platform('linux') {
+              jdkVersion = '17.0.3.6.1'
+              arch('aarch64') {
+                  jdkVersion = '17.1.2.3.1'
+              }
+              
+      }
+   }
+   
    // Optional: For each distribution, you can set a base url for a
    //           mirror to use instead of the default public mirror.
    // Default:  Whatever mirror is publicly provided by the vendor

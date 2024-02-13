@@ -90,7 +90,7 @@ public final class JdksPlugin implements Plugin<Project> {
             JdkManager jdkManager,
             JavaLanguageVersion javaLanguageVersion) {
 
-        String version = jdkExtension.getJdkVersion().get();
+        String version = jdkExtension.jdkFor(Os.current())
         JdkDistributionName jdkDistributionName =
                 jdkExtension.getDistributionName().get();
 

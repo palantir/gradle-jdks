@@ -101,7 +101,7 @@ public abstract class JdksExtension {
                         String.format("No configuration for JdkDistribution " + jdkDistributionName)));
     }
 
-    public final Optional<JdkExtension> jdkFor(JavaLanguageVersion javaLanguageVersion, Project project) {
+    final Optional<JdkExtension> jdkFor(JavaLanguageVersion javaLanguageVersion, Project project) {
         return jdks.get(javaLanguageVersion, project);
     }
 

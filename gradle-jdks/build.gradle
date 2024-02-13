@@ -53,4 +53,5 @@ pluginBundle {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.errorprone.disable 'JavaxInjectOnAbstractMethod'
+    it.options.errorprone.disable 'StrictUnusedVariable'
 }
