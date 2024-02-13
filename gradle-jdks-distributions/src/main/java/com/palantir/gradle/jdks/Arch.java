@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Optional;
 
-public enum JdkDistributionName {
-    AZUL_ZULU,
-    AMAZON_CORRETTO,
-    GRAALVM_CE;
-
-    JdkDistributionName() {}
+public enum Arch {
+    X86,
+    X86_64,
+    AARCH64;
 
     @Override
     public String toString() {
@@ -37,12 +35,12 @@ public enum JdkDistributionName {
         return UiNames.uiName(this);
     }
 
-    public static Optional<JdkDistributionName> fromString(String distributionUiName) {
-        return UiNames.fromString(values(), distributionUiName);
+    public static Optional<Arch> fromString(String archUiName) {
+        return UiNames.fromString(values(), archUiName);
     }
 
     @JsonCreator
-    public static JdkDistributionName fromStringThrowing(String distributionUiName) {
-        return UiNames.fromStringThrowing(JdkDistributionName.class, values(), distributionUiName);
+    public static Arch fromStringThrowing(String archUiName) {
+        return UiNames.fromStringThrowing(Arch.class, values(), archUiName);
     }
 }

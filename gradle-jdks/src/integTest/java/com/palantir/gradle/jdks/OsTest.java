@@ -27,17 +27,17 @@ import org.junit.jupiter.api.Test;
 class OsTest {
     @Test
     void modern_glibc_system_is_identified() {
-        assertThat(Os.linuxLibcFromLdd(execInDocker("ubuntu:20.04"))).isEqualTo(Os.LINUX_GLIBC);
+        assertThat(CurrentOs.linuxLibcFromLdd(execInDocker("ubuntu:20.04"))).isEqualTo(Os.LINUX_GLIBC);
     }
 
     @Test
     void old_glibc_system_is_identified() {
-        assertThat(Os.linuxLibcFromLdd(execInDocker("centos:7"))).isEqualTo(Os.LINUX_GLIBC);
+        assertThat(CurrentOs.linuxLibcFromLdd(execInDocker("centos:7"))).isEqualTo(Os.LINUX_GLIBC);
     }
 
     @Test
     void musl_system_is_identified() {
-        assertThat(Os.linuxLibcFromLdd(execInDocker("alpine:3.16.0"))).isEqualTo(Os.LINUX_MUSL);
+        assertThat(CurrentOs.linuxLibcFromLdd(execInDocker("alpine:3.16.0"))).isEqualTo(Os.LINUX_MUSL);
     }
 
     private UnaryOperator<List<String>> execInDocker(String dockerImage) {

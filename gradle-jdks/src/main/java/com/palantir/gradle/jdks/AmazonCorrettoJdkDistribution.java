@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
-import com.palantir.gradle.jdks.JdkRelease.Arch;
 
 final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     @Override

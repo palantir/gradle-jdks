@@ -16,8 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.utils.lazilyconfiguredmapping.LazilyConfiguredMapping;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.model.ObjectFactory;
@@ -29,18 +29,21 @@ public abstract class JdkExtension {
 
     public abstract Property<JdkDistributionName> getDistributionName();
 
-    private final LazilyConfiguredMapping<Os, JdkOsExtension, Void> jdkOsExtensions =
-            new LazilyConfiguredMapping<>(() -> {
-                JdkOsExtension extension = getObjectFactory().newInstance(JdkOsExtension.class);
-                extension.getJdkVersion().set(getJdkVersion());
-                return extension;
-            });
+    private final Map<Os, JdkOsExtension> jdkOsExtensions = new HashMap<>();
 
     @Inject
     protected abstract ObjectFactory getObjectFactory();
 
-    final Optional<JdkOsExtension> jdkFor(Os os) {
-        return jdkOsExtensions.get(os, null);
+    public JdkExtension() {
+        for (Os os : Os.values()) {
+            JdkOsExtension jdkOsExtension = getObjectFactory().newInstance(JdkOsExtension.class);
+            jdkOsExtension.getJdkVersion().set(getJdkVersion());
+            jdkOsExtensions.put(os, jdkOsExtension);
+        }
+    }
+
+    final JdkOsExtension jdkFor(Os os) {
+        return jdkOsExtensions.get(os);
     }
 
     public final void setDistribution(JdkDistributionName jdkDistributionName) {
@@ -52,7 +55,7 @@ public abstract class JdkExtension {
     }
 
     public final void os(Os os, Action<JdkOsExtension> action) {
-        jdkOsExtensions.put(os, action);
+        action.execute(jdkOsExtensions.get(os));
     }
 
     public final void os(String os, Action<JdkOsExtension> action) {

@@ -90,7 +90,15 @@ public final class JdksPlugin implements Plugin<Project> {
             JdkManager jdkManager,
             JavaLanguageVersion javaLanguageVersion) {
 
-        String version = jdkExtension.jdkFor(Os.current())
+        Os currentOs = CurrentOs.current();
+        Arch currentArch = CurrentArch.current();
+
+        String version = jdkExtension
+                .jdkFor(currentOs)
+                .jdkFor(currentArch)
+                .getJdkVersion()
+                .get();
+
         JdkDistributionName jdkDistributionName =
                 jdkExtension.getDistributionName().get();
 
@@ -99,10 +107,15 @@ public final class JdksPlugin implements Plugin<Project> {
                         project,
                         JdkSpec.builder()
                                 .distributionName(jdkDistributionName)
-                                .release(JdkRelease.builder().version(version).build())
+                                .release(JdkRelease.builder()
+                                        .version(version)
+                                        .os(currentOs)
+                                        .arch(currentArch)
+                                        .build())
                                 .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
                                 .build())
                 .toFile()));
+
         return GradleJdksJavaInstallationMetadata.create(
                 javaLanguageVersion, version, version, jdkDistributionName.uiName(), installationPath);
     }

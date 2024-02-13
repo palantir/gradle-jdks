@@ -16,43 +16,15 @@
 
 package com.palantir.gradle.jdks;
 
-import java.util.Locale;
-import java.util.Set;
 import org.immutables.value.Value;
 
 @Value.Immutable
 interface JdkRelease {
     String version();
 
-    @Value.Default
-    default Os os() {
-        return Os.current();
-    }
+    Os os();
 
-    @Value.Default
-    default Arch arch() {
-        String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
-
-        if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
-            return Arch.X86_64;
-        }
-
-        if (Set.of("arm", "arm64", "aarch64").contains(osArch)) {
-            return Arch.AARCH64;
-        }
-
-        if (Set.of("x86", "i686").contains(osArch)) {
-            return Arch.X86;
-        }
-
-        throw new UnsupportedOperationException("Cannot get architecture for " + osArch);
-    }
-
-    enum Arch {
-        X86,
-        X86_64,
-        AARCH64
-    }
+    Arch arch();
 
     class Builder extends ImmutableJdkRelease.Builder {}
 

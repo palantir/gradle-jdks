@@ -16,9 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.jdks.JdkRelease.Arch;
-import com.palantir.gradle.utils.lazilyconfiguredmapping.LazilyConfiguredMapping;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.model.ObjectFactory;
@@ -30,18 +29,21 @@ public abstract class JdkOsExtension {
     @Inject
     protected abstract ObjectFactory getObjectFactory();
 
-    private final LazilyConfiguredMapping<Arch, JdkOsArchExtension, Void> jdkOsArchExtensions =
-            new LazilyConfiguredMapping<>(() -> {
-                JdkOsArchExtension extension = getObjectFactory().newInstance(JdkOsArchExtension.class);
-                extension.getJdkVersion().set(getJdkVersion());
-                return extension;
-            });
+    private final Map<Arch, JdkOsArchExtension> jdkOsArchExtensions = new HashMap<>();
+
+    public JdkOsExtension() {
+        for (Arch arch : Arch.values()) {
+            JdkOsArchExtension jdkOsArchExtension = getObjectFactory().newInstance(JdkOsArchExtension.class);
+            jdkOsArchExtension.getJdkVersion().set(getJdkVersion());
+            jdkOsArchExtensions.put(arch, jdkOsArchExtension);
+        }
+    }
 
     final JdkOsArchExtension jdkFor(Arch arch) {
-        return jdkOsArchExtensions.get(arch, null);
+        return jdkOsArchExtensions.get(arch);
     }
 
     public final void arch(Arch arch, Action<JdkOsArchExtension> action) {
-        jdkOsArchExtensions.put(arch, action);
+        action.execute(jdkOsArchExtensions.get(arch));
     }
 }

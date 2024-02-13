@@ -22,7 +22,9 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
     def setup() {
         // language=Gradle
         buildFile << '''
-            extensions.create('jdks', com.palantir.gradle.jdks.JdksExtension)
+            import com.palantir.gradle.jdks.*
+
+            extensions.create('jdks', JdksExtension)
         '''.stripIndent(true)
     }
 
@@ -35,20 +37,20 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
                     jdkVersion = '11.1'
                     
                     os('linux') {
-                        arch('amd64') {
+                        arch('x86_64') {
                             jdkVersion = '11.2'
                         }
                     }
                 }
             }
             
-            println jdks.jdkFor
+            println extensions.jdks.jdkFor(JavaLanguageVersion.of(11), project).get().jdkFor(Os.LINUX_GLIBC).jdkFor(Arch.X86_64).jdkVersion
         '''.stripIndent(true)
 
         when:
         def stdout = runTasksSuccessfully('help').standardOutput
 
         then:
-        1==1
+        stdout.contains('11.2')
     }
 }

@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Optional;
 
-public enum JdkDistributionName {
-    AZUL_ZULU,
-    AMAZON_CORRETTO,
-    GRAALVM_CE;
-
-    JdkDistributionName() {}
+enum Os {
+    MACOS,
+    LINUX_GLIBC,
+    LINUX_MUSL,
+    WINDOWS;
 
     @Override
     public String toString() {
@@ -37,12 +36,12 @@ public enum JdkDistributionName {
         return UiNames.uiName(this);
     }
 
-    public static Optional<JdkDistributionName> fromString(String distributionUiName) {
-        return UiNames.fromString(values(), distributionUiName);
+    public static Optional<Os> fromString(String osUiName) {
+        return UiNames.fromString(values(), osUiName);
     }
 
     @JsonCreator
-    public static JdkDistributionName fromStringThrowing(String distributionUiName) {
-        return UiNames.fromStringThrowing(JdkDistributionName.class, values(), distributionUiName);
+    public static Os fromStringThrowing(String osUiName) {
+        return UiNames.fromStringThrowing(Os.class, values(), osUiName);
     }
 }

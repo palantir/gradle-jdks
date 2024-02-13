@@ -18,7 +18,6 @@ package com.palantir.gradle.jdks;
 
 import com.google.common.collect.ImmutableSet;
 import com.palantir.gradle.jdks.JdkPath.Extension;
-import com.palantir.gradle.jdks.JdkRelease.Arch;
 import java.util.Arrays;
 import java.util.List;
 import org.immutables.value.Value;
