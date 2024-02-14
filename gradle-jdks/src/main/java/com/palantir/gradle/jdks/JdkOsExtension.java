@@ -46,4 +46,8 @@ public abstract class JdkOsExtension {
     public final void arch(Arch arch, Action<JdkOsArchExtension> action) {
         action.execute(jdkOsArchExtensions.get(arch));
     }
+
+    public final void arch(String arch, Action<JdkOsArchExtension> action) {
+        arch(Arch.fromStringThrowing(arch), action);
+    }
 }

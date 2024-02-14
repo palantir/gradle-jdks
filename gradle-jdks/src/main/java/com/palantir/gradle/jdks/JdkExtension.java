@@ -59,6 +59,6 @@ public abstract class JdkExtension {
     }
 
     public final void os(String os, Action<JdkOsExtension> action) {
-        throw new UnsupportedOperationException("not yet implemented");
+        os(Os.fromStringThrowing(os), action);
     }
 }

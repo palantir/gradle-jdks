@@ -28,7 +28,7 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
         '''.stripIndent(true)
     }
 
-    def test() {
+    def 'correctly handles multi level version overrides'() {
         // language=Gradle
         buildFile << '''
             jdks {
@@ -36,21 +36,31 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
                     distribution = 'amazon-corretto'
                     jdkVersion = '11.1'
                     
-                    os('linux') {
-                        arch('x86_64') {
-                            jdkVersion = '11.2'
+                    os('linux-glibc') {
+                        jdkVersion = '11.2'
+                        
+                        arch('x86-64') {
+                            jdkVersion = '11.3'
                         }
                     }
                 }
             }
             
-            println extensions.jdks.jdkFor(JavaLanguageVersion.of(11), project).get().jdkFor(Os.LINUX_GLIBC).jdkFor(Arch.X86_64).jdkVersion
+            def jdkVersionFor = { os, arch ->
+                jdks.jdkFor(JavaLanguageVersion.of(11), project).get().jdkFor(os).jdkFor(arch).jdkVersion.get()
+            }
+            
+            println('jdkVersion macos aarch64: ' + jdkVersionFor(Os.MACOS, Arch.AARCH64))
+            println('jdkVersion linux-glibc aarch64: ' + jdkVersionFor(Os.LINUX_GLIBC, Arch.AARCH64))
+            println('jdkVersion linux-glibc x64: ' + jdkVersionFor(Os.LINUX_GLIBC, Arch.X86_64))
         '''.stripIndent(true)
 
         when:
         def stdout = runTasksSuccessfully('help').standardOutput
 
         then:
-        stdout.contains('11.2')
+        stdout.contains('jdkVersion macos aarch64: 11.1')
+        stdout.contains('jdkVersion linux-glibc aarch64: 11.2')
+        stdout.contains('jdkVersion linux-glibc x64: 11.3')
     }
 }
