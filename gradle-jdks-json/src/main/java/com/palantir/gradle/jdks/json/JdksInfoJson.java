@@ -14,15 +14,23 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.json;
 
-import com.palantir.gradle.jdks.json.JdkOsArchInfoJson;
-import org.gradle.api.provider.Property;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.palantir.gradle.jdks.ImmutableJdksInfoJson;
+import java.util.Map;
+import org.immutables.value.Value;
 
-public abstract class JdkOsArchExtension {
-    public abstract Property<String> getJdkVersion();
+@Value.Immutable
+@JsonDeserialize(as = ImmutableJdksInfoJson.class)
+@JsonIgnoreProperties(ignoreUnknown = true)
+public abstract class JdksInfoJson {
+    public abstract Map<String, JdkInfoJson> jdksPerJavaVersion();
 
-    public final void fromJson(JdkOsArchInfoJson archInfo) {
-        getJdkVersion().set(archInfo.version());
+    public static final class Builder extends ImmutableJdksInfoJson.Builder {}
+
+    public static Builder builder() {
+        return new Builder();
     }
 }

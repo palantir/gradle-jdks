@@ -1,0 +1,13 @@
+apply plugin: 'java'
+apply plugin: 'com.palantir.external-publish-jar'
+
+dependencies {
+    implementation project(':gradle-jdks-distributions')
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    annotationProcessor 'org.immutables:value'
+    compileOnlyApi 'org.immutables:value::annotations'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+}

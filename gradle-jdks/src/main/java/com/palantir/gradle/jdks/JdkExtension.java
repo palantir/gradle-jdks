@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.json.JdkInfoJson;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -60,5 +61,14 @@ public abstract class JdkExtension {
 
     public final void os(String os, Action<JdkOsExtension> action) {
         os(Os.fromStringThrowing(os), action);
+    }
+
+    public final void fromJson(JdkInfoJson jdkInfoJson) {
+        getDistributionName().set(jdkInfoJson.distribution());
+        jdkInfoJson.os().forEach((os, osInfo) -> {
+            os(os, osExtension -> {
+                osExtension.fromJson(osInfo);
+            });
+        });
     }
 }

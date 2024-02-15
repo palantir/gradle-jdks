@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Optional;
 
-enum Os {
+public enum Os {
     MACOS,
     LINUX_GLIBC,
     LINUX_MUSL,

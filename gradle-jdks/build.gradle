@@ -12,6 +12,7 @@ tasks.build.dependsOn tasks.integTest
 
 dependencies {
     api project(':gradle-jdks-distributions')
+    api project(':gradle-jdks-json')
 
     implementation 'com.palantir.baseline:gradle-baseline-java'
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'

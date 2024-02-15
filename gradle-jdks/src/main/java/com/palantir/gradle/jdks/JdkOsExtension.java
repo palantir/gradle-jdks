@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.json.JdkOsInfoJson;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -49,5 +50,13 @@ public abstract class JdkOsExtension {
 
     public final void arch(String arch, Action<JdkOsArchExtension> action) {
         arch(Arch.fromStringThrowing(arch), action);
+    }
+
+    public final void fromJson(JdkOsInfoJson osInfo) {
+        osInfo.arch().forEach((arch, archInfo) -> {
+            arch(arch, archExtension -> {
+                archExtension.fromJson(archInfo);
+            });
+        });
     }
 }

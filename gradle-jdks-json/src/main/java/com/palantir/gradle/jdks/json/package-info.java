@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+@Value.Style(
+        visibility = ImplementationVisibility.PACKAGE,
+        overshadowImplementation = true,
+        jdkOnly = true,
+        get = {"get*", "is*"})
+package com.palantir.gradle.jdks.json;
 
-import com.palantir.gradle.jdks.json.JdkOsArchInfoJson;
-import org.gradle.api.provider.Property;
-
-public abstract class JdkOsArchExtension {
-    public abstract Property<String> getJdkVersion();
-
-    public final void fromJson(JdkOsArchInfoJson archInfo) {
-        getJdkVersion().set(archInfo.version());
-    }
-}
+import org.immutables.value.Value;
+import org.immutables.value.Value.Style.ImplementationVisibility;
