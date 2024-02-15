@@ -2,8 +2,8 @@ apply plugin: 'java'
 apply plugin: 'com.palantir.external-publish-jar'
 
 dependencies {
-    implementation project(':gradle-jdks-distributions')
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    api project(':gradle-jdks-distributions')
+    api 'com.fasterxml.jackson.core:jackson-databind'
 
     annotationProcessor 'org.immutables:value'
     compileOnlyApi 'org.immutables:value::annotations'

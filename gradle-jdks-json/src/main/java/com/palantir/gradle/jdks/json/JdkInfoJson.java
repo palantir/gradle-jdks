@@ -18,7 +18,6 @@ package com.palantir.gradle.jdks.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.palantir.gradle.jdks.ImmutableJdkInfoJson;
 import com.palantir.gradle.jdks.JdkDistributionName;
 import com.palantir.gradle.jdks.Os;
 import java.util.Map;
