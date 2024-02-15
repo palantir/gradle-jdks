@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.palantir.gradle.jdks.JdkDistributionName;
 import com.palantir.gradle.jdks.Os;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -28,6 +29,8 @@ import org.immutables.value.Value;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class JdkInfoJson {
     public abstract JdkDistributionName distribution();
+
+    public abstract Optional<String> version();
 
     public abstract Map<Os, JdkOsInfoJson> os();
 

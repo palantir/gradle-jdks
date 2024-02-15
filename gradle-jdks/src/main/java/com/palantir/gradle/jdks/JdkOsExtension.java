@@ -53,6 +53,8 @@ public abstract class JdkOsExtension {
     }
 
     public final void fromJson(JdkOsInfoJson osInfo) {
+        osInfo.version().ifPresent(getJdkVersion()::set);
+
         osInfo.arch().forEach((arch, archInfo) -> {
             arch(arch, archExtension -> {
                 archExtension.fromJson(archInfo);

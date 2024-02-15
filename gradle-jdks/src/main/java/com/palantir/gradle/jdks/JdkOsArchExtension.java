@@ -23,6 +23,6 @@ public abstract class JdkOsArchExtension {
     public abstract Property<String> getJdkVersion();
 
     public final void fromJson(JdkOsArchInfoJson archInfo) {
-        getJdkVersion().set(archInfo.version());
+        archInfo.version().ifPresent(getJdkVersion()::set);
     }
 }

@@ -20,12 +20,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.palantir.gradle.jdks.Arch;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(as = ImmutableJdkOsInfoJson.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class JdkOsInfoJson {
+    public abstract Optional<String> version();
+
     public abstract Map<Arch, JdkOsArchInfoJson> arch();
 
     public static final class Builder extends ImmutableJdkOsInfoJson.Builder {}

@@ -18,13 +18,14 @@ package com.palantir.gradle.jdks.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(as = ImmutableJdkOsArchInfoJson.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class JdkOsArchInfoJson {
-    public abstract String version();
+    public abstract Optional<String> version();
 
     public static final class Builder extends ImmutableJdkOsArchInfoJson.Builder {}
 
