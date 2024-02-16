@@ -13,7 +13,9 @@ tasks.build.dependsOn tasks.integTest
 dependencies {
     api project(':gradle-jdks-distributions')
 
-    implementation 'com.palantir.baseline:gradle-baseline-java'
+    implementation('com.palantir.baseline:gradle-baseline-java') {
+        exclude group: 'com.diffplug.spotless', module: 'spotless-plugin-gradle'
+    }
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'
     implementation 'com.google.guava:guava'
 
