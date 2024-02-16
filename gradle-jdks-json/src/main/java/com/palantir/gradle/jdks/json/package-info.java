@@ -19,7 +19,9 @@
         overshadowImplementation = true,
         jdkOnly = true,
         get = {"get*", "is*"})
+@Serial.Structural
 package com.palantir.gradle.jdks.json;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ImplementationVisibility;

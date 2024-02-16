@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.palantir.gradle.jdks.Arch;
 import java.util.Map;
@@ -27,6 +28,7 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableJdkOsInfoJson.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class JdkOsInfoJson {
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     public abstract Optional<String> version();
 
     public abstract Map<Arch, JdkOsArchInfoJson> arch();
