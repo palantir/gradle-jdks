@@ -14,7 +14,9 @@ dependencies {
     api project(':gradle-jdks-distributions')
     api project(':gradle-jdks-json')
 
-    implementation 'com.palantir.baseline:gradle-baseline-java'
+    implementation('com.palantir.baseline:gradle-baseline-java') {
+        exclude group: 'com.diffplug.spotless', module: 'spotless-plugin-gradle'
+    }
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'
     implementation 'com.google.guava:guava'
 
