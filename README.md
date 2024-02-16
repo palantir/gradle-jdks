@@ -73,16 +73,19 @@ jdks {
       jdkVersion = '17.0.3.6.1'
    }
    
-   jdk(11) {
+   // You can also individually specify different versions per OS and arch
+   jdk(21) {
       distribution = 'amazon-corretto'
-      jdkVersion = '17.0.3.6.1'
-      jdkVersions {
-          platform('linux') {
-              jdkVersion = '17.0.3.6.1'
-              arch('aarch64') {
-                  jdkVersion = '17.1.2.3.1'
-              }
-              
+      jdkVersion = '21.0.2.13.1'
+      
+      // OS options are linux-glibc, linux-musl, macos, windows
+      os('linux-glibc') {
+         jdkVersion = '21.0.2.14.1'
+       
+         // arch options are x86, x86-64, aarch64
+         arch('aarch64') {
+            jdkVersion = '21.0.2.14.2'
+         }     
       }
    }
    
