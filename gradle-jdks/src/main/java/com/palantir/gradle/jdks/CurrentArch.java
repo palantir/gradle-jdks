@@ -37,4 +37,6 @@ final class CurrentArch {
 
         throw new UnsupportedOperationException("Cannot get architecture for " + osArch);
     }
+
+    private CurrentArch() {}
 }
