@@ -65,7 +65,6 @@ public abstract class JdkExtension {
 
     public final void fromJson(JdkInfoJson jdkInfo) {
         getDistributionName().set(jdkInfo.distribution());
-        jdkInfo.version().ifPresent(getJdkVersion()::set);
 
         jdkInfo.os().forEach((os, osInfo) -> {
             os(os, osExtension -> {

@@ -17,12 +17,10 @@
 package com.palantir.gradle.jdks.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.palantir.gradle.jdks.JdkDistributionName;
 import com.palantir.gradle.jdks.Os;
 import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -30,9 +28,6 @@ import org.immutables.value.Value;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class JdkInfoJson {
     public abstract JdkDistributionName distribution();
-
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    public abstract Optional<String> version();
 
     public abstract Map<Os, JdkOsInfoJson> os();
 
