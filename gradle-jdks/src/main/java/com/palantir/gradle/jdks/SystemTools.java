@@ -20,14 +20,14 @@ final class SystemTools {
     private SystemTools() {}
 
     static String java() {
-        if (CurrentOs.current() == Os.WINDOWS) {
+        if (CurrentOs.get() == Os.WINDOWS) {
             return "java.exe";
         }
         return "java";
     }
 
     static String keytool() {
-        if (CurrentOs.current() == Os.WINDOWS) {
+        if (CurrentOs.get() == Os.WINDOWS) {
             return "keytool.exe";
         }
         return "keytool";

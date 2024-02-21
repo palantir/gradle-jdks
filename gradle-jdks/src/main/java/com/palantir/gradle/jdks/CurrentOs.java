@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 final class CurrentOs {
-    public static Os current() {
+    public static Os get() {
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
 
         if (osName.startsWith("mac")) {
