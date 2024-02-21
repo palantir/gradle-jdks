@@ -19,7 +19,6 @@ package com.palantir.gradle.jdks;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
-import com.palantir.gradle.jdks.JdkRelease.Arch;
 import org.junit.jupiter.api.Test;
 
 class AmazonCorrettoJdkDistributionTest {

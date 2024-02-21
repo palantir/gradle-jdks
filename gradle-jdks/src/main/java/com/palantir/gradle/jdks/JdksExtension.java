@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.utils.lazilyconfiguredmapping.LazilyConfiguredMapping;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
@@ -94,6 +95,12 @@ public abstract class JdksExtension {
         jdkDistribution(JdkDistributionName.fromStringThrowing(distributionName), ConfigureUtil.toAction(closure));
     }
 
+    public final void fromJson(JdksInfoJson jdksInfo) {
+        jdksInfo.jdksPerJavaVersion().forEach((javaVersionAsString, jdkInfo) -> {
+            jdk(JavaLanguageVersion.of(javaVersionAsString), jdkExtension -> jdkExtension.fromJson(jdkInfo));
+        });
+    }
+
     public final JdkDistributionExtension jdkDistributionFor(JdkDistributionName jdkDistributionName) {
         return jdkDistributions
                 .get(jdkDistributionName, null)
@@ -101,7 +108,7 @@ public abstract class JdksExtension {
                         String.format("No configuration for JdkDistribution " + jdkDistributionName)));
     }
 
-    public final Optional<JdkExtension> jdkFor(JavaLanguageVersion javaLanguageVersion, Project project) {
+    final Optional<JdkExtension> jdkFor(JavaLanguageVersion javaLanguageVersion, Project project) {
         return jdks.get(javaLanguageVersion, project);
     }
 

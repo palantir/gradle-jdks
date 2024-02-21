@@ -16,6 +16,12 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.json.JdkInfoJson;
+import java.util.HashMap;
+import java.util.Map;
+import javax.inject.Inject;
+import org.gradle.api.Action;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 
 public abstract class JdkExtension {
@@ -24,11 +30,49 @@ public abstract class JdkExtension {
 
     public abstract Property<JdkDistributionName> getDistributionName();
 
+    private final Map<Os, JdkOsExtension> jdkOsExtensions = new HashMap<>();
+
+    @Inject
+    protected abstract ObjectFactory getObjectFactory();
+
+    public JdkExtension() {
+        getJdkVersion().finalizeValueOnRead();
+        getDistributionName().finalizeValueOnRead();
+
+        for (Os os : Os.values()) {
+            JdkOsExtension jdkOsExtension = getObjectFactory().newInstance(JdkOsExtension.class);
+            jdkOsExtension.getJdkVersion().set(getJdkVersion());
+            jdkOsExtensions.put(os, jdkOsExtension);
+        }
+    }
+
+    final JdkOsExtension jdkFor(Os os) {
+        return jdkOsExtensions.get(os);
+    }
+
     public final void setDistribution(JdkDistributionName jdkDistributionName) {
         getDistributionName().set(jdkDistributionName);
     }
 
     public final void setDistribution(String distributionName) {
         setDistribution(JdkDistributionName.fromStringThrowing(distributionName));
+    }
+
+    public final void os(Os os, Action<JdkOsExtension> action) {
+        action.execute(jdkOsExtensions.get(os));
+    }
+
+    public final void os(String os, Action<JdkOsExtension> action) {
+        os(Os.fromStringThrowing(os), action);
+    }
+
+    public final void fromJson(JdkInfoJson jdkInfo) {
+        getDistributionName().set(jdkInfo.distribution());
+
+        jdkInfo.os().forEach((os, osInfo) -> {
+            os(os, osExtension -> {
+                osExtension.fromJson(osInfo);
+            });
+        });
     }
 }

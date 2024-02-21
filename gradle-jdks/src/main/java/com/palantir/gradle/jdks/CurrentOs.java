@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.immutables.value.Value;
 
-enum Os {
-    MACOS,
-    LINUX_GLIBC,
-    LINUX_MUSL,
-    WINDOWS;
-
-    @Value.Default
-    public static Os current() {
+final class CurrentOs {
+    public static Os get() {
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
 
         if (osName.startsWith("mac")) {
@@ -104,4 +97,6 @@ enum Os {
             return lines.collect(Collectors.joining("\n"));
         }
     }
+
+    private CurrentOs() {}
 }

@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+@Value.Style(
+        visibility = ImplementationVisibility.PACKAGE,
+        overshadowImplementation = true,
+        jdkOnly = true,
+        get = {"get*", "is*"})
+@Serial.Structural
+package com.palantir.gradle.jdks.json;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-@Value.Immutable
-interface JdkRelease {
-    String version();
-
-    Os os();
-
-    Arch arch();
-
-    class Builder extends ImmutableJdkRelease.Builder {}
-
-    static Builder builder() {
-        return new Builder();
-    }
-}
+import org.immutables.value.Value.Style.ImplementationVisibility;

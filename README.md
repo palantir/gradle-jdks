@@ -73,6 +73,22 @@ jdks {
       jdkVersion = '17.0.3.6.1'
    }
    
+   // You can also individually specify different versions per OS and arch
+   jdk(21) {
+      distribution = 'amazon-corretto'
+      jdkVersion = '21.0.2.13.1'
+      
+      // OS options are linux-glibc, linux-musl, macos, windows
+      os('linux-glibc') {
+         jdkVersion = '21.0.2.14.1'
+       
+         // arch options are x86, x86-64, aarch64
+         arch('aarch64') {
+            jdkVersion = '21.0.2.14.2'
+         }     
+      }
+   }
+   
    // Optional: For each distribution, you can set a base url for a
    //           mirror to use instead of the default public mirror.
    // Default:  Whatever mirror is publicly provided by the vendor

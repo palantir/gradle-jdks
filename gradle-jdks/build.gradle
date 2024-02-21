@@ -12,6 +12,7 @@ tasks.build.dependsOn tasks.integTest
 
 dependencies {
     api project(':gradle-jdks-distributions')
+    api project(':gradle-jdks-json')
 
     implementation('com.palantir.baseline:gradle-baseline-java') {
         exclude group: 'com.diffplug.spotless', module: 'spotless-plugin-gradle'
@@ -55,4 +56,5 @@ pluginBundle {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.errorprone.disable 'JavaxInjectOnAbstractMethod'
+    it.options.errorprone.disable 'StrictUnusedVariable'
 }

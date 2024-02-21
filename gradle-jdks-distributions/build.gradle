@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'com.palantir.external-publish-jar'
 
 dependencies {
-    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+    api 'com.fasterxml.jackson.core:jackson-annotations'
 
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'

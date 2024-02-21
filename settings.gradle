@@ -2,3 +2,4 @@ rootProject.name = 'gradle-jdks-root'
 
 include 'gradle-jdks'
 include 'gradle-jdks-distributions'
+include 'gradle-jdks-json'

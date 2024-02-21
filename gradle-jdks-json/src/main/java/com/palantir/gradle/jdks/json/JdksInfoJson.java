@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.json;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
-interface JdkRelease {
-    String version();
+@JsonDeserialize(as = ImmutableJdksInfoJson.class)
+@JsonIgnoreProperties(ignoreUnknown = true)
+public abstract class JdksInfoJson {
+    public abstract Map<String, JdkInfoJson> jdksPerJavaVersion();
 
-    Os os();
+    public static final class Builder extends ImmutableJdksInfoJson.Builder {}
 
-    Arch arch();
-
-    class Builder extends ImmutableJdkRelease.Builder {}
-
-    static Builder builder() {
+    public static Builder builder() {
         return new Builder();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,17 @@
 
 package com.palantir.gradle.jdks;
 
-import org.immutables.value.Value;
+import com.palantir.gradle.jdks.json.JdkOsArchInfoJson;
+import org.gradle.api.provider.Property;
 
-@Value.Immutable
-interface JdkRelease {
-    String version();
+public abstract class JdkOsArchExtension {
+    public abstract Property<String> getJdkVersion();
 
-    Os os();
+    public JdkOsArchExtension() {
+        getJdkVersion().finalizeValueOnRead();
+    }
 
-    Arch arch();
-
-    class Builder extends ImmutableJdkRelease.Builder {}
-
-    static Builder builder() {
-        return new Builder();
+    public final void fromJson(JdkOsArchInfoJson archInfo) {
+        getJdkVersion().set(archInfo.version());
     }
 }
