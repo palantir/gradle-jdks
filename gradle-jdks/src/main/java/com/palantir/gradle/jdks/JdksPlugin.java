@@ -90,25 +90,21 @@ public final class JdksPlugin implements Plugin<Project> {
             JdkManager jdkManager,
             JavaLanguageVersion javaLanguageVersion) {
 
-        Os currentOs = CurrentOs.current();
-        Arch currentArch = CurrentArch.current();
+        Os currentOs = CurrentOs.get();
+        Arch currentArch = CurrentArch.get();
 
-        String version = jdkExtension
-                .jdkFor(currentOs)
-                .jdkFor(currentArch)
-                .getJdkVersion()
-                .get();
+        Provider<String> version =
+                jdkExtension.jdkFor(currentOs).jdkFor(currentArch).getJdkVersion();
 
-        JdkDistributionName jdkDistributionName =
-                jdkExtension.getDistributionName().get();
+        Provider<JdkDistributionName> jdkDistributionName = jdkExtension.getDistributionName();
 
         Provider<Directory> installationPath = project.getLayout().dir(project.provider(() -> jdkManager
                 .jdk(
                         project,
                         JdkSpec.builder()
-                                .distributionName(jdkDistributionName)
+                                .distributionName(jdkDistributionName.get())
                                 .release(JdkRelease.builder()
-                                        .version(version)
+                                        .version(version.get())
                                         .os(currentOs)
                                         .arch(currentArch)
                                         .build())
@@ -117,6 +113,10 @@ public final class JdksPlugin implements Plugin<Project> {
                 .toFile()));
 
         return GradleJdksJavaInstallationMetadata.create(
-                javaLanguageVersion, version, version, jdkDistributionName.uiName(), installationPath);
+                javaLanguageVersion,
+                version,
+                version,
+                jdkDistributionName.map(JdkDistributionName::uiName),
+                installationPath);
     }
 }

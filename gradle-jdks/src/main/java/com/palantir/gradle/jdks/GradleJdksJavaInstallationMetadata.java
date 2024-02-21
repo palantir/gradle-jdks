@@ -25,9 +25,9 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 final class GradleJdksJavaInstallationMetadata {
     public static JavaInstallationMetadata create(
             JavaLanguageVersion javaLanguageVersion,
-            String javaRuntimeVersion,
-            String jvmVersion,
-            String vendor,
+            Provider<String> javaRuntimeVersion,
+            Provider<String> jvmVersion,
+            Provider<String> vendor,
             Provider<Directory> installationPath) {
         return (JavaInstallationMetadata) Proxy.newProxyInstance(
                 GradleJdksJavaInstallationMetadata.class.getClassLoader(),
@@ -42,11 +42,11 @@ final class GradleJdksJavaInstallationMetadata {
                         case "getLanguageVersion":
                             return javaLanguageVersion;
                         case "getJavaRuntimeVersion":
-                            return javaRuntimeVersion;
+                            return javaRuntimeVersion.get();
                         case "getJvmVersion":
-                            return jvmVersion;
+                            return jvmVersion.get();
                         case "getVendor":
-                            return vendor;
+                            return vendor.get();
                         case "getInstallationPath":
                             return installationPath.get();
                         case "isCurrentJvm":

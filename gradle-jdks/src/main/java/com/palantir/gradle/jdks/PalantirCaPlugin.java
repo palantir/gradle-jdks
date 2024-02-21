@@ -76,7 +76,7 @@ public final class PalantirCaPlugin implements Plugin<Project> {
     }
 
     private Optional<byte[]> systemCertificates() {
-        Os currentOs = CurrentOs.current();
+        Os currentOs = CurrentOs.get();
 
         switch (currentOs) {
             case MACOS:
