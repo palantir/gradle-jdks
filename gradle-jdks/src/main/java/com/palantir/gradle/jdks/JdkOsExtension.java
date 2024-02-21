@@ -33,6 +33,8 @@ public abstract class JdkOsExtension {
     private final Map<Arch, JdkOsArchExtension> jdkOsArchExtensions = new HashMap<>();
 
     public JdkOsExtension() {
+        getJdkVersion().finalizeValueOnRead();
+
         for (Arch arch : Arch.values()) {
             JdkOsArchExtension jdkOsArchExtension = getObjectFactory().newInstance(JdkOsArchExtension.class);
             jdkOsArchExtension.getJdkVersion().set(getJdkVersion());
