@@ -93,18 +93,22 @@ public final class JdksPlugin implements Plugin<Project> {
         Os currentOs = CurrentOs.get();
         Arch currentArch = CurrentArch.get();
 
-        Provider<String> version =
-                jdkExtension.jdkFor(currentOs).jdkFor(currentArch).getJdkVersion();
+        String version = jdkExtension
+                .jdkFor(currentOs)
+                .jdkFor(currentArch)
+                .getJdkVersion()
+                .get();
 
-        Provider<JdkDistributionName> jdkDistributionName = jdkExtension.getDistributionName();
+        JdkDistributionName jdkDistributionName =
+                jdkExtension.getDistributionName().get();
 
         Provider<Directory> installationPath = project.getLayout().dir(project.provider(() -> jdkManager
                 .jdk(
                         project,
                         JdkSpec.builder()
-                                .distributionName(jdkDistributionName.get())
+                                .distributionName(jdkDistributionName)
                                 .release(JdkRelease.builder()
-                                        .version(version.get())
+                                        .version(version)
                                         .os(currentOs)
                                         .arch(currentArch)
                                         .build())
@@ -113,10 +117,6 @@ public final class JdksPlugin implements Plugin<Project> {
                 .toFile()));
 
         return GradleJdksJavaInstallationMetadata.create(
-                javaLanguageVersion,
-                version,
-                version,
-                jdkDistributionName.map(JdkDistributionName::uiName),
-                installationPath);
+                javaLanguageVersion, version, version, jdkDistributionName.uiName(), installationPath);
     }
 }
