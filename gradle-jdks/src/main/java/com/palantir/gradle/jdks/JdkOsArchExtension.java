@@ -22,10 +22,6 @@ import org.gradle.api.provider.Property;
 public abstract class JdkOsArchExtension {
     public abstract Property<String> getJdkVersion();
 
-    public JdkOsArchExtension() {
-        getJdkVersion().finalizeValueOnRead();
-    }
-
     public final void fromJson(JdkOsArchInfoJson archInfo) {
         getJdkVersion().set(archInfo.version());
     }
