@@ -36,9 +36,6 @@ public abstract class JdkExtension {
     protected abstract ObjectFactory getObjectFactory();
 
     public JdkExtension() {
-        getJdkVersion().finalizeValueOnRead();
-        getDistributionName().finalizeValueOnRead();
-
         for (Os os : Os.values()) {
             JdkOsExtension jdkOsExtension = getObjectFactory().newInstance(JdkOsExtension.class);
             jdkOsExtension.getJdkVersion().set(getJdkVersion());
