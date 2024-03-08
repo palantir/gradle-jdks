@@ -1,0 +1,25 @@
+apply plugin: 'java'
+apply plugin: 'com.palantir.external-publish-jar'
+apply plugin: 'org.unbroken-dome.test-sets'
+
+testSets {
+    integTest
+}
+
+
+tasks.build.dependsOn tasks.integTest
+tasks.integTest {
+    dependsOn tasks.jar
+    environment("PROJECT_VERSION", project.version)
+}
+
+dependencies {
+    implementation 'com.google.guava:guava'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+}
+
+tasks.withType(JavaCompile) {
+    options.errorprone.disable 'PreferSafeLoggableExceptions'
+}
