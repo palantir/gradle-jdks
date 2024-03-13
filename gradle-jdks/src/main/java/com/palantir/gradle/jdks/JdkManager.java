@@ -69,6 +69,7 @@ public final class JdkManager {
                         jdkSpec.distributionName(),
                         jdkSpec.release().version(),
                         jdkSpec.consistentShortHash());
+
         if (Files.exists(diskPath)) {
             project.getLogger()
                     .debug(

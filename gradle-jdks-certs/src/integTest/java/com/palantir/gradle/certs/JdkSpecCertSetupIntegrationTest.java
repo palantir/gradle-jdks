@@ -28,6 +28,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -35,43 +37,61 @@ import org.junit.jupiter.api.Test;
 public class JdkSpecCertSetupIntegrationTest {
 
     private static final String JDK_VERSION = "11.0.21.9.1";
+    private static final String ARCH = getArch();
 
     @Test
     public void can_setup_jdk_with_certs_centos() throws IOException {
-        //  3. test for other images
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, "linux", "aarch64");
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, "linux");
         assertThat(execInDocker("centos:7", "/bin/bash", temporaryGradleDirectory))
                 .isEqualTo("sasa");
     }
 
     @Test
     public void can_setup_jdk_with_certs_ubuntu() throws IOException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, "linux", "aarch64");
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, "linux");
         assertThat(execInDocker("ubuntu:20.04", "/bin/bash", temporaryGradleDirectory))
                 .isEqualTo("sasa");
     }
 
     @Test
     public void can_setup_jdk_with_certs_alpine() throws IOException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, "alpine-linux", "aarch64");
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, "alpine-linux");
         assertThat(execInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory))
                 .isEqualTo("sasa");
     }
 
-    private static Path setupGradleDirectoryStructure(String jdkVersion, String os, String arch) throws IOException {
+    private static Path setupGradleDirectoryStructure(String jdkVersion, String os) throws IOException {
+        /**
+         * Each project will contain the following gradle file structure:
+         * project-root/
+         * ├── gradle/
+         * │   ├── wrapper/
+         * │   │   ├── gradle-wrapper.jar
+         * │   │   ├── gradle-wrapper.properties
+         * │   ├── jdks/
+         * │   │   ├── <jdkMajorVersion eg.11>/
+         * │   │   │   ├── <os eg. linux>/
+         * │   │   │   │   ├── <arch eg. aarch64>/
+         * │   │   │   │   │   ├── download-url
+         * │   │   │   │   │   ├── local-path
+         * │   ├── gradle-jdk-major-version
+         * │   ├── gradle-jdks-certs.jar
+         * ├── subProjects/...
+         * ...
+         */
         String jdkMajorVersion = Iterables.get(Splitter.on('.').split(jdkVersion), 0);
         Path gradleDirectory = Files.createTempDirectory("gradle");
-        Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-jdk-major-version.txt"));
+        Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-jdk-major-version"));
         Files.writeString(gradleJdkVersion, jdkMajorVersion.toString());
         Path archDirectory = Files.createDirectories(
-                gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os, arch)));
-        Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url.txt"));
+                gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os, ARCH)));
+        Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
         Files.writeString(
                 downloadUrlPath,
                 String.format(
                         "https://corretto.aws/downloads/resources/%s/amazon-corretto-%s-%s-%s.tar.gz",
-                        jdkVersion, jdkVersion, os, arch));
-        Path localPath = Files.createFile(archDirectory.resolve("local-path.txt"));
+                        jdkVersion, jdkVersion, os, ARCH));
+        Path localPath = Files.createFile(archDirectory.resolve("local-path"));
         Files.writeString(localPath, String.format("amazon-corretto-%s-crogoz", jdkVersion));
 
         // copy the jar from build/libs to the gradle directory
@@ -91,8 +111,6 @@ public class JdkSpecCertSetupIntegrationTest {
         return runCommand(List.of(
                 "docker",
                 "run",
-                "--platform",
-                "linux/arm64",
                 "--rm",
                 "-v",
                 String.format(String.format("%s:/gradle", localGradlePath.toAbsolutePath())),
@@ -130,5 +148,22 @@ public class JdkSpecCertSetupIntegrationTest {
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
             return lines.collect(Collectors.joining("\n"));
         }
+    }
+
+    private static String getArch() {
+        String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
+
+        if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
+            return "x86-64";
+        }
+
+        if (Set.of("arm", "arm64", "aarch64").contains(osArch)) {
+            return "aarch64";
+        }
+
+        if (Set.of("x86", "i686").contains(osArch)) {
+            return "x86";
+        }
+        throw new RuntimeException("TODO not supported");
     }
 }
