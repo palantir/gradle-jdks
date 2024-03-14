@@ -19,7 +19,7 @@ package com.palantir.gradle.jdks;
 import org.immutables.value.Value;
 
 @Value.Immutable
-interface JdkRelease {
+public interface JdkRelease {
     String version();
 
     Os os();

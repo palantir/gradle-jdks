@@ -20,6 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution;
+import com.palantir.gradle.jdks.Arch;
+import com.palantir.gradle.jdks.CurrentArch;
+import com.palantir.gradle.jdks.JdkPath;
+import com.palantir.gradle.jdks.JdkRelease;
+import com.palantir.gradle.jdks.Os;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,8 +34,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -37,30 +41,31 @@ import org.junit.jupiter.api.Test;
 public class JdkSpecCertSetupIntegrationTest {
 
     private static final String JDK_VERSION = "11.0.21.9.1";
-    private static final String ARCH = getArch();
+    private static final Arch ARCH = CurrentArch.get();
+    private static final AmazonCorrettoJdkDistribution distribution = new AmazonCorrettoJdkDistribution();
 
     @Test
     public void can_setup_jdk_with_certs_centos() throws IOException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, "linux");
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
         assertThat(execInDocker("centos:7", "/bin/bash", temporaryGradleDirectory))
                 .isEqualTo("sasa");
     }
 
     @Test
     public void can_setup_jdk_with_certs_ubuntu() throws IOException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, "linux");
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
         assertThat(execInDocker("ubuntu:20.04", "/bin/bash", temporaryGradleDirectory))
                 .isEqualTo("sasa");
     }
 
     @Test
     public void can_setup_jdk_with_certs_alpine() throws IOException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, "alpine-linux");
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_MUSL);
         assertThat(execInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory))
                 .isEqualTo("sasa");
     }
 
-    private static Path setupGradleDirectoryStructure(String jdkVersion, String os) throws IOException {
+    private static Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
         /**
          * Each project will contain the following gradle file structure:
          * project-root/
@@ -83,14 +88,15 @@ public class JdkSpecCertSetupIntegrationTest {
         Path gradleDirectory = Files.createTempDirectory("gradle");
         Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-jdk-major-version"));
         Files.writeString(gradleJdkVersion, jdkMajorVersion.toString());
+        JdkPath jdkPath = distribution.path(
+                JdkRelease.builder().version(jdkVersion).os(os).arch(ARCH).build());
         Path archDirectory = Files.createDirectories(
-                gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os, ARCH)));
+                gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os.uiName(), ARCH.uiName())));
         Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
         Files.writeString(
                 downloadUrlPath,
-                String.format(
-                        "https://corretto.aws/downloads/resources/%s/amazon-corretto-%s-%s-%s.tar.gz",
-                        jdkVersion, jdkVersion, os, arch(ARCH)));
+                String.format(String.format(
+                        "%s/%s.%s", distribution.defaultBaseUrl(), jdkPath.filename(), jdkPath.extension())));
         Path localPath = Files.createFile(archDirectory.resolve("local-path"));
         Files.writeString(localPath, String.format("amazon-corretto-%s-crogoz", jdkVersion));
 
@@ -148,34 +154,5 @@ public class JdkSpecCertSetupIntegrationTest {
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
             return lines.collect(Collectors.joining("\n"));
         }
-    }
-
-    private static String getArch() {
-        String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
-        System.out.println("Os_property" + osArch);
-        if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
-            return "x86-64";
-        }
-
-        if (Set.of("arm", "arm64", "aarch64").contains(osArch)) {
-            return "aarch64";
-        }
-
-        if (Set.of("x86", "i686").contains(osArch)) {
-            return "x86";
-        }
-        throw new RuntimeException("TODO not supported");
-    }
-
-    private static String arch(String arch) {
-        if (arch.equals("x86-64")) {
-            return "x64";
-        } else if (arch.equals("i386")) {
-            return "i386";
-        } else if (arch.equals("aarch64")) {
-            return "aarch64";
-        }
-
-        throw new UnsupportedOperationException("Case " + arch + " not implemented");
     }
 }

@@ -28,7 +28,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-final class CurrentOs {
+public final class CurrentOs {
     public static Os get() {
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
 

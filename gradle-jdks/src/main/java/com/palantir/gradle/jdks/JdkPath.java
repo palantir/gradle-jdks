@@ -19,7 +19,7 @@ package com.palantir.gradle.jdks;
 import org.immutables.value.Value;
 
 @Value.Immutable
-interface JdkPath {
+public interface JdkPath {
     String filename();
 
     Extension extension();

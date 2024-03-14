@@ -71,7 +71,7 @@ die () {
     exit 1
 } >&2
 
-# OS specific support
+# OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.CurrentOs.java
 case "$( uname )" in                          #(
   Linux* )          os_name="linux"  ;;       #(
   Darwin* )         os_name="macos"  ;;       #(
@@ -80,7 +80,9 @@ esac
 
 if [ "$os_name" = "linux" ]; then
     if [ -f /etc/alpine-release ]; then
-      os_name="alpine-linux"
+      os_name="linux-musl"
+    else
+      os_name="linux-glibc"
     fi
 fi
 
@@ -110,11 +112,10 @@ jdk_installation_directory=$HOME/.gradle/gradle-jdks/"$distribution_local_path"
 if [ -d "$jdk_installation_directory" ]; then
   echo "Distribution $distribution_url already exists, setting JAVA_HOME to $jdk_installation_directory"
 else
-  in_progress_dir="$tmp_work_dir/$distribution_local_path-inprogress"
-  mkdir -p "$in_progress_dir"
-  echo "$in_progress_dir/$distribution_name"
   # Download and extract the distribution into a temporary directory
   echo "Distribution $distribution_url does not exist, installing in progress ..."
+  in_progress_dir="$tmp_work_dir/$distribution_local_path.in-progress"
+  mkdir -p "$in_progress_dir"
   cd "$in_progress_dir"
   if command -v curl > /dev/null 2>&1; then
     echo "Using curl to download $distribution_url"
@@ -124,9 +125,9 @@ else
     echo "Using wget to download $distribution_url"
     wget -qO- -c "$distribution_url" | tar -xzf -
   else
+    # TODO(crogoz): maybe run using java ? should be tried first
     die "ERROR: Neither curl nor wget are installed"
   fi
-
   cd - || exit
 
   # Finding the java_home
@@ -145,5 +146,5 @@ else
   fi
 fi
 
-# TODO(crogoz): set up the JAVA_HOME, running source ./script ?
+# TODO(crogoz): set up the JAVA_HOME, running g ./script ?
 # export JAVA_HOME="$jdk_installation_directory"

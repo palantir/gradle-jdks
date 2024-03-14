@@ -2,13 +2,8 @@ apply plugin: 'java'
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'org.unbroken-dome.test-sets'
 
-testSets {
-    integTest
-}
-
-
-tasks.build.dependsOn tasks.integTest
-tasks.integTest {
+tasks.build.dependsOn tasks.test
+tasks.test {
     dependsOn tasks.jar
     environment("PROJECT_VERSION", project.version)
 }
@@ -16,6 +11,8 @@ tasks.integTest {
 dependencies {
     implementation 'com.google.guava:guava'
 
+    testImplementation project(":gradle-jdks")
+    testImplementation project(":gradle-jdks-distributions")
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
 }

@@ -19,8 +19,8 @@ package com.palantir.gradle.jdks;
 import java.util.Locale;
 import java.util.Set;
 
-final class CurrentArch {
-    static Arch get() {
+public final class CurrentArch {
+    public static Arch get() {
         String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
 
         if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
