@@ -37,8 +37,28 @@
 #
 ##############################################################################
 
-# TODO(crogoz): set -eu, pipefail
+# TODO(crogoz): set -e
 # TODO(crogoz): shlock/flock
+
+# Resolve links: $0 may be a link
+app_path=$0
+
+# Need this for daisy-chained symlinks.
+while
+    APP_HOME=${app_path%"${app_path##*/}"}  # leaves a trailing /; empty if no leading path
+    [ -h "$app_path" ]
+do
+    ls=$( ls -ld "$app_path" )
+    link=${ls#*' -> '}
+    case $link in             #(
+      /*)   app_path=$link ;; #(
+      *)    app_path=$APP_HOME$link ;;
+    esac
+done
+
+APP_BASE_NAME=${0##*/}
+APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
+# the app home should be <>/gradle
 
 tmp_work_dir=$(mktemp -d)
 
@@ -66,7 +86,7 @@ fi
 
 # Arch specific support, see: gradle-jdks:com.palantir.gradle.jdks.CurrentArch.java
 case "$(uname -m)" in                         #(
-  x86-64* )       arch_name="x86-64"  ;;      #(
+  x86_64* )       arch_name="x86-64"  ;;      #(
   x64* )          arch_name="x86-64"  ;;      #(
   amd64* )        arch_name="x86-64"  ;;      #(
   arm64* )        arch_name="aarch64"  ;;     #(
@@ -77,9 +97,9 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
-read -r major_version < gradle/gradle-jdk-major-version
-read -r distribution_url < gradle/jdks/"$major_version"/$os_name/$arch_name/download-url
-read -r distribution_local_path < gradle/jdks/"$major_version"/$os_name/$arch_name/local-path
+read -r major_version < "$APP_HOME"/gradle-jdk-major-version
+read -r distribution_url < "$APP_HOME"/jdks/"$major_version"/"$os_name"/"$arch_name"/download-url
+read -r distribution_local_path < "$APP_HOME"/jdks/"$major_version"/"$os_name"/"$arch_name"/local-path
 
 # Extracting the distribution name; this will be the name of the un-tarred directory
 distribution_full_name=$(basename "$distribution_url")
@@ -95,14 +115,19 @@ else
   echo "$in_progress_dir/$distribution_name"
   # Download and extract the distribution into a temporary directory
   echo "Distribution $distribution_url does not exist, installing in progress ..."
+  cd "$in_progress_dir"
   if command -v curl > /dev/null 2>&1; then
     echo "Using curl to download $distribution_url"
     # TODO(crogoz): check the exitCode
-    curl -k -C - "$distribution_url" | tar -xz -C "$in_progress_dir"
-  else
+    curl -C - "$distribution_url" | tar -xzf -
+  elif command -v wget > /dev/null 2>&1; then
     echo "Using wget to download $distribution_url"
-    wget --no-check-certificate -c "$distribution_url" | tar -xz -C "$in_progress_dir"
+    wget -qO- -c "$distribution_url" | tar -xzf -
+  else
+    die "ERROR: Neither curl nor wget are installed"
   fi
+
+  cd - || exit
 
   # Finding the java_home
   java_bin=$(find "$in_progress_dir/$distribution_name" -type f -name "java" -path "*/bin/java" ! -type l)

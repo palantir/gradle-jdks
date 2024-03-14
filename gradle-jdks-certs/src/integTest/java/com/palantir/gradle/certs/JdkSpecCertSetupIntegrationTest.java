@@ -90,7 +90,7 @@ public class JdkSpecCertSetupIntegrationTest {
                 downloadUrlPath,
                 String.format(
                         "https://corretto.aws/downloads/resources/%s/amazon-corretto-%s-%s-%s.tar.gz",
-                        jdkVersion, jdkVersion, os, ARCH));
+                        jdkVersion, jdkVersion, os, arch(ARCH)));
         Path localPath = Files.createFile(archDirectory.resolve("local-path"));
         Files.writeString(localPath, String.format("amazon-corretto-%s-crogoz", jdkVersion));
 
@@ -152,7 +152,7 @@ public class JdkSpecCertSetupIntegrationTest {
 
     private static String getArch() {
         String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
-
+        System.out.println("Os_property" + osArch);
         if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
             return "x86-64";
         }
@@ -165,5 +165,17 @@ public class JdkSpecCertSetupIntegrationTest {
             return "x86";
         }
         throw new RuntimeException("TODO not supported");
+    }
+
+    private static String arch(String arch) {
+        if (arch.equals("x86-64")) {
+            return "x64";
+        } else if (arch.equals("i386")) {
+            return "i386";
+        } else if (arch.equals("aarch64")) {
+            return "aarch64";
+        }
+
+        throw new UnsupportedOperationException("Case " + arch + " not implemented");
     }
 }
