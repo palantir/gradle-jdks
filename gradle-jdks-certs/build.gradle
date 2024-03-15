@@ -3,7 +3,8 @@ apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'org.unbroken-dome.test-sets'
 
 dependencies {
-    implementation 'com.google.guava:guava'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
 }
 
 tasks.withType(JavaCompile) {

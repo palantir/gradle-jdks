@@ -31,12 +31,12 @@ public final class GradleLogger implements ILogger {
     }
 
     @Override
-    public void log(String format, Object... args) {
-        gradleLogger.log(logLevel, format, args);
+    public void log(String message) {
+        gradleLogger.log(logLevel, message);
     }
 
     @Override
-    public void logError(String format, Object... args) {
-        log(format, args);
+    public void logError(String errorMessage) {
+        log(errorMessage);
     }
 }

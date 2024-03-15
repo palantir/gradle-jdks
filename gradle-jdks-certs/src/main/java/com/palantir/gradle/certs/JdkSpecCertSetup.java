@@ -16,9 +16,11 @@
 
 package com.palantir.gradle.certs;
 
-public class JdkSpecCertSetup {
+public final class JdkSpecCertSetup {
 
     public static void main(String[] _args) {
         CaResources.maybeImportPalantirRootCaInJdk(new StdLogger());
     }
+
+    private JdkSpecCertSetup() {}
 }

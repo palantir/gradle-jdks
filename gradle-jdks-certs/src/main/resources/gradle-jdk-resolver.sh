@@ -37,11 +37,9 @@
 #
 ##############################################################################
 
-# TODO(crogoz): shlock/flock
 set -e; set -o pipefail
 
 # Resolve links: $0 may be a link
-
 app_path=$0
 
 # Need this for daisy-chained symlinks.
@@ -59,7 +57,6 @@ done
 
 APP_BASE_NAME=${0##*/}
 APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
-# the app home should be <>/gradle
 
 tmp_work_dir=$(mktemp -d)
 
@@ -67,7 +64,8 @@ die () {
     echo
     echo "$*"
     echo
-    rm -rf "$tmp_work_dir"
+    # TODO(crogoz): check
+    echo rm -rf "$tmp_work_dir"
     exit 1
 } >&2
 
@@ -107,11 +105,13 @@ read -r distribution_local_path < "$APP_HOME"/jdks/"$major_version"/"$os_name"/"
 distribution_full_name=$(basename "$distribution_url")
 distribution_name="${distribution_full_name%.tar.gz}"
 
+# TODO(crogoz): customize based on a file in the distribution
 # Check if distribution exists in $HOME/.gradle/gradle-jdks
-jdk_installation_directory=$HOME/.gradle/gradle-jdks/"$distribution_local_path"
+jdk_installation_directory="$HOME"/.gradle/gradle-jdks/"$distribution_local_path"
 if [ -d "$jdk_installation_directory" ]; then
   echo "Distribution $distribution_url already exists, setting JAVA_HOME to $jdk_installation_directory"
 else
+  mkdir -p "$HOME"/.gradle/gradle-jdks/
   # Download and extract the distribution into a temporary directory
   echo "Distribution $distribution_url does not exist, installing in progress ..."
   in_progress_dir="$tmp_work_dir/$distribution_local_path.in-progress"
@@ -125,25 +125,37 @@ else
     wget -qO- -c "$distribution_url" | tar -xzf -
   else
     # TODO(crogoz): maybe run using java ? should be tried first
-    die "ERROR: Neither curl nor wget are installed"
+    die "ERROR: Neither curl nor wget are installed, Could not set up JAVA_HOME"
   fi
   cd - || exit
 
   # Finding the java_home
   java_bin=$(find "$in_progress_dir/$distribution_name" -type f -name "java" -path "*/bin/java" ! -type l)
   java_home="${java_bin%/*/*}"
-
-  # Copying the java_home into the permanent location
-  mkdir -p "$jdk_installation_directory"
-  mv "$java_home"/* "$jdk_installation_directory"
-  echo "Successfully installed JDK distribution, setting JAVA_HOME to $jdk_installation_directory"
-
+  if [ ! -d "$jdk_installation_directory" ]; then
+    lock_file="$jdk_installation_directory".jdks.lock
+    if command -v flock > /dev/null 2>&1; then
+      flock -n "$lock_file" "$APP_HOME"/just-move.sh "$java_home" "$jdk_installation_directory" || echo "Lock file already held by another process"
+    elif command -v shlock > /dev/null 2>&1; then
+      if shlock -f "$lock_file" -p $$; then
+        sh "$APP_HOME"/just-move.sh "$java_home" "$jdk_installation_directory"
+        rm "$lock_file"
+      else
+        echo Lock "$lock_file" already held by $(cat "$lock_file")
+      fi
+    else
+      # TODO(crogoz): use something else ? verify integrity after the move ?
+      die "ERROR: Neither flock nor shlock are installed, Could not set up JAVA_HOME"
+    fi
+  fi
   # Setting up the jdk certificates
-  "$jdk_installation_directory/bin/java" -cp gradle/jdks/gradle-jdk-certs.jar com.palantir.gradle.certs.JdkSpecCertSetup
-  if [ $? -ne 0 ]; then
-    die "ERROR: Failed to run the jdk certificate setup $?"
+  "$jdk_installation_directory/bin/java" -cp "$APP_HOME"/jdks/gradle-jdk-certs.jar com.palantir.gradle.certs.JdkSpecCertSetup
+  exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    die "ERROR: Failed to run the jdk certificate setup: exit_code: $exit_code"
   fi
 fi
 
-# TODO(crogoz): set up the JAVA_HOME, running g ./script ?
-# export JAVA_HOME="$jdk_installation_directory"
+# TODO(crogoz): set up the JAVA_HOME, running exec script
+export JAVA_HOME="$jdk_installation_directory"
+export PATH=$PATH:$JAVA_HOME/bin

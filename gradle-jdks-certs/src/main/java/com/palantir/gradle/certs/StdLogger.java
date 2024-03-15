@@ -16,20 +16,19 @@
 
 package com.palantir.gradle.certs;
 
-import com.google.common.base.Strings;
-
 /**
  * A simple logger that logs to stdout and stderr.
  */
+@SuppressWarnings({"BanSystemOut", "BanSystemErr"})
 public final class StdLogger implements ILogger {
 
     @Override
-    public void log(String format, Object... args) {
-        System.out.println(Strings.lenientFormat(format, args));
+    public void log(String message) {
+        System.out.println(message);
     }
 
     @Override
-    public void logError(String format, Object... args) {
-        System.err.println(Strings.lenientFormat(format, args));
+    public void logError(String errorMessae) {
+        System.err.println(errorMessae);
     }
 }

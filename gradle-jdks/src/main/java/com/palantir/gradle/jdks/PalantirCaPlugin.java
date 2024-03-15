@@ -47,7 +47,7 @@ public final class PalantirCaPlugin implements Plugin<Project> {
                 .getByType(JdksExtension.class)
                 .getCaCerts()
                 .putAll(possibleRootProject.provider(() -> CaResources.readPalantirRootCaFromSystemTruststore(logger)
-                        .map(cert -> Map.of(CaResources.PALANTIR_3RD_GEN_CERTIFICATE, cert))
+                        .map(cert -> Map.of(cert.getName(), cert.getContent()))
                         .orElseGet(() -> {
                             logger.logError("Could not find Palantir CA in system truststore");
                             return Map.of();

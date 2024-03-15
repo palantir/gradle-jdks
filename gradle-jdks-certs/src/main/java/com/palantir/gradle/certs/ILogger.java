@@ -21,10 +21,10 @@ public interface ILogger {
     /**
      * Logs an info message.
      */
-    void log(String format, Object... args);
+    void log(String message);
 
     /**
      * Logs an error message.
      */
-    void logError(String format, Object... args);
+    void logError(String errorMessage);
 }

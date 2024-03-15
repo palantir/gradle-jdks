@@ -16,7 +16,7 @@
 
 package com.palantir.gradle.certs;
 
-public class PalantirCert {
+public final class PalantirCert {
 
     private final String content;
 

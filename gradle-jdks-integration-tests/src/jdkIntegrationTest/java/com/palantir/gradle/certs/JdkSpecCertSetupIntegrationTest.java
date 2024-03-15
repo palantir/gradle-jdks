@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution;
 import com.palantir.gradle.jdks.Arch;
 import com.palantir.gradle.jdks.CurrentArch;
+import com.palantir.gradle.jdks.CurrentOs;
 import com.palantir.gradle.jdks.JdkPath;
 import com.palantir.gradle.jdks.JdkRelease;
 import com.palantir.gradle.jdks.Os;
@@ -43,27 +44,61 @@ public class JdkSpecCertSetupIntegrationTest {
     private static final String SUCCESSFUL_OUTPUT = "Successfully installed JDK distribution, setting JAVA_HOME to";
     private static final String JDK_VERSION = "11.0.21.9.1";
     private static final Arch ARCH = CurrentArch.get();
+    private static final String TEST_HASH = "integration-tests";
     private static final AmazonCorrettoJdkDistribution distribution = new AmazonCorrettoJdkDistribution();
 
     @Test
     public void can_setup_jdk_with_certs_centos() throws IOException, InterruptedException {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
-        assertThat(execInDocker("centos:7", "/bin/bash", temporaryGradleDirectory))
-                .contains(SUCCESSFUL_OUTPUT);
+        String expectedDistributionPath =
+                String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
+        assertThat(execInDocker("centos:7", "/bin/bash", temporaryGradleDirectory, "testing-script.sh"))
+                .contains(SUCCESSFUL_OUTPUT)
+                .contains(String.format("Java home is: %s", expectedDistributionPath))
+                .contains(String.format("Java path is: %s", expectedDistributionPath))
+                .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
+                .contains("Palantir CA was not imported in the JDK truststore");
     }
 
     @Test
     public void can_setup_jdk_with_certs_ubuntu() throws IOException, InterruptedException {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
-        assertThat(execInDocker("ubuntu:20.04", "/bin/bash", temporaryGradleDirectory))
-                .contains(SUCCESSFUL_OUTPUT);
+        String expectedDistributionPath =
+                String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
+        assertThat(execInDocker("ubuntu:20.04", "/bin/bash", temporaryGradleDirectory, "testing-script.sh"))
+                .contains(SUCCESSFUL_OUTPUT)
+                .contains(String.format("Java home is: %s", expectedDistributionPath))
+                .contains(String.format("Java path is: %s", expectedDistributionPath))
+                .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
+                .contains("Palantir CA was not imported in the JDK truststore");
     }
 
     @Test
     public void can_setup_jdk_with_certs_alpine() throws IOException, InterruptedException {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_MUSL);
-        assertThat(execInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory))
-                .contains(SUCCESSFUL_OUTPUT);
+        String expectedDistributionPath =
+                String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
+        assertThat(execInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory, "testing-script.sh"))
+                .contains(SUCCESSFUL_OUTPUT)
+                .contains(String.format("Java home is: %s", expectedDistributionPath))
+                .contains(String.format("Java path is: %s", expectedDistributionPath))
+                .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
+                .contains("Palantir CA was not imported in the JDK truststore");
+    }
+
+    @Test
+    public void can_setup_locally_from_scratch() throws IOException, InterruptedException {
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, CurrentOs.get());
+        String expectedJavaHomeVersion = String.format(
+                "%s/.gradle/gradle-jdks/amazon-corretto-%s-%s", System.getenv("HOME"), JDK_VERSION, TEST_HASH);
+        assertThat(runCommandWithZeroExitCode(List.of(
+                        "/bin/bash",
+                        temporaryGradleDirectory
+                                .resolve("gradle-jdk-resolver.sh")
+                                .toAbsolutePath()
+                                .toString())))
+                .contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion));
+        assertThat(runCommandWithZeroExitCode(List.of("which", "java"))).contains(expectedJavaHomeVersion);
     }
 
     private static Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
@@ -101,7 +136,7 @@ public class JdkSpecCertSetupIntegrationTest {
                 String.format(String.format(
                         "%s/%s.%s", distribution.defaultBaseUrl(), jdkPath.filename(), jdkPath.extension())));
         Path localPath = Files.createFile(archDirectory.resolve("local-path"));
-        writeFileContent(localPath, String.format("amazon-corretto-%s-crogoz", jdkVersion));
+        writeFileContent(localPath, String.format("amazon-corretto-%s-%s", jdkVersion, TEST_HASH));
 
         // copy the jar from build/libs to the gradle directory
         Files.copy(
@@ -114,6 +149,13 @@ public class JdkSpecCertSetupIntegrationTest {
         Files.copy(
                 Path.of("../gradle-jdks-certs/src/main/resources/gradle-jdk-resolver.sh"),
                 gradleDirectory.resolve("gradle-jdk-resolver.sh"));
+        // copy the gradle-jdk-resolver.sh to the gradle directory
+        Files.copy(
+                Path.of("../gradle-jdks-certs/src/main/resources/just-move.sh"),
+                gradleDirectory.resolve("just-move.sh"));
+        Files.copy(
+                Path.of("src/jdkIntegrationTest/resources/testing-script.sh"),
+                gradleDirectory.resolve("testing-script.sh"));
         return gradleDirectory;
     }
 
@@ -121,7 +163,7 @@ public class JdkSpecCertSetupIntegrationTest {
         Files.writeString(path, content + "\n");
     }
 
-    private String execInDocker(String dockerImage, String bashEntryPoint, Path localGradlePath)
+    private String execInDocker(String dockerImage, String bashEntryPoint, Path localGradlePath, String script)
             throws IOException, InterruptedException {
         return runCommandWithZeroExitCode(List.of(
                 "docker",
@@ -132,7 +174,7 @@ public class JdkSpecCertSetupIntegrationTest {
                 "--entrypoint",
                 bashEntryPoint,
                 dockerImage,
-                "/gradle/gradle-jdk-resolver.sh"));
+                String.format("/gradle/%s", script)));
     }
 
     static String runCommandWithZeroExitCode(List<String> commandArguments) throws InterruptedException, IOException {
@@ -152,5 +194,10 @@ public class JdkSpecCertSetupIntegrationTest {
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
             return lines.collect(Collectors.joining("\n"));
         }
+    }
+
+    private static String getJavaVersion(String jdkVersion) {
+        String[] jdkVersions = jdkVersion.split("\\.");
+        return String.join(".", List.of(jdkVersions[0], jdkVersions[1], jdkVersions[2]));
     }
 }

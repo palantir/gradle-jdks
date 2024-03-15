@@ -39,7 +39,7 @@ import java.util.Optional;
 public final class CaResources {
 
     private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
-    public static final String PALANTIR_3RD_GEN_CERTIFICATE = "Palantir3rdGenRootCa";
+    private static final String PALANTIR_3RD_GEN_CERTIFICATE = "Palantir3rdGenRootCa";
 
     public static Optional<PalantirCert> readPalantirRootCaFromSystemTruststore(ILogger logger) {
         return systemCertificates(logger).flatMap(CaResources::selectPalantirCertificate);
@@ -49,7 +49,7 @@ public final class CaResources {
         readPalantirRootCaFromSystemTruststore(logger)
                 .ifPresentOrElse(
                         cert -> importPalantirRootCaInCurrentJdk(logger, cert),
-                        () -> logger.logError("Failed to import Palantir CA certificate into the JDK truststore"));
+                        () -> logger.logError("Palantir CA was not imported in the JDK truststore"));
     }
 
     private static void importPalantirRootCaInCurrentJdk(ILogger logger, PalantirCert palantirCert) {
@@ -58,7 +58,7 @@ public final class CaResources {
             importSystemCertificate(palantirCert);
             logger.log("Successfully imported Palantir CA certificate into the JDK truststore");
         } else {
-            logger.logError("Importing certificates for OS type '{}' is not yet supported", osName);
+            logger.logError(String.format("Importing certificates for OS type '%s' is not yet supported", osName));
         }
     }
 
@@ -92,10 +92,10 @@ public final class CaResources {
         } else if (osName.startsWith("linux")) {
             return linuxSystemCertificates(logger);
         } else {
-            logger.logError(
+            logger.logError(String.format(
                     "Not attempting to read Palantir CA from system truststore "
-                            + "as OS type '{}' does not yet support this",
-                    osName);
+                            + "as OS type '%s' does not yet support this",
+                    osName));
             return Optional.empty();
         }
     }
@@ -124,9 +124,9 @@ public final class CaResources {
                     }
                 })
                 .or(() -> {
-                    logger.logError(
-                            "Could not find system truststore at any of {} in order to load Palantir CA cert",
-                            possibleCaCertificatePaths);
+                    logger.logError(String.format(
+                            "Could not find system truststore at any of %s in order to load Palantir CA cert",
+                            possibleCaCertificatePaths));
                     return Optional.empty();
                 });
     }
@@ -139,7 +139,7 @@ public final class CaResources {
                 .map(certificate -> new PalantirCert(certificate, PALANTIR_3RD_GEN_CERTIFICATE));
     }
 
-    private static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
+    static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
         CertificateFactory certificateFactory;
         try {
             certificateFactory = CertificateFactory.getInstance("X.509");
