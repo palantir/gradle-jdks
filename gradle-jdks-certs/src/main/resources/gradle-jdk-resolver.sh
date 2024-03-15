@@ -37,10 +37,11 @@
 #
 ##############################################################################
 
-# TODO(crogoz): set -e
 # TODO(crogoz): shlock/flock
+set -e; set -o pipefail
 
 # Resolve links: $0 may be a link
+
 app_path=$0
 
 # Need this for daisy-chained symlinks.
@@ -66,8 +67,7 @@ die () {
     echo
     echo "$*"
     echo
-    # TODO(crogoz): Cleaning up
-    echo rm -rf "$tmp_work_dir"
+    rm -rf "$tmp_work_dir"
     exit 1
 } >&2
 
@@ -119,7 +119,6 @@ else
   cd "$in_progress_dir"
   if command -v curl > /dev/null 2>&1; then
     echo "Using curl to download $distribution_url"
-    # TODO(crogoz): check the exitCode
     curl -C - "$distribution_url" | tar -xzf -
   elif command -v wget > /dev/null 2>&1; then
     echo "Using wget to download $distribution_url"

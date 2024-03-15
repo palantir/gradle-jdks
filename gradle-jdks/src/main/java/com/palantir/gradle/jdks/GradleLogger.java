@@ -14,11 +14,29 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.certs;
+package com.palantir.gradle.jdks;
 
-public class JdkSpecCertSetup {
+import com.palantir.gradle.certs.ILogger;
+import org.gradle.api.logging.LogLevel;
+import org.gradle.api.logging.Logger;
 
-    public static void main(String[] _args) {
-        CaResources.maybeImportPalantirRootCaInJdk(new StdLogger());
+public final class GradleLogger implements ILogger {
+
+    private Logger gradleLogger;
+    private LogLevel logLevel;
+
+    public GradleLogger(Logger gradleLogger, LogLevel logLevel) {
+        this.gradleLogger = gradleLogger;
+        this.logLevel = logLevel;
+    }
+
+    @Override
+    public void log(String format, Object... args) {
+        gradleLogger.log(logLevel, format, args);
+    }
+
+    @Override
+    public void logError(String format, Object... args) {
+        log(format, args);
     }
 }

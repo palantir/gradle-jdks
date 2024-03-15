@@ -16,9 +16,15 @@
 
 package com.palantir.gradle.certs;
 
-public class JdkSpecCertSetup {
+public interface ILogger {
 
-    public static void main(String[] _args) {
-        CaResources.maybeImportPalantirRootCaInJdk(new StdLogger());
-    }
+    /**
+     * Logs an info message.
+     */
+    void log(String format, Object... args);
+
+    /**
+     * Logs an error message.
+     */
+    void logError(String format, Object... args);
 }

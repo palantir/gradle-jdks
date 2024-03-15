@@ -40,34 +40,37 @@ import org.junit.jupiter.api.Test;
 
 public class JdkSpecCertSetupIntegrationTest {
 
+    private static final String SUCCESSFUL_OUTPUT = "Successfully installed JDK distribution, setting JAVA_HOME to";
     private static final String JDK_VERSION = "11.0.21.9.1";
     private static final Arch ARCH = CurrentArch.get();
     private static final AmazonCorrettoJdkDistribution distribution = new AmazonCorrettoJdkDistribution();
 
     @Test
-    public void can_setup_jdk_with_certs_centos() throws IOException {
+    public void can_setup_jdk_with_certs_centos() throws IOException, InterruptedException {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
         assertThat(execInDocker("centos:7", "/bin/bash", temporaryGradleDirectory))
-                .isEqualTo("sasa");
+                .contains(SUCCESSFUL_OUTPUT);
     }
 
     @Test
-    public void can_setup_jdk_with_certs_ubuntu() throws IOException {
+    public void can_setup_jdk_with_certs_ubuntu() throws IOException, InterruptedException {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
         assertThat(execInDocker("ubuntu:20.04", "/bin/bash", temporaryGradleDirectory))
-                .isEqualTo("sasa");
+                .contains(SUCCESSFUL_OUTPUT);
     }
 
     @Test
-    public void can_setup_jdk_with_certs_alpine() throws IOException {
+    public void can_setup_jdk_with_certs_alpine() throws IOException, InterruptedException {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_MUSL);
         assertThat(execInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory))
-                .isEqualTo("sasa");
+                .contains(SUCCESSFUL_OUTPUT);
     }
 
     private static Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
         /**
          * Each project will contain the following gradle file structure:
+         * Note! Make sure the files end in a newline character, otherwise the `read` command in the
+         * gradle-jdk-resolver.sh will fail!
          * project-root/
          * ├── gradle/
          * │   ├── wrapper/
@@ -87,34 +90,40 @@ public class JdkSpecCertSetupIntegrationTest {
         String jdkMajorVersion = Iterables.get(Splitter.on('.').split(jdkVersion), 0);
         Path gradleDirectory = Files.createTempDirectory("gradle");
         Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-jdk-major-version"));
-        Files.writeString(gradleJdkVersion, jdkMajorVersion.toString());
+        writeFileContent(gradleJdkVersion, jdkMajorVersion.toString());
         JdkPath jdkPath = distribution.path(
                 JdkRelease.builder().version(jdkVersion).os(os).arch(ARCH).build());
         Path archDirectory = Files.createDirectories(
                 gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os.uiName(), ARCH.uiName())));
         Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
-        Files.writeString(
+        writeFileContent(
                 downloadUrlPath,
                 String.format(String.format(
                         "%s/%s.%s", distribution.defaultBaseUrl(), jdkPath.filename(), jdkPath.extension())));
         Path localPath = Files.createFile(archDirectory.resolve("local-path"));
-        Files.writeString(localPath, String.format("amazon-corretto-%s-crogoz", jdkVersion));
+        writeFileContent(localPath, String.format("amazon-corretto-%s-crogoz", jdkVersion));
 
         // copy the jar from build/libs to the gradle directory
         Files.copy(
                 Path.of(String.format(
-                        "build/libs/gradle-jdks-certs-%s.jar", System.getenv().get("PROJECT_VERSION"))),
+                        "../gradle-jdks-certs/build/libs/gradle-jdks-certs-%s.jar",
+                        System.getenv().get("PROJECT_VERSION"))),
                 gradleDirectory.resolve("jdks/gradle-jdk-certs.jar"));
 
         // copy the gradle-jdk-resolver.sh to the gradle directory
         Files.copy(
-                Path.of("src/main/resources/gradle-jdk-resolver.sh"),
+                Path.of("../gradle-jdks-certs/src/main/resources/gradle-jdk-resolver.sh"),
                 gradleDirectory.resolve("gradle-jdk-resolver.sh"));
         return gradleDirectory;
     }
 
-    private String execInDocker(String dockerImage, String bashEntryPoint, Path localGradlePath) {
-        return runCommand(List.of(
+    private static void writeFileContent(Path path, String content) throws IOException {
+        Files.writeString(path, content + "\n");
+    }
+
+    private String execInDocker(String dockerImage, String bashEntryPoint, Path localGradlePath)
+            throws IOException, InterruptedException {
+        return runCommandWithZeroExitCode(List.of(
                 "docker",
                 "run",
                 "--rm",
@@ -126,27 +135,16 @@ public class JdkSpecCertSetupIntegrationTest {
                 "/gradle/gradle-jdk-resolver.sh"));
     }
 
-    static String runCommand(List<String> commandArguments) {
-        try {
-            Process process = new ProcessBuilder()
-                    .command(commandArguments)
-                    .redirectErrorStream(true)
-                    .start();
-            String output = readAllInput(process.getInputStream());
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new RuntimeException(String.format(
-                        "Failed to run command '%s'. " + "Failed with exit code %d.Output:\n\n%s",
-                        String.join(" ", commandArguments), exitCode, output));
-            }
-            return output;
-        } catch (IOException e) {
-            throw new RuntimeException(
-                    String.format("Failed to run command '%s'. ", String.join(" ", commandArguments)), e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(
-                    String.format("Failed to run command '%s'. ", String.join(" ", commandArguments)), e);
-        }
+    static String runCommandWithZeroExitCode(List<String> commandArguments) throws InterruptedException, IOException {
+        Process process = new ProcessBuilder()
+                .command(commandArguments)
+                .redirectErrorStream(true)
+                .start();
+        String output = readAllInput(process.getInputStream());
+        assertThat(process.waitFor())
+                .as("Command '%s' failed with output: %s", String.join(" ", commandArguments), output)
+                .isEqualTo(0);
+        return output;
     }
 
     private static String readAllInput(InputStream inputStream) {

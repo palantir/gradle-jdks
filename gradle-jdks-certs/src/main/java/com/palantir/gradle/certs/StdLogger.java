@@ -16,9 +16,20 @@
 
 package com.palantir.gradle.certs;
 
-public class JdkSpecCertSetup {
+import com.google.common.base.Strings;
 
-    public static void main(String[] _args) {
-        CaResources.maybeImportPalantirRootCaInJdk(new StdLogger());
+/**
+ * A simple logger that logs to stdout and stderr.
+ */
+public final class StdLogger implements ILogger {
+
+    @Override
+    public void log(String format, Object... args) {
+        System.out.println(Strings.lenientFormat(format, args));
+    }
+
+    @Override
+    public void logError(String format, Object... args) {
+        System.err.println(Strings.lenientFormat(format, args));
     }
 }
