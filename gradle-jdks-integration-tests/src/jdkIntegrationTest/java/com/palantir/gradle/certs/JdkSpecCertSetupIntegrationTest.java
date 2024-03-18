@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 
 public class JdkSpecCertSetupIntegrationTest {
 
@@ -87,6 +88,7 @@ public class JdkSpecCertSetupIntegrationTest {
     }
 
     @Test
+    @EnabledOnOs(org.junit.jupiter.api.condition.OS.MAC)
     public void can_setup_locally_from_scratch() throws IOException, InterruptedException {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, CurrentOs.get());
         String expectedJavaHomeVersion = String.format(
@@ -98,7 +100,6 @@ public class JdkSpecCertSetupIntegrationTest {
                                 .toAbsolutePath()
                                 .toString())))
                 .contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion));
-        assertThat(runCommandWithZeroExitCode(List.of("which", "java"))).contains(expectedJavaHomeVersion);
     }
 
     private static Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {

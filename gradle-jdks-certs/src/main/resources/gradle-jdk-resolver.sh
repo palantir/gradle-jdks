@@ -101,10 +101,6 @@ read -r major_version < "$APP_HOME"/gradle-jdk-major-version
 read -r distribution_url < "$APP_HOME"/jdks/"$major_version"/"$os_name"/"$arch_name"/download-url
 read -r distribution_local_path < "$APP_HOME"/jdks/"$major_version"/"$os_name"/"$arch_name"/local-path
 
-# Extracting the distribution name; this will be the name of the un-tarred directory
-distribution_full_name=$(basename "$distribution_url")
-distribution_name="${distribution_full_name%.tar.gz}"
-
 # TODO(crogoz): customize based on a file in the distribution
 # Check if distribution exists in $HOME/.gradle/gradle-jdks
 jdk_installation_directory="$HOME"/.gradle/gradle-jdks/"$distribution_local_path"
@@ -130,7 +126,7 @@ else
   cd - || exit
 
   # Finding the java_home
-  java_bin=$(find "$in_progress_dir/$distribution_name" -type f -name "java" -path "*/bin/java" ! -type l)
+  java_bin=$(find "$in_progress_dir" -type f -name "java" -path "*/bin/java" ! -type l)
   java_home="${java_bin%/*/*}"
   if [ ! -d "$jdk_installation_directory" ]; then
     lock_file="$jdk_installation_directory".jdks.lock
@@ -156,6 +152,5 @@ else
   fi
 fi
 
-# TODO(crogoz): set up the JAVA_HOME, running exec script
 export JAVA_HOME="$jdk_installation_directory"
 export PATH=$PATH:$JAVA_HOME/bin
