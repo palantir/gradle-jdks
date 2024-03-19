@@ -32,14 +32,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 
@@ -98,7 +96,7 @@ public class JdkSpecCertSetupIntegrationTest {
                 "%s/.gradle/gradle-jdks/amazon-corretto-%s-%s", System.getenv("HOME"), JDK_VERSION, TEST_HASH);
         Path expectedJavaHome = Path.of(expectedJavaHomeVersion);
         if (Files.exists(expectedJavaHome)) {
-            deleteDirectory(expectedJavaHome);
+            FileUtils.deleteDirectory(expectedJavaHome.toFile());
         }
         assertThat(runCommandWithZeroExitCode(List.of(
                         "/bin/bash",
@@ -106,7 +104,8 @@ public class JdkSpecCertSetupIntegrationTest {
                                 .resolve("gradle-jdk-resolver.sh")
                                 .toAbsolutePath()
                                 .toString())))
-                .contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion));
+                .contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion))
+                .contains("Successfully imported Palantir CA certificate into the JDK truststore");
         assertThat(runCommandWithZeroExitCode(List.of(
                         "/bin/bash",
                         temporaryGradleDirectory
@@ -116,7 +115,7 @@ public class JdkSpecCertSetupIntegrationTest {
                 .contains(String.format("already exists, setting JAVA_HOME to %s", expectedJavaHomeVersion));
         assertThat(Files.exists(expectedJavaHome)).isTrue();
         // TODO(crogoz): maybe have this in a custom directory?
-        deleteDirectory(expectedJavaHome);
+        FileUtils.deleteDirectory(expectedJavaHome.toFile());
     }
 
     private static Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
@@ -159,7 +158,7 @@ public class JdkSpecCertSetupIntegrationTest {
         // copy the jar from build/libs to the gradle directory
         Files.copy(
                 Path.of(String.format(
-                        "../gradle-jdks-certs/build/libs/gradle-jdks-certs-%s.jar",
+                        "../gradle-jdks-certs/build/libs/gradle-jdks-certs-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
                 gradleDirectory.resolve("jdks/gradle-jdk-certs.jar"));
 
@@ -217,21 +216,5 @@ public class JdkSpecCertSetupIntegrationTest {
     private static String getJavaVersion(String jdkVersion) {
         String[] jdkVersions = jdkVersion.split("\\.");
         return String.join(".", List.of(jdkVersions[0], jdkVersions[1], jdkVersions[2]));
-    }
-
-    private static void deleteDirectory(Path directory) throws IOException {
-        Files.walkFileTree(directory, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException _exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes _attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-        });
     }
 }

@@ -22,9 +22,10 @@
 #   This script does the following:
 #   (1) Downloads the corresponding JDK distribution based on the majorVersion=`gradle/gradle-jdk-major-version`
 #     and the distribution_url=`gradle/jdks/${majorVersion}/${os}/${arch}/download_url`
-#   (2) Installs the distribution in `$HOME/.gradle/gradle-jdks/${local_path}` based on the
-#     local_path=`gradle/jdks/${majorVersion}/${os}/${arch}/local_path`
-#   (3) Calls the java class `JdkSpecCertSetup` that will set up the certificates for the locally installed distribution
+#   (2) Installs the distribution in a temporary directory
+#   (3) Calls the java class `GradleJdkInstallationSetup` that will move the distribution to
+#   `$HOME/.gradle/gradle-jdks/${local_path}` based on the local_path=`gradle/jdks/${majorVersion}/${os}/${arch}/local_path`
+#   and it will set up the Palantir certificates for the locally installed distribution
 #   (4) Sets up the JAVA_HOME env variable to the currently installed JDK
 #
 #
@@ -64,8 +65,7 @@ die () {
     echo
     echo "$*"
     echo
-    # TODO(crogoz): check
-    echo rm -rf "$tmp_work_dir"
+    rm -rf "$tmp_work_dir"
     exit 1
 } >&2
 
@@ -128,25 +128,8 @@ else
   # Finding the java_home
   java_bin=$(find "$in_progress_dir" -type f -name "java" -path "*/bin/java" ! -type l)
   java_home="${java_bin%/*/*}"
-  if [ ! -d "$jdk_installation_directory" ]; then
-    lock_file="$jdk_installation_directory".jdks.lock
-    # TODO(crogoz): check if we need to do a timeout ?
-    if command -v flock > /dev/null 2>&1; then
-      flock "$lock_file" "$APP_HOME"/just-move.sh "$java_home" "$jdk_installation_directory"
-    elif command -v shlock > /dev/null 2>&1; then
-      while ! shlock -f "$lock_file" -p $$; do
-        echo Lock "$lock_file" already held by $(cat "$lock_file"). Retrying...
-        sleep .1;
-      done
-      sh "$APP_HOME"/just-move.sh "$java_home" "$jdk_installation_directory"
-      trap "rm -f $lock_file" EXIT
-    else
-      # TODO(crogoz): use something else ? verify integrity after the move ?
-      die "ERROR: Neither flock nor shlock are installed, Could not set up JAVA_HOME"
-    fi
-  fi
-  # Setting up the jdk certificates
-  "$jdk_installation_directory/bin/java" -cp "$APP_HOME"/jdks/gradle-jdk-certs.jar com.palantir.gradle.certs.JdkSpecCertSetup
+  "$java_home/bin/java" -cp "$APP_HOME"/jdks/gradle-jdk-certs.jar com.palantir.gradle.certs.GradleJdkInstallationSetup "$jdk_installation_directory"
+  echo Successfully installed JDK distribution, setting JAVA_HOME to "$jdk_installation_directory"
 fi
 
 export JAVA_HOME="$jdk_installation_directory"

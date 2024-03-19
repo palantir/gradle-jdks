@@ -9,6 +9,7 @@ dependencies {
     jdkIntegrationTestImplementation project(":gradle-jdks")
     jdkIntegrationTestImplementation project(":gradle-jdks-certs")
 
+    jdkIntegrationTestImplementation 'commons-io:commons-io'
     jdkIntegrationTestImplementation 'com.google.guava:guava'
     jdkIntegrationTestImplementation 'org.junit.jupiter:junit-jupiter'
     jdkIntegrationTestImplementation 'org.assertj:assertj-core'
@@ -16,6 +17,6 @@ dependencies {
 
 tasks.build.dependsOn tasks.jdkIntegrationTest
 tasks.jdkIntegrationTest {
-    dependsOn project(":gradle-jdks-certs").tasks.jar
+    dependsOn project(":gradle-jdks-certs").tasks.fatJar
     environment("PROJECT_VERSION", project.version)
 }

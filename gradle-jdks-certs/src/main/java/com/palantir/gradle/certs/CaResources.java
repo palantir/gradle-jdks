@@ -45,28 +45,32 @@ public final class CaResources {
         return systemCertificates(logger).flatMap(CaResources::selectPalantirCertificate);
     }
 
-    public static void maybeImportPalantirRootCaInJdk(ILogger logger) {
+    public static void maybeImportPalantirRootCaInJdk(ILogger logger, Path jdkInstallationDirectory) {
         readPalantirRootCaFromSystemTruststore(logger)
                 .ifPresentOrElse(
-                        cert -> importPalantirRootCaInCurrentJdk(logger, cert),
+                        cert -> importPalantirRootCaInJdk(logger, cert, jdkInstallationDirectory),
                         () -> logger.logError("Palantir CA was not imported in the JDK truststore"));
     }
 
-    private static void importPalantirRootCaInCurrentJdk(ILogger logger, PalantirCert palantirCert) {
+    private static void importPalantirRootCaInJdk(
+            ILogger logger, PalantirCert palantirCert, Path jdkInstallationDirectory) {
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
         if (osName.startsWith("mac") || osName.startsWith("linux")) {
-            importSystemCertificate(palantirCert);
+            importSystemCertificate(palantirCert, jdkInstallationDirectory);
             logger.log("Successfully imported Palantir CA certificate into the JDK truststore");
         } else {
             logger.logError(String.format("Importing certificates for OS type '%s' is not yet supported", osName));
         }
     }
 
-    private static void importSystemCertificate(PalantirCert palantirCert) {
+    private static void importSystemCertificate(PalantirCert palantirCert, Path jdkInstallationDirectory) {
         try {
             File palantirCertFile = File.createTempFile(palantirCert.getName(), ".pem");
             Files.write(palantirCertFile.toPath(), palantirCert.getContent().getBytes(StandardCharsets.UTF_8));
-            String keytoolPath = System.getProperty("java.home") + "/bin/keytool";
+            String keytoolPath = jdkInstallationDirectory
+                    .resolve("bin/keytool")
+                    .toAbsolutePath()
+                    .toString();
             List<String> importCertificateCommand = List.of(
                     keytoolPath,
                     "-import",
