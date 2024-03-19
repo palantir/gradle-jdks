@@ -64,7 +64,7 @@ public final class CaResources {
 
     private static void importSystemCertificate(PalantirCert palantirCert) {
         try {
-            File palantirCertFile = File.createTempFile(palantirCert.getName(), ".cer");
+            File palantirCertFile = File.createTempFile(palantirCert.getName(), ".pem");
             Files.write(palantirCertFile.toPath(), palantirCert.getContent().getBytes(StandardCharsets.UTF_8));
             String keytoolPath = System.getProperty("java.home") + "/bin/keytool";
             List<String> importCertificateCommand = List.of(
@@ -136,7 +136,7 @@ public final class CaResources {
                 .filter(cert -> PALANTIR_3RD_GEN_SERIAL.equals(((X509Certificate) cert).getSerialNumber()))
                 .findFirst()
                 .map(CaResources::encodeCertificate)
-                .map(certificate -> new PalantirCert(certificate, PALANTIR_3RD_GEN_CERTIFICATE));
+                .map(certificate -> new PalantirCert(PALANTIR_3RD_GEN_CERTIFICATE, certificate));
     }
 
     static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
