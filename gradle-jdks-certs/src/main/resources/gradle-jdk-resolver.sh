@@ -130,15 +130,16 @@ else
   java_home="${java_bin%/*/*}"
   if [ ! -d "$jdk_installation_directory" ]; then
     lock_file="$jdk_installation_directory".jdks.lock
+    # TODO(crogoz): check if we need to do a timeout ?
     if command -v flock > /dev/null 2>&1; then
-      flock -n "$lock_file" "$APP_HOME"/just-move.sh "$java_home" "$jdk_installation_directory" || echo "Lock file already held by another process"
+      flock "$lock_file" "$APP_HOME"/just-move.sh "$java_home" "$jdk_installation_directory"
     elif command -v shlock > /dev/null 2>&1; then
-      if shlock -f "$lock_file" -p $$; then
-        sh "$APP_HOME"/just-move.sh "$java_home" "$jdk_installation_directory"
-        rm "$lock_file"
-      else
-        echo Lock "$lock_file" already held by $(cat "$lock_file")
-      fi
+      while ! shlock -f "$lock_file" -p $$; do
+        echo Lock "$lock_file" already held by $(cat "$lock_file"). Retrying...
+        sleep .1;
+      done
+      sh "$APP_HOME"/just-move.sh "$java_home" "$jdk_installation_directory"
+      trap "rm -f $lock_file" EXIT
     else
       # TODO(crogoz): use something else ? verify integrity after the move ?
       die "ERROR: Neither flock nor shlock are installed, Could not set up JAVA_HOME"
@@ -146,10 +147,6 @@ else
   fi
   # Setting up the jdk certificates
   "$jdk_installation_directory/bin/java" -cp "$APP_HOME"/jdks/gradle-jdk-certs.jar com.palantir.gradle.certs.JdkSpecCertSetup
-  exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-    die "ERROR: Failed to run the jdk certificate setup: exit_code: $exit_code"
-  fi
 fi
 
 export JAVA_HOME="$jdk_installation_directory"

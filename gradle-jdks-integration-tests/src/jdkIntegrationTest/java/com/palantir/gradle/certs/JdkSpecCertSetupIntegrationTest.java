@@ -32,8 +32,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -93,6 +96,10 @@ public class JdkSpecCertSetupIntegrationTest {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, CurrentOs.get());
         String expectedJavaHomeVersion = String.format(
                 "%s/.gradle/gradle-jdks/amazon-corretto-%s-%s", System.getenv("HOME"), JDK_VERSION, TEST_HASH);
+        Path expectedJavaHome = Path.of(expectedJavaHomeVersion);
+        if (Files.exists(expectedJavaHome)) {
+            deleteDirectory(expectedJavaHome);
+        }
         assertThat(runCommandWithZeroExitCode(List.of(
                         "/bin/bash",
                         temporaryGradleDirectory
@@ -100,6 +107,16 @@ public class JdkSpecCertSetupIntegrationTest {
                                 .toAbsolutePath()
                                 .toString())))
                 .contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion));
+        assertThat(runCommandWithZeroExitCode(List.of(
+                        "/bin/bash",
+                        temporaryGradleDirectory
+                                .resolve("gradle-jdk-resolver.sh")
+                                .toAbsolutePath()
+                                .toString())))
+                .contains(String.format("already exists, setting JAVA_HOME to %s", expectedJavaHomeVersion));
+        assertThat(Files.exists(expectedJavaHome)).isTrue();
+        // TODO(crogoz): maybe have this in a custom directory?
+        deleteDirectory(expectedJavaHome);
     }
 
     private static Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
@@ -200,5 +217,21 @@ public class JdkSpecCertSetupIntegrationTest {
     private static String getJavaVersion(String jdkVersion) {
         String[] jdkVersions = jdkVersion.split("\\.");
         return String.join(".", List.of(jdkVersions[0], jdkVersions[1], jdkVersions[2]));
+    }
+
+    private static void deleteDirectory(Path directory) throws IOException {
+        Files.walkFileTree(directory, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException _exc) throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes _attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 }
