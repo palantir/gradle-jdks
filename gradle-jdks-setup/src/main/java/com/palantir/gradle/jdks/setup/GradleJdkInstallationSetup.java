@@ -38,7 +38,7 @@ public final class GradleJdkInstallationSetup {
         Path destinationJdkInstallationDirectory = Path.of(args[0]);
         Path certsDirectory = Path.of(args[1]);
         atomicCopyJdkInstallationDirectory(logger, destinationJdkInstallationDirectory);
-        Map<String, String> certNamesToSerialNumbers = extractCertsSerialNumbers(certsDirectory);
+        Map<String, String> certNamesToSerialNumbers = extractCertsSerialNumbers(logger, certsDirectory);
         CaResources.maybeImportCertsInJdk(logger, destinationJdkInstallationDirectory, certNamesToSerialNumbers);
     }
 
@@ -65,8 +65,10 @@ public final class GradleJdkInstallationSetup {
         }
     }
 
-    private static Map<String, String> extractCertsSerialNumbers(Path certsDirectory) throws IOException {
+    private static Map<String, String> extractCertsSerialNumbers(ILogger logger, Path certsDirectory)
+            throws IOException {
         if (!Files.exists(certsDirectory)) {
+            logger.log("No certs directory found, skipping import of certificates");
             return Map.of();
         }
         Map<String, String> certSerialNumbersToAliases = new HashMap<>();
@@ -97,5 +99,5 @@ public final class GradleJdkInstallationSetup {
         return certSerialNumbersToAliases;
     }
 
-    public GradleJdkInstallationSetup() {}
+    private GradleJdkInstallationSetup() {}
 }

@@ -1,5 +1,5 @@
-FROM @BASE_IMAGE@
+FROM ubuntu:20.04
 RUN apt-get update && apt-get install -y curl
-COPY @LOCAL_PATH@ /gradle
+COPY ./gradle /gradle
 ENTRYPOINT ["/bin/bash"]
-CMD ["testing-script.sh"]
+CMD ["/gradle/testing-script.sh"]

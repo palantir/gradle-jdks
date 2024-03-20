@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 
@@ -52,7 +53,8 @@ public class JdkSpecCertSetupIntegrationTest {
 
     @Test
     public void can_setup_jdk_with_certs_centos() throws IOException, InterruptedException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
+        Path workingDir = Files.createTempDirectory("testing-jdk-installation");
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(workingDir, JDK_VERSION, Os.LINUX_GLIBC);
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
         assertThat(execInDocker("centos:7", "/bin/bash", temporaryGradleDirectory, "testing-script.sh"))
@@ -61,14 +63,19 @@ public class JdkSpecCertSetupIntegrationTest {
                 .contains(String.format("Java path is: %s", expectedDistributionPath))
                 .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
                 .contains("Skipping the certificate import.");
+        FileUtils.deleteDirectory(workingDir.toFile());
     }
 
     @Test
     public void can_setup_jdk_with_certs_ubuntu() throws IOException, InterruptedException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
+        Path workingDir = Path.of("build/jdkIntegrationTest");
+        if (workingDir.toFile().exists()) {
+            FileUtils.deleteDirectory(workingDir.toFile());
+        }
+        setupGradleDirectoryStructure(workingDir, JDK_VERSION, Os.LINUX_GLIBC);
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
-        assertThat(dockerBuildAndRun("ubuntu:20.04", temporaryGradleDirectory, "testing-script.sh"))
+        assertThat(dockerBuildAndRun("ubuntu:20.04", workingDir, "testing-script.sh"))
                 .contains(SUCCESSFUL_OUTPUT)
                 .contains(String.format("Java home is: %s", expectedDistributionPath))
                 .contains(String.format("Java path is: %s", expectedDistributionPath))
@@ -78,7 +85,8 @@ public class JdkSpecCertSetupIntegrationTest {
 
     @Test
     public void can_setup_jdk_with_certs_alpine() throws IOException, InterruptedException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_MUSL);
+        Path workingDir = Files.createTempDirectory("testing-jdk-installation");
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(workingDir, JDK_VERSION, Os.LINUX_MUSL);
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
         assertThat(execInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory, "testing-script.sh"))
@@ -92,7 +100,8 @@ public class JdkSpecCertSetupIntegrationTest {
     @Test
     @EnabledOnOs(org.junit.jupiter.api.condition.OS.MAC)
     public void can_setup_locally_from_scratch() throws IOException, InterruptedException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, CurrentOs.get());
+        Path workingDir = Files.createTempDirectory("testing-jdk-installation");
+        Path temporaryGradleDirectory = setupGradleDirectoryStructure(workingDir, JDK_VERSION, CurrentOs.get());
         Path gradleHomeDir = Files.createTempDirectory("jdkIntegrationTest");
         Path gradleJdksDir = Files.createDirectory(gradleHomeDir.resolve("gradle-jdks"));
         Path expectedJavaHomeVersion =
@@ -109,8 +118,8 @@ public class JdkSpecCertSetupIntegrationTest {
                                 "GRADLE_USER_HOME",
                                 gradleHomeDir.toAbsolutePath().toString())))
                 .contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion))
-                .contains(
-                        "Successfully imported CA certificate Palantir3rdGenRootCaIntegrationTest into the JDK truststore");
+                .contains("Successfully imported CA certificate Palantir3rdGenRootCaIntegrationTest into the JDK"
+                        + " truststore");
         assertThat(runCommandWithZeroExitCode(
                         List.of(
                                 "/bin/bash",
@@ -123,10 +132,10 @@ public class JdkSpecCertSetupIntegrationTest {
                                 gradleHomeDir.toAbsolutePath().toString())))
                 .contains(String.format("already exists, setting JAVA_HOME to %s", expectedJavaHomeVersion));
         assertThat(Files.exists(expectedJavaHome)).isTrue();
-        // FileUtils.deleteDirectory(gradleHomeDir.toFile());
+        FileUtils.deleteDirectory(workingDir.toFile());
     }
 
-    private static Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
+    private static Path setupGradleDirectoryStructure(Path workingDir, String jdkVersion, Os os) throws IOException {
         /**
          * Each project will contain the following gradle file structure:
          * Note! Make sure the files end in a newline character, otherwise the `read` command in the
@@ -143,14 +152,14 @@ public class JdkSpecCertSetupIntegrationTest {
          * │   │   │   │   │   ├── download-url
          * │   │   │   │   │   ├── local-path
          * │   ├── certs/
-         * │   │   ├── Palantir3rdGenRootCa.serial-number.pem
+         * │   │   ├── Palantir3rdGenRootCa.serial-number
          * │   ├── gradle-jdk-major-version
          * │   ├── gradle-jdks-setup.jar
          * ├── subProjects/...
          * ...
          */
         String jdkMajorVersion = Iterables.get(Splitter.on('.').split(jdkVersion), 0);
-        Path gradleDirectory = Files.createTempDirectory("gradle");
+        Path gradleDirectory = Files.createDirectories(workingDir.resolve("gradle"));
         Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-jdk-major-version"));
         writeFileContent(gradleJdkVersion, jdkMajorVersion.toString());
         JdkPath jdkPath = distribution.path(
@@ -158,7 +167,8 @@ public class JdkSpecCertSetupIntegrationTest {
         Path archDirectory = Files.createDirectories(
                 gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os.uiName(), ARCH.uiName())));
         Path certsDirectory = Files.createDirectories(gradleDirectory.resolve("certs"));
-        Path palantirCert = Files.createFile(certsDirectory.resolve("Palantir3rdGenRootCaIntegrationTest.pem"));
+        Path palantirCert =
+                Files.createFile(certsDirectory.resolve("Palantir3rdGenRootCaIntegrationTest.serial-number"));
         writeFileContent(palantirCert, "18126334688741185161");
         Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
         writeFileContent(
@@ -204,15 +214,14 @@ public class JdkSpecCertSetupIntegrationTest {
                 String.format("/gradle/%s", script)));
     }
 
-    private String dockerBuildAndRun(String baseImage, Path localGradlePath, String script)
+    private String dockerBuildAndRun(String baseImage, Path workingDir, String script)
             throws IOException, InterruptedException {
-        Path renderedDockerfile = Path.of("src/jdkIntegrationTest/resources/Dockerfile.jdkIntegrationTest.rendered");
+        Path resourcesPath = Path.of("src/jdkIntegrationTest/resources/");
+        Path renderedDockerfile = resourcesPath.resolve("Dockerfile.jdkIntegrationTest.rendered");
         Files.writeString(
                 renderedDockerfile,
                 Files.readString(Path.of("src/jdkIntegrationTest/resources/Dockerfile.template"))
                         .replaceAll("@BASE_IMAGE@", baseImage)
-                        .replaceAll(
-                                "@LOCAL_PATH@", localGradlePath.toAbsolutePath().toString())
                         .replaceAll("@SCRIPT@", script));
 
         String dockerImage = String.format("jdk-test-%s", baseImage);
@@ -223,7 +232,7 @@ public class JdkSpecCertSetupIntegrationTest {
                 dockerImage,
                 "-f",
                 renderedDockerfile.toAbsolutePath().toString(),
-                localGradlePath.getParent().toAbsolutePath().toString()));
+                workingDir.toAbsolutePath().toString()));
         return runCommandWithZeroExitCode(List.of("docker", "run", dockerImage));
     }
 
