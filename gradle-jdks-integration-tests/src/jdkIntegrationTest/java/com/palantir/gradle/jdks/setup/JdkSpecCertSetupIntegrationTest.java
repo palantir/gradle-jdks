@@ -49,6 +49,7 @@ public class JdkSpecCertSetupIntegrationTest {
     private static final String JDK_VERSION = "11.0.21.9.1";
     private static final Arch ARCH = CurrentArch.get();
     private static final String TEST_HASH = "integration-tests";
+    private static final String CERT_ALIAS = "Palantir3rdGenRootCaIntegrationTest";
     private static final AmazonCorrettoJdkDistribution distribution = new AmazonCorrettoJdkDistribution();
 
     @Test
@@ -57,12 +58,9 @@ public class JdkSpecCertSetupIntegrationTest {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(workingDir, JDK_VERSION, Os.LINUX_GLIBC);
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
-        assertThat(execInDocker("centos:7", "/bin/bash", temporaryGradleDirectory, "testing-script.sh"))
-                .contains(SUCCESSFUL_OUTPUT)
-                .contains(String.format("Java home is: %s", expectedDistributionPath))
-                .contains(String.format("Java path is: %s", expectedDistributionPath))
-                .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
-                .contains("Skipping the certificate import.");
+        assertJdkWithNoCertsWasSetUp(
+                execInDocker("centos:7", "/bin/bash", temporaryGradleDirectory, "testing-script.sh"),
+                expectedDistributionPath);
         FileUtils.deleteDirectory(workingDir.toFile());
     }
 
@@ -75,12 +73,8 @@ public class JdkSpecCertSetupIntegrationTest {
         setupGradleDirectoryStructure(workingDir, JDK_VERSION, Os.LINUX_GLIBC);
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
-        assertThat(dockerBuildAndRun("ubuntu:20.04", workingDir, "testing-script.sh"))
-                .contains(SUCCESSFUL_OUTPUT)
-                .contains(String.format("Java home is: %s", expectedDistributionPath))
-                .contains(String.format("Java path is: %s", expectedDistributionPath))
-                .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
-                .contains("Skipping the certificate import.");
+        assertJdkWithNoCertsWasSetUp(
+                dockerBuildAndRun("ubuntu:20.04", workingDir, "testing-script.sh"), expectedDistributionPath);
     }
 
     @Test
@@ -89,12 +83,10 @@ public class JdkSpecCertSetupIntegrationTest {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(workingDir, JDK_VERSION, Os.LINUX_MUSL);
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
-        assertThat(execInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory, "testing-script.sh"))
-                .contains(SUCCESSFUL_OUTPUT)
-                .contains(String.format("Java home is: %s", expectedDistributionPath))
-                .contains(String.format("Java path is: %s", expectedDistributionPath))
-                .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
-                .contains("Skipping the certificate import.");
+        assertJdkWithNoCertsWasSetUp(
+                execInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory, "testing-script.sh"),
+                expectedDistributionPath);
+        FileUtils.deleteDirectory(workingDir.toFile());
     }
 
     @Test
@@ -119,7 +111,9 @@ public class JdkSpecCertSetupIntegrationTest {
                                 gradleHomeDir.toAbsolutePath().toString())))
                 .contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion))
                 .contains("Successfully imported CA certificate Palantir3rdGenRootCaIntegrationTest into the JDK"
-                        + " truststore");
+                        + " truststore")
+                .contains("Certificates 'nonExistingCert' could not be found in the system keystore. These certificates"
+                        + " were not imported.");
         assertThat(runCommandWithZeroExitCode(
                         List.of(
                                 "/bin/bash",
@@ -170,6 +164,8 @@ public class JdkSpecCertSetupIntegrationTest {
         Path palantirCert =
                 Files.createFile(certsDirectory.resolve("Palantir3rdGenRootCaIntegrationTest.serial-number"));
         writeFileContent(palantirCert, "18126334688741185161");
+        Path nonExistingCert = Files.createFile(certsDirectory.resolve("nonExistingCert.serial-number"));
+        writeFileContent(nonExistingCert, "1111");
         Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
         writeFileContent(
                 downloadUrlPath,
@@ -263,5 +259,17 @@ public class JdkSpecCertSetupIntegrationTest {
     private static String getJavaVersion(String jdkVersion) {
         String[] jdkVersions = jdkVersion.split("\\.");
         return String.join(".", List.of(jdkVersions[0], jdkVersions[1], jdkVersions[2]));
+    }
+
+    private static void assertJdkWithNoCertsWasSetUp(String output, String expectedDistributionPath) {
+        assertThat(output)
+                .contains(SUCCESSFUL_OUTPUT)
+                .contains(String.format("Java home is: %s", expectedDistributionPath))
+                .contains(String.format("Java path is: %s", expectedDistributionPath))
+                .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
+                .contains(String.format(
+                        "Certificates '%s, nonExistingCert' could not be found in the system keystore. These"
+                                + " certificates were not imported.",
+                        CERT_ALIAS));
     }
 }

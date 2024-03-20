@@ -30,11 +30,14 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class CaResources {
@@ -52,15 +55,29 @@ public final class CaResources {
             logger.log("No certificates were provided to import, skipping...");
             return;
         }
-        systemCertificates(logger)
-                .map(certs -> selectCertificates(certs, certSerialNumbersToAliases))
-                .orElseGet(() -> {
-                    logger.logError(String.format(
-                            "No certs were found on the system for %s. Skipping the certificate import.",
-                            certSerialNumbersToAliases.values()));
-                    return Stream.empty();
-                })
-                .forEach(cert -> importCertInJdk(logger, cert, jdkInstallationDirectory));
+        List<Certificate> selectedCertificates = systemCertificates(logger)
+                .map(certs ->
+                        selectCertificates(certs, certSerialNumbersToAliases).collect(Collectors.toList()))
+                .orElseGet(List::of);
+        selectedCertificates.forEach(cert -> importCertInJdk(logger, cert, jdkInstallationDirectory));
+        if (selectedCertificates.size() != certSerialNumbersToAliases.size()) {
+            logMissingCertificates(
+                    logger,
+                    selectedCertificates,
+                    certSerialNumbersToAliases.values().stream().collect(Collectors.toSet()));
+        }
+    }
+
+    private static void logMissingCertificates(
+            ILogger logger, List<Certificate> selectedCerts, Collection<String> expectedCerts) {
+        Set<String> selectedCertAliases =
+                selectedCerts.stream().map(Certificate::getAlias).collect(Collectors.toSet());
+        Set<String> missingCertAliases = expectedCerts.stream()
+                .filter(alias -> !selectedCertAliases.contains(alias))
+                .collect(Collectors.toSet());
+        logger.logError(String.format(
+                "Certificates '%s' could not be found in the system keystore. These certificates were not imported.",
+                String.join(", ", missingCertAliases)));
     }
 
     private static void importCertInJdk(ILogger logger, Certificate certificate, Path jdkInstallationDirectory) {
@@ -169,7 +186,7 @@ public final class CaResources {
                 })
                 .or(() -> {
                     logger.logError(String.format(
-                            "Could not find system truststore at any of %s in order to load Palantir CA cert",
+                            "Could not find system truststore at any of %s in order to load CA certs",
                             possibleCaCertificatePaths));
                     return Optional.empty();
                 });
