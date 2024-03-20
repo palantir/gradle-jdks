@@ -1,0 +1,13 @@
+apply plugin: 'java'
+apply plugin: 'com.palantir.external-publish-jar'
+apply plugin: 'org.unbroken-dome.test-sets'
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'commons-io:commons-io'
+}
+
+tasks.withType(JavaCompile) {
+    options.errorprone.disable 'PreferSafeLoggableExceptions', 'StringSplitter'
+}

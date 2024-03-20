@@ -14,17 +14,24 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.certs;
+package com.palantir.gradle.jdks.setup;
 
-public interface ILogger {
+public final class Certificate {
 
-    /**
-     * Logs an info message.
-     */
-    void log(String message);
+    private final String content;
 
-    /**
-     * Logs an error message.
-     */
-    void logError(String errorMessage);
+    private final String alias;
+
+    public Certificate(String alias, String content) {
+        this.alias = alias;
+        this.content = content;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public String getContent() {
+        return content;
+    }
 }

@@ -13,7 +13,7 @@ tasks.build.dependsOn tasks.integTest
 dependencies {
     api project(':gradle-jdks-distributions')
     api project(':gradle-jdks-json')
-    api project(':gradle-jdks-certs')
+    api project(':gradle-jdks-setup')
 
     implementation('com.palantir.baseline:gradle-baseline-java') {
         exclude group: 'com.diffplug.spotless', module: 'spotless-plugin-gradle'

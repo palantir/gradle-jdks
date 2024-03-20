@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.certs;
+package com.palantir.gradle.jdks.setup;
 
 import java.io.BufferedReader;
 import java.io.IOException;

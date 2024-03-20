@@ -7,7 +7,7 @@ testSets {
 
 dependencies {
     jdkIntegrationTestImplementation project(":gradle-jdks")
-    jdkIntegrationTestImplementation project(":gradle-jdks-certs")
+    jdkIntegrationTestImplementation project(":gradle-jdks-setup")
 
     jdkIntegrationTestImplementation 'commons-io:commons-io'
     jdkIntegrationTestImplementation 'com.google.guava:guava'
@@ -17,6 +17,9 @@ dependencies {
 
 tasks.build.dependsOn tasks.jdkIntegrationTest
 tasks.jdkIntegrationTest {
-    dependsOn project(":gradle-jdks-certs").tasks.fatJar
     environment("PROJECT_VERSION", project.version)
+}
+
+tasks.withType(JavaCompile) {
+    options.errorprone.disable 'StringSplitter'
 }

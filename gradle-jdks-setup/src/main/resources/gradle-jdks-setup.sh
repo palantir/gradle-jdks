@@ -24,9 +24,9 @@
 #     and the distribution_url=`gradle/jdks/${majorVersion}/${os}/${arch}/download_url`
 #   (2) Installs the distribution in a temporary directory
 #   (3) Calls the java class `GradleJdkInstallationSetup` that will move the distribution to
-#   `$HOME/.gradle/gradle-jdks/${local_path}` based on the local_path=`gradle/jdks/${majorVersion}/${os}/${arch}/local_path`
-#   and it will set up the Palantir certificates for the locally installed distribution
-#   (4) Sets up the JAVA_HOME env variable to the currently installed JDK
+#   `$GRADLE_USER_HOME/${local_path}` based on the local_path=`gradle/jdks/${majorVersion}/${os}/${arch}/local_path`
+#   and it will set up the certificates based on `gradle/certs` entries for the locally installed distribution
+#   (4) Sets up the JAVA_HOME and PATH env variable to the currently installed JDK
 #
 #
 #   Important for running:
@@ -60,6 +60,8 @@ APP_BASE_NAME=${0##*/}
 APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
 
 tmp_work_dir=$(mktemp -d)
+GRADLE_USER_HOME=${GRADLE_USER_HOME:-"$HOME"/.gradle}
+GRADLE_JDKS_HOME="$GRADLE_USER_HOME"/gradle-jdks
 
 die () {
     echo
@@ -100,14 +102,14 @@ esac
 read -r major_version < "$APP_HOME"/gradle-jdk-major-version
 read -r distribution_url < "$APP_HOME"/jdks/"$major_version"/"$os_name"/"$arch_name"/download-url
 read -r distribution_local_path < "$APP_HOME"/jdks/"$major_version"/"$os_name"/"$arch_name"/local-path
+certs_directory="$APP_HOME"/certs
 
-# TODO(crogoz): customize based on a file in the distribution
-# Check if distribution exists in $HOME/.gradle/gradle-jdks
-jdk_installation_directory="$HOME"/.gradle/gradle-jdks/"$distribution_local_path"
+# Check if distribution exists in $GRADLE_JDKS_HOME
+jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
 if [ -d "$jdk_installation_directory" ]; then
   echo "Distribution $distribution_url already exists, setting JAVA_HOME to $jdk_installation_directory"
 else
-  mkdir -p "$HOME"/.gradle/gradle-jdks/
+  mkdir -p "$GRADLE_JDKS_HOME"
   # Download and extract the distribution into a temporary directory
   echo "Distribution $distribution_url does not exist, installing in progress ..."
   in_progress_dir="$tmp_work_dir/$distribution_local_path.in-progress"
@@ -128,7 +130,7 @@ else
   # Finding the java_home
   java_bin=$(find "$in_progress_dir" -type f -name "java" -path "*/bin/java" ! -type l)
   java_home="${java_bin%/*/*}"
-  "$java_home/bin/java" -cp "$APP_HOME"/jdks/gradle-jdk-certs.jar com.palantir.gradle.certs.GradleJdkInstallationSetup "$jdk_installation_directory"
+  "$java_home/bin/java" -cp "$APP_HOME"/jdks/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory"
   echo Successfully installed JDK distribution, setting JAVA_HOME to "$jdk_installation_directory"
 fi
 

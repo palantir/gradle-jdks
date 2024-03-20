@@ -16,8 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.certs.CaResources;
-import com.palantir.gradle.certs.ILogger;
+import com.palantir.gradle.jdks.setup.CaResources;
+import com.palantir.gradle.jdks.setup.ILogger;
 import java.util.Map;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -47,7 +47,7 @@ public final class PalantirCaPlugin implements Plugin<Project> {
                 .getByType(JdksExtension.class)
                 .getCaCerts()
                 .putAll(possibleRootProject.provider(() -> CaResources.readPalantirRootCaFromSystemTruststore(logger)
-                        .map(cert -> Map.of(cert.getName(), cert.getContent()))
+                        .map(cert -> Map.of(cert.getAlias(), cert.getContent()))
                         .orElseGet(() -> {
                             logger.logError("Could not find Palantir CA in system truststore");
                             return Map.of();

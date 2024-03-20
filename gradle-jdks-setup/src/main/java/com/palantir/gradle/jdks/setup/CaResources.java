@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.certs;
+package com.palantir.gradle.jdks.setup;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -34,39 +33,55 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public final class CaResources {
 
     private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
     private static final String PALANTIR_3RD_GEN_CERTIFICATE = "Palantir3rdGenRootCa";
 
-    public static Optional<PalantirCert> readPalantirRootCaFromSystemTruststore(ILogger logger) {
+    public static Optional<Certificate> readPalantirRootCaFromSystemTruststore(ILogger logger) {
         return systemCertificates(logger).flatMap(CaResources::selectPalantirCertificate);
     }
 
-    public static void maybeImportPalantirRootCaInJdk(ILogger logger, Path jdkInstallationDirectory) {
-        readPalantirRootCaFromSystemTruststore(logger)
-                .ifPresentOrElse(
-                        cert -> importPalantirRootCaInJdk(logger, cert, jdkInstallationDirectory),
-                        () -> logger.logError("Palantir CA was not imported in the JDK truststore"));
+    public static void maybeImportCertsInJdk(
+            ILogger logger, Path jdkInstallationDirectory, Map<String, String> certSerialNumbersToAliases) {
+        if (certSerialNumbersToAliases.isEmpty()) {
+            logger.log("No certificates were provided to import, skipping...");
+            return;
+        }
+        systemCertificates(logger)
+                .map(certs -> selectCertificates(certs, certSerialNumbersToAliases))
+                .orElseGet(() -> {
+                    logger.logError(String.format(
+                            "No certs were found on the system for %s. Skipping the certificate import.",
+                            certSerialNumbersToAliases.values()));
+                    return Stream.empty();
+                })
+                .forEach(cert -> importCertInJdk(logger, cert, jdkInstallationDirectory));
     }
 
-    private static void importPalantirRootCaInJdk(
-            ILogger logger, PalantirCert palantirCert, Path jdkInstallationDirectory) {
+    private static void importCertInJdk(ILogger logger, Certificate certificate, Path jdkInstallationDirectory) {
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
         if (osName.startsWith("mac") || osName.startsWith("linux")) {
-            importSystemCertificate(palantirCert, jdkInstallationDirectory);
-            logger.log("Successfully imported Palantir CA certificate into the JDK truststore");
+            unixImportCertInJdk(logger, certificate, jdkInstallationDirectory);
+            logger.log(String.format(
+                    "Successfully imported CA certificate %s into the JDK truststore", certificate.getAlias()));
         } else {
             logger.logError(String.format("Importing certificates for OS type '%s' is not yet supported", osName));
         }
     }
 
-    private static void importSystemCertificate(PalantirCert palantirCert, Path jdkInstallationDirectory) {
+    private static void unixImportCertInJdk(ILogger logger, Certificate certificate, Path jdkInstallationDirectory) {
         try {
-            File palantirCertFile = File.createTempFile(palantirCert.getName(), ".pem");
-            Files.write(palantirCertFile.toPath(), palantirCert.getContent().getBytes(StandardCharsets.UTF_8));
+            if (certificateAlreadyExistsInTruststore(jdkInstallationDirectory, certificate.getAlias())) {
+                logger.log("Certificate already exists in the truststore, skipping...");
+                return;
+            }
+            File palantirCertFile = File.createTempFile(certificate.getAlias(), ".pem");
+            Files.write(palantirCertFile.toPath(), certificate.getContent().getBytes(StandardCharsets.UTF_8));
             String keytoolPath = jdkInstallationDirectory
                     .resolve("bin/keytool")
                     .toAbsolutePath()
@@ -76,7 +91,7 @@ public final class CaResources {
                     "-import",
                     "-trustcacerts",
                     "-alias",
-                    PALANTIR_3RD_GEN_CERTIFICATE,
+                    certificate.getAlias(),
                     "-cacerts",
                     "-storepass",
                     "changeit",
@@ -86,6 +101,31 @@ public final class CaResources {
             CommandRunner.run(importCertificateCommand);
         } catch (IOException e) {
             throw new RuntimeException("Unable to import the certificate to the jdk", e);
+        }
+    }
+
+    private static boolean certificateAlreadyExistsInTruststore(Path jdkInstallationDirectory, String alias) {
+        try {
+            String keytoolPath = jdkInstallationDirectory
+                    .resolve("bin/keytool")
+                    .toAbsolutePath()
+                    .toString();
+            List<String> checkCertificateCommand = List.of(
+                    keytoolPath,
+                    "-list",
+                    "-storepass",
+                    "changeit",
+                    "-alias",
+                    alias,
+                    "-keystore",
+                    jdkInstallationDirectory.resolve("lib/security/cacerts").toString());
+            CommandRunner.run(checkCertificateCommand);
+            return true;
+        } catch (Exception e) {
+            if (e.getMessage().contains(String.format("Alias <%s> does not exist", alias))) {
+                return false;
+            }
+            throw new RuntimeException("Unable to check if the certificate already exists in the truststore", e);
         }
     }
 
@@ -135,15 +175,25 @@ public final class CaResources {
                 });
     }
 
-    private static Optional<PalantirCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {
-        return parseCerts(multipleCertificateBytes).stream()
-                .filter(cert -> PALANTIR_3RD_GEN_SERIAL.equals(((X509Certificate) cert).getSerialNumber()))
-                .findFirst()
-                .map(CaResources::encodeCertificate)
-                .map(certificate -> new PalantirCert(PALANTIR_3RD_GEN_CERTIFICATE, certificate));
+    private static Optional<Certificate> selectPalantirCertificate(byte[] multipleCertificateBytes) {
+        return selectCertificates(
+                        multipleCertificateBytes,
+                        Map.of(PALANTIR_3RD_GEN_SERIAL.toString(), PALANTIR_3RD_GEN_CERTIFICATE))
+                .findFirst();
     }
 
-    static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
+    private static Stream<Certificate> selectCertificates(
+            byte[] multipleCertificateBytes, Map<String, String> certSerialNumbersToAliases) {
+        return parseCerts(multipleCertificateBytes).stream()
+                .filter(cert -> certSerialNumbersToAliases.containsKey(
+                        ((X509Certificate) cert).getSerialNumber().toString()))
+                .map(cert -> new Certificate(
+                        certSerialNumbersToAliases.get(
+                                ((X509Certificate) cert).getSerialNumber().toString()),
+                        encodeCertificate(cert)));
+    }
+
+    static List<java.security.cert.Certificate> parseCerts(byte[] multipleCertificateBytes) {
         CertificateFactory certificateFactory;
         try {
             certificateFactory = CertificateFactory.getInstance("X.509");
@@ -151,7 +201,7 @@ public final class CaResources {
             throw new RuntimeException("Could not make X.509 certificate factory", e);
         }
 
-        List<Certificate> certs = new ArrayList<>();
+        List<java.security.cert.Certificate> certs = new ArrayList<>();
 
         ByteArrayInputStream baos = new ByteArrayInputStream(multipleCertificateBytes);
 
@@ -178,7 +228,7 @@ public final class CaResources {
         return Collections.unmodifiableList(certs);
     }
 
-    private static String encodeCertificate(Certificate palantirCert) {
+    private static String encodeCertificate(java.security.cert.Certificate palantirCert) {
         Base64.Encoder encoder = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8));
         try {
             return String.join(

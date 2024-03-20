@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.certs;
+package com.palantir.gradle.jdks.setup;
 
-public final class PalantirCert {
+/**
+ * A simple logger that logs to stdout and stderr.
+ */
+@SuppressWarnings({"BanSystemOut", "BanSystemErr"})
+public final class StdLogger implements ILogger {
 
-    private final String content;
-
-    private final String name;
-
-    public PalantirCert(String name, String content) {
-        this.name = name;
-        this.content = content;
+    @Override
+    public void log(String message) {
+        System.out.println(message);
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getContent() {
-        return content;
+    @Override
+    public void logError(String errorMessae) {
+        System.err.println(errorMessae);
     }
 }

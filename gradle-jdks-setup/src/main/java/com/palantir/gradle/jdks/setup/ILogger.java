@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.certs;
+package com.palantir.gradle.jdks.setup;
 
-/**
- * A simple logger that logs to stdout and stderr.
- */
-@SuppressWarnings({"BanSystemOut", "BanSystemErr"})
-public final class StdLogger implements ILogger {
+public interface ILogger {
 
-    @Override
-    public void log(String message) {
-        System.out.println(message);
-    }
+    /**
+     * Logs an info message.
+     */
+    void log(String message);
 
-    @Override
-    public void logError(String errorMessae) {
-        System.err.println(errorMessae);
-    }
+    /**
+     * Logs an error message.
+     */
+    void logError(String errorMessage);
 }

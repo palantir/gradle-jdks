@@ -16,11 +16,15 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.certs.PathLock;
+import com.google.common.io.Closer;
+import com.google.common.util.concurrent.Striped;
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -28,7 +32,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
@@ -228,6 +234,42 @@ public final class JdkManager {
             throw new RuntimeException(String.format(
                     "Failed to add ca cert '%s' to java installation at '%s'. Keytool output: %s\n\n",
                     alias, javaHome, output.toString(StandardCharsets.UTF_8)));
+        }
+    }
+
+    /**
+     * Abstraction around locking access to a file or directory, by creating another file with a
+     * matching name, and '.lock' extension. Note that the underlying file locking mechanism is
+     * left to the filesystem, so we must be careful to work within its bounds. For example,
+     * POSIX file locks apply to a process, so within the process we must ensure synchronization
+     * separately.
+     */
+    private static final class PathLock implements Closeable {
+        private static final Striped<Lock> JVM_LOCKS = Striped.lock(16);
+        private final Closer closer;
+
+        PathLock(Path path) throws IOException {
+            this.closer = Closer.create();
+            try {
+                Lock jvmLock = JVM_LOCKS.get(path);
+                jvmLock.lock();
+                closer.register(jvmLock::unlock);
+                Files.createDirectories(path.getParent());
+                FileChannel channel = closer.register(FileChannel.open(
+                        path.getParent().resolve(path.getFileName() + ".lock"),
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.WRITE));
+                FileLock fileLock = channel.lock();
+                closer.register(fileLock::close);
+            } catch (Throwable t) {
+                closer.close();
+                throw t;
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            closer.close();
         }
     }
 }

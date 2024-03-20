@@ -16,7 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.certs.ILogger;
+import com.palantir.gradle.jdks.setup.ILogger;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 
