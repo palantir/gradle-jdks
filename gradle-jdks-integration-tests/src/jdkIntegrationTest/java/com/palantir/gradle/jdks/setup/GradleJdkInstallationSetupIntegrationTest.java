@@ -37,19 +37,21 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 
-public class JdkSpecCertSetupIntegrationTest {
+public class GradleJdkInstallationSetupIntegrationTest {
 
     private static final String SUCCESSFUL_OUTPUT = "Successfully installed JDK distribution, setting JAVA_HOME to";
     private static final String JDK_VERSION = "11.0.21.9.1";
     private static final Arch ARCH = CurrentArch.get();
     private static final String TEST_HASH = "integration-tests";
     private static final String CERT_ALIAS = "Palantir3rdGenRootCaIntegrationTest";
+    private static final String NON_EXISTING_CERT_ALIAS = "nonExistingCert";
     private static final AmazonCorrettoJdkDistribution distribution = new AmazonCorrettoJdkDistribution();
 
     @Test
@@ -112,8 +114,10 @@ public class JdkSpecCertSetupIntegrationTest {
                 .contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion))
                 .contains("Successfully imported CA certificate Palantir3rdGenRootCaIntegrationTest into the JDK"
                         + " truststore")
-                .contains("Certificates 'nonExistingCert' could not be found in the system keystore. These certificates"
-                        + " were not imported.");
+                .contains(String.format(
+                        "Certificates '%s' could not be found in the system keystore. These certificates"
+                                + " were not imported.",
+                        NON_EXISTING_CERT_ALIAS));
         assertThat(runCommandWithZeroExitCode(
                         List.of(
                                 "/bin/bash",
@@ -164,7 +168,8 @@ public class JdkSpecCertSetupIntegrationTest {
         Path palantirCert =
                 Files.createFile(certsDirectory.resolve("Palantir3rdGenRootCaIntegrationTest.serial-number"));
         writeFileContent(palantirCert, "18126334688741185161");
-        Path nonExistingCert = Files.createFile(certsDirectory.resolve("nonExistingCert.serial-number"));
+        Path nonExistingCert =
+                Files.createFile(certsDirectory.resolve(String.format("%s.serial-number", NON_EXISTING_CERT_ALIAS)));
         writeFileContent(nonExistingCert, "1111");
         Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
         writeFileContent(
@@ -268,8 +273,8 @@ public class JdkSpecCertSetupIntegrationTest {
                 .contains(String.format("Java path is: %s", expectedDistributionPath))
                 .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
                 .contains(String.format(
-                        "Certificates '%s, nonExistingCert' could not be found in the system keystore. These"
+                        "Certificates '%s' could not be found in the system keystore. These"
                                 + " certificates were not imported.",
-                        CERT_ALIAS));
+                        String.join(", ", Set.of(NON_EXISTING_CERT_ALIAS, CERT_ALIAS))));
     }
 }

@@ -72,7 +72,12 @@ public final class GradleJdkInstallationSetupTest {
         Path destJavaHome = destDistribution.resolve("bin/java");
         assertThat(destDistribution).exists();
         assertThat(destJavaHome).exists();
-        checkCaIsImported(destDistribution, "Palantir3rdGenRootCaTest");
+        checkCaIsImportedIfExistingInSystemKeytool(destDistribution, "Palantir3rdGenRootCaTest");
+    }
+
+    private static void checkCaIsImportedIfExistingInSystemKeytool(Path jdkPath, String certAlias) {
+        CaResources.readPalantirRootCaFromSystemTruststore(new StdLogger())
+                .ifPresent(_ignored -> checkCaIsImported(jdkPath, certAlias));
     }
 
     private static void checkCaIsImported(Path jdkPath, String certAlias) {
