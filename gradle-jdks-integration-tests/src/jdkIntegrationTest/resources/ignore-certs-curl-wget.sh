@@ -16,12 +16,12 @@
 #
 set -e
 
-if [ -f ignore-certs-curl-wget.sh ]; then
-  . ignore-certs-curl-wget.sh
+if command -v curl > /dev/null 2>&1; then
+  function curl () { command curl -k "$@"; }
+  export curl
 fi
 
-. /gradle/gradle-jdks-setup.sh
-
-echo "Java home is: $JAVA_HOME"
-echo "Java path is: $(type -p java)"
-echo "Java version is: $(java --version | awk '{print $2}' | head -n 1)"
+if command -v wget > /dev/null 2>&1; then
+  function wget () { command wget --no-check-certificate "$@" ; }
+  export wget
+fi

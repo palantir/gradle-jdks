@@ -53,9 +53,9 @@ public class GradleJdkInstallationSetupIntegrationTest {
     private static final Arch ARCH = CurrentArch.get();
     private static final String TEST_HASH = "integration-tests";
     private static final String PALANTIR_CERT_ALIAS = "Palantir3rdGenRootCaIntegrationTest";
-    private static final String NON_EXISTING_CERT_ALIAS = "nonExistingCert";
+    private static final String NON_EXISTING_CERT_ALIAS = "NonExistingCert";
     private static final String CORRETTO_DISTRIBUTION_URL_ENV = "CORRETTO_DISTRIBUTION_URL";
-    private static final AmazonCorrettoJdkDistribution distribution = new AmazonCorrettoJdkDistribution();
+    private static final AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
     private static final List<String> NO_EXTRA_RUN_STEPS = List.of();
     private static final List<String> INSTALL_CURL_RUN_STEP = List.of(getAptGetCurlRunStep());
 
@@ -158,7 +158,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Path gradleDirectory = Files.createDirectories(workingDir.resolve("gradle"));
         Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-jdk-major-version"));
         writeFileContent(gradleJdkVersion, jdkMajorVersion.toString());
-        JdkPath jdkPath = distribution.path(
+        JdkPath jdkPath = CORRETTO_JDK_DISTRIBUTION.path(
                 JdkRelease.builder().version(jdkVersion).os(os).arch(ARCH).build());
         Path archDirectory = Files.createDirectories(
                 gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os.uiName(), ARCH.uiName())));
@@ -171,7 +171,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         writeFileContent(nonExistingCert, "1111");
         Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
         String correttoDistributionUrl = Optional.ofNullable(System.getenv(CORRETTO_DISTRIBUTION_URL_ENV))
-                .orElseGet(distribution::defaultBaseUrl);
+                .orElseGet(CORRETTO_JDK_DISTRIBUTION::defaultBaseUrl);
         writeFileContent(
                 downloadUrlPath,
                 String.format(
@@ -190,10 +190,19 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Files.copy(
                 Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),
                 gradleDirectory.resolve("gradle-jdks-setup.sh"));
+
         // copy the testing script to the gradle directory
         Files.copy(
                 Path.of("src/jdkIntegrationTest/resources/testing-script.sh"),
                 gradleDirectory.resolve("testing-script.sh"));
+
+        // workaround when running locally to ignore the certificate setup when using curl & wget
+        if (Optional.ofNullable(System.getenv("CI")).isEmpty()) {
+            Files.copy(
+                    Path.of("src/jdkIntegrationTest/resources/ignore-certs-curl-wget.sh"),
+                    gradleDirectory.resolve("ignore-certs-curl-wget.sh"));
+        }
+
         return gradleDirectory;
     }
 
