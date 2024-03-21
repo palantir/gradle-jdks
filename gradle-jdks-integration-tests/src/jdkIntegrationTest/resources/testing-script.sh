@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
 #
@@ -16,7 +16,13 @@
 #
 set -e
 
-source /gradle/gradle-jdks-setup.sh
+shopt -s expand_aliases
+
+if [ -f /root/.bash_profile ]; then
+  . /root/.bash_profile
+fi
+. /gradle/gradle-jdks-setup.sh
+
 echo "Java home is: $JAVA_HOME"
 echo "Java path is: $(type -p java)"
 echo "Java version is: $(java --version | awk '{print $2}' | head -n 1)"

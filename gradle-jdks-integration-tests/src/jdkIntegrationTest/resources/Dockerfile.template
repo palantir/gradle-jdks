@@ -1,5 +1,4 @@
-FROM ubuntu:20.04
-RUN apt-get update && apt-get install -y curl
+FROM @BASE_IMAGE@
 COPY ./gradle /gradle
-ENTRYPOINT ["/bin/bash"]
-CMD ["/gradle/testing-script.sh"]
+RUN apt-get update && apt-get install -y curl && echo "alias curl='curl -k'" >> /root/.bash_profile && chmod +x /gradle/testing-script.sh
+CMD ["/bin/bash", "-i", "-c", "/gradle/testing-script.sh"]

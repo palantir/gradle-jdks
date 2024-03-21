@@ -61,8 +61,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
         assertJdkWithNoCertsWasSetUp(
-                execInDocker("centos:7", "/bin/bash", temporaryGradleDirectory, "testing-script.sh"),
-                expectedDistributionPath);
+                runTestingScriptInDocker("centos:7", "/bin/bash", temporaryGradleDirectory), expectedDistributionPath);
         FileUtils.deleteDirectory(workingDir.toFile());
     }
 
@@ -76,7 +75,8 @@ public class GradleJdkInstallationSetupIntegrationTest {
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
         assertJdkWithNoCertsWasSetUp(
-                dockerBuildAndRun("ubuntu:20.04", workingDir, "testing-script.sh"), expectedDistributionPath);
+                dockerBuildAndRunTestingScript("ubuntu:20.04", workingDir, List.of(getInstallCurlRunStep())),
+                expectedDistributionPath);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
         assertJdkWithNoCertsWasSetUp(
-                execInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory, "testing-script.sh"),
+                runTestingScriptInDocker("alpine:3.16.0", "/bin/sh", temporaryGradleDirectory),
                 expectedDistributionPath);
         FileUtils.deleteDirectory(workingDir.toFile());
     }
@@ -201,7 +201,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Files.writeString(path, content + "\n");
     }
 
-    private String execInDocker(String dockerImage, String bashEntryPoint, Path localGradlePath, String script)
+    private String runTestingScriptInDocker(String dockerImage, String bashEntryPoint, Path localGradlePath)
             throws IOException, InterruptedException {
         return runCommandWithZeroExitCode(List.of(
                 "docker",
@@ -212,10 +212,10 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 "--entrypoint",
                 bashEntryPoint,
                 dockerImage,
-                String.format("/gradle/%s", script)));
+                "/gradle/testing-script.sh"));
     }
 
-    private String dockerBuildAndRun(String baseImage, Path workingDir, String script)
+    private String dockerBuildAndRunTestingScript(String baseImage, Path workingDir, List<String> dockerRunSteps)
             throws IOException, InterruptedException {
         Path resourcesPath = Path.of("src/jdkIntegrationTest/resources/");
         Path renderedDockerfile = resourcesPath.resolve("Dockerfile.jdkIntegrationTest.rendered");
@@ -223,7 +223,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 renderedDockerfile,
                 Files.readString(Path.of("src/jdkIntegrationTest/resources/Dockerfile.template"))
                         .replaceAll("@BASE_IMAGE@", baseImage)
-                        .replaceAll("@SCRIPT@", script));
+                        .replaceAll("@ADD_RUN_STEPS@", dockerRunSteps.stream().collect(Collectors.joining("\n"))));
 
         String dockerImage = String.format("jdk-test-%s", baseImage);
         runCommandWithZeroExitCode(List.of(
@@ -235,6 +235,10 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 renderedDockerfile.toAbsolutePath().toString(),
                 workingDir.toAbsolutePath().toString()));
         return runCommandWithZeroExitCode(List.of("docker", "run", dockerImage));
+    }
+
+    private static String getInstallCurlRunStep() {
+        return "RUN apt-get update && apt-get install -y curl";
     }
 
     static String runCommandWithZeroExitCode(List<String> commandArguments) throws InterruptedException, IOException {
