@@ -17,7 +17,7 @@
 package com.palantir.gradle.jdks.setup;
 
 /**
- * Helper class to represent a certificate based on the alias and content.*
+ * Helper class to represent a certificate based on the alias and content.
  */
 public final class Certificate {
 

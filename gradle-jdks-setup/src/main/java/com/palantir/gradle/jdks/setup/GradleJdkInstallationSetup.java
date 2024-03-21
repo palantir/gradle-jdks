@@ -29,9 +29,10 @@ import java.util.Map;
 
 /**
  * Class responsible for installing the current JDK into {@code destinationJdkInstallationDir} and importing the
- * certificates specified by their serialNumbers & alias name from {@code certsDir} into the JDK's truststore. A certificate will be
- * imported iff the serial number already exists in the truststore.
- * The class will be called by the Gradle setup script in <a href="file:../resources/gradle-jdks-setup.sh">resources/gradle-jdks-setup.sh</a>
+ * certificates specified by their serialNumbers & alias name from {@code certsDir} into the JDK's truststore.
+ * A certificate will be imported iff the serial number already exists in the truststore.
+ * The class will be called by the Gradle setup script in
+ * <a href="file:../resources/gradle-jdks-setup.sh">resources/gradle-jdks-setup.sh</a>.
  */
 public final class GradleJdkInstallationSetup {
 
