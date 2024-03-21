@@ -72,9 +72,10 @@ public final class CaResources {
             ILogger logger, List<Certificate> selectedCerts, Collection<String> expectedCerts) {
         Set<String> selectedCertAliases =
                 selectedCerts.stream().map(Certificate::getAlias).collect(Collectors.toSet());
-        Set<String> missingCertAliases = expectedCerts.stream()
+        List<String> missingCertAliases = expectedCerts.stream()
                 .filter(alias -> !selectedCertAliases.contains(alias))
-                .collect(Collectors.toSet());
+                .sorted()
+                .collect(Collectors.toList());
         logger.logError(String.format(
                 "Certificates '%s' could not be found in the system keystore. These certificates were not imported.",
                 String.join(", ", missingCertAliases)));

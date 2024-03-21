@@ -16,11 +16,16 @@
 #
 set -e
 
-shopt -s expand_aliases
-
-if [ -f /root/.bash_profile ]; then
-  . /root/.bash_profile
+if command -v curl > /dev/null 2>&1; then
+  function curl () { command curl -k "$@"; }
+  export curl
 fi
+
+if command -v wget > /dev/null 2>&1; then
+  function wget () { command wget --no-check-certificate "$@" ; }
+  export wget
+fi
+
 . /gradle/gradle-jdks-setup.sh
 
 echo "Java home is: $JAVA_HOME"
