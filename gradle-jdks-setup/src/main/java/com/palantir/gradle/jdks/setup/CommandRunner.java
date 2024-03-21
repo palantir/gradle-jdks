@@ -49,7 +49,7 @@ public final class CommandRunner {
         }
     }
 
-    private static String readAllInput(InputStream inputStream) {
+    static String readAllInput(InputStream inputStream) {
         try (Stream<String> lines =
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
             return lines.collect(Collectors.joining("\n"));

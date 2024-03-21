@@ -27,19 +27,24 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Class responsible for installing the current JDK into {@code destinationJdkInstallationDir} and importing the
+ * certificates specified by their serialNumbers & alias name from {@code certsDir} into the JDK's truststore. A certificate will be
+ * imported iff the serial number already exists in the truststore.
+ * The class will be called by the Gradle setup script in <a href="file:../resources/gradle-jdks-setup.sh">resources/gradle-jdks-setup.sh</a>
+ */
 public final class GradleJdkInstallationSetup {
 
     public static void main(String[] args) throws IOException {
         StdLogger logger = new StdLogger();
         if (args.length != 2) {
-            throw new IllegalArgumentException(
-                    "Expected two arguments: destinationJdkInstallationDirectory and certsDirectory");
+            throw new IllegalArgumentException("Expected two arguments: destinationJdkInstallationDir and certsDir");
         }
-        Path destinationJdkInstallationDirectory = Path.of(args[0]);
-        Path certsDirectory = Path.of(args[1]);
-        atomicCopyJdkInstallationDirectory(logger, destinationJdkInstallationDirectory);
-        Map<String, String> certNamesToSerialNumbers = extractCertsSerialNumbers(logger, certsDirectory);
-        CaResources.maybeImportCertsInJdk(logger, destinationJdkInstallationDirectory, certNamesToSerialNumbers);
+        Path destinationJdkInstallationDir = Path.of(args[0]);
+        Path certsDir = Path.of(args[1]);
+        atomicCopyJdkInstallationDirectory(logger, destinationJdkInstallationDir);
+        Map<String, String> certNamesToSerialNumbers = extractCertsSerialNumbers(logger, certsDir);
+        CaResources.maybeImportCertsInJdk(logger, destinationJdkInstallationDir, certNamesToSerialNumbers);
     }
 
     private static void atomicCopyJdkInstallationDirectory(ILogger logger, Path destinationJdkInstallationDirectory)
@@ -88,7 +93,7 @@ public final class GradleJdkInstallationSetup {
 
             @Override
             public FileVisitResult visitFileFailed(Path _file, IOException exc) throws IOException {
-                throw new RuntimeException("Unable to read file", exc);
+                throw new RuntimeException("Unable to read the certificate file", exc);
             }
 
             @Override

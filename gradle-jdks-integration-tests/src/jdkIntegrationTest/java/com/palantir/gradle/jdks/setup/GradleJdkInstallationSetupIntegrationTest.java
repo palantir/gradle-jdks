@@ -27,11 +27,7 @@ import com.palantir.gradle.jdks.CurrentOs;
 import com.palantir.gradle.jdks.JdkPath;
 import com.palantir.gradle.jdks.JdkRelease;
 import com.palantir.gradle.jdks.Os;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -39,12 +35,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
 
 public class GradleJdkInstallationSetupIntegrationTest {
 
@@ -91,7 +85,6 @@ public class GradleJdkInstallationSetupIntegrationTest {
     }
 
     @Test
-    @EnabledOnOs(org.junit.jupiter.api.condition.OS.MAC)
     public void can_setup_locally_from_scratch() throws IOException, InterruptedException {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, CurrentOs.get());
         Path gradleHomeDir = Files.createTempDirectory("jdkIntegrationTest");
@@ -99,23 +92,35 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Path expectedJavaHomeVersion =
                 gradleJdksDir.resolve(String.format("amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH));
         Path expectedJavaHome = expectedJavaHomeVersion.resolve("bin/java");
-        assertThat(runCommandWithZeroExitCode(
-                        List.of(
-                                "/bin/bash",
-                                temporaryGradleDirectory
-                                        .resolve("gradle-jdks-setup.sh")
-                                        .toAbsolutePath()
-                                        .toString()),
-                        Map.of(
-                                "GRADLE_USER_HOME",
-                                gradleHomeDir.toAbsolutePath().toString())))
-                .contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion))
-                .contains("Successfully imported CA certificate Palantir3rdGenRootCaIntegrationTest into the JDK"
-                        + " truststore")
-                .contains(String.format(
-                        "Certificates '%s' could not be found in the system keystore. These certificates"
-                                + " were not imported.",
-                        NON_EXISTING_CERT_ALIAS));
+
+        String firstRunOutput = runCommandWithZeroExitCode(
+                List.of(
+                        "/bin/bash",
+                        temporaryGradleDirectory
+                                .resolve("gradle-jdks-setup.sh")
+                                .toAbsolutePath()
+                                .toString()),
+                Map.of("GRADLE_USER_HOME", gradleHomeDir.toAbsolutePath().toString()));
+        assertThat(firstRunOutput).contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion));
+        if (CaResources.readPalantirRootCaFromSystemTruststore(new StdLogger()).isPresent()) {
+            assertThat(firstRunOutput)
+                    .contains("Successfully imported CA certificate Palantir3rdGenRootCaIntegrationTest into the JDK"
+                            + " truststore")
+                    .contains(String.format(
+                            "Certificates '%s' could not be found in the system keystore. These certificates"
+                                    + " were not imported.",
+                            NON_EXISTING_CERT_ALIAS));
+        } else {
+            assertThat(firstRunOutput)
+                    .doesNotContain(
+                            "Successfully imported CA certificate Palantir3rdGenRootCaIntegrationTest into the JDK"
+                                    + " truststore")
+                    .contains(String.format(
+                            "Certificates '%s, %s' could not be found in the system keystore. These"
+                                    + " certificates were not imported.",
+                            NON_EXISTING_CERT_ALIAS, PALANTIR_CERT_ALIAS));
+        }
+
         assertThat(runCommandWithZeroExitCode(
                         List.of(
                                 "/bin/bash",
@@ -253,18 +258,11 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 new ProcessBuilder().command(commandArguments).redirectErrorStream(true);
         processBuilder.environment().putAll(Objects.requireNonNull(environment));
         Process process = processBuilder.start();
-        String output = readAllInput(process.getInputStream());
+        String output = CommandRunner.readAllInput(process.getInputStream());
         assertThat(process.waitFor())
                 .as("Command '%s' failed with output: %s", String.join(" ", commandArguments), output)
                 .isEqualTo(0);
         return output;
-    }
-
-    private static String readAllInput(InputStream inputStream) {
-        try (Stream<String> lines =
-                new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
-            return lines.collect(Collectors.joining("\n"));
-        }
     }
 
     private static String getJavaVersion(String jdkVersion) {

@@ -16,6 +16,9 @@
 
 package com.palantir.gradle.jdks.setup;
 
+/**
+ * Interface to log messages for the JDK certificate setup {@link CaResources}.
+ */
 public interface ILogger {
 
     /**

@@ -26,7 +26,7 @@
 #   (3) Calls the java class `GradleJdkInstallationSetup` that will move the distribution to
 #   `$GRADLE_USER_HOME/${local_path}` based on the local_path=`gradle/jdks/${majorVersion}/${os}/${arch}/local_path`
 #   and it will set up the certificates based on `gradle/certs` entries for the locally installed distribution
-#   (4) Sets up the JAVA_HOME and PATH env variable to the currently installed JDK
+#   (4) Sets up the JAVA_HOME and PATH env variables to the currently installed JDK
 #
 #
 #   Important for running:
