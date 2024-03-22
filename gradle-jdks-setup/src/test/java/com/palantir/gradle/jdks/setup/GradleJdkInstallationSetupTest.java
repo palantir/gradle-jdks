@@ -19,28 +19,22 @@ package com.palantir.gradle.jdks.setup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public final class GradleJdkInstallationSetupTest {
 
-    public static Path tempDir;
+    private static final BigInteger AMAZON_ROOT_CA_1_SERIAL =
+            new BigInteger("143266978916655856878034712317230054538369994");
+    private static final String AMAZON_CERT_ALIAS = "AmazonRootCA1Test";
 
-    @BeforeAll
-    public static void beforeAll() throws IOException {
-        tempDir = Files.createTempDirectory("testing-jdk-installation");
-    }
-
-    @AfterAll
-    public static void afterAll() throws IOException {
-        FileUtils.deleteDirectory(tempDir.toFile());
-    }
+    @TempDir
+    Path tempDir;
 
     @Test
     public void can_copy_jdk_installation_with_no_certs() throws IOException {
@@ -62,8 +56,8 @@ public final class GradleJdkInstallationSetupTest {
         String distribution =
                 Path.of(System.getProperty("java.home")).getFileName().toString();
         Path certsDir = Files.createDirectories(tempDir.resolve("certs"));
-        Path palantirRootCa = Files.createFile(certsDir.resolve("Palantir3rdGenRootCaTest.crt"));
-        Files.write(palantirRootCa, "18126334688741185161\n".getBytes(StandardCharsets.UTF_8));
+        Path amazonRootCa = Files.createFile(certsDir.resolve(String.format("%s.serial-number", AMAZON_CERT_ALIAS)));
+        Files.write(amazonRootCa, AMAZON_ROOT_CA_1_SERIAL.toString().getBytes(StandardCharsets.UTF_8));
         GradleJdkInstallationSetup.main(new String[] {
             tempDir.resolve(distribution).toAbsolutePath().toString(),
             certsDir.toAbsolutePath().toString()
@@ -72,22 +66,17 @@ public final class GradleJdkInstallationSetupTest {
         Path destJavaHome = destDistribution.resolve("bin/java");
         assertThat(destDistribution).exists();
         assertThat(destJavaHome).exists();
-        checkCaIsImportedIfExistingInSystemKeytool(destDistribution, "Palantir3rdGenRootCaTest");
+        checkCaIsImported(destDistribution);
     }
 
-    private static void checkCaIsImportedIfExistingInSystemKeytool(Path jdkPath, String certAlias) {
-        CaResources.readPalantirRootCaFromSystemTruststore(new StdLogger())
-                .ifPresent(_ignored -> checkCaIsImported(jdkPath, certAlias));
-    }
-
-    private static void checkCaIsImported(Path jdkPath, String certAlias) {
+    private static void checkCaIsImported(Path jdkPath) {
         CommandRunner.run(List.of(
                 jdkPath.resolve("bin/keytool").toString(),
                 "-list",
                 "-storepass",
                 "changeit",
                 "-alias",
-                certAlias,
+                AMAZON_CERT_ALIAS,
                 "-keystore",
                 jdkPath.resolve("lib/security/cacerts").toString()));
     }

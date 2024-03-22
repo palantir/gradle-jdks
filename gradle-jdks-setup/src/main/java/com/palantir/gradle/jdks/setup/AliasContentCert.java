@@ -19,13 +19,13 @@ package com.palantir.gradle.jdks.setup;
 /**
  * Helper class to represent a certificate based on the alias and content.
  */
-public final class Certificate {
+public final class AliasContentCert {
 
     private final String content;
 
     private final String alias;
 
-    public Certificate(String alias, String content) {
+    public AliasContentCert(String alias, String content) {
         this.alias = alias;
         this.content = content;
     }

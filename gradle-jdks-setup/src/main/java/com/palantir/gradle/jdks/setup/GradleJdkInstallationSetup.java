@@ -18,14 +18,12 @@ package com.palantir.gradle.jdks.setup;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Class responsible for installing the current JDK into {@code destinationJdkInstallationDir} and importing the
@@ -38,14 +36,15 @@ public final class GradleJdkInstallationSetup {
 
     public static void main(String[] args) throws IOException {
         StdLogger logger = new StdLogger();
+        CaResources caResources = new CaResources(logger);
         if (args.length != 2) {
             throw new IllegalArgumentException("Expected two arguments: destinationJdkInstallationDir and certsDir");
         }
         Path destinationJdkInstallationDir = Path.of(args[0]);
         Path certsDir = Path.of(args[1]);
         atomicCopyJdkInstallationDirectory(logger, destinationJdkInstallationDir);
-        Map<String, String> certNamesToSerialNumbers = extractCertsSerialNumbers(logger, certsDir);
-        CaResources.maybeImportCertsInJdk(logger, destinationJdkInstallationDir, certNamesToSerialNumbers);
+        Map<String, String> certSerialNumbersToNames = extractCertsSerialNumbers(logger, certsDir);
+        caResources.maybeImportCertsInJdk(destinationJdkInstallationDir, certSerialNumbersToNames);
     }
 
     private static void atomicCopyJdkInstallationDirectory(ILogger logger, Path destinationJdkInstallationDirectory)
@@ -71,38 +70,26 @@ public final class GradleJdkInstallationSetup {
         }
     }
 
+    @SuppressWarnings("StringSplitter")
     private static Map<String, String> extractCertsSerialNumbers(ILogger logger, Path certsDirectory)
             throws IOException {
         if (!Files.exists(certsDirectory)) {
             logger.log("No certs directory found, skipping import of certificates");
             return Map.of();
         }
-        Map<String, String> certSerialNumbersToAliases = new HashMap<>();
-        Files.walkFileTree(certsDirectory, new FileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path _dir, BasicFileAttributes _attrs) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
+        try (Stream<Path> stream = Files.list(certsDirectory)) {
+            return stream.collect(Collectors.toMap(
+                    GradleJdkInstallationSetup::readSerialNumber,
+                    certFile -> certFile.getFileName().toString().split("\\.")[0]));
+        }
+    }
 
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes _attrs) throws IOException {
-                String certAlias = file.getFileName().toString().split("\\.")[0];
-                String certSerialNumber = Files.readString(file).trim();
-                certSerialNumbersToAliases.put(certSerialNumber, certAlias);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path _file, IOException exc) throws IOException {
-                throw new RuntimeException("Unable to read the certificate file", exc);
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path _dir, IOException _exc) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        return certSerialNumbersToAliases;
+    private static String readSerialNumber(Path certFile) {
+        try {
+            return Files.readString(certFile).trim();
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to read serial number from " + certFile, e);
+        }
     }
 
     private GradleJdkInstallationSetup() {}

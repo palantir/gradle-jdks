@@ -11,5 +11,5 @@ dependencies {
 }
 
 tasks.withType(JavaCompile) {
-    options.errorprone.disable 'PreferSafeLoggableExceptions', 'StringSplitter'
+    options.errorprone.disable 'PreferSafeLoggableExceptions'
 }

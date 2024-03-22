@@ -2,24 +2,20 @@ apply plugin: 'java'
 apply plugin: 'org.unbroken-dome.test-sets'
 
 testSets {
-    jdkIntegrationTest
+    integrationTest
 }
 
 dependencies {
-    jdkIntegrationTestImplementation project(":gradle-jdks")
-    jdkIntegrationTestImplementation project(":gradle-jdks-setup")
+    integrationTestImplementation project(":gradle-jdks")
+    integrationTestImplementation project(":gradle-jdks-setup")
 
-    jdkIntegrationTestImplementation 'commons-io:commons-io'
-    jdkIntegrationTestImplementation 'com.google.guava:guava'
-    jdkIntegrationTestImplementation 'org.junit.jupiter:junit-jupiter'
-    jdkIntegrationTestImplementation 'org.assertj:assertj-core'
+    integrationTestImplementation 'commons-io:commons-io'
+    integrationTestImplementation 'com.google.guava:guava'
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter'
+    integrationTestImplementation 'org.assertj:assertj-core'
 }
 
-tasks.build.dependsOn tasks.jdkIntegrationTest
-tasks.jdkIntegrationTest {
+tasks.build.dependsOn tasks.integrationTest
+tasks.integrationTest {
     environment("PROJECT_VERSION", project.version)
-}
-
-tasks.withType(JavaCompile) {
-    options.errorprone.disable 'StringSplitter'
 }

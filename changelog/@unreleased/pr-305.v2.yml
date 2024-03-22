@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: '[Part 1] Gradle JDK automanagement'
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/305

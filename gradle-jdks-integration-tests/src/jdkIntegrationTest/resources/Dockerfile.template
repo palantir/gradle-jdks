@@ -1,5 +1,0 @@
-FROM @BASE_IMAGE@
-@EXTRA_RUN_STEPS@
-COPY ./gradle /gradle
-RUN chmod +x /gradle/testing-script.sh
-CMD ["@SHELL@", "/gradle/testing-script.sh"]
