@@ -82,7 +82,7 @@ case "$( uname )" in                          #(
 esac
 
 if [ "$os_name" = "linux" ]; then
-    if [ -f /etc/alpine-release ]; then
+    if (ldd --version 2>&1 || true) | grep -q musl ; then
       os_name="linux-musl"
     else
       os_name="linux-glibc"

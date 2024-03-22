@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -94,11 +93,9 @@ public class GradleJdkInstallationSetupIntegrationTest {
         assertThat(firstRunOutput).contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion));
         assertThat(firstRunOutput)
                 .contains(String.format(
-                        "Successfully imported CA certificate %s into the JDK" + " truststore", AMAZON_CERT_ALIAS))
-                .contains(String.format(
-                        "Certificates '%s' could not be found in the system keystore. These certificates"
-                                + " were not imported.",
-                        NON_EXISTING_CERT_ALIAS));
+                        "Successfully imported CA certificate %s into the JDK truststore", AMAZON_CERT_ALIAS))
+                .doesNotContain(String.format(
+                        "Successfully imported CA certificate %s into the JDK truststore", NON_EXISTING_CERT_ALIAS));
 
         assertThat(runCommandWithZeroExitCode(
                         List.of(
@@ -112,7 +109,6 @@ public class GradleJdkInstallationSetupIntegrationTest {
                                 gradleHomeDir.toAbsolutePath().toString())))
                 .contains(String.format("already exists, setting JAVA_HOME to %s", expectedJavaHomeVersion));
         assertThat(Files.exists(expectedJavaHome)).isTrue();
-        FileUtils.deleteDirectory(workingDir.toFile());
     }
 
     private Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
@@ -245,9 +241,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 .contains(String.format("Java home is: %s", expectedDistributionPath))
                 .containsPattern(String.format("Java path is: java is ([^/]*\\s)*%s", expectedDistributionPath))
                 .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
-                .contains(String.format(
-                        "Certificates '%s' could not be found in the system keystore. These"
-                                + " certificates were not imported.",
-                        NON_EXISTING_CERT_ALIAS));
+                .doesNotContain(String.format(
+                        "Successfully imported CA certificate %s into the JDK truststore", NON_EXISTING_CERT_ALIAS));
     }
 }

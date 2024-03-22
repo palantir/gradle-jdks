@@ -42,13 +42,12 @@ public final class GradleJdkInstallationSetup {
         }
         Path destinationJdkInstallationDir = Path.of(args[0]);
         Path certsDir = Path.of(args[1]);
-        atomicCopyJdkInstallationDirectory(logger, destinationJdkInstallationDir);
+        copy(logger, destinationJdkInstallationDir);
         Map<String, String> certSerialNumbersToNames = extractCertsSerialNumbers(logger, certsDir);
         caResources.maybeImportCertsInJdk(destinationJdkInstallationDir, certSerialNumbersToNames);
     }
 
-    private static void atomicCopyJdkInstallationDirectory(ILogger logger, Path destinationJdkInstallationDirectory)
-            throws IOException {
+    private static void copy(ILogger logger, Path destinationJdkInstallationDirectory) throws IOException {
         Path currentJavaHome = Path.of(System.getProperty("java.home"));
         Path jdksInstallationDirectory = destinationJdkInstallationDirectory.getParent();
         if (!jdksInstallationDirectory.toFile().exists()) {

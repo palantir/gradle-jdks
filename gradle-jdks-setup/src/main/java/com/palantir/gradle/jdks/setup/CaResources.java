@@ -31,13 +31,11 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,28 +59,10 @@ public final class CaResources {
             logger.log("No certificates were provided to import, skipping...");
             return;
         }
-        List<AliasContentCert> selectedAliasContentCerts = systemCertificates()
-                .map(certs ->
-                        selectCertificates(certs, certSerialNumbersToAliases).collect(Collectors.toList()))
-                .orElseGet(List::of);
-        selectedAliasContentCerts.forEach(cert -> importCertInJdk(cert, jdkInstallationDirectory));
-        if (selectedAliasContentCerts.size() != certSerialNumbersToAliases.size()) {
-            logMissingCertificates(
-                    selectedAliasContentCerts,
-                    certSerialNumbersToAliases.values().stream().collect(Collectors.toSet()));
-        }
-    }
-
-    private void logMissingCertificates(List<AliasContentCert> selectedCerts, Collection<String> expectedCerts) {
-        Set<String> selectedCertAliases =
-                selectedCerts.stream().map(AliasContentCert::getAlias).collect(Collectors.toSet());
-        List<String> missingCertAliases = expectedCerts.stream()
-                .filter(alias -> !selectedCertAliases.contains(alias))
-                .sorted()
-                .collect(Collectors.toList());
-        logger.logError(String.format(
-                "Certificates '%s' could not be found in the system keystore. These certificates were not imported.",
-                String.join(", ", missingCertAliases)));
+        systemCertificates()
+                .map(certs -> selectCertificates(certs, certSerialNumbersToAliases))
+                .orElseGet(Stream::of)
+                .forEach(cert -> importCertInJdk(cert, jdkInstallationDirectory));
     }
 
     private void importCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {

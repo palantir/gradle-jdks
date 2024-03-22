@@ -22,16 +22,25 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class CommandRunner {
 
     public static String run(List<String> commandArguments) {
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
         try {
             Process process = new ProcessBuilder().command(commandArguments).start();
-            String output = readAllInput(process.getInputStream());
-            String errorOutput = readAllInput(process.getErrorStream());
+            CompletableFuture<String> outputFuture =
+                    CompletableFuture.supplyAsync(() -> readAllInput(process.getInputStream()), executorService);
+            CompletableFuture<String> errorOutputFuture =
+                    CompletableFuture.supplyAsync(() -> readAllInput(process.getErrorStream()), executorService);
+            String output = outputFuture.get();
+            String errorOutput = errorOutputFuture.get();
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 throw new RuntimeException(String.format(
@@ -46,6 +55,12 @@ public final class CommandRunner {
         } catch (InterruptedException e) {
             throw new RuntimeException(
                     String.format("Failed to run command '%s'. ", String.join(" ", commandArguments)), e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(
+                    String.format("Failed to get output for the command '%s'. ", String.join(" ", commandArguments)),
+                    e);
+        } finally {
+            executorService.shutdown();
         }
     }
 
