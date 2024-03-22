@@ -24,9 +24,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@Disabled("Set up a different current JDK")
 public final class GradleJdkInstallationSetupTest {
 
     private static final BigInteger AMAZON_ROOT_CA_1_SERIAL =

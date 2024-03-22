@@ -26,17 +26,19 @@ import java.util.Optional;
 
 public final class FileUtils {
 
-    public static void copyDirectory(Path source, Path destination) throws IOException {
+    public static void moveDirectory(Path source, Path destination) throws IOException {
         Files.walkFileTree(source, new FileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes _attrs) throws IOException {
-                Files.createDirectories(destination.resolve(source.relativize(dir)));
+                if (!destination.resolve(source.relativize(dir)).toFile().exists()) {
+                    Files.createDirectories(destination.resolve(source.relativize(dir)));
+                }
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes _attrs) throws IOException {
-                Files.copy(file, destination.resolve(source.relativize(file)));
+                Files.move(file, destination.resolve(source.relativize(file)));
                 return FileVisitResult.CONTINUE;
             }
 

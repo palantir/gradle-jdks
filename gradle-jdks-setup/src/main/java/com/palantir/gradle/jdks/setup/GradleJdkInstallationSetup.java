@@ -42,29 +42,32 @@ public final class GradleJdkInstallationSetup {
         }
         Path destinationJdkInstallationDir = Path.of(args[0]);
         Path certsDir = Path.of(args[1]);
-        atomicCopyJdkInstallationDirectory(logger, destinationJdkInstallationDir);
+        Path currentJavaHome = Path.of(System.getProperty("java.home"));
         Map<String, String> certSerialNumbersToNames = extractCertsSerialNumbers(logger, certsDir);
-        caResources.maybeImportCertsInJdk(destinationJdkInstallationDir, certSerialNumbersToNames);
+        caResources.maybeImportCertsInJdk(currentJavaHome, certSerialNumbersToNames);
+        atomicMvJdkInstallationDirectory(logger, currentJavaHome, destinationJdkInstallationDir);
+        // DO NOT ADD ANYTHING AFTER THIS LINE. We moved the current JDK installation directory used by the process to a
+        // different directory. We cannot rely on the JDK installation directory anymore.
     }
 
-    private static void atomicCopyJdkInstallationDirectory(ILogger logger, Path destinationJdkInstallationDirectory)
-            throws IOException {
-        Path currentJavaHome = Path.of(System.getProperty("java.home"));
-        Path jdksInstallationDirectory = destinationJdkInstallationDirectory.getParent();
+    private static void atomicMvJdkInstallationDirectory(
+            ILogger logger, Path sourceJdkInstallationDir, Path destinationJdkInstallationDir) throws IOException {
+        Path jdksInstallationDirectory = destinationJdkInstallationDir.getParent();
         if (!jdksInstallationDirectory.toFile().exists()) {
             Files.createDirectories(jdksInstallationDirectory);
         }
-        Path lockFile = jdksInstallationDirectory.resolve(destinationJdkInstallationDirectory.getFileName() + ".lock");
+        Path lockFile = jdksInstallationDirectory.resolve(destinationJdkInstallationDir.getFileName() + ".lock");
         try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             channel.lock();
             // double-check, now that we hold the lock
-            if (Files.exists(destinationJdkInstallationDirectory)) {
-                logger.log(String.format("Distribution URL %s already exists", destinationJdkInstallationDirectory));
+            if (Files.exists(destinationJdkInstallationDir)) {
+                logger.log(String.format("Distribution URL %s already exists", destinationJdkInstallationDir));
                 return;
             }
-            logger.log(
-                    String.format("Copying JDK from %s into %s", currentJavaHome, destinationJdkInstallationDirectory));
-            FileUtils.copyDirectory(currentJavaHome, destinationJdkInstallationDirectory);
+            logger.log(String.format(
+                    "Moving JDK from the current installation directory %s into %s",
+                    sourceJdkInstallationDir, destinationJdkInstallationDir));
+            FileUtils.moveDirectory(sourceJdkInstallationDir, destinationJdkInstallationDir);
         } catch (IOException e) {
             throw new RuntimeException("Unable to acquire locks, won't move the JDK installation directory", e);
         }

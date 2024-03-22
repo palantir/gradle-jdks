@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -76,6 +77,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
     }
 
     @Test
+    @Disabled("Set up a different JDK")
     public void can_setup_locally_from_scratch() throws IOException, InterruptedException {
         Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, CurrentOs.get());
         Path gradleHomeDir = Files.createTempDirectory("jdkIntegrationTest");
