@@ -9,5 +9,5 @@ fi
 . /gradle/gradle-jdks-setup.sh
 
 echo "Java home is: $JAVA_HOME"
-echo "Java path is: $(type -p java)"
+echo "Java path is: $(type java)"
 echo "Java version is: $(java --version | awk '{print $2}' | head -n 1)"

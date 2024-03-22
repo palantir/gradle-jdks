@@ -248,7 +248,6 @@ public final class CaResources {
             try {
                 certs.add(certificateFactory.generateCertificate(baos));
             } catch (CertificateException e) {
-                System.err.println("Failed to parse cert " + e.getMessage() + "certificate" + i);
                 if (e.getMessage().contains("Duplicate extensions not allowed")) {
                     continue;
                 }

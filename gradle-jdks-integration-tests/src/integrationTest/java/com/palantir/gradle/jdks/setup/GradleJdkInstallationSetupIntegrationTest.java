@@ -243,7 +243,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         assertThat(output)
                 .contains(SUCCESSFUL_OUTPUT)
                 .contains(String.format("Java home is: %s", expectedDistributionPath))
-                .contains(String.format("Java path is: %s", expectedDistributionPath))
+                .containsPattern(String.format("Java path is: java is ([^/]*\\s)*%s", expectedDistributionPath))
                 .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
                 .contains(String.format(
                         "Certificates '%s' could not be found in the system keystore. These"

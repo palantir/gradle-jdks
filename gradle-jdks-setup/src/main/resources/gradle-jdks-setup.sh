@@ -38,7 +38,11 @@
 #
 ##############################################################################
 
-set -e; set -o pipefail
+set -e
+if (set -o  pipefail 2>/dev/null); then
+    echo "Setting pipefail"
+    set -o pipefail
+fi
 
 # Resolve links: $0 may be a link
 app_path=$0
