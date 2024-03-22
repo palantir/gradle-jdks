@@ -212,7 +212,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 "-f",
                 dockerFile.toAbsolutePath().toString(),
                 workingDir.toAbsolutePath().toString()));
-        return runCommandWithZeroExitCode(List.of("docker", "run", dockerImage));
+        return runCommandWithZeroExitCode(List.of("docker", "run", "--rm", dockerImage));
     }
 
     static String runCommandWithZeroExitCode(List<String> commandArguments) throws InterruptedException, IOException {
