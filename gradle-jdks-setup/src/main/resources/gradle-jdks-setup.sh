@@ -40,7 +40,6 @@
 
 set -e
 if (set -o  pipefail 2>/dev/null); then
-    echo "Setting pipefail"
     set -o pipefail
 fi
 
@@ -126,7 +125,7 @@ else
     echo "Using wget to download $distribution_url"
     wget -qO- -c "$distribution_url" | tar -xzf -
   else
-    # TODO(crogoz): maybe run using java ? should be tried first
+    # TODO(crogoz): fallback to java if it exists
     die "ERROR: Neither curl nor wget are installed, Could not set up JAVA_HOME"
   fi
   cd - || exit
@@ -137,6 +136,8 @@ else
   "$java_home/bin/java" -cp "$APP_HOME"/jdks/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory"
   echo Successfully installed JDK distribution, setting JAVA_HOME to "$jdk_installation_directory"
 fi
+
+rm -rf "$tmp_work_dir"
 
 export JAVA_HOME="$jdk_installation_directory"
 export PATH=$PATH:$JAVA_HOME/bin

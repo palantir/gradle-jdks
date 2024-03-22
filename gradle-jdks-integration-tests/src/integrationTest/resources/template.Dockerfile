@@ -10,4 +10,3 @@ COPY ./gradle /gradle
 RUN chmod +x /gradle/testing-script.sh
 ARG SCRIPT_SHELL
 CMD $SCRIPT_SHELL /gradle/testing-script.sh
-

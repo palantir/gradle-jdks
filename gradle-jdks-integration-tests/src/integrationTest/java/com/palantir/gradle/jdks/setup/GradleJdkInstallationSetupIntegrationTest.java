@@ -196,7 +196,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
 
     private String dockerBuildAndRunTestingScript(String baseImage, String shell, boolean installCurl)
             throws IOException, InterruptedException {
-        Path dockerFile = Path.of("src/integrationTest/resources/Dockerfile.template");
+        Path dockerFile = Path.of("src/integrationTest/resources/template.Dockerfile");
         String dockerImage = String.format("jdk-test-%s", baseImage);
         runCommandWithZeroExitCode(List.of(
                 "docker",

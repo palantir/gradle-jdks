@@ -18,7 +18,6 @@
 .apt_generated
 generated_src/
 **/src/generated/
-Dockerfile.jdkIntegrationTest.rendered
 
 # OS X
 .DS_Store
