@@ -20,6 +20,11 @@ import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
 import spock.lang.Unroll
 
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
+
 @Unroll
 class JdksPluginIntegrationSpec extends IntegrationSpec {
     private static final List<String> GRADLE_VERSIONS = List.of("7.6.2", "8.4")
@@ -222,6 +227,24 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
         where:
         gradleVersionNumber << GRADLE_VERSIONS
+    }
+
+    def '#gradleVersionNumber: patches gradleWrapper to set up JDK'() {
+        gradleVersion = gradleVersionNumber
+
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+
+
+        when:
+        def result = runTasksSuccessfully('wrapper')
+
+        then:
+        result.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
+        file("gradlew").text.contains("exec gradle-jdks-setup.sh")
+
+        where:
+        gradleVersionNumber << GRADLE_VERSIONS
+
     }
 
     @Override

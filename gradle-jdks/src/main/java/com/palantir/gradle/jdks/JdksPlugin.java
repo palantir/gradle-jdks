@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersions;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
+import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Optional;
@@ -25,6 +26,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
@@ -60,6 +62,16 @@ public final class JdksPlugin implements Plugin<Project> {
                     return Optional.of(javaInstallationForLanguageVersion(
                             project, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion));
                 });
+
+        TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
+                .getTasks()
+                .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
+                    task.getGradlewUnixScriptFile().set(rootProject.file("gradlew"));
+                    task.getGradlePropsFile().set(rootProject.file("gradle.properties"));
+                });
+        rootProject.getTasks().named("wrapper").configure(wrapperTask -> {
+            wrapperTask.finalizedBy(wrapperPatcherTask);
+        });
     }
 
     private JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {

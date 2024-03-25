@@ -21,7 +21,9 @@ dependencies {
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'
     implementation 'com.google.guava:guava'
 
+    compileOnly 'com.palantir.gradle.auto-parallelizable:auto-parallelizable-annotations'
     compileOnly 'org.immutables:value::annotations'
+    annotationProcessor 'com.palantir.gradle.auto-parallelizable:auto-parallelizable'
     annotationProcessor 'org.immutables:value'
 
     testImplementation 'com.netflix.nebula:nebula-test'
