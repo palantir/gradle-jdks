@@ -25,12 +25,12 @@ import org.junit.jupiter.api.Test;
 public class CommandRunnerTest {
 
     @Test
-    public void testCommandSuccess() {
+    public void command_runs_successfully() {
         assertThat(CommandRunner.run(List.of("echo", "my message"))).contains("my message");
     }
 
     @Test
-    public void testCommandFailure() {
+    public void command_fails() {
         assertThatThrownBy(() -> CommandRunner.run(List.of("nonexistingcommand")))
                 .hasMessageContaining("Failed to run command 'nonexistingcommand'");
     }
