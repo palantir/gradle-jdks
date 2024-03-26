@@ -61,3 +61,7 @@ tasks.withType(JavaCompile).configureEach {
     it.options.errorprone.disable 'JavaxInjectOnAbstractMethod'
     it.options.errorprone.disable 'StrictUnusedVariable'
 }
+
+tasks.test {
+    environment("PROJECT_VERSION", project.version)
+}

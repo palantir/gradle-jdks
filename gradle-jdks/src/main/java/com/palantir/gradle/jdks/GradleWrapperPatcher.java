@@ -128,7 +128,10 @@ public abstract class GradleWrapperPatcher {
     private static List<String> getGradlewPatchLines() {
         return List.of(
                 String.format("# Setting up the Gradle JDK because %s is enabled", ENABLE_GRADLE_JDK_SETUP),
-                "exec gradle-jdks-setup.sh");
+                "echo Setting up the Gradle JDK is starting",
+                "source gradle/gradle-jdks-setup.sh",
+                "echo $?",
+                "echo Setting up the Gradle JDK is complete");
     }
 
     private static String getGradlewWithPatch(int insertIndex, List<String> initialLines) {
