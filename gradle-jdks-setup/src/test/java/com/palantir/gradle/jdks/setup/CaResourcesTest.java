@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2023 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.setup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,30 +22,30 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-class PalantirCaPluginTest {
+public class CaResourcesTest {
+
     @Test
     void handles_just_whitespace_truststore() {
-        assertThat(PalantirCaPlugin.parseCerts("         \n      ".getBytes(StandardCharsets.UTF_8)))
+        assertThat(CaResources.parseCerts("         \n      ".getBytes(StandardCharsets.UTF_8)))
                 .isEmpty();
     }
 
     @Test
     void handles_whitespace_and_comments_between_certs() throws IOException {
 
-        assertThat(PalantirCaPlugin.parseCerts(certsFromResources("amazon-cas-with-whitespace-between.pem")))
+        assertThat(CaResources.parseCerts(certsFromResources("amazon-cas-with-whitespace-between.pem")))
                 .hasSize(3);
     }
 
     @Test
     void does_not_explode_when_given_certs_with_duplicate_extensions() throws IOException {
-        assertThat(PalantirCaPlugin.parseCerts(certsFromResources("apple-kdc-cert-with-duplicate-extension.pem")))
+        assertThat(CaResources.parseCerts(certsFromResources("apple-kdc-cert-with-duplicate-extension.pem")))
                 .isEmpty();
     }
 
     @Test
     void does_not_explode_when_given_certs_with_incorrect_vesion() throws IOException {
-        assertThat(PalantirCaPlugin.parseCerts(
-                        certsFromResources("strongloop-cert-with-v3-extensions-but-v1-version.pem")))
+        assertThat(CaResources.parseCerts(certsFromResources("strongloop-cert-with-v3-extensions-but-v1-version.pem")))
                 .isEmpty();
     }
 

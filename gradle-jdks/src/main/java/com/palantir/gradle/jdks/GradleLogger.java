@@ -16,27 +16,27 @@
 
 package com.palantir.gradle.jdks;
 
-import java.util.Locale;
-import java.util.Set;
+import com.palantir.gradle.jdks.setup.ILogger;
+import org.gradle.api.logging.LogLevel;
+import org.gradle.api.logging.Logger;
 
-public final class CurrentArch {
-    public static Arch get() {
-        String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
+public final class GradleLogger implements ILogger {
 
-        if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
-            return Arch.X86_64;
-        }
+    private Logger gradleLogger;
+    private LogLevel logLevel;
 
-        if (Set.of("arm", "arm64", "aarch64").contains(osArch)) {
-            return Arch.AARCH64;
-        }
-
-        if (Set.of("x86", "i686").contains(osArch)) {
-            return Arch.X86;
-        }
-
-        throw new UnsupportedOperationException("Cannot get architecture for " + osArch);
+    public GradleLogger(Logger gradleLogger, LogLevel logLevel) {
+        this.gradleLogger = gradleLogger;
+        this.logLevel = logLevel;
     }
 
-    private CurrentArch() {}
+    @Override
+    public void log(String message) {
+        gradleLogger.log(logLevel, message);
+    }
+
+    @Override
+    public void logError(String errorMessage) {
+        log(errorMessage);
+    }
 }

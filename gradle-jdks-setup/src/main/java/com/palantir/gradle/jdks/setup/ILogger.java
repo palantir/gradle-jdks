@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.setup;
 
-import org.immutables.value.Value;
+/**
+ * Interface to log messages for the JDK certificate setup {@link CaResources}.
+ */
+public interface ILogger {
 
-@Value.Immutable
-public interface JdkRelease {
-    String version();
+    /**
+     * Logs an info message.
+     */
+    void log(String message);
 
-    Os os();
-
-    Arch arch();
-
-    class Builder extends ImmutableJdkRelease.Builder {}
-
-    static Builder builder() {
-        return new Builder();
-    }
+    /**
+     * Logs an error message.
+     */
+    void logError(String errorMessage);
 }

@@ -3,6 +3,7 @@
 *.ipr
 *.iws
 .idea/
+.profileconfig.json
 
 # Eclipse
 .classpath

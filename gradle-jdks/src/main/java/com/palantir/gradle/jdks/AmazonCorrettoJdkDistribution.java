@@ -18,7 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
 
-final class AmazonCorrettoJdkDistribution implements JdkDistribution {
+public final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     @Override
     public String defaultBaseUrl() {
         return "https://corretto.aws";

@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.setup;
 
-import org.immutables.value.Value;
+/**
+ * A simple logger that logs to stdout and stderr.
+ */
+@SuppressWarnings({"BanSystemOut", "BanSystemErr"})
+public final class StdLogger implements ILogger {
 
-@Value.Immutable
-public interface JdkRelease {
-    String version();
+    @Override
+    public void log(String message) {
+        System.out.println(message);
+    }
 
-    Os os();
-
-    Arch arch();
-
-    class Builder extends ImmutableJdkRelease.Builder {}
-
-    static Builder builder() {
-        return new Builder();
+    @Override
+    public void logError(String errorMessae) {
+        System.err.println(errorMessae);
     }
 }

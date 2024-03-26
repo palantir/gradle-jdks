@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2022 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,27 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.setup;
 
-import org.immutables.value.Value;
+/**
+ * Helper class to represent a certificate based on the alias and content.
+ */
+public final class AliasContentCert {
 
-@Value.Immutable
-public interface JdkRelease {
-    String version();
+    private final String content;
 
-    Os os();
+    private final String alias;
 
-    Arch arch();
+    public AliasContentCert(String alias, String content) {
+        this.alias = alias;
+        this.content = content;
+    }
 
-    class Builder extends ImmutableJdkRelease.Builder {}
+    public String getAlias() {
+        return alias;
+    }
 
-    static Builder builder() {
-        return new Builder();
+    public String getContent() {
+        return content;
     }
 }
