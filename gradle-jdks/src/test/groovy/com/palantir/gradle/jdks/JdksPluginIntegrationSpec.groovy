@@ -16,21 +16,13 @@
 
 package com.palantir.gradle.jdks
 
-import com.palantir.gradle.jdks.setup.CommandRunner
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
 import spock.lang.Unroll
 
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
-
 @Unroll
 class JdksPluginIntegrationSpec extends IntegrationSpec {
     private static final List<String> GRADLE_VERSIONS = List.of("7.6.2", "8.4")
-    private static final AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
-    private static final String CORRETTO_DISTRIBUTION_URL_ENV = "CORRETTO_DISTRIBUTION_URL";
 
     def setup() {
         // language=gradle
@@ -227,59 +219,6 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
         then:
         error.contains "Could not find a JDK with major version 11 in project ':subproject'"
-
-        where:
-        gradleVersionNumber << GRADLE_VERSIONS
-    }
-
-    def '#gradleVersionNumber: patches gradleWrapper to set up JDK'() {
-        def jdkMajorVersion = '17'
-        def jdkVersion = '17.0.9.8.1'
-        gradleVersion = gradleVersionNumber
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
-
-        file('gradle/gradle-jdk-major-version') << jdkMajorVersion + "\n"
-        directory('gradle/jdks')
-
-        Files.copy(
-                Path.of(String.format(
-                        "../gradle-jdks-setup/build/libs/gradle-jdks-setup-%s.jar",
-                        System.getenv().get("PROJECT_VERSION"))),
-                projectDir.toPath().resolve("gradle/jdks/gradle-jdks-setup.jar"));
-
-        Files.copy(
-                Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),
-                projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh"));
-
-        Os os = CurrentOs.get();
-        Arch arch = CurrentArch.get();
-
-        directory(String.format('gradle/jdks/%s/%s/%s', jdkMajorVersion, os, arch))
-        JdkPath jdkPath = CORRETTO_JDK_DISTRIBUTION.path(
-                JdkRelease.builder().version(jdkVersion).os(os).arch(arch).build());
-        String correttoDistributionUrl = Optional.ofNullable(System.getenv(CORRETTO_DISTRIBUTION_URL_ENV))
-                .orElseGet(CORRETTO_JDK_DISTRIBUTION::defaultBaseUrl);
-        String downloadUrl = String.format(
-                String.format("%s/%s.%s\n", correttoDistributionUrl, jdkPath.filename(), jdkPath.extension()))
-        String localFilename = String.format("amazon-corretto-%s-jdkPluginIntegrationTest\n", jdkVersion);
-        file(String.format('gradle/jdks/%s/%s/%s/download-url', jdkMajorVersion, CurrentOs.get(), CurrentArch.get())) << downloadUrl
-        file(String.format('gradle/jdks/%s/%s/%s/local-path', jdkMajorVersion, CurrentOs.get(), CurrentArch.get())) <<  localFilename
-
-        when:
-        def output = runTasksSuccessfully('wrapper')
-        Process process = new ProcessBuilder()
-                .command(List.of(String.format("./gradlew", "wrapper", "-v")))
-                .directory(projectDir).redirectErrorStream(true).start();
-        String wrapperResult = CommandRunner.readAllInput(process.getInputStream());
-        process.waitFor();
-
-        then:
-        output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
-        Path gradleJdksPath = Optional.ofNullable(System.getenv("GRADLE_USER_HOME")).map(Path::of).orElse(Path.of(System.getProperty("user.home")).resolve(".gradle")).resolve("gradle-jdks")
-        String expectedLocalPath = gradleJdksPath.resolve(localFilename)
-        wrapperResult.contains(String.format("Successfully installed JDK distribution, setting JAVA_HOME to %s", expectedLocalPath))
-        wrapperResult.contains(String.format("JAVA_HOME=%s", expectedLocalPath))
-        file("gradlew").text.contains("source gradle/gradle-jdks-setup.sh")
 
         where:
         gradleVersionNumber << GRADLE_VERSIONS

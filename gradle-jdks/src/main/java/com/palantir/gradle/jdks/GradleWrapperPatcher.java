@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,9 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.commons.io.IOUtils;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -42,7 +43,10 @@ public abstract class GradleWrapperPatcher {
 
     private static final String ENABLE_GRADLE_JDK_SETUP = "gradle.jdk.setup.enabled";
     private static final Logger log = Logging.getLogger(GradleWrapperPatcher.class);
-    private static final Pattern GRADLEW_PATCH_HEADER = Pattern.compile("# >>> Gradle JDK setup >>>");
+    private static final String GRADLEW_PATCH = "gradlew-patch";
+
+    // DO NOT CHANGE the header and the footer, they are used to identify the patch block
+    private static final String GRADLEW_PATCH_HEADER = "# >>> Gradle JDK setup >>>";
     private static final String GRADLEW_PATCH_FOOTER = "# <<< Gradle JDK setup <<<";
 
     interface Params {
@@ -94,19 +98,15 @@ public abstract class GradleWrapperPatcher {
     }
 
     private static Optional<String> maybeGetNewGradlewContent(Path gradlewFile) {
-        try {
-            List<String> initialLines = Files.readAllLines(gradlewFile);
-            List<String> linesNoPatch = getLinesWithoutPatch(initialLines);
-            int index = getInsertLineIndex(linesNoPatch);
-            return Optional.of(getGradlewWithPatch(index, linesNoPatch));
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to read the gradlew script file", e);
-        }
+        List<String> linesNoPatch = getLinesWithoutPatch(gradlewFile);
+        int index = getInsertLineIndex(linesNoPatch);
+        return Optional.of(getGradlewWithPatch(index, linesNoPatch));
     }
 
-    private static List<String> getLinesWithoutPatch(List<String> initialLines) {
+    private static List<String> getLinesWithoutPatch(Path gradlewFile) {
+        List<String> initialLines = readAllLines(gradlewFile);
         int startIndex = IntStream.range(0, initialLines.size())
-                .filter(i -> GRADLEW_PATCH_HEADER.matcher(initialLines.get(i)).find())
+                .filter(i -> initialLines.get(i).equals(GRADLEW_PATCH_HEADER))
                 .findFirst()
                 .orElse(-1);
         if (startIndex == -1) {
@@ -143,16 +143,16 @@ public abstract class GradleWrapperPatcher {
         throw new RuntimeException("Unable to find where to patch the gradlew file, aborting...");
     }
 
-    private static List<String> getGradlewPatchLines() {
+    private static List<String> readAllLines(Path filePath) {
         try {
-            return Files.readAllLines(Path.of("src/main/resources/gradlew-patch"));
+            return Files.readAllLines(filePath);
         } catch (IOException e) {
             throw new RuntimeException("Unable to read the gradlew patch file", e);
         }
     }
 
     private static String getGradlewWithPatch(int insertIndex, List<String> initialLines) {
-        List<String> gradlewPatchLines = getGradlewPatchLines();
+        List<String> gradlewPatchLines = getGradlewPatch();
         List<String> newLines = new ArrayList<>(initialLines.size() + gradlewPatchLines.size());
         newLines.addAll(initialLines.subList(0, insertIndex));
         newLines.addAll(gradlewPatchLines);
@@ -163,5 +163,14 @@ public abstract class GradleWrapperPatcher {
         }
         newLines.addAll(initialLines.subList(insertIndex + 1, initialLines.size()));
         return newLines.stream().collect(Collectors.joining("\n"));
+    }
+
+    private static List<String> getGradlewPatch() {
+        try (InputStream inputStream =
+                GradleWrapperPatcher.class.getClassLoader().getResourceAsStream(GRADLEW_PATCH)) {
+            return IOUtils.readLines(inputStream, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
