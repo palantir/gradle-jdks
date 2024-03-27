@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.gradle.api.file.RegularFileProperty;
@@ -41,6 +42,8 @@ public abstract class GradleWrapperPatcher {
 
     private static final String ENABLE_GRADLE_JDK_SETUP = "gradle.jdk.setup.enabled";
     private static final Logger log = Logging.getLogger(GradleWrapperPatcher.class);
+    private static final Pattern GRADLEW_PATCH_HEADER = Pattern.compile("# >>> Gradle JDK setup >>>");
+    private static final String GRADLEW_PATCH_FOOTER = "# <<< Gradle JDK setup <<<";
 
     interface Params {
 
@@ -92,22 +95,37 @@ public abstract class GradleWrapperPatcher {
 
     private static Optional<String> maybeGetNewGradlewContent(Path gradlewFile) {
         try {
-            List<String> lines = Files.readAllLines(gradlewFile);
-            if (patchAlreadyPresent(lines)) {
-                return Optional.empty();
-            }
-            int insertIndex = getLineIndex(lines) + 1;
-            return Optional.of(getGradlewWithPatch(insertIndex, lines));
+            List<String> initialLines = Files.readAllLines(gradlewFile);
+            List<String> linesNoPatch = getLinesWithoutPatch(initialLines);
+            int index = getInsertLineIndex(linesNoPatch);
+            return Optional.of(getGradlewWithPatch(index, linesNoPatch));
         } catch (IOException e) {
             throw new RuntimeException("Unable to read the gradlew script file", e);
         }
     }
 
-    private static boolean patchAlreadyPresent(List<String> lines) {
-        return lines.stream().anyMatch(line -> line.contains("gradle-jdks-setup.sh"));
+    private static List<String> getLinesWithoutPatch(List<String> initialLines) {
+        int startIndex = IntStream.range(0, initialLines.size())
+                .filter(i -> GRADLEW_PATCH_HEADER.matcher(initialLines.get(i)).find())
+                .findFirst()
+                .orElse(-1);
+        if (startIndex == -1) {
+            return initialLines;
+        }
+        int endIndex = IntStream.range(startIndex, initialLines.size())
+                .filter(i -> initialLines.get(i).equals(GRADLEW_PATCH_FOOTER))
+                .findFirst()
+                .orElse(-1);
+        if (endIndex == -1) {
+            throw new RuntimeException(
+                    String.format("Invalid gradle JDK patch, missing the closing footer %s", GRADLEW_PATCH_FOOTER));
+        }
+        List<String> linesNoPatch = initialLines.subList(0, startIndex);
+        linesNoPatch.addAll(initialLines.subList(endIndex + 1, initialLines.size()));
+        return linesNoPatch;
     }
 
-    private static int getLineIndex(List<String> lines) {
+    private static int getInsertLineIndex(List<String> lines) {
         // first try to find the line that contains the comment block
         List<Integer> explanationBlock = IntStream.range(0, lines.size())
                 .filter(i -> lines.get(i).startsWith("###"))
@@ -115,23 +133,22 @@ public abstract class GradleWrapperPatcher {
                 .boxed()
                 .collect(Collectors.toList());
         if (explanationBlock.size() == 2 && explanationBlock.get(0) < explanationBlock.get(1)) {
-            return explanationBlock.get(1);
+            return explanationBlock.get(1) + 1;
         }
         // if the comment block is not found, try to find the shebang line
         int shebangLine = lines.indexOf("#!");
         if (shebangLine != -1) {
-            return shebangLine;
+            return shebangLine + 1;
         }
         throw new RuntimeException("Unable to find where to patch the gradlew file, aborting...");
     }
 
     private static List<String> getGradlewPatchLines() {
-        return List.of(
-                String.format("# Setting up the Gradle JDK because %s is enabled", ENABLE_GRADLE_JDK_SETUP),
-                "echo Setting up the Gradle JDK is starting",
-                "source gradle/gradle-jdks-setup.sh",
-                "echo $?",
-                "echo Setting up the Gradle JDK is complete");
+        try {
+            return Files.readAllLines(Path.of("src/main/resources/gradlew-patch"));
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to read the gradlew patch file", e);
+        }
     }
 
     private static String getGradlewWithPatch(int insertIndex, List<String> initialLines) {
