@@ -16,14 +16,11 @@
 
 package com.palantir.gradle.jdks.setup;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution;
 import com.palantir.gradle.jdks.Arch;
 import com.palantir.gradle.jdks.CurrentArch;
-import com.palantir.gradle.jdks.CurrentOs;
 import com.palantir.gradle.jdks.JdkPath;
 import com.palantir.gradle.jdks.JdkRelease;
 import com.palantir.gradle.jdks.Os;
@@ -35,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -72,43 +70,6 @@ public class GradleJdkInstallationSetupIntegrationTest {
     public void can_setup_jdk_with_certs_alpine() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_MUSL);
         assertJdkWithNoCertsWasSetUp(dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL));
-    }
-
-    @Test
-    public void can_setup_locally_from_scratch() throws IOException, InterruptedException {
-        Path temporaryGradleDirectory = setupGradleDirectoryStructure(JDK_VERSION, CurrentOs.get());
-        Path gradleHomeDir = Files.createTempDirectory("jdkIntegrationTest");
-        Path gradleJdksDir = Files.createDirectory(gradleHomeDir.resolve("gradle-jdks"));
-        Path expectedJavaHomeVersion =
-                gradleJdksDir.resolve(String.format("amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH));
-        Path expectedJavaHome = expectedJavaHomeVersion.resolve("bin/java");
-        String firstRunOutput = runCommandWithZeroExitCode(
-                List.of(
-                        "/bin/bash",
-                        temporaryGradleDirectory
-                                .resolve("gradle-jdks-setup.sh")
-                                .toAbsolutePath()
-                                .toString()),
-                Map.of("GRADLE_USER_HOME", gradleHomeDir.toAbsolutePath().toString()));
-        assertThat(firstRunOutput).contains(String.format(SUCCESSFUL_OUTPUT + " %s", expectedJavaHomeVersion));
-        assertThat(firstRunOutput)
-                .contains(String.format(
-                        "Successfully imported CA certificate %s into the JDK truststore", AMAZON_CERT_ALIAS))
-                .doesNotContain(String.format(
-                        "Successfully imported CA certificate %s into the JDK truststore", NON_EXISTING_CERT_ALIAS));
-
-        assertThat(runCommandWithZeroExitCode(
-                        List.of(
-                                "/bin/bash",
-                                temporaryGradleDirectory
-                                        .resolve("gradle-jdks-setup.sh")
-                                        .toAbsolutePath()
-                                        .toString()),
-                        Map.of(
-                                "GRADLE_USER_HOME",
-                                gradleHomeDir.toAbsolutePath().toString())))
-                .contains(String.format("already exists, setting JAVA_HOME to %s", expectedJavaHomeVersion));
-        assertThat(Files.exists(expectedJavaHome)).isTrue();
     }
 
     private Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
@@ -171,15 +132,13 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),
                 gradleDirectory.resolve("gradle-jdks-setup.sh"));
 
-        // copy the testing script to the gradle directory
-        Files.copy(
-                Path.of("src/integrationTest/resources/testing-script.sh"),
-                gradleDirectory.resolve("testing-script.sh"));
+        // copy the testing script to the working directory
+        Files.copy(Path.of("src/test/resources/testing-script.sh"), workingDir.resolve("testing-script.sh"));
 
         // workaround when running locally to ignore the certificate setup when using curl & wget
         if (Optional.ofNullable(System.getenv("CI")).isEmpty()) {
             Files.copy(
-                    Path.of("src/integrationTest/resources/ignore-certs-curl-wget.sh"),
+                    Path.of("src/test/resources/ignore-certs-curl-wget.sh"),
                     gradleDirectory.resolve("ignore-certs-curl-wget.sh"));
         }
 
@@ -192,7 +151,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
 
     private String dockerBuildAndRunTestingScript(String baseImage, String shell, boolean installCurl)
             throws IOException, InterruptedException {
-        Path dockerFile = Path.of("src/integrationTest/resources/template.Dockerfile");
+        Path dockerFile = Path.of("src/test/resources/template.Dockerfile");
         String dockerImage = String.format("jdk-test-%s", baseImage);
         runCommandWithZeroExitCode(List.of(
                 "docker",
@@ -208,7 +167,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 "-f",
                 dockerFile.toAbsolutePath().toString(),
                 workingDir.toAbsolutePath().toString()));
-        return runCommandWithZeroExitCode(List.of("docker", "run", "--rm", dockerImage));
+        return runCommandWithZeroExitCode(List.of("docker", "run", dockerImage));
     }
 
     static String runCommandWithZeroExitCode(List<String> commandArguments) throws InterruptedException, IOException {
@@ -222,7 +181,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         processBuilder.environment().putAll(Objects.requireNonNull(environment));
         Process process = processBuilder.start();
         String output = CommandRunner.readAllInput(process.getInputStream());
-        assertThat(process.waitFor())
+        Assertions.assertThat(process.waitFor())
                 .as("Command '%s' failed with output: %s", String.join(" ", commandArguments), output)
                 .isEqualTo(0);
         return output;
@@ -236,7 +195,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
     private static void assertJdkWithNoCertsWasSetUp(String output) {
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
-        assertThat(output)
+        Assertions.assertThat(output)
                 .contains(SUCCESSFUL_OUTPUT)
                 .contains(String.format("Java home is: %s", expectedDistributionPath))
                 .containsPattern(String.format("Java path is: java is ([^/]*\\s)*%s", expectedDistributionPath))

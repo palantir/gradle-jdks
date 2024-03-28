@@ -27,6 +27,7 @@ dependencies {
     annotationProcessor 'com.palantir.gradle.auto-parallelizable:auto-parallelizable'
     annotationProcessor 'org.immutables:value'
 
+    testImplementation gradleTestKit()
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'

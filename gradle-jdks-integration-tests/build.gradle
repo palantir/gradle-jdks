@@ -2,28 +2,16 @@ apply plugin: 'java'
 apply plugin: 'org.unbroken-dome.test-sets'
 apply plugin: 'groovy'
 
-testSets {
-    integrationTest
-}
-
 dependencies {
-
     testImplementation project(":gradle-jdks")
     testImplementation project(":gradle-jdks-setup")
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'commons-io:commons-io'
     testImplementation 'com.google.guava:guava'
-
-    integrationTestImplementation project(":gradle-jdks")
-    integrationTestImplementation project(":gradle-jdks-setup")
-
-    integrationTestImplementation 'commons-io:commons-io'
-    integrationTestImplementation 'com.google.guava:guava'
-    integrationTestImplementation 'org.junit.jupiter:junit-jupiter'
-    integrationTestImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
 }
 
-tasks.build.dependsOn tasks.integrationTest
 tasks.test {
     environment("PROJECT_VERSION", project.version)
 }
