@@ -88,7 +88,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     }
 
     private Iterable<File> getImplementationClassPath() {
-        File propertiesFile = new File(this.class.getClassLoader().getResource('plugin-under-test-metadata.properties').toURI())
+        File propertiesFile = new File("../gradle-jdks/build/pluginUnderTestMetadata/plugin-under-test-metadata.properties")
         Properties properties = new Properties()
         propertiesFile.withInputStream { inputStream ->
             properties.load(inputStream)
