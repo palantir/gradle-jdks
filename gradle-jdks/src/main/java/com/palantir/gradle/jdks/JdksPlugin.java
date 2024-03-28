@@ -63,12 +63,8 @@ public final class JdksPlugin implements Plugin<Project> {
                             project, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion));
                 });
 
-        TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
-                .getTasks()
-                .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
-                    task.getGradlewUnixScriptFile().set(rootProject.file("gradlew"));
-                    task.getGradlePropsFile().set(rootProject.file("gradle.properties"));
-                });
+        TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask =
+                rootProject.getTasks().register("wrapperJdkPatcher", GradleWrapperPatcherTask.class);
         rootProject.getTasks().named("wrapper").configure(wrapperTask -> {
             wrapperTask.finalizedBy(wrapperPatcherTask);
         });

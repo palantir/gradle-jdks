@@ -75,6 +75,15 @@ die () {
     exit 1
 } >&2
 
+
+read_value() {
+  if [ ! -f "$1" ]; then
+    die "ERROR: $1 not found, aborting Gradle JDK setup"
+  fi
+  read -r value < "$1"
+  echo "$value"
+}
+
 # OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.CurrentOs.java
 case "$( uname )" in                          #(
   Linux* )          os_name="linux"  ;;       #(
@@ -108,9 +117,10 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
-read -r major_version < "$APP_GRADLE_DIR"/gradle-jdk-major-version
-read -r distribution_url < "$APP_GRADLE_DIR"/jdks/"$major_version"/"$os_name"/"$arch_name"/download-url
-read -r distribution_local_path < "$APP_GRADLE_DIR"/jdks/"$major_version"/"$os_name"/"$arch_name"/local-path
+major_version=$(read_value "$APP_GRADLE_DIR"/gradle-jdk-major-version)
+echo $major_version
+distribution_url=$(read_value "$APP_GRADLE_DIR"/jdks/"$major_version"/"$os_name"/"$arch_name"/download-url)
+distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$major_version"/"$os_name"/"$arch_name"/local-path)
 certs_directory="$APP_GRADLE_DIR"/certs
 
 # Check if distribution exists in $GRADLE_JDKS_HOME

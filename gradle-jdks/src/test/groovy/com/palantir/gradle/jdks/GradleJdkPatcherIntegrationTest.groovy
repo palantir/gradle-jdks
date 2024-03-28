@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks
 
 import com.google.common.base.Splitter
 import com.google.common.collect.Iterables
+import com.google.common.collect.Sets
 import com.palantir.gradle.jdks.setup.CommandRunner
 import nebula.test.IntegrationSpec
 import spock.lang.TempDir
@@ -54,37 +55,15 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
                 }
             }
             apply plugin: 'com.palantir.jdks'
-        """.replace("FILES", getImplementationClassPath().join(",")).stripIndent(true)
-
+        """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
 
         // language=gradle
-        def subprojectDir = addSubproject 'subproject', '''
+        addSubproject 'subproject', '''
             apply plugin: 'java-library'
-            
-            task printJavaVersion(type: JavaExec) {
-                classpath = sourceSets.main.runtimeClasspath
-                mainClass = 'foo.PrintJavaVersion'
-                logging.captureStandardOutput LogLevel.LIFECYCLE
-                logging.captureStandardError LogLevel.LIFECYCLE
-            }
         '''.stripIndent(true)
-
-        // language=java
-        writeJavaSourceFile '''
-            package foo;
-
-            public final class PrintJavaVersion {
-                public static void main(String... args) {
-                    System.out.printf(
-                            "version: %s, vendor: %s%n",
-                            System.getProperty("java.version"),
-                            System.getProperty("java.vendor"));
-                }
-            }
-        '''.stripIndent(true), subprojectDir
     }
 
-    private Iterable<File> getImplementationClassPath() {
+    private Iterable<File> getPluginClasspathInjector() {
         File propertiesFile = new File("build/pluginUnderTestMetadata/plugin-under-test-metadata.properties")
         Properties properties = new Properties()
         propertiesFile.withInputStream { inputStream ->
@@ -97,9 +76,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
 
     def '#gradleVersionNumber: patches gradleWrapper to set up JDK'() {
-
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
-
         gradleVersion = gradleVersionNumber
         populateGradleFiles(JDK_17_VERSION)
 
@@ -119,7 +96,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
         Path gradleJdksPath = workingDir.resolve("gradle-jdks")
         String expectedLocalPath = gradleJdksPath.resolve(getLocalFilename(JDK_17_VERSION))
-        wrapperResult1.contains(String.format("Successfully installed JDK distribution, setting JAVA_HOME to"))
+        wrapperResult1.contains(String.format("Successfully installed JDK distribution, setting JAVA_HOME to %s", expectedLocalPath))
         wrapperResult1.contains(EXPECTED_JDK_LOG)
         wrapperResult1.contains("Gradle 7.6.2")
         file('gradle/wrapper/gradle-wrapper.properties').text.contains("gradle-8.4-bin.zip")
@@ -132,6 +109,71 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         gradleVersionNumber << [ GRADLE_7VERSION ]
     }
 
+    def '#gradleVersionNumber: gradlew file is correctly generated'() {
+        gradleVersion = gradleVersionNumber
+
+        when:
+        def output = runTasksSuccessfully('wrapper')
+
+        then:
+        output.wasExecuted(':wrapperJdkPatcher')
+        List<String> initialRows = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
+
+        when:
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        def outputWithJdkEnabled = runTasksSuccessfully('wrapper')
+
+        then:
+        outputWithJdkEnabled.wasExecuted(':wrapperJdkPatcher')
+        List<String> rowsAfterPatching = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
+
+        List<String> gradlewPatchRows = Files.readAllLines(Path.of('src/main/resources/gradlew-patch'))
+        rowsAfterPatching.removeAll(initialRows)
+        rowsAfterPatching.removeAll(gradlewPatchRows)
+        rowsAfterPatching.size() == 0
+
+        where:
+        gradleVersionNumber << [ GRADLE_7VERSION ]
+    }
+
+    def 'no gradleWrapper patch if gradle.jdk.setup.enabled == false'() {
+        populateGradleFiles(JDK_17_VERSION)
+
+        when:
+        def output = runTasksSuccessfully('wrapper')
+
+        then:
+        output.wasExecuted(':wrapperJdkPatcher')
+        !output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
+        !file("gradlew").text.contains("gradle-jdks-setup.sh")
+    }
+
+    def 'fails if the JDK setup files are missing' () {
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        gradleVersion = gradleVersionNumber
+        directory('gradle')
+        Files.copy(
+                Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),
+                projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh"));
+
+        when:
+        def output = runTasksSuccessfully('wrapper')
+
+        then:
+        output.wasExecuted(':wrapperJdkPatcher')
+        output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
+        file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
+
+        when:
+        String wrapperResult1 = upgradeGradleWrapper()
+
+        then:
+        file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
+        wrapperResult1.contains("not found, aborting Gradle JDK setup")
+
+        where:
+        gradleVersionNumber << [ GRADLE_7VERSION ]
+    }
 
     void populateGradleFiles(String jdkVersion) {
         String jdkMajorVersion = Iterables.get(Splitter.on('.').split(jdkVersion), 0);

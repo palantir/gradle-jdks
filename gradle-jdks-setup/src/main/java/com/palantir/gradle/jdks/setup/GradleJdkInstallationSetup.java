@@ -73,7 +73,7 @@ public final class GradleJdkInstallationSetup {
     private static Map<String, String> extractCertsSerialNumbers(ILogger logger, Path certsDirectory)
             throws IOException {
         if (!Files.exists(certsDirectory)) {
-            logger.log("No certs directory found, skipping import of certificates");
+            logger.log("No `certs` directory found, no certificates will be imported");
             return Map.of();
         }
         try (Stream<Path> stream = Files.list(certsDirectory)) {

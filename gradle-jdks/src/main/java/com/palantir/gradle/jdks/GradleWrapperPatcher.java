@@ -32,55 +32,55 @@ import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.inject.Inject;
 import org.apache.commons.io.IOUtils;
-import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
 
 @AutoParallelizable
 public abstract class GradleWrapperPatcher {
 
-    private static final String ENABLE_GRADLE_JDK_SETUP = "gradle.jdk.setup.enabled";
     private static final Logger log = Logging.getLogger(GradleWrapperPatcher.class);
+    private static final String ENABLE_GRADLE_JDK_SETUP = "gradle.jdk.setup.enabled";
     private static final String GRADLEW_PATCH = "gradlew-patch";
+    private static final String GRADLEW_UNIX_SCRIPT = "gradlew";
+    private static final String COMMENT_BLOCK = "###";
+    private static final String SHEBANG = "#!";
 
     // DO NOT CHANGE the header and the footer, they are used to identify the patch block
     private static final String GRADLEW_PATCH_HEADER = "# >>> Gradle JDK setup >>>";
     private static final String GRADLEW_PATCH_FOOTER = "# <<< Gradle JDK setup <<<";
 
     interface Params {
-
-        @OutputFile
-        RegularFileProperty getGradlewUnixScriptFile();
-
-        @InputFile
-        RegularFileProperty getGradlePropsFile();
+        @Inject
+        ProjectLayout getProjectLayout();
     }
 
     public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {}
 
     static void action(Params params) {
-        Properties properties = loadProperties(params.getGradlePropsFile().get().getAsFile());
-        if (!isGradleJdkSetupEnabled(properties)) {
+        if (!isGradleJdkSetupEnabled(params.getProjectLayout())) {
             return;
         }
         log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
-        // make sure all changes are transactional!
-        Path gradlewFile = params.getGradlewUnixScriptFile().get().getAsFile().toPath();
-        maybeGetNewGradlewContent(gradlewFile).ifPresent(newGradlewContent -> write(gradlewFile, newGradlewContent));
+        Path gradlewFile = params.getProjectLayout()
+                .files(GRADLEW_UNIX_SCRIPT)
+                .getSingleFile()
+                .toPath();
+        patchGradlewContent(gradlewFile);
     }
 
-    private static Properties loadProperties(File gradleWrapperPropsFile) {
+    private static Properties loadGradleProperties(File gradleWrapperPropsFile) {
         Properties properties = new Properties();
         try (FileInputStream inputStream = new FileInputStream(gradleWrapperPropsFile)) {
             properties.load(inputStream);
             return properties;
         } catch (FileNotFoundException e) {
-            throw new RuntimeException("Unable to find gradle-wrapper.properties file", e);
+            throw new RuntimeException("Unable to find gradle.properties file", e);
         } catch (IOException e) {
-            throw new RuntimeException("Could not read gradle-wrapper.properties file", e);
+            throw new RuntimeException("Could not read gradle.properties file", e);
         }
     }
 
@@ -92,16 +92,20 @@ public abstract class GradleWrapperPatcher {
         }
     }
 
-    private static boolean isGradleJdkSetupEnabled(Properties properties) {
+    private static boolean isGradleJdkSetupEnabled(ProjectLayout projectLayout) {
+        FileCollection gradleProperties = projectLayout.files("gradle.properties");
+        if (gradleProperties.isEmpty() || !gradleProperties.getSingleFile().exists()) {
+            return false;
+        }
+        Properties properties = loadGradleProperties(gradleProperties.getSingleFile());
         return Optional.ofNullable(properties.getProperty(ENABLE_GRADLE_JDK_SETUP))
                 .map(Boolean::parseBoolean)
                 .orElse(false);
     }
 
-    private static Optional<String> maybeGetNewGradlewContent(Path gradlewFile) {
+    private static void patchGradlewContent(Path gradlewFile) {
         List<String> linesNoPatch = getLinesWithoutPatch(gradlewFile);
-        int index = getInsertLineIndex(linesNoPatch);
-        return Optional.of(getGradlewWithPatch(index, linesNoPatch));
+        write(gradlewFile, getNewGradlewWithPatchContent(linesNoPatch));
     }
 
     private static List<String> getLinesWithoutPatch(Path gradlewFile) {
@@ -120,23 +124,40 @@ public abstract class GradleWrapperPatcher {
                     String.format("Invalid gradle JDK patch, missing the closing footer %s", GRADLEW_PATCH_FOOTER));
         }
         List<String> linesNoPatch = initialLines.subList(0, startIndex.getAsInt());
-        linesNoPatch.addAll(initialLines.subList(endIndex.getAsInt() + 1, initialLines.size()));
+        if (endIndex.getAsInt() + 1 < initialLines.size()) {
+            linesNoPatch.addAll(initialLines.subList(endIndex.getAsInt() + 1, initialLines.size()));
+        }
         return linesNoPatch;
     }
 
+    private static String getNewGradlewWithPatchContent(List<String> initialLines) {
+        int insertIndex = getInsertLineIndex(initialLines);
+        List<String> gradlewPatchLines = getGradlewPatch();
+        List<String> newLines = new ArrayList<>(initialLines.size() + gradlewPatchLines.size());
+        newLines.addAll(initialLines.subList(0, insertIndex));
+        newLines.addAll(gradlewPatchLines);
+        newLines.addAll(initialLines.subList(insertIndex, initialLines.size()));
+        return newLines.stream().collect(Collectors.joining(System.lineSeparator()));
+    }
+
+    /**
+     * gradlew contains a comment block that explains how it works. We are trying to add the patch block after it.
+     * The fallback is adding the patch block directly after the shebang line.
+     */
     private static int getInsertLineIndex(List<String> lines) {
         // first try to find the line that contains the comment block
         List<Integer> explanationBlock = IntStream.range(0, lines.size())
-                .filter(i -> lines.get(i).startsWith("###"))
+                .filter(i -> lines.get(i).startsWith(COMMENT_BLOCK))
                 .limit(2)
                 .boxed()
                 .collect(Collectors.toList());
         if (explanationBlock.size() == 2 && explanationBlock.get(0) < explanationBlock.get(1)) {
+            // the lines will be inserted after the first comment block ends.
             return explanationBlock.get(1) + 1;
         }
-        // if the comment block is not found, try to find the shebang line
-        int shebangLine = lines.indexOf("#!");
+        int shebangLine = lines.indexOf(SHEBANG);
         if (shebangLine != -1) {
+            // fallback: insert after the shebang
             return shebangLine + 1;
         }
         throw new RuntimeException("Unable to find where to patch the gradlew file, aborting...");
@@ -148,20 +169,6 @@ public abstract class GradleWrapperPatcher {
         } catch (IOException e) {
             throw new RuntimeException("Unable to read the gradlew patch file", e);
         }
-    }
-
-    private static String getGradlewWithPatch(int insertIndex, List<String> initialLines) {
-        List<String> gradlewPatchLines = getGradlewPatch();
-        List<String> newLines = new ArrayList<>(initialLines.size() + gradlewPatchLines.size());
-        newLines.addAll(initialLines.subList(0, insertIndex));
-        newLines.addAll(gradlewPatchLines);
-        if (insertIndex + 1 >= initialLines.size()) {
-            throw new RuntimeException(String.format(
-                    "Unexpected index %s to insert the patched gradlew size: %s, aborting",
-                    insertIndex, initialLines.size()));
-        }
-        newLines.addAll(initialLines.subList(insertIndex + 1, initialLines.size()));
-        return newLines.stream().collect(Collectors.joining("\n"));
     }
 
     private static List<String> getGradlewPatch() {
