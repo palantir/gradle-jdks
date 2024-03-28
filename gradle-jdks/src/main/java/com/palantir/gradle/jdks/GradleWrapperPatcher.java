@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -105,23 +106,21 @@ public abstract class GradleWrapperPatcher {
 
     private static List<String> getLinesWithoutPatch(Path gradlewFile) {
         List<String> initialLines = readAllLines(gradlewFile);
-        int startIndex = IntStream.range(0, initialLines.size())
+        OptionalInt startIndex = IntStream.range(0, initialLines.size())
                 .filter(i -> initialLines.get(i).equals(GRADLEW_PATCH_HEADER))
-                .findFirst()
-                .orElse(-1);
-        if (startIndex == -1) {
+                .findFirst();
+        if (startIndex.isEmpty()) {
             return initialLines;
         }
-        int endIndex = IntStream.range(startIndex, initialLines.size())
+        OptionalInt endIndex = IntStream.range(startIndex.getAsInt(), initialLines.size())
                 .filter(i -> initialLines.get(i).equals(GRADLEW_PATCH_FOOTER))
-                .findFirst()
-                .orElse(-1);
-        if (endIndex == -1) {
+                .findFirst();
+        if (endIndex.isEmpty()) {
             throw new RuntimeException(
                     String.format("Invalid gradle JDK patch, missing the closing footer %s", GRADLEW_PATCH_FOOTER));
         }
-        List<String> linesNoPatch = initialLines.subList(0, startIndex);
-        linesNoPatch.addAll(initialLines.subList(endIndex + 1, initialLines.size()));
+        List<String> linesNoPatch = initialLines.subList(0, startIndex.getAsInt());
+        linesNoPatch.addAll(initialLines.subList(endIndex.getAsInt() + 1, initialLines.size()));
         return linesNoPatch;
     }
 

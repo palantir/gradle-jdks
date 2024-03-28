@@ -72,7 +72,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         assertJdkWithNoCertsWasSetUp(dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL));
     }
 
-    private Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
+    Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
         /**
          * Each project will contain the following gradle file structure:
          * Note! Make sure the files end in a newline character, otherwise the `read` command in the

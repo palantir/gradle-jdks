@@ -33,13 +33,16 @@ import java.nio.file.Path
 
 class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
-    private static final List<String> GRADLE_VERSIONS = List.of("7.6.2")
+    private static final String GRADLE_7VERSION = "7.6.2";
+    private static final String GRADLE_8VERSION = "8.4";
     private static final AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
     private static final String CORRETTO_DISTRIBUTION_URL_ENV = "CORRETTO_DISTRIBUTION_URL";
     private static final String JDK_17_VERSION = "17.0.9.8.1";
-    private static final String EXPECTED_GRADLE_VERSION_LOG = "JVM:          17.0.9 (Amazon.com Inc. 17.0.9+8-LTS)";
+    private static final String EXPECTED_JDK_LOG = "JVM:          17.0.9 (Amazon.com Inc. 17.0.9+8-LTS)";
     private static final String AMAZON_ROOT_CA_1_SERIAL = "143266978916655856878034712317230054538369994"
     private static final String AMAZON_CERT_ALIAS = "AmazonRootCA1Test";
+    private static final String PALANTIR_3RD_GEN_SERIAL = "18126334688741185161";
+    private static final String PALANTIR_3RD_GEN_ALIAS = "Palantir3rdGenRootCa";
 
     @TempDir
     private Path workingDir;
@@ -99,7 +102,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     }
 
 
-
     def '#gradleVersionNumber: patches gradleWrapper to set up JDK'() {
 
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
@@ -114,25 +116,27 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         then:
         output.wasExecuted(':wrapperJdkPatcher')
         output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
-        file("gradlew").text.contains("source gradle/gradle-jdks-setup.sh")
+        file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
 
         when:
-        String wrapperResult1 = runGradleWrapper()
-        String wrapperResult2 = runGradleWrapper()
+        String wrapperResult1 = upgradeGradleWrapper()
+        String wrapperResult2 = upgradeGradleWrapper()
 
         then:
-        file("gradlew").text.contains("source gradle/gradle-jdks-setup.sh")
+        file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
         Path gradleJdksPath = workingDir.resolve("gradle-jdks")
         String expectedLocalPath = gradleJdksPath.resolve(getLocalFilename(JDK_17_VERSION))
         wrapperResult1.contains(String.format("Successfully installed JDK distribution, setting JAVA_HOME to"))
-        wrapperResult1.contains(EXPECTED_GRADLE_VERSION_LOG)
+        wrapperResult1.contains(EXPECTED_JDK_LOG)
+        wrapperResult1.contains("Gradle 7.6.2")
         file('gradle/wrapper/gradle-wrapper.properties').text.contains("gradle-8.4-bin.zip")
         wrapperResult2.contains(String.format("already exists, setting JAVA_HOME to %s", expectedLocalPath))
-        wrapperResult2.contains(EXPECTED_GRADLE_VERSION_LOG)
+        wrapperResult2.contains(EXPECTED_JDK_LOG)
+        wrapperResult2.contains("Gradle 8.4")
 
 
         where:
-        gradleVersionNumber << GRADLE_VERSIONS
+        gradleVersionNumber << [ GRADLE_7VERSION ]
     }
 
 
@@ -168,7 +172,9 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         file(String.format('gradle/jdks/%s/%s/%s/local-path', jdkMajorVersion, CurrentOs.get(), CurrentArch.get())) <<  localFilename
 
         directory('gradle/certs')
-        file(String.format('gradle/certs/%s.serial-number', AMAZON_CERT_ALIAS)) << AMAZON_ROOT_CA_1_SERIAL
+        file(String.format('gradle/certs/%s.serial-number', AMAZON_CERT_ALIAS)) << AMAZON_ROOT_CA_1_SERIAL + "\n"
+        directory('gradle/certs')
+        file(String.format('gradle/certs/%s.serial-number', PALANTIR_3RD_GEN_ALIAS)) << PALANTIR_3RD_GEN_SERIAL + "\n"
     }
 
     private String getLocalFilename(String jdkVersion) {
@@ -176,12 +182,11 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     }
 
 
-    private String runGradleWrapper() {
+    private String upgradeGradleWrapper() {
         ProcessBuilder processBuilder = new ProcessBuilder()
-                .command(List.of("./gradlew", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace"))
+                .command(List.of("./gradlew", "wrapper", "--gradle-version", GRADLE_8VERSION, "-V", "--stacktrace"))
                 .directory(projectDir).redirectErrorStream(true)
-        // TODO(crogoz): uncomment & figure out cert issues
-        // processBuilder.environment().put("GRADLE_USER_HOME", workingDir.toAbsolutePath().toString());
+        processBuilder.environment().put("GRADLE_USER_HOME", workingDir.toAbsolutePath().toString());
         Process process = processBuilder.start()
         process.waitFor()
         return CommandRunner.readAllInput(process.getInputStream())
