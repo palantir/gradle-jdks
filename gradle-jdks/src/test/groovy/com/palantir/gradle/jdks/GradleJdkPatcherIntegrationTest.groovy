@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.setup
+package com.palantir.gradle.jdks
 
 import com.google.common.base.Splitter
 import com.google.common.collect.Iterables
-import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution
-import com.palantir.gradle.jdks.Arch
-import com.palantir.gradle.jdks.CurrentArch
-import com.palantir.gradle.jdks.CurrentOs
-import com.palantir.gradle.jdks.JdkPath
-import com.palantir.gradle.jdks.JdkRelease
-import com.palantir.gradle.jdks.Os
+import com.palantir.gradle.jdks.setup.CommandRunner
 import nebula.test.IntegrationSpec
 import spock.lang.TempDir
 
@@ -33,19 +27,19 @@ import java.nio.file.Path
 
 class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
-    private static final String GRADLE_7VERSION = "7.6.2";
-    private static final String GRADLE_8VERSION = "8.4";
-    private static final AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
-    private static final String CORRETTO_DISTRIBUTION_URL_ENV = "CORRETTO_DISTRIBUTION_URL";
-    private static final String JDK_17_VERSION = "17.0.9.8.1";
-    private static final String EXPECTED_JDK_LOG = "JVM:          17.0.9 (Amazon.com Inc. 17.0.9+8-LTS)";
-    private static final String AMAZON_ROOT_CA_1_SERIAL = "143266978916655856878034712317230054538369994"
-    private static final String AMAZON_CERT_ALIAS = "AmazonRootCA1Test";
-    private static final String PALANTIR_3RD_GEN_SERIAL = "18126334688741185161";
-    private static final String PALANTIR_3RD_GEN_ALIAS = "Palantir3rdGenRootCa";
+    private static String GRADLE_7VERSION = "7.6.2";
+    private static String GRADLE_8VERSION = "8.4";
+    private static AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
+    private static String CORRETTO_DISTRIBUTION_URL_ENV = "CORRETTO_DISTRIBUTION_URL";
+    private static String JDK_17_VERSION = "17.0.9.8.1";
+    private static String EXPECTED_JDK_LOG = "JVM:          17.0.9 (Amazon.com Inc. 17.0.9+8-LTS)";
+    private static String AMAZON_ROOT_CA_1_SERIAL = "143266978916655856878034712317230054538369994"
+    private static String AMAZON_CERT_ALIAS = "AmazonRootCA1Test";
+    private static String PALANTIR_3RD_GEN_SERIAL = "18126334688741185161";
+    private static String PALANTIR_3RD_GEN_ALIAS = "Palantir3rdGenRootCa";
 
     @TempDir
-    private Path workingDir;
+    private Path workingDir
 
     def setup() {
 
@@ -91,7 +85,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     }
 
     private Iterable<File> getImplementationClassPath() {
-        File propertiesFile = new File("../gradle-jdks/build/pluginUnderTestMetadata/plugin-under-test-metadata.properties")
+        File propertiesFile = new File("build/pluginUnderTestMetadata/plugin-under-test-metadata.properties")
         Properties properties = new Properties()
         propertiesFile.withInputStream { inputStream ->
             properties.load(inputStream)
@@ -111,7 +105,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
         when:
         def output = runTasksSuccessfully('wrapper')
-
 
         then:
         output.wasExecuted(':wrapperJdkPatcher')
@@ -140,7 +133,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     }
 
 
-    private void populateGradleFiles(String jdkVersion) {
+    void populateGradleFiles(String jdkVersion) {
         String jdkMajorVersion = Iterables.get(Splitter.on('.').split(jdkVersion), 0);
 
         file('gradle/gradle-jdk-major-version') << jdkMajorVersion + "\n"
@@ -177,16 +170,16 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         file(String.format('gradle/certs/%s.serial-number', PALANTIR_3RD_GEN_ALIAS)) << PALANTIR_3RD_GEN_SERIAL + "\n"
     }
 
-    private String getLocalFilename(String jdkVersion) {
+    String getLocalFilename(String jdkVersion) {
        return  String.format("amazon-corretto-%s-jdkPluginIntegrationTest\n", jdkVersion);
     }
 
 
-    private String upgradeGradleWrapper() {
+    String upgradeGradleWrapper() {
         ProcessBuilder processBuilder = new ProcessBuilder()
                 .command(List.of("./gradlew", "wrapper", "--gradle-version", GRADLE_8VERSION, "-V", "--stacktrace"))
                 .directory(projectDir).redirectErrorStream(true)
-        processBuilder.environment().put("GRADLE_USER_HOME", workingDir.toAbsolutePath().toString());
+        processBuilder.environment().put("GRADLE_USER_HOME", workingDir.toAbsolutePath().toString())
         Process process = processBuilder.start()
         process.waitFor()
         return CommandRunner.readAllInput(process.getInputStream())

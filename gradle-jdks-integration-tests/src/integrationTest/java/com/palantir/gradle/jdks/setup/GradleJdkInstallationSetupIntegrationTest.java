@@ -72,7 +72,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         assertJdkWithNoCertsWasSetUp(dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL));
     }
 
-    Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
+    private Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
         /**
          * Each project will contain the following gradle file structure:
          * Note! Make sure the files end in a newline character, otherwise the `read` command in the
@@ -133,12 +133,12 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 gradleDirectory.resolve("gradle-jdks-setup.sh"));
 
         // copy the testing script to the working directory
-        Files.copy(Path.of("src/test/resources/testing-script.sh"), workingDir.resolve("testing-script.sh"));
+        Files.copy(Path.of("src/integrationTest/resources/testing-script.sh"), workingDir.resolve("testing-script.sh"));
 
         // workaround when running locally to ignore the certificate setup when using curl & wget
         if (Optional.ofNullable(System.getenv("CI")).isEmpty()) {
             Files.copy(
-                    Path.of("src/test/resources/ignore-certs-curl-wget.sh"),
+                    Path.of("src/integrationTest/resources/ignore-certs-curl-wget.sh"),
                     gradleDirectory.resolve("ignore-certs-curl-wget.sh"));
         }
 
@@ -151,7 +151,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
 
     private String dockerBuildAndRunTestingScript(String baseImage, String shell, boolean installCurl)
             throws IOException, InterruptedException {
-        Path dockerFile = Path.of("src/test/resources/template.Dockerfile");
+        Path dockerFile = Path.of("src/integrationTest/resources/template.Dockerfile");
         String dockerImage = String.format("jdk-test-%s", baseImage);
         runCommandWithZeroExitCode(List.of(
                 "docker",
@@ -170,11 +170,12 @@ public class GradleJdkInstallationSetupIntegrationTest {
         return runCommandWithZeroExitCode(List.of("docker", "run", dockerImage));
     }
 
-    static String runCommandWithZeroExitCode(List<String> commandArguments) throws InterruptedException, IOException {
+    private static String runCommandWithZeroExitCode(List<String> commandArguments)
+            throws InterruptedException, IOException {
         return runCommandWithZeroExitCode(commandArguments, Map.of());
     }
 
-    static String runCommandWithZeroExitCode(List<String> commandArguments, Map<String, String> environment)
+    private static String runCommandWithZeroExitCode(List<String> commandArguments, Map<String, String> environment)
             throws InterruptedException, IOException {
         ProcessBuilder processBuilder =
                 new ProcessBuilder().command(commandArguments).redirectErrorStream(true);
