@@ -16,6 +16,8 @@
 
 package com.palantir.gradle.jdks.setup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution;
@@ -32,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -167,7 +168,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 "-f",
                 dockerFile.toAbsolutePath().toString(),
                 workingDir.toAbsolutePath().toString()));
-        return runCommandWithZeroExitCode(List.of("docker", "run", dockerImage));
+        return runCommandWithZeroExitCode(List.of("docker", "run", "--rm", dockerImage));
     }
 
     private static String runCommandWithZeroExitCode(List<String> commandArguments)
@@ -182,7 +183,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         processBuilder.environment().putAll(Objects.requireNonNull(environment));
         Process process = processBuilder.start();
         String output = CommandRunner.readAllInput(process.getInputStream());
-        Assertions.assertThat(process.waitFor())
+        assertThat(process.waitFor())
                 .as("Command '%s' failed with output: %s", String.join(" ", commandArguments), output)
                 .isEqualTo(0);
         return output;
@@ -196,7 +197,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
     private static void assertJdkWithNoCertsWasSetUp(String output) {
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
-        Assertions.assertThat(output)
+        assertThat(output)
                 .contains(SUCCESSFUL_OUTPUT)
                 .contains(String.format("Java home is: %s", expectedDistributionPath))
                 .containsPattern(String.format("Java path is: java is ([^/]*\\s)*%s", expectedDistributionPath))
