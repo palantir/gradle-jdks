@@ -25,7 +25,6 @@ import java.util.Optional;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
-import org.gradle.api.logging.LogLevel;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
@@ -72,8 +71,6 @@ public final class JdksPlugin implements Plugin<Project> {
                 });
         rootProject.getTasks().named("wrapper").configure(wrapperTask -> {
             wrapperTask.finalizedBy(wrapperPatcherTask);
-            wrapperTask.getLogging().captureStandardError(LogLevel.LIFECYCLE);
-            wrapperTask.getLogging().captureStandardOutput(LogLevel.LIFECYCLE);
         });
     }
 
