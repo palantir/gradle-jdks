@@ -20,6 +20,7 @@ import com.palantir.baseline.plugins.javaversions.BaselineJavaVersions;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
 import org.gradle.api.Plugin;
@@ -70,8 +71,9 @@ public final class JdksPlugin implements Plugin<Project> {
                 .getTasks()
                 .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
                     task.onlyIf(t -> getEnableGradleJdkProperty(rootProject));
-                    task.getOriginalGradlewScript().set(rootProject.file("gradlew"));
-                    task.getPatchedGradlewScript().set(rootProject.file("gradlew"));
+                    Path gradlewPath = rootProject.getRootDir().toPath().resolve("gradlew");
+                    task.getOriginalGradlewScript().set(rootProject.file(gradlewPath.toAbsolutePath()));
+                    task.getPatchedGradlewScript().set(rootProject.file(gradlewPath.toAbsolutePath()));
                 });
         rootProject.getTasks().named("wrapper").configure(wrapperTask -> {
             wrapperTask.finalizedBy(wrapperPatcherTask);
