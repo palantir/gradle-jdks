@@ -61,6 +61,7 @@ done
 
 APP_BASE_NAME=${0##*/}
 APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
+APP_GRADLE_DIR="$APP_HOME"/gradle
 
 tmp_work_dir=$(mktemp -d)
 GRADLE_USER_HOME=${GRADLE_USER_HOME:-"$HOME"/.gradle}
@@ -73,6 +74,15 @@ die () {
     rm -rf "$tmp_work_dir"
     exit 1
 } >&2
+
+
+read_value() {
+  if [ ! -f "$1" ]; then
+    die "ERROR: $1 not found, aborting Gradle JDK setup"
+  fi
+  read -r value < "$1"
+  echo "$value"
+}
 
 # OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.CurrentOs.java
 case "$( uname )" in                          #(
@@ -107,10 +117,11 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
-read -r major_version < "$APP_HOME"/gradle-jdk-major-version
-read -r distribution_url < "$APP_HOME"/jdks/"$major_version"/"$os_name"/"$arch_name"/download-url
-read -r distribution_local_path < "$APP_HOME"/jdks/"$major_version"/"$os_name"/"$arch_name"/local-path
-certs_directory="$APP_HOME"/certs
+major_version=$(read_value "$APP_GRADLE_DIR"/gradle-jdk-major-version)
+echo $major_version
+distribution_url=$(read_value "$APP_GRADLE_DIR"/jdks/"$major_version"/"$os_name"/"$arch_name"/download-url)
+distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$major_version"/"$os_name"/"$arch_name"/local-path)
+certs_directory="$APP_GRADLE_DIR"/certs
 
 # Check if distribution exists in $GRADLE_JDKS_HOME
 jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
@@ -138,7 +149,7 @@ else
   # Finding the java_home
   java_bin=$(find "$in_progress_dir" -type f -name "java" -path "*/bin/java" ! -type l)
   java_home="${java_bin%/*/*}"
-  "$java_home/bin/java" -cp "$APP_HOME"/jdks/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory"
+  "$java_home/bin/java" -cp "$APP_GRADLE_DIR"/jdks/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory"
   echo Successfully installed JDK distribution, setting JAVA_HOME to "$jdk_installation_directory"
 fi
 

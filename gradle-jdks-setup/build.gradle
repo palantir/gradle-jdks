@@ -2,14 +2,29 @@ apply plugin: 'java'
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'org.unbroken-dome.test-sets'
 
+
+testSets {
+    integrationTest
+}
+
 dependencies {
     // Avoid adding compile dependencies here, as they will also need to be added in the gradle-jdks-setup*.jar
 
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'commons-io:commons-io'
+
+    integrationTestImplementation project(':gradle-jdks')
+    integrationTestImplementation 'commons-io:commons-io'
+    integrationTestImplementation 'com.google.guava:guava'
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter'
+    integrationTestImplementation 'org.assertj:assertj-core'
 }
 
 tasks.withType(JavaCompile) {
     options.errorprone.disable 'PreferSafeLoggableExceptions'
+}
+
+tasks.integrationTest {
+    environment("PROJECT_VERSION", project.version)
 }

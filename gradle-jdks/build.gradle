@@ -20,10 +20,14 @@ dependencies {
     }
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'
     implementation 'com.google.guava:guava'
+    implementation 'commons-io:commons-io'
 
+    compileOnly 'com.palantir.gradle.auto-parallelizable:auto-parallelizable-annotations'
     compileOnly 'org.immutables:value::annotations'
+    annotationProcessor 'com.palantir.gradle.auto-parallelizable:auto-parallelizable'
     annotationProcessor 'org.immutables:value'
 
+    testImplementation gradleTestKit()
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
@@ -58,4 +62,8 @@ pluginBundle {
 tasks.withType(JavaCompile).configureEach {
     it.options.errorprone.disable 'JavaxInjectOnAbstractMethod'
     it.options.errorprone.disable 'StrictUnusedVariable'
+}
+
+tasks.test {
+    environment("PROJECT_VERSION", project.version)
 }

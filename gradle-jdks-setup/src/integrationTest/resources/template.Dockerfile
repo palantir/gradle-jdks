@@ -6,7 +6,7 @@ RUN if [ "$INSTALL_CURL" = "true" ] ; then \
         apt-get update && \
         apt-get install -y curl ; \
     fi
-COPY ./gradle /gradle
-RUN chmod +x /gradle/testing-script.sh
+COPY . /
+RUN chmod +x /testing-script.sh
 ARG SCRIPT_SHELL
-CMD $SCRIPT_SHELL /gradle/testing-script.sh
+CMD $SCRIPT_SHELL /testing-script.sh
