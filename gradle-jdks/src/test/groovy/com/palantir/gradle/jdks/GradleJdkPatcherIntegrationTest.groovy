@@ -18,7 +18,6 @@ package com.palantir.gradle.jdks
 
 import com.google.common.base.Splitter
 import com.google.common.collect.Iterables
-import com.google.common.collect.Sets
 import com.palantir.gradle.jdks.setup.CommandRunner
 import nebula.test.IntegrationSpec
 import spock.lang.TempDir
@@ -28,16 +27,11 @@ import java.nio.file.Path
 
 class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
-    private static String GRADLE_7VERSION = "7.6.2";
-    private static String GRADLE_8VERSION = "8.4";
     private static AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
-    private static String CORRETTO_DISTRIBUTION_URL_ENV = "CORRETTO_DISTRIBUTION_URL";
+    private static String GRADLE_7VERSION = "7.6.2";
     private static String JDK_17_VERSION = "17.0.9.8.1";
-    private static String EXPECTED_JDK_LOG = "JVM:          17.0.9 (Amazon.com Inc. 17.0.9+8-LTS)";
     private static String AMAZON_ROOT_CA_1_SERIAL = "143266978916655856878034712317230054538369994"
-    private static String AMAZON_CERT_ALIAS = "AmazonRootCA1Test";
     private static String PALANTIR_3RD_GEN_SERIAL = "18126334688741185161";
-    private static String PALANTIR_3RD_GEN_ALIAS = "Palantir3rdGenRootCa";
 
     @TempDir
     private Path workingDir
@@ -50,6 +44,8 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
                 repositories {
                     mavenCentral()
                 }
+                // we need to inject the classpath of the plugin under test manually. The tests call the `./gradlew` 
+                // command directly in the tests (so not using the nebula-test workflow).
                 dependencies {
                     classpath files(FILES)
                 }
@@ -97,11 +93,12 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         Path gradleJdksPath = workingDir.resolve("gradle-jdks")
         String expectedLocalPath = gradleJdksPath.resolve(getLocalFilename(JDK_17_VERSION))
         wrapperResult1.contains(String.format("Successfully installed JDK distribution, setting JAVA_HOME to %s", expectedLocalPath))
-        wrapperResult1.contains(EXPECTED_JDK_LOG)
+        String expectedJdkLog = "JVM:          17.0.9 (Amazon.com Inc. 17.0.9+8-LTS)";
+        wrapperResult1.contains(expectedJdkLog)
         wrapperResult1.contains("Gradle 7.6.2")
         file('gradle/wrapper/gradle-wrapper.properties').text.contains("gradle-8.4-bin.zip")
         wrapperResult2.contains(String.format("already exists, setting JAVA_HOME to %s", expectedLocalPath))
-        wrapperResult2.contains(EXPECTED_JDK_LOG)
+        wrapperResult2.contains(expectedJdkLog)
         wrapperResult2.contains("Gradle 8.4")
 
 
@@ -127,7 +124,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         outputWithJdkEnabled.wasExecuted(':wrapperJdkPatcher')
         List<String> rowsAfterPatching = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
 
-        List<String> gradlewPatchRows = Files.readAllLines(Path.of('src/main/resources/gradlew-patch'))
+        List<String> gradlewPatchRows = Files.readAllLines(Path.of('src/main/resources/gradlew-patch.sh'))
         rowsAfterPatching.removeAll(initialRows)
         rowsAfterPatching.removeAll(gradlewPatchRows)
         rowsAfterPatching.size() == 0
@@ -143,7 +140,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         def output = runTasksSuccessfully('wrapper')
 
         then:
-        output.wasExecuted(':wrapperJdkPatcher')
+        output.wasSkipped(':wrapperJdkPatcher')
         !output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         !file("gradlew").text.contains("gradle-jdks-setup.sh")
     }
@@ -198,7 +195,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
         JdkPath jdkPath = CORRETTO_JDK_DISTRIBUTION.path(
                 JdkRelease.builder().version(jdkVersion).os(os).arch(arch).build());
-        String correttoDistributionUrl = Optional.ofNullable(System.getenv(CORRETTO_DISTRIBUTION_URL_ENV))
+        String correttoDistributionUrl = Optional.ofNullable(System.getenv("CORRETTO_DISTRIBUTION_URL"))
                 .orElseGet(CORRETTO_JDK_DISTRIBUTION::defaultBaseUrl);
         String downloadUrl = String.format(
                 String.format("%s/%s.%s\n", correttoDistributionUrl, jdkPath.filename(), jdkPath.extension()))
@@ -207,9 +204,9 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         file(String.format('gradle/jdks/%s/%s/%s/local-path', jdkMajorVersion, CurrentOs.get(), CurrentArch.get())) <<  localFilename
 
         directory('gradle/certs')
-        file(String.format('gradle/certs/%s.serial-number', AMAZON_CERT_ALIAS)) << AMAZON_ROOT_CA_1_SERIAL + "\n"
+        file('gradle/certs/AmazonRootCA1Test.serial-number') << AMAZON_ROOT_CA_1_SERIAL + "\n"
         directory('gradle/certs')
-        file(String.format('gradle/certs/%s.serial-number', PALANTIR_3RD_GEN_ALIAS)) << PALANTIR_3RD_GEN_SERIAL + "\n"
+        file('gradle/certs/Palantir3rdGenRootCa.serial-number') << PALANTIR_3RD_GEN_SERIAL + "\n"
     }
 
     String getLocalFilename(String jdkVersion) {
@@ -219,7 +216,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
     String upgradeGradleWrapper() {
         ProcessBuilder processBuilder = new ProcessBuilder()
-                .command(List.of("./gradlew", "wrapper", "--gradle-version", GRADLE_8VERSION, "-V", "--stacktrace"))
+                .command(List.of("./gradlew", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace"))
                 .directory(projectDir).redirectErrorStream(true)
         processBuilder.environment().put("GRADLE_USER_HOME", workingDir.toAbsolutePath().toString())
         Process process = processBuilder.start()

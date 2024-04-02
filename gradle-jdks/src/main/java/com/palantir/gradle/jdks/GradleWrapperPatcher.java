@@ -17,9 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -27,25 +24,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.inject.Inject;
 import org.apache.commons.io.IOUtils;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.ProjectLayout;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.OutputFile;
 
 @AutoParallelizable
 public abstract class GradleWrapperPatcher {
 
     private static final Logger log = Logging.getLogger(GradleWrapperPatcher.class);
-    private static final String ENABLE_GRADLE_JDK_SETUP = "gradle.jdk.setup.enabled";
-    private static final String GRADLEW_PATCH = "gradlew-patch";
-    private static final String GRADLEW_UNIX_SCRIPT = "gradlew";
+    private static final String GRADLEW_PATCH = "gradlew-patch.sh";
     private static final String COMMENT_BLOCK = "###";
     private static final String SHEBANG = "#!";
 
@@ -54,34 +47,26 @@ public abstract class GradleWrapperPatcher {
     private static final String GRADLEW_PATCH_FOOTER = "# <<< Gradle JDK setup <<<";
 
     interface Params {
-        @Inject
-        ProjectLayout getProjectLayout();
+
+        @InputFile
+        RegularFileProperty getOriginalGradlewScript();
+
+        @OutputFile
+        RegularFileProperty getPatchedGradlewScript();
     }
 
     public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {}
 
     static void action(Params params) {
-        if (!isGradleJdkSetupEnabled(params.getProjectLayout())) {
-            return;
-        }
         log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
-        Path gradlewFile = params.getProjectLayout()
-                .files(GRADLEW_UNIX_SCRIPT)
-                .getSingleFile()
-                .toPath();
-        patchGradlewContent(gradlewFile);
+        patchGradlewContent(params.getOriginalGradlewScript(), params.getPatchedGradlewScript());
     }
 
-    private static Properties loadGradleProperties(File gradleWrapperPropsFile) {
-        Properties properties = new Properties();
-        try (FileInputStream inputStream = new FileInputStream(gradleWrapperPropsFile)) {
-            properties.load(inputStream);
-            return properties;
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("Unable to find gradle.properties file", e);
-        } catch (IOException e) {
-            throw new RuntimeException("Could not read gradle.properties file", e);
-        }
+    private static void patchGradlewContent(
+            RegularFileProperty originalGradlewScript, RegularFileProperty patchedGradlewScript) {
+        List<String> linesNoPatch =
+                getLinesWithoutPatch(originalGradlewScript.getAsFile().get().toPath());
+        write(patchedGradlewScript.getAsFile().get().toPath(), getNewGradlewWithPatchContent(linesNoPatch));
     }
 
     private static void write(Path destPath, String content) {
@@ -90,22 +75,6 @@ public abstract class GradleWrapperPatcher {
         } catch (IOException e) {
             throw new RuntimeException("Unable to write file", e);
         }
-    }
-
-    private static boolean isGradleJdkSetupEnabled(ProjectLayout projectLayout) {
-        FileCollection gradleProperties = projectLayout.files("gradle.properties");
-        if (gradleProperties.isEmpty() || !gradleProperties.getSingleFile().exists()) {
-            return false;
-        }
-        Properties properties = loadGradleProperties(gradleProperties.getSingleFile());
-        return Optional.ofNullable(properties.getProperty(ENABLE_GRADLE_JDK_SETUP))
-                .map(Boolean::parseBoolean)
-                .orElse(false);
-    }
-
-    private static void patchGradlewContent(Path gradlewFile) {
-        List<String> linesNoPatch = getLinesWithoutPatch(gradlewFile);
-        write(gradlewFile, getNewGradlewWithPatchContent(linesNoPatch));
     }
 
     private static List<String> getLinesWithoutPatch(Path gradlewFile) {
