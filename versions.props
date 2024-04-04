@@ -9,7 +9,9 @@ org.mockito:* = 5.11.0
 com.palantir.gradle.utils:* = 0.1.0
 com.google.guava:guava = 33.1.0-jre
 commons-io:commons-io = 2.16.0
+org.apache.commons:commons-compress = 1.26.1
 com.palantir.gradle.auto-parallelizable:* = 1.4.0
+org.ow2.asm:asm=9.2.1
 
 # dependency-upgrader:OFF
 com.palantir.baseline:* = 5.26.0

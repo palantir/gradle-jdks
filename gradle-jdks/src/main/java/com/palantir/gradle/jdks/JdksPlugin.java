@@ -74,6 +74,15 @@ public final class JdksPlugin implements Plugin<Project> {
                     Path gradlewPath = rootProject.getRootDir().toPath().resolve("gradlew");
                     task.getOriginalGradlewScript().set(rootProject.file(gradlewPath.toAbsolutePath()));
                     task.getPatchedGradlewScript().set(rootProject.file(gradlewPath.toAbsolutePath()));
+                    task.getOriginalGradleWrapperJar()
+                            .set(rootProject.file(
+                                    rootProject.getRootDir().toPath().resolve("gradle/wrapper/gradle-wrapper.jar")));
+                    task.getPatchedGradleWrapperJar()
+                            .set(rootProject.file(
+                                    rootProject.getRootDir().toPath().resolve("gradle/wrapper/gradle-wrapper.jar")));
+                    task.getBuildDir()
+                            .set(rootProject.file(
+                                    rootProject.getBuildDir().toPath().resolve("gradle-wrapper-extracted")));
                 });
         rootProject.getTasks().named("wrapper").configure(wrapperTask -> {
             wrapperTask.finalizedBy(wrapperPatcherTask);

@@ -21,6 +21,8 @@ dependencies {
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'
     implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
+    implementation 'org.apache.commons:commons-compress'
+    implementation 'org.ow2.asm:asm'
 
     compileOnly 'com.palantir.gradle.auto-parallelizable:auto-parallelizable-annotations'
     compileOnly 'org.immutables:value::annotations'
