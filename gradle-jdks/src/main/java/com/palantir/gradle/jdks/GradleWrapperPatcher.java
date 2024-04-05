@@ -101,7 +101,8 @@ public abstract class GradleWrapperPatcher {
                 .findFirst()
                 .map(File::new)
                 .orElseThrow();
-        JarResources.extractPackageNameFromJar(gradleJdksSetupJar, "org.gradle.wrapper", buildDir);
+        JarResources.extractPackageNameFromJar(
+                gradleJdksSetupJar, List.of("org.gradle.wrapper", "com.palantir.gradle.jdks.common"), buildDir);
         createJarFromDirectory(
                 buildDir.toFile(), patchedGradleWrapperJar.getAsFile().get());
     }

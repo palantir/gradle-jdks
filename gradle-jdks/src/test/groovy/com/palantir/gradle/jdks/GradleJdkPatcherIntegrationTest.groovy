@@ -18,7 +18,7 @@ package com.palantir.gradle.jdks
 
 import com.google.common.base.Splitter
 import com.google.common.collect.Iterables
-import com.palantir.gradle.jdks.setup.CommandRunner
+import com.palantir.gradle.jdks.common.CommandRunner
 import nebula.test.IntegrationSpec
 import spock.lang.TempDir
 

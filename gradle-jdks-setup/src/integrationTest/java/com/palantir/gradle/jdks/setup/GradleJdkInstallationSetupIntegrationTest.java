@@ -26,6 +26,7 @@ import com.palantir.gradle.jdks.CurrentArch;
 import com.palantir.gradle.jdks.JdkPath;
 import com.palantir.gradle.jdks.JdkRelease;
 import com.palantir.gradle.jdks.Os;
+import com.palantir.gradle.jdks.common.CommandRunner;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;

@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks.setup;
 
+import com.palantir.gradle.jdks.common.CommandRunner;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;

@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
@@ -59,14 +60,14 @@ public final class JarResources {
         }
     }
 
-    public static void extractPackageNameFromJar(File jarFile, String packageName, Path destinationDirPath) {
+    public static void extractPackageNameFromJar(File jarFile, List<String> packageNames, Path destinationDirPath) {
         try (JarFile jar = new JarFile(jarFile)) {
             Enumeration<JarEntry> entries = jar.entries();
 
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
                 if (!entry.isDirectory()
-                        && entry.getName().startsWith(packageName.replace('.', '/'))
+                        && startsWithAny(entry.getName(), packageNames)
                         && entry.getName().endsWith(".class")) {
                     try (InputStream inputStream = jar.getInputStream(entry)) {
                         String className =
@@ -80,6 +81,12 @@ public final class JarResources {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean startsWithAny(String str, List<String> prefixes) {
+        return prefixes.stream()
+                .map(packageName -> packageName.replace('.', '/'))
+                .anyMatch(str::startsWith);
     }
 
     private JarResources() {}

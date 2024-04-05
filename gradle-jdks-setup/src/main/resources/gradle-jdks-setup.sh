@@ -61,7 +61,11 @@ done
 
 APP_BASE_NAME=${0##*/}
 APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
-APP_GRADLE_DIR="$APP_HOME"/gradle
+if [[ "$APP_HOME" != */gradle ]]; then
+  APP_GRADLE_DIR="$APP_HOME"/gradle
+else
+  APP_GRADLE_DIR="$APP_HOME"
+fi
 
 tmp_work_dir=$(mktemp -d)
 GRADLE_USER_HOME=${GRADLE_USER_HOME:-"$HOME"/.gradle}
@@ -118,7 +122,6 @@ case "$(uname -m)" in                         #(
 esac
 
 major_version=$(read_value "$APP_GRADLE_DIR"/gradle-jdk-major-version)
-echo $major_version
 distribution_url=$(read_value "$APP_GRADLE_DIR"/jdks/"$major_version"/"$os_name"/"$arch_name"/download-url)
 distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$major_version"/"$os_name"/"$arch_name"/local-path)
 certs_directory="$APP_GRADLE_DIR"/certs

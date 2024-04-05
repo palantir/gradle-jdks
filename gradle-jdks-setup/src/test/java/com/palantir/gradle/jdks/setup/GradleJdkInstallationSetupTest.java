@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks.setup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.palantir.gradle.jdks.common.CommandRunner;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
