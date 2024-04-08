@@ -22,11 +22,11 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution;
 import com.palantir.gradle.jdks.Arch;
+import com.palantir.gradle.jdks.CommandRunner;
 import com.palantir.gradle.jdks.CurrentArch;
 import com.palantir.gradle.jdks.JdkPath;
 import com.palantir.gradle.jdks.JdkRelease;
 import com.palantir.gradle.jdks.Os;
-import com.palantir.gradle.jdks.common.CommandRunner;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -125,7 +125,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         // copy the jar from build/libs to the gradle directory
         Files.copy(
                 Path.of(String.format(
-                        "../gradle-jdks-setup/build/libs/gradle-jdks-setup-%s.jar",
+                        "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
                 gradleDirectory.resolve("jdks/gradle-jdks-setup.jar"));
 

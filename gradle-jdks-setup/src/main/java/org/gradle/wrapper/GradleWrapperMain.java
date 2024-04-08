@@ -16,10 +16,10 @@
 
 package org.gradle.wrapper;
 
-import com.palantir.gradle.jdks.common.CommandRunner;
-import java.io.ByteArrayOutputStream;
+import com.palantir.gradle.jdks.CommandRunner;
+import com.palantir.gradle.jdks.CurrentArch;
+import com.palantir.gradle.jdks.CurrentOs;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,11 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.function.UnaryOperator;
 
 @SuppressWarnings("BanSystemOut")
 public final class GradleWrapperMain {
@@ -42,9 +38,8 @@ public final class GradleWrapperMain {
         configureJdkAutomanagement();
 
         // Delegate back to the original GradleWrapperMain implementation
-        ClassLoader loader = new OriginalGradleWrapperLoader();
-        Class<?> origGradleWrapperMainClass = loader.loadClass("org.gradle.wrapper.OrigGradleWrapper");
-        Method method = origGradleWrapperMainClass.getMethod("main", String[].class);
+        Class<?> originalGradleWrapperMainClass = Class.forName("org.gradle.wrapper.OriginalGradleWrapperMain");
+        Method method = originalGradleWrapperMainClass.getMethod("main", String[].class);
         method.invoke(null, new Object[] {args});
     }
 
@@ -52,7 +47,8 @@ public final class GradleWrapperMain {
         // Delegate to gradle-jdks-setup.sh to install the JDK
         // TODO(crogoz): maybe use java to do the setup
         Path projectHome = projectHome();
-        CommandRunner.run(List.of("sh", "./gradle/gradle-jdks-setup.sh"), Optional.of(projectHome.toFile()));
+        // TODO(crogoz): if invoked from ./gradle then we don't need to do this
+        CommandRunner.run(List.of("./gradle/gradle-jdks-setup.sh"), Optional.of(projectHome.toFile()));
 
         // Set the daemon Java Home
         Path jdkMajorVersionPath = projectHome.resolve("gradle/gradle-jdk-major-version");
@@ -60,8 +56,8 @@ public final class GradleWrapperMain {
         Path localPathFile = projectHome
                 .resolve("gradle/jdks")
                 .resolve(majorVersion)
-                .resolve(getOs())
-                .resolve(getArch())
+                .resolve(CurrentOs.get().uiName())
+                .resolve(CurrentArch.get().uiName())
                 .resolve("local-path");
         String localJdkFileName = Files.readString(localPathFile).trim();
         Path jdkInstallationPath = getGradleJdksPath().resolve(localJdkFileName);
@@ -108,104 +104,5 @@ public final class GradleWrapperMain {
         return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
                         .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
                 .resolve("gradle-jdks");
-    }
-
-    public static String getArch() {
-        String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
-
-        if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
-            return "x86-64";
-        }
-
-        if (Set.of("arm", "arm64", "aarch64").contains(osArch)) {
-            return "aarch64";
-        }
-
-        if (Set.of("x86", "i686").contains(osArch)) {
-            return "x86";
-        }
-
-        throw new UnsupportedOperationException("Cannot get architecture for " + osArch);
-    }
-
-    public static String getOs() {
-        String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-
-        if (osName.startsWith("mac")) {
-            return "macos";
-        }
-
-        if (osName.startsWith("windows")) {
-            return "windows";
-        }
-
-        if (osName.startsWith("linux")) {
-            return linuxLibcFromLdd(UnaryOperator.identity());
-        }
-
-        throw new UnsupportedOperationException("Cannot get platform for operating system " + osName);
-    }
-
-    static String linuxLibcFromLdd(UnaryOperator<List<String>> argTransformer) {
-        try {
-            Process process = new ProcessBuilder()
-                    .command(argTransformer.apply(List.of("ldd", "--version")))
-                    .start();
-
-            // Extremely frustratingly, musl `ldd` exits with code 1 on --version, and prints to stderr, unlike the more
-            // reasonable glibc, which exits with code 0 and prints to stdout. So we concat stdout and stderr together,
-            // check the output for the correct strings, then fail if we can't find it.
-            String lowercaseOutput = (CommandRunner.readAllInput(process.getInputStream()) + "\n"
-                            + CommandRunner.readAllInput(process.getErrorStream()))
-                    .toLowerCase(Locale.ROOT);
-
-            int secondsToWait = 5;
-            if (!process.waitFor(secondsToWait, TimeUnit.SECONDS)) {
-                throw new RuntimeException(
-                        "ldd failed to run within " + secondsToWait + " seconds. Output: " + lowercaseOutput);
-            }
-
-            if (lowercaseOutput.contains("glibc") || lowercaseOutput.contains("gnu libc")) {
-                return "linux-glibc";
-            }
-
-            if (lowercaseOutput.contains("musl")) {
-                return "linux-musl";
-            }
-
-            if (!Set.of(0, 1).contains(process.exitValue())) {
-                throw new RuntimeException(String.format(
-                        "Failed to run ldd - exited with exit code %d. Output: %s.",
-                        process.exitValue(), lowercaseOutput));
-            }
-
-            throw new UnsupportedOperationException(
-                    "Cannot work out libc used by this OS. ldd output was: " + lowercaseOutput);
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static final class OriginalGradleWrapperLoader extends ClassLoader {
-        @Override
-        public Class<?> findClass(String name) {
-            byte[] bytes = loadClassFromFile(name);
-            return defineClass(name, bytes, 0, bytes.length);
-        }
-
-        private byte[] loadClassFromFile(String fileName) {
-            try (InputStream inputStream =
-                    getClass().getClassLoader().getResourceAsStream(fileName.replace('.', '/') + ".class")) {
-                ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-                int nextValue;
-                while ((nextValue = inputStream.read()) != -1) {
-                    byteStream.write(nextValue);
-                }
-                byteStream.flush();
-                return byteStream.toByteArray();
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to load class from file", e);
-            }
-        }
     }
 }

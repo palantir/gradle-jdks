@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.common;
+package com.palantir.gradle.jdks;
 
 import java.io.BufferedReader;
 import java.io.File;

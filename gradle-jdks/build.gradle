@@ -68,4 +68,5 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.test {
     environment("PROJECT_VERSION", project.version)
+    dependsOn ':gradle-jdks-setup:fatJar'
 }

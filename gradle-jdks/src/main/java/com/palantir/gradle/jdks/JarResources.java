@@ -22,14 +22,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Enumeration;
-import java.util.List;
 import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
+import java.util.jar.JarOutputStream;
 
 public final class JarResources {
 
@@ -38,18 +34,12 @@ public final class JarResources {
             JarEntry jarEntry;
             while ((jarEntry = jarInputStream.getNextJarEntry()) != null) {
                 File outputFile = new File(sourceDirectory.toFile(), jarEntry.getName());
-
                 if (jarEntry.isDirectory()) {
                     outputFile.mkdirs();
                 } else {
                     outputFile.getParentFile().mkdirs();
-
                     try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
-                        byte[] buffer = new byte[2048];
-                        int bytesRead;
-                        while ((bytesRead = jarInputStream.read(buffer)) != -1) {
-                            outputStream.write(buffer, 0, bytesRead);
-                        }
+                        jarInputStream.transferTo(outputStream);
                     }
                 }
             }
@@ -60,33 +50,35 @@ public final class JarResources {
         }
     }
 
-    public static void extractPackageNameFromJar(File jarFile, List<String> packageNames, Path destinationDirPath) {
-        try (JarFile jar = new JarFile(jarFile)) {
-            Enumeration<JarEntry> entries = jar.entries();
-
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                if (!entry.isDirectory()
-                        && startsWithAny(entry.getName(), packageNames)
-                        && entry.getName().endsWith(".class")) {
-                    try (InputStream inputStream = jar.getInputStream(entry)) {
-                        String className =
-                                entry.getName().substring(0, entry.getName().length() - ".class".length());
-                        Path destinationFile = destinationDirPath.resolve(className + ".class");
-                        Files.createDirectories(destinationFile.getParent());
-                        Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
-                    }
-                }
-            }
+    public static void createJarFromDirectory(File sourceDir, File outputFile) {
+        try (FileOutputStream fos = new FileOutputStream(outputFile);
+                JarOutputStream jos = new JarOutputStream(fos)) {
+            addDirectoryToJar(jos, sourceDir, "");
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to create Jar from dir", e);
         }
     }
 
-    private static boolean startsWithAny(String str, List<String> prefixes) {
-        return prefixes.stream()
-                .map(packageName -> packageName.replace('.', '/'))
-                .anyMatch(str::startsWith);
+    private static void addDirectoryToJar(JarOutputStream jarOutputStream, File dir, String relativePath)
+            throws IOException {
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return;
+        }
+        for (File file : files) {
+            if (file.isDirectory()) {
+                String newRelativePath = relativePath + file.getName() + "/";
+                addDirectoryToJar(jarOutputStream, file, newRelativePath);
+            } else {
+                String entryName = relativePath + file.getName();
+                JarEntry entry = new JarEntry(entryName);
+                jarOutputStream.putNextEntry(entry);
+                try (InputStream in = new FileInputStream(file)) {
+                    in.transferTo(jarOutputStream);
+                }
+                jarOutputStream.closeEntry();
+            }
+        }
     }
 
     private JarResources() {}

@@ -8,7 +8,8 @@ testSets {
 }
 
 dependencies {
-    // Avoid adding compile dependencies here, as they will also need to be added in the gradle-jdks-setup*.jar
+    // Avoid adding large compile dependencies here, as they will also need to be added in the gradle-jdks-setup*.jar
+    implementation project(':gradle-jdks-distributions')
 
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
@@ -21,6 +22,16 @@ dependencies {
     integrationTestImplementation 'org.assertj:assertj-core'
 }
 
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup'
+    }
+    archiveBaseName = 'gradle-jdks-setup-all'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
 tasks.withType(JavaCompile) {
     options.errorprone.disable 'PreferSafeLoggableExceptions'
 }
@@ -28,3 +39,5 @@ tasks.withType(JavaCompile) {
 tasks.integrationTest {
     environment("PROJECT_VERSION", project.version)
 }
+
+tasks.build.dependsOn tasks.fatJar

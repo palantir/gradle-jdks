@@ -16,7 +16,9 @@
 
 package com.palantir.gradle.jdks.setup;
 
-import com.palantir.gradle.jdks.common.CommandRunner;
+import com.palantir.gradle.jdks.CommandRunner;
+import com.palantir.gradle.jdks.CurrentOs;
+import com.palantir.gradle.jdks.Os;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +36,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -67,13 +68,20 @@ public final class CaResources {
     }
 
     private void importCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {
-        String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-        if (osName.startsWith("mac") || osName.startsWith("linux")) {
-            unixImportCertInJdk(aliasContentCert, jdkInstallationDirectory);
-            logger.log(String.format(
-                    "Successfully imported CA certificate %s into the JDK truststore", aliasContentCert.getAlias()));
-        } else {
-            logger.logError(String.format("Importing certificates for OS type '%s' is not yet supported", osName));
+        Os os = CurrentOs.get();
+        switch (os) {
+            case MACOS:
+            case LINUX_GLIBC:
+            case LINUX_MUSL:
+                unixImportCertInJdk(aliasContentCert, jdkInstallationDirectory);
+                logger.log(String.format(
+                        "Successfully imported CA certificate %s into the JDK truststore",
+                        aliasContentCert.getAlias()));
+                break;
+            case WINDOWS:
+                logger.logError(
+                        String.format("Importing certificates for OS type '%s' is not yet supported", os.uiName()));
+                break;
         }
     }
 
@@ -133,18 +141,22 @@ public final class CaResources {
     }
 
     private Optional<byte[]> systemCertificates() {
-        String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-        if (osName.startsWith("mac")) {
-            return Optional.of(macosSystemCertificates());
-        } else if (osName.startsWith("linux")) {
-            return linuxSystemCertificates();
-        } else {
-            logger.logError(String.format(
-                    "Not attempting to read Palantir CA from system truststore "
-                            + "as OS type '%s' does not yet support this",
-                    osName));
-            return Optional.empty();
+        Os os = CurrentOs.get();
+        switch (os) {
+            case MACOS:
+                return Optional.of(macosSystemCertificates());
+            case LINUX_MUSL:
+            case LINUX_GLIBC:
+                return linuxSystemCertificates();
+            case WINDOWS:
+                logger.logError(String.format(
+                        "Not attempting to read Palantir CA from system truststore "
+                                + "as OS type '%s' does not yet support this",
+                        os.uiName()));
+                return Optional.empty();
         }
+        // not reachable
+        return Optional.empty();
     }
 
     private static byte[] macosSystemCertificates() {

@@ -17,27 +17,23 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
-import java.util.jar.JarEntry;
-import java.util.jar.JarOutputStream;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
 
@@ -45,6 +41,8 @@ import org.gradle.api.tasks.OutputFile;
 public abstract class GradleWrapperPatcher {
 
     private static final Logger log = Logging.getLogger(GradleWrapperPatcher.class);
+    private static final String ENABLE_GRADLE_JDK_SETUP = "gradle.jdk.setup.enabled";
+
     private static final String GRADLEW_PATCH = "gradlew-patch.sh";
     private static final String COMMENT_BLOCK = "###";
     private static final String SHEBANG = "#!";
@@ -61,6 +59,10 @@ public abstract class GradleWrapperPatcher {
         @InputFile
         RegularFileProperty getOriginalGradleWrapperJar();
 
+        @InputFile
+        @Optional
+        RegularFileProperty getGradleJdksSetupJar();
+
         @OutputFile
         RegularFileProperty getPatchedGradlewScript();
 
@@ -71,7 +73,14 @@ public abstract class GradleWrapperPatcher {
         RegularFileProperty getBuildDir();
     }
 
-    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {}
+    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {
+
+        public GradleWrapperPatcherTask() {
+            onlyIf(t -> getGradleJdksSetupJar()
+                    .map(setupJar -> setupJar.getAsFile().exists())
+                    .getOrElse(false));
+        }
+    }
 
     static void action(Params params) {
         log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
@@ -80,7 +89,8 @@ public abstract class GradleWrapperPatcher {
         patchGradlewJar(
                 params.getBuildDir().get().getAsFile().toPath(),
                 params.getOriginalGradleWrapperJar(),
-                params.getPatchedGradleWrapperJar());
+                params.getPatchedGradleWrapperJar(),
+                params.getGradleJdksSetupJar());
     }
 
     private static void patchGradlewContent(
@@ -91,56 +101,15 @@ public abstract class GradleWrapperPatcher {
     }
 
     private static void patchGradlewJar(
-            Path buildDir, RegularFileProperty originalGradleWrapperJar, RegularFileProperty patchedGradleWrapperJar) {
+            Path buildDir,
+            RegularFileProperty originalGradleWrapperJar,
+            RegularFileProperty patchedGradleWrapperJar,
+            RegularFileProperty gradleJdksSetupJar) {
         JarResources.extractJar(originalGradleWrapperJar.getAsFile().get(), buildDir);
-
-        OrigGradleWrapperCreator.create(buildDir);
-        String[] classPaths = System.getProperty("java.class.path").split(File.pathSeparator);
-        File gradleJdksSetupJar = Arrays.stream(classPaths)
-                .filter(path -> path.contains("gradle-jdks-setup"))
-                .findFirst()
-                .map(File::new)
-                .orElseThrow();
-        JarResources.extractPackageNameFromJar(
-                gradleJdksSetupJar, List.of("org.gradle.wrapper", "com.palantir.gradle.jdks.common"), buildDir);
-        createJarFromDirectory(
+        OriginalGradleWrapperMainCreator.create(buildDir);
+        JarResources.extractJar(gradleJdksSetupJar.getAsFile().get(), buildDir);
+        JarResources.createJarFromDirectory(
                 buildDir.toFile(), patchedGradleWrapperJar.getAsFile().get());
-    }
-
-    public static void createJarFromDirectory(File sourceDir, File outputFile) {
-        try (FileOutputStream fos = new FileOutputStream(outputFile);
-                JarOutputStream jos = new JarOutputStream(fos)) {
-            addDirectoryToJar(jos, sourceDir, "");
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create Jar from dir", e);
-        }
-    }
-
-    private static void addDirectoryToJar(JarOutputStream jarOutputStream, File dir, String relativePath)
-            throws IOException {
-        File[] files = dir.listFiles();
-        if (files == null) {
-            return;
-        }
-        for (File file : files) {
-            if (file.isDirectory()) {
-                String newRelativePath = relativePath + file.getName() + "/";
-                addDirectoryToJar(jarOutputStream, file, newRelativePath);
-            } else {
-                String entryName = relativePath + file.getName();
-                JarEntry entry = new JarEntry(entryName);
-                jarOutputStream.putNextEntry(entry);
-
-                try (InputStream in = new FileInputStream(file)) {
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    while ((bytesRead = in.read(buffer)) != -1) {
-                        jarOutputStream.write(buffer, 0, bytesRead);
-                    }
-                }
-                jarOutputStream.closeEntry();
-            }
-        }
     }
 
     private static void write(Path destPath, String content) {
@@ -221,5 +190,11 @@ public abstract class GradleWrapperPatcher {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static boolean getEnableGradleJdkProperty(Project project) {
+        return java.util.Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
+                .map(prop -> Boolean.parseBoolean(((String) prop)))
+                .orElse(false);
     }
 }

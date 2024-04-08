@@ -18,7 +18,6 @@ package com.palantir.gradle.jdks
 
 import com.google.common.base.Splitter
 import com.google.common.collect.Iterables
-import com.palantir.gradle.jdks.common.CommandRunner
 import nebula.test.IntegrationSpec
 import spock.lang.TempDir
 
@@ -51,6 +50,12 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
                 }
             }
             apply plugin: 'com.palantir.jdks'
+
+            tasks.register('getGradleJavaHomeProp') {
+                doLast {
+                    println "Gradle java home is " + System.getProperty('org.gradle.java.home')
+                }
+            }
         """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
 
         // language=gradle
@@ -96,11 +101,12 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         String expectedJdkLog = "JVM:          17.0.9 (Amazon.com Inc. 17.0.9+8-LTS)";
         wrapperResult1.contains(expectedJdkLog)
         wrapperResult1.contains("Gradle 7.6.2")
+        wrapperResult1.contains("Gradle java home is " + expectedLocalPath)
         file('gradle/wrapper/gradle-wrapper.properties').text.contains("gradle-8.4-bin.zip")
         wrapperResult2.contains(String.format("already exists, setting JAVA_HOME to %s", expectedLocalPath))
         wrapperResult2.contains(expectedJdkLog)
         wrapperResult2.contains("Gradle 8.4")
-
+        wrapperResult2.contains("Gradle java home is " + expectedLocalPath)
 
         where:
         gradleVersionNumber << [ GRADLE_7VERSION ]
@@ -180,7 +186,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
         Files.copy(
                 Path.of(String.format(
-                        "../gradle-jdks-setup/build/libs/gradle-jdks-setup-%s.jar",
+                        "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
                 projectDir.toPath().resolve("gradle/jdks/gradle-jdks-setup.jar"));
 
@@ -216,7 +222,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
     String upgradeGradleWrapper() {
         ProcessBuilder processBuilder = new ProcessBuilder()
-                .command(List.of("./gradlew", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace"))
+                .command(List.of("./gradlew", "getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace"))
                 .directory(projectDir).redirectErrorStream(true)
         processBuilder.environment().put("GRADLE_USER_HOME", workingDir.toAbsolutePath().toString())
         Process process = processBuilder.start()

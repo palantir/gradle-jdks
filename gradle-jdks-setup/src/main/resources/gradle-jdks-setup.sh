@@ -61,10 +61,10 @@ done
 
 APP_BASE_NAME=${0##*/}
 APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
-if [[ "$APP_HOME" != */gradle ]]; then
-  APP_GRADLE_DIR="$APP_HOME"/gradle
-else
+if [ "${APP_HOME%gradle}" != "$APP_HOME" ]; then
   APP_GRADLE_DIR="$APP_HOME"
+else
+  APP_GRADLE_DIR="$APP_HOME"/gradle
 fi
 
 tmp_work_dir=$(mktemp -d)

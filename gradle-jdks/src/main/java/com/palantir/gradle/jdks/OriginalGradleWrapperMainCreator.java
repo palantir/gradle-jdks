@@ -27,10 +27,10 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public final class OrigGradleWrapperCreator {
+public final class OriginalGradleWrapperMainCreator {
 
     private static final String OLD_CLASS_NAME = "org.gradle.wrapper.GradleWrapperMain";
-    private static final String NEW_CLASS_NAME = "org.gradle.wrapper.OrigGradleWrapper";
+    private static final String NEW_CLASS_NAME = "org.gradle.wrapper.OriginalGradleWrapperMain";
 
     public static void create(Path destinationDir) {
         try {
@@ -44,7 +44,8 @@ public final class OrigGradleWrapperCreator {
                 outputStream.write(modifiedClassBytecode);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error renaming GradleWrapperMain.class into OrigGradleWrapper.class", e);
+            throw new RuntimeException(
+                    "Error renaming GradleWrapperMain.class into OriginalGradleWrapperMain.class", e);
         }
     }
 
@@ -100,5 +101,5 @@ public final class OrigGradleWrapperCreator {
                 .toString();
     }
 
-    private OrigGradleWrapperCreator() {}
+    private OriginalGradleWrapperMainCreator() {}
 }
