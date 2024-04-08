@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: '[Gradle JDK automanagment] Add gradlew patching logic'
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/338

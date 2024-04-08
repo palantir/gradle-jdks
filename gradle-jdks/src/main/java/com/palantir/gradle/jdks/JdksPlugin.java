@@ -33,6 +33,8 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public final class JdksPlugin implements Plugin<Project> {
 
+    private static final String ENABLE_GRADLE_JDK_SETUP = "gradle.jdk.setup.enabled";
+
     @Override
     public void apply(Project rootProject) {
         if (rootProject.getRootProject() != rootProject) {
@@ -68,6 +70,7 @@ public final class JdksPlugin implements Plugin<Project> {
         TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
                 .getTasks()
                 .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
+                    task.onlyIf(t -> getEnableGradleJdkProperty(rootProject));
                     Path gradlewPath = rootProject.getRootDir().toPath().resolve("gradlew");
                     task.getOriginalGradlewScript().set(rootProject.file(gradlewPath.toAbsolutePath()));
                     task.getPatchedGradlewScript().set(rootProject.file(gradlewPath.toAbsolutePath()));
@@ -90,6 +93,12 @@ public final class JdksPlugin implements Plugin<Project> {
         rootProject.getTasks().named("wrapper").configure(wrapperTask -> {
             wrapperTask.finalizedBy(wrapperPatcherTask);
         });
+    }
+
+    public boolean getEnableGradleJdkProperty(Project project) {
+        return Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
+                .map(prop -> Boolean.parseBoolean(((String) prop)))
+                .orElse(false);
     }
 
     private JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {

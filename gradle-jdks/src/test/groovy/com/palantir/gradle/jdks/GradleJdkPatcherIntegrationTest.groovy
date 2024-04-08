@@ -82,11 +82,12 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         populateGradleFiles(JDK_17_VERSION)
 
         when:
-        def output = runTasksSuccessfully('wrapper')
+        def output = runTasksSuccessfully('wrapper', 'getGradleJavaHomeProp')
 
         then:
         output.wasExecuted(':wrapperJdkPatcher')
         output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
+        output.standardOutput.contains("Gradle java home is null")
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
 
         when:
@@ -114,12 +115,13 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
     def '#gradleVersionNumber: gradlew file is correctly generated'() {
         gradleVersion = gradleVersionNumber
+        populateGradleFiles(JDK_17_VERSION)
 
         when:
         def output = runTasksSuccessfully('wrapper')
 
         then:
-        output.wasExecuted(':wrapperJdkPatcher')
+        output.wasSkipped(':wrapperJdkPatcher')
         List<String> initialRows = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
 
         when:
@@ -127,7 +129,8 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         def outputWithJdkEnabled = runTasksSuccessfully('wrapper')
 
         then:
-        outputWithJdkEnabled.wasExecuted(':wrapperJdkPatcher')
+        !outputWithJdkEnabled.wasSkipped(':wrapperJdkPatcher')
+        outputWithJdkEnabled.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         List<String> rowsAfterPatching = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
 
         List<String> gradlewPatchRows = Files.readAllLines(Path.of('src/main/resources/gradlew-patch.sh'))
@@ -158,6 +161,12 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         Files.copy(
                 Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),
                 projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh"));
+        directory('gradle/jdks')
+        Files.copy(
+                Path.of(String.format(
+                        "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
+                        System.getenv().get("PROJECT_VERSION"))),
+                projectDir.toPath().resolve("gradle/jdks/gradle-jdks-setup.jar"));
 
         when:
         def output = runTasksSuccessfully('wrapper')
