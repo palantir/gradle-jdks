@@ -16,6 +16,11 @@
 
 package com.palantir.gradle.jdks
 
+import nebula.test.functional.ExecutionResult
+import org.junit.jupiter.api.Disabled
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.base.Splitter
 import com.google.common.collect.Iterables
 import nebula.test.IntegrationSpec
@@ -29,6 +34,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     private static AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
     private static String GRADLE_7VERSION = "7.6.2";
     private static String JDK_17_VERSION = "17.0.9.8.1";
+    private static String JDK_21_VERSION = "21.0.2.13.1";
     private static String AMAZON_ROOT_CA_1_SERIAL = "143266978916655856878034712317230054538369994"
     private static String PALANTIR_3RD_GEN_SERIAL = "18126334688741185161";
 
@@ -54,6 +60,10 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
             tasks.register('getGradleJavaHomeProp') {
                 doLast {
                     println "Gradle java home is " + System.getProperty('org.gradle.java.home')
+                    println "Gradle auto-download is " + System.getProperty('org.gradle.java.installations.auto-download')
+                    println "Gradle auto-detect is " + System.getProperty('org.gradle.java.installations.auto-detect')
+                    println "Toolchains installations " + System.getProperty('org.gradle.java.installations.paths')
+                    println providers.gradleProperty('org.gradle.java.installations.auto-detect')
                 }
             }
         """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
@@ -99,19 +109,35 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
         Path gradleJdksPath = workingDir.resolve("gradle-jdks")
         String expectedLocalPath = gradleJdksPath.resolve(getLocalFilename(JDK_17_VERSION))
-        wrapperResult1.contains(String.format("Successfully installed JDK distribution, setting JAVA_HOME to %s", expectedLocalPath))
+        wrapperResult1.contains(String.format("Successfully installed JDK distribution in %s", expectedLocalPath))
         String expectedJdkLog = "JVM:          17.0.9 (Amazon.com Inc. 17.0.9+8-LTS)";
         wrapperResult1.contains(expectedJdkLog)
         wrapperResult1.contains("Gradle 7.6.2")
         wrapperResult1.contains("Gradle java home is " + expectedLocalPath)
         file('gradle/wrapper/gradle-wrapper.properties').text.contains("gradle-8.4-bin.zip")
-        wrapperResult2.contains(String.format("already exists, setting JAVA_HOME to %s", expectedLocalPath))
+        wrapperResult2.contains(String.format("already exists in %s", expectedLocalPath))
         wrapperResult2.contains(expectedJdkLog)
         wrapperResult2.contains("Gradle 8.4")
         wrapperResult2.contains("Gradle java home is " + expectedLocalPath)
 
         where:
         gradleVersionNumber << [ GRADLE_7VERSION ]
+    }
+
+    def '#gradleVersionNumber: javaToolchains correctly set-up'() {
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        gradleVersion = gradleVersionNumber
+        populateGradleFiles(JDK_17_VERSION, Set.of(JDK_17_VERSION, JDK_21_VERSION))
+
+        when:
+        String wrapperOutput= runTasksSuccessfully('wrapper').standardOutput
+        String javaToolchains = runGradlewCommand(List.of("./gradlew", "javaToolchains", "getGradleJavaHomeProp"))
+
+        then:
+        javaToolchains.contains(wrapperOutput)
+
+        where:
+        gradleVersionNumber << [ "8.6" ]
     }
 
     def '#gradleVersionNumber: gradlew file is correctly generated'() {
@@ -189,25 +215,39 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         gradleVersionNumber << [ GRADLE_7VERSION ]
     }
 
-    void populateGradleFiles(String jdkVersion) {
-        String jdkMajorVersion = Iterables.get(Splitter.on('.').split(jdkVersion), 0);
+    void populateGradleFiles(String gradleJdkVersion) {
+        populateGradleFiles(gradleJdkVersion, Set.of(gradleJdkVersion))
+    }
 
-        file('gradle/gradle-jdk-major-version') << jdkMajorVersion + "\n"
+    void populateGradleFiles(String gradleJdkVersion, Set<String> allJdkVersions) {
+        assertThat(allJdkVersions).contains(gradleJdkVersion).as("the list of custom toolchains should also include the gradleJdkVersions")
+
+        String gradleJdkMajorVersion = Iterables.get(Splitter.on('.').split(gradleJdkVersion), 0);
+        file('gradle/gradle-jdk-major-version') << gradleJdkMajorVersion + "\n"
         directory('gradle/jdks')
 
         Files.copy(
                 Path.of(String.format(
                         "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
-                projectDir.toPath().resolve("gradle/jdks/gradle-jdks-setup.jar"));
+                projectDir.toPath().resolve("gradle/jdks/gradle-jdks-setup.jar"))
 
         Files.copy(
                 Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),
-                projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh"));
+                projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh"))
 
-        Os os = CurrentOs.get();
-        Arch arch = CurrentArch.get();
+        allJdkVersions.forEach(jdkVersion -> addJdk(jdkVersion))
 
+        directory('gradle/certs')
+        file('gradle/certs/AmazonRootCA1Test.serial-number') << AMAZON_ROOT_CA_1_SERIAL + "\n"
+        directory('gradle/certs')
+        file('gradle/certs/Palantir3rdGenRootCa.serial-number') << PALANTIR_3RD_GEN_SERIAL + "\n"
+    }
+
+    void addJdk(String jdkVersion) {
+        Os os = CurrentOs.get()
+        Arch arch = CurrentArch.get()
+        String jdkMajorVersion = Iterables.get(Splitter.on('.').split(jdkVersion), 0);
         directory(String.format('gradle/jdks/%s/%s/%s', jdkMajorVersion, os, arch))
 
         JdkPath jdkPath = CORRETTO_JDK_DISTRIBUTION.path(
@@ -217,23 +257,21 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         String downloadUrl = String.format(
                 String.format("%s/%s.%s\n", correttoDistributionUrl, jdkPath.filename(), jdkPath.extension()))
         String localFilename = getLocalFilename(jdkVersion);
-        file(String.format('gradle/jdks/%s/%s/%s/download-url', jdkMajorVersion, CurrentOs.get(), CurrentArch.get())) << downloadUrl
-        file(String.format('gradle/jdks/%s/%s/%s/local-path', jdkMajorVersion, CurrentOs.get(), CurrentArch.get())) <<  localFilename
-
-        directory('gradle/certs')
-        file('gradle/certs/AmazonRootCA1Test.serial-number') << AMAZON_ROOT_CA_1_SERIAL + "\n"
-        directory('gradle/certs')
-        file('gradle/certs/Palantir3rdGenRootCa.serial-number') << PALANTIR_3RD_GEN_SERIAL + "\n"
+        file(String.format('gradle/jdks/%s/%s/%s/download-url', jdkMajorVersion, os, arch)) << downloadUrl
+        file(String.format('gradle/jdks/%s/%s/%s/local-path', jdkMajorVersion, os, arch)) <<  localFilename
     }
 
     String getLocalFilename(String jdkVersion) {
        return  String.format("amazon-corretto-%s-jdkPluginIntegrationTest\n", jdkVersion);
     }
 
-
     String upgradeGradleWrapper() {
+        return runGradlewCommand(List.of("./gradlew", "getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace"))
+    }
+
+    String runGradlewCommand(List<String> gradlewCommand) {
         ProcessBuilder processBuilder = new ProcessBuilder()
-                .command(List.of("./gradlew", "getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace"))
+                .command(gradlewCommand)
                 .directory(projectDir).redirectErrorStream(true)
         processBuilder.environment().put("GRADLE_USER_HOME", workingDir.toAbsolutePath().toString())
         Process process = processBuilder.start()
