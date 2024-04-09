@@ -155,8 +155,7 @@ public final class CaResources {
                         os.uiName()));
                 return Optional.empty();
         }
-        // not reachable
-        return Optional.empty();
+        throw new IllegalStateException("Unreachable code; all Os enum values should be handled");
     }
 
     private static byte[] macosSystemCertificates() {

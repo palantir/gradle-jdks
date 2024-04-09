@@ -80,14 +80,12 @@ public final class JdksPlugin implements Plugin<Project> {
                     task.getPatchedGradleWrapperJar()
                             .set(rootProject.file(
                                     rootProject.getRootDir().toPath().resolve("gradle/wrapper/gradle-wrapper.jar")));
-                    task.getBuildDir()
-                            .set(rootProject.file(
-                                    rootProject.getBuildDir().toPath().resolve("gradle-wrapper-extracted")));
                     File gradleJdksSetupJar = rootProject
                             .getRootDir()
                             .toPath()
                             .resolve("gradle/jdks/gradle-jdks-setup.jar")
                             .toFile();
+                    task.getBuildDir().set(task.getTemporaryDir());
                     task.getGradleJdksSetupJar().set(gradleJdksSetupJar.exists() ? gradleJdksSetupJar : null);
                 });
         rootProject.getTasks().named("wrapper").configure(wrapperTask -> {

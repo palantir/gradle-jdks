@@ -61,7 +61,6 @@ done
 
 APP_BASE_NAME=${0##*/}
 APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
-echo "APP_HOME is $APP_HOME"
 if [ "${APP_HOME%gradle}" != "$APP_HOME" ]; then
   APP_GRADLE_DIR="$APP_HOME"
 else

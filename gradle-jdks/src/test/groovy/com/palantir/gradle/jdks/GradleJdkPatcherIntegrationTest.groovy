@@ -86,6 +86,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
         then:
         output.wasExecuted(':wrapperJdkPatcher')
+        !output.wasSkipped(':wrapperJdkPatcher')
         output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         output.standardOutput.contains("Gradle java home is null")
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
@@ -173,6 +174,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
         then:
         output.wasExecuted(':wrapperJdkPatcher')
+        !output.wasSkipped(':wrapperJdkPatcher')
         output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
 

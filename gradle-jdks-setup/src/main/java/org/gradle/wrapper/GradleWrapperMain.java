@@ -45,7 +45,6 @@ public final class GradleWrapperMain {
 
     private static void configureJdkAutomanagement() throws IOException {
         // Delegate to gradle-jdks-setup.sh to install the JDK
-        // TODO(crogoz): maybe use java to do the setup
         Path projectHome = projectHome();
         // TODO(crogoz): if invoked from ./gradle then we don't need to do this
         CommandRunner.run(List.of("./gradle/gradle-jdks-setup.sh"), Optional.of(projectHome.toFile()));

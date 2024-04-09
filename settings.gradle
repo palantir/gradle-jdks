@@ -4,3 +4,5 @@ include 'gradle-jdks'
 include 'gradle-jdks-distributions'
 include 'gradle-jdks-json'
 include 'gradle-jdks-setup'
+include 'gradle-jdks-setup-common'
+
