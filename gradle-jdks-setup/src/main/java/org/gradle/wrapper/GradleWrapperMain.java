@@ -19,6 +19,7 @@ package org.gradle.wrapper;
 import com.palantir.gradle.jdks.CommandRunner;
 import com.palantir.gradle.jdks.CurrentArch;
 import com.palantir.gradle.jdks.CurrentOs;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -26,8 +27,11 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @SuppressWarnings("BanSystemOut")
 public final class GradleWrapperMain {
@@ -35,40 +39,75 @@ public final class GradleWrapperMain {
     private GradleWrapperMain() {}
 
     public static void main(String[] args) throws Exception {
-        configureJdkAutomanagement();
+        List<String> toolchains = getAndConfigureJdkAutomanagement();
 
         // Delegate back to the original GradleWrapperMain implementation
         Class<?> originalGradleWrapperMainClass = Class.forName("org.gradle.wrapper.OriginalGradleWrapperMain");
         Method method = originalGradleWrapperMainClass.getMethod("main", String[].class);
-        method.invoke(null, new Object[] {args});
+        String[] extraArgs = {
+            // Disable auto-download and auto-detect of JDKs
+            "-Porg.gradle.java.installations.auto-download=false",
+            "-Porg.gradle.java.installations.auto-detect=false",
+            // Set the custom toolchains locations
+            "-Porg.gradle.java.installations.paths=" + String.join(",", toolchains)
+        };
+        String[] combinedArgs =
+                Stream.concat(Arrays.stream(args), Arrays.stream(extraArgs)).toArray(String[]::new);
+        method.invoke(null, new Object[] {combinedArgs});
     }
 
-    private static void configureJdkAutomanagement() throws IOException {
+    private static List<String> getAndConfigureJdkAutomanagement() throws IOException {
         // Delegate to gradle-jdks-setup.sh to install the JDK
         Path projectHome = projectHome();
         // TODO(crogoz): if invoked from ./gradle then we don't need to do this
         CommandRunner.run(List.of("./gradle/gradle-jdks-setup.sh"), Optional.of(projectHome.toFile()));
 
         // Set the daemon Java Home
+        String osName = CurrentOs.get().uiName();
+        String archName = CurrentArch.get().uiName();
         Path jdkMajorVersionPath = projectHome.resolve("gradle/gradle-jdk-major-version");
         String majorVersion = Files.readString(jdkMajorVersionPath).trim();
         Path localPathFile = projectHome
                 .resolve("gradle/jdks")
                 .resolve(majorVersion)
-                .resolve(CurrentOs.get().uiName())
-                .resolve(CurrentArch.get().uiName())
+                .resolve(osName)
+                .resolve(archName)
                 .resolve("local-path");
         String localJdkFileName = Files.readString(localPathFile).trim();
-        Path jdkInstallationPath = getGradleJdksPath().resolve(localJdkFileName);
+        Path gradleJdksInstallationDir = getGradleJdksPath();
+        Path jdkInstallationPath = gradleJdksInstallationDir.resolve(localJdkFileName);
         System.out.println("Setting daemon Java Home to " + jdkInstallationPath.toAbsolutePath());
         System.setProperty(
                 "org.gradle.java.home", jdkInstallationPath.toAbsolutePath().toString());
 
-        // Disable auto-download and auto-detect of JDKs
-        // System.setProperty("org.gradle.java.installations.auto-download", "false");
-        // System.setProperty("org.gradle.java.installations.auto-detect", "false");
+        String localPathPattern = String.format("%s/%s/local-path", osName, archName);
+        List<String> toolchainsInstallationPaths = getAllInstallationsPaths(
+                projectHome.resolve("gradle/jdks").toFile(), gradleJdksInstallationDir, localPathPattern);
+        System.out.println("Setting custom toolchains locations to " + toolchainsInstallationPaths);
+        return toolchainsInstallationPaths;
+    }
 
-        // TODO(crogoz): read all jdks installations & set them up
+    private static List<String> getAllInstallationsPaths(
+            File gradleJdkConfigurationDir, Path gradleJdksInstallationDir, String localPathPattern)
+            throws IOException {
+        List<String> paths = new ArrayList<>();
+        File[] files = gradleJdkConfigurationDir.listFiles();
+        if (files == null) {
+            return paths;
+        }
+        for (File file : files) {
+            if (file.isDirectory()) {
+                paths.addAll(getAllInstallationsPaths(file, gradleJdksInstallationDir, localPathPattern));
+            } else if (file.getPath().endsWith(localPathPattern)) {
+                String localJdkFileName =
+                        Files.readString(file.toPath().toAbsolutePath()).trim();
+                paths.add(gradleJdksInstallationDir
+                        .resolve(localJdkFileName)
+                        .toAbsolutePath()
+                        .toString());
+            }
+        }
+        return paths;
     }
 
     private static Path projectHome() {

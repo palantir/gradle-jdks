@@ -16,8 +16,8 @@
 
 package com.palantir.gradle.jdks
 
-import nebula.test.functional.ExecutionResult
-import org.junit.jupiter.api.Disabled
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,10 +60,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
             tasks.register('getGradleJavaHomeProp') {
                 doLast {
                     println "Gradle java home is " + System.getProperty('org.gradle.java.home')
-                    println "Gradle auto-download is " + System.getProperty('org.gradle.java.installations.auto-download')
-                    println "Gradle auto-detect is " + System.getProperty('org.gradle.java.installations.auto-detect')
-                    println "Toolchains installations " + System.getProperty('org.gradle.java.installations.paths')
-                    println providers.gradleProperty('org.gradle.java.installations.auto-detect')
                 }
             }
         """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
@@ -130,14 +126,22 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         populateGradleFiles(JDK_17_VERSION, Set.of(JDK_17_VERSION, JDK_21_VERSION))
 
         when:
-        String wrapperOutput= runTasksSuccessfully('wrapper').standardOutput
-        String javaToolchains = runGradlewCommand(List.of("./gradlew", "javaToolchains", "getGradleJavaHomeProp"))
+        runTasksSuccessfully('wrapper').standardOutput
+        String javaToolchains = runGradlewCommand(List.of("./gradlew", "javaToolchains"))
 
         then:
-        javaToolchains.contains(wrapperOutput)
+        javaToolchains.contains("Auto-detection:     Disabled")
+        javaToolchains.contains("Auto-download:      Disabled")
+        javaToolchains.contains("JDK 17.0.9")
+        javaToolchains.contains("JDK 21.0.2")
+        Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(javaToolchains)
+        while (matcher.find()) {
+            String detectedByPattern = matcher.group(1)
+            detectedByPattern.contains("Gradle property 'org.gradle.java.installations.paths'")
+        }
 
         where:
-        gradleVersionNumber << [ "8.6" ]
+        gradleVersionNumber << [ GRADLE_7VERSION ]
     }
 
     def '#gradleVersionNumber: gradlew file is correctly generated'() {
