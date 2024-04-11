@@ -182,8 +182,14 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         String output = runGradlewCommand(List.of("./gradlew", "javaToolchains", "compileJava", "--info"))
 
         then:
-        output.contains("No compatible toolchains found for request specification: {languageVersion=15, " +
-                "vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false).")
+        if (gradleVersionNumber == GRADLE_7VERSION) {
+            output.contains("No compatible toolchains found for request specification: {languageVersion=15, " +
+                    "vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false).")
+        } else {
+            output.contains("No matching toolchains found for requested specification: {languageVersion=15, " +
+                    "vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false).")
+        }
+
 
         where:
         gradleVersionNumber << [ GRADLE_7VERSION, GRADLE_8VERSION ]
