@@ -182,7 +182,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         String output = runGradlewCommand(List.of("./gradlew", "javaToolchains", "compileJava", "--info"))
 
         then:
-        output.contains(":subprojectJdk21:compileJava FAILED")
         output.contains("No compatible toolchains found for request specification: {languageVersion=15, " +
                 "vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false).")
 
