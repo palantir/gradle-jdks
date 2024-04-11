@@ -48,24 +48,26 @@ public final class JdksPlugin implements Plugin<Project> {
         JdkManager jdkManager = new JdkManager(
                 jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension));
 
-        rootProject.getPluginManager().apply(BaselineJavaVersions.class);
+        if (!getEnableGradleJdkProperty(rootProject)) {
+            rootProject.getPluginManager().apply(BaselineJavaVersions.class);
 
-        rootProject
-                .getExtensions()
-                .getByType(BaselineJavaVersionsExtension.class)
-                .jdks((javaLanguageVersion, project) -> {
-                    JdkExtension jdkExtension = jdksExtension
-                            .jdkFor(javaLanguageVersion, project)
-                            .orElseThrow(() -> new RuntimeException(String.format(
-                                    "Could not find a JDK with major version %s in project '%s'. "
-                                            + "Please ensure that you have configured JDKs properly for "
-                                            + "gradle-jdks as per the readme: "
-                                            + "https://github.com/palantir/gradle-jdks#usage",
-                                    javaLanguageVersion.toString(), project.getPath())));
+            rootProject
+                    .getExtensions()
+                    .getByType(BaselineJavaVersionsExtension.class)
+                    .jdks((javaLanguageVersion, project) -> {
+                        JdkExtension jdkExtension = jdksExtension
+                                .jdkFor(javaLanguageVersion, project)
+                                .orElseThrow(() -> new RuntimeException(String.format(
+                                        "Could not find a JDK with major version %s in project '%s'. "
+                                                + "Please ensure that you have configured JDKs properly for "
+                                                + "gradle-jdks as per the readme: "
+                                                + "https://github.com/palantir/gradle-jdks#usage",
+                                        javaLanguageVersion.toString(), project.getPath())));
 
-                    return Optional.of(javaInstallationForLanguageVersion(
-                            project, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion));
-                });
+                        return Optional.of(javaInstallationForLanguageVersion(
+                                project, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion));
+                    });
+        }
 
         TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
                 .getTasks()

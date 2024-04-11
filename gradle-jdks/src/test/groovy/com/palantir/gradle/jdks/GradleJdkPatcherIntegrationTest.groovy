@@ -16,6 +16,9 @@
 
 package com.palantir.gradle.jdks
 
+import spock.config.ConfigurationObject
+import spock.lang.TempDir
+
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -24,7 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.base.Splitter
 import com.google.common.collect.Iterables
 import nebula.test.IntegrationSpec
-import spock.lang.TempDir
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -33,6 +35,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
     private static AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
     private static String GRADLE_7VERSION = "7.6.2";
+    private static String GRADLE_8VERSION = "8.5";
     private static String JDK_17_VERSION = "17.0.9.8.1";
     private static String JDK_21_VERSION = "21.0.2.13.1";
     private static String AMAZON_ROOT_CA_1_SERIAL = "143266978916655856878034712317230054538369994"
@@ -55,6 +58,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
                     classpath files(FILES)
                 }
             }
+            apply plugin: 'java'
             apply plugin: 'com.palantir.jdks'
 
             tasks.register('getGradleJavaHomeProp') {
@@ -124,24 +128,66 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
         gradleVersion = gradleVersionNumber
         populateGradleFiles(JDK_17_VERSION, Set.of(JDK_17_VERSION, JDK_21_VERSION))
+        def subprojectJdk21 = addSubproject 'subprojectJdk21', '''
+            apply plugin: 'java-library'
+            java {
+                toolchain {
+                    languageVersion.set(JavaLanguageVersion.of(21))
+                }
+            }
+        '''.stripIndent(true)
+
+        writeHelloWorld(subprojectJdk21)
 
         when:
         runTasksSuccessfully('wrapper').standardOutput
-        String javaToolchains = runGradlewCommand(List.of("./gradlew", "javaToolchains"))
+        String output = runGradlewCommand(List.of("./gradlew", "javaToolchains", "compileJava", "--info"))
 
         then:
-        javaToolchains.contains("Auto-detection:     Disabled")
-        javaToolchains.contains("Auto-download:      Disabled")
-        javaToolchains.contains("JDK 17.0.9")
-        javaToolchains.contains("JDK 21.0.2")
-        Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(javaToolchains)
+        output.contains("Auto-detection:     Disabled")
+        output.contains("Auto-download:      Disabled")
+        output.contains("JDK 17.0.9")
+        output.contains("JDK 21.0.2")
+        Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(output)
         while (matcher.find()) {
             String detectedByPattern = matcher.group(1)
             detectedByPattern.contains("Gradle property 'org.gradle.java.installations.paths'")
         }
+        Path gradleJdksPath = workingDir.resolve("gradle-jdks")
+        Path expectedLocalPath = gradleJdksPath.resolve(getLocalFilename(JDK_21_VERSION).trim())
+        // in mac the <workingDir> will symlink to /private/<workingDir>
+        output.contains(String.format("Compiling with toolchain '%s'", expectedLocalPath.toFile().getCanonicalPath()))
 
         where:
-        gradleVersionNumber << [ GRADLE_7VERSION ]
+        gradleVersionNumber << [ GRADLE_7VERSION, GRADLE_8VERSION ]
+    }
+
+    def '#gradleVersionNumber: fails if toolchain not found'() {
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        gradleVersion = gradleVersionNumber
+        populateGradleFiles(JDK_17_VERSION, Set.of(JDK_17_VERSION, JDK_21_VERSION))
+        def subprojectJdk21 = addSubproject 'subprojectJdk21', '''
+            apply plugin: 'java-library'
+            java {
+                toolchain {
+                    languageVersion.set(JavaLanguageVersion.of(15))
+                }
+            }
+        '''.stripIndent(true)
+
+        writeHelloWorld(subprojectJdk21)
+
+        when:
+        runTasksSuccessfully('wrapper').standardOutput
+        String output = runGradlewCommand(List.of("./gradlew", "javaToolchains", "compileJava", "--info"))
+
+        then:
+        output.contains(":subprojectJdk21:compileJava FAILED")
+        output.contains("No compatible toolchains found for request specification: {languageVersion=15, " +
+                "vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false).")
+
+        where:
+        gradleVersionNumber << [ GRADLE_7VERSION, GRADLE_8VERSION ]
     }
 
     def '#gradleVersionNumber: gradlew file is correctly generated'() {
@@ -170,7 +216,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         rowsAfterPatching.size() == 0
 
         where:
-        gradleVersionNumber << [ GRADLE_7VERSION ]
+        gradleVersionNumber << [ GRADLE_7VERSION, GRADLE_8VERSION ]
     }
 
     def 'no gradleWrapper patch if gradle.jdk.setup.enabled == false'() {
@@ -216,7 +262,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         wrapperResult1.contains("not found, aborting Gradle JDK setup")
 
         where:
-        gradleVersionNumber << [ GRADLE_7VERSION ]
+        gradleVersionNumber << [ GRADLE_7VERSION, GRADLE_8VERSION ]
     }
 
     void populateGradleFiles(String gradleJdkVersion) {

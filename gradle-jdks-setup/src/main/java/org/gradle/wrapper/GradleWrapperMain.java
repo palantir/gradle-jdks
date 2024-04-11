@@ -36,6 +36,8 @@ import java.util.stream.Stream;
 @SuppressWarnings("BanSystemOut")
 public final class GradleWrapperMain {
 
+    private static final String RUNNING_FROM_GRADLEW_PROP = "running.from.gradlew";
+
     private GradleWrapperMain() {}
 
     public static void main(String[] args) throws Exception {
@@ -57,10 +59,11 @@ public final class GradleWrapperMain {
     }
 
     private static List<String> getAndConfigureJdkAutomanagement() throws IOException {
-        // Delegate to gradle-jdks-setup.sh to install the JDK
+        // Delegate to gradle-jdks-setup.sh to install the JDK if it hasn't been installed yet
         Path projectHome = projectHome();
-        // TODO(crogoz): if invoked from ./gradle then we don't need to do this
-        CommandRunner.run(List.of("./gradle/gradle-jdks-setup.sh"), Optional.of(projectHome.toFile()));
+        if (!isRunningFromGradlew()) {
+            CommandRunner.run(List.of("./gradle/gradle-jdks-setup.sh"), Optional.of(projectHome.toFile()));
+        }
 
         // Set the daemon Java Home
         String osName = CurrentOs.get().uiName();
@@ -108,6 +111,10 @@ public final class GradleWrapperMain {
             }
         }
         return paths;
+    }
+
+    private static boolean isRunningFromGradlew() {
+        return Boolean.parseBoolean(System.getProperty(RUNNING_FROM_GRADLEW_PROP, "false"));
     }
 
     private static Path projectHome() {
