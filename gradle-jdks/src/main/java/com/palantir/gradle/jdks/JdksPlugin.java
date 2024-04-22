@@ -41,15 +41,23 @@ public final class JdksPlugin implements Plugin<Project> {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
 
-        JdkDistributions jdkDistributions = new JdkDistributions();
+        rootProject.getPluginManager().apply(BaselineJavaVersions.class);
 
-        JdksExtension jdksExtension = extension(rootProject, jdkDistributions);
+        if (getEnableGradleJdkProperty(rootProject)) {
+            rootProject.getLogger().info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects " +
+                    "are managed by the configured custom toolchains.");
+            rootProject
+                    .getExtensions()
+                    .getByType(BaselineJavaVersionsExtension.class)
+                    .jdkToolchainsAutoManagement()
+                    .set(true);
+        } else {
+            JdkDistributions jdkDistributions = new JdkDistributions();
 
-        JdkManager jdkManager = new JdkManager(
-                jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension));
+            JdksExtension jdksExtension = extension(rootProject, jdkDistributions);
 
-        if (!getEnableGradleJdkProperty(rootProject)) {
-            rootProject.getPluginManager().apply(BaselineJavaVersions.class);
+            JdkManager jdkManager = new JdkManager(
+                    jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension));
 
             rootProject
                     .getExtensions()

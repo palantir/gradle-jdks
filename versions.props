@@ -14,7 +14,7 @@ com.palantir.gradle.auto-parallelizable:* = 1.4.0
 org.ow2.asm:asm = 9.2.1
 
 # dependency-upgrader:OFF
-com.palantir.baseline:* = 5.26.0
+com.palantir.baseline:* = 5.49.0-13-g8680a87
 # dependency-upgrader:ON
 
 # conflict resolution
