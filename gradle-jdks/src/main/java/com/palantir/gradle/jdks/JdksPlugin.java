@@ -40,7 +40,6 @@ public final class JdksPlugin implements Plugin<Project> {
         if (rootProject.getRootProject() != rootProject) {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
-
         rootProject.getPluginManager().apply(BaselineJavaVersions.class);
 
         if (getEnableGradleJdkProperty(rootProject)) {
@@ -104,7 +103,7 @@ public final class JdksPlugin implements Plugin<Project> {
     }
 
     public boolean getEnableGradleJdkProperty(Project project) {
-        return Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
+        return !CurrentOs.get().equals(Os.WINDOWS) && Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
                 .map(prop -> Boolean.parseBoolean(((String) prop)))
                 .orElse(false);
     }
