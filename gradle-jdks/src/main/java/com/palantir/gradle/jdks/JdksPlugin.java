@@ -42,6 +42,10 @@ public final class JdksPlugin implements Plugin<Project> {
         }
         rootProject.getPluginManager().apply(BaselineJavaVersions.class);
 
+        JdkDistributions jdkDistributions = new JdkDistributions();
+
+        JdksExtension jdksExtension = extension(rootProject, jdkDistributions);
+
         if (getEnableGradleJdkProperty(rootProject)) {
             rootProject.getLogger().info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects " +
                     "are managed by the configured custom toolchains.");
@@ -51,10 +55,6 @@ public final class JdksPlugin implements Plugin<Project> {
                     .getSetupJdkToolchains()
                     .set(false);
         } else {
-            JdkDistributions jdkDistributions = new JdkDistributions();
-
-            JdksExtension jdksExtension = extension(rootProject, jdkDistributions);
-
             JdkManager jdkManager = new JdkManager(
                     jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension));
 
