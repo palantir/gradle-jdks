@@ -47,8 +47,10 @@ public final class JdksPlugin implements Plugin<Project> {
         JdksExtension jdksExtension = extension(rootProject, jdkDistributions);
 
         if (getEnableGradleJdkProperty(rootProject)) {
-            rootProject.getLogger().info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects " +
-                    "are managed by the configured custom toolchains.");
+            rootProject
+                    .getLogger()
+                    .info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects "
+                            + "are managed by the configured custom toolchains.");
             rootProject
                     .getExtensions()
                     .getByType(BaselineJavaVersionsExtension.class)
@@ -103,9 +105,10 @@ public final class JdksPlugin implements Plugin<Project> {
     }
 
     public boolean getEnableGradleJdkProperty(Project project) {
-        return !CurrentOs.get().equals(Os.WINDOWS) && Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
-                .map(prop -> Boolean.parseBoolean(((String) prop)))
-                .orElse(false);
+        return !CurrentOs.get().equals(Os.WINDOWS)
+                && Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
+                        .map(prop -> Boolean.parseBoolean(((String) prop)))
+                        .orElse(false);
     }
 
     private JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
