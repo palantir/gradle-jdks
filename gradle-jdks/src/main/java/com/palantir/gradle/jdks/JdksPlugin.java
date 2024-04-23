@@ -48,8 +48,8 @@ public final class JdksPlugin implements Plugin<Project> {
             rootProject
                     .getExtensions()
                     .getByType(BaselineJavaVersionsExtension.class)
-                    .jdkToolchainsAutoManagement()
-                    .set(true);
+                    .getSetupJdkToolchains()
+                    .set(false);
         } else {
             JdkDistributions jdkDistributions = new JdkDistributions();
 
