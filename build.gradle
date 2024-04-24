@@ -30,7 +30,7 @@ apply plugin: 'com.palantir.failure-reports'
 
 javaVersions {
     libraryTarget = 11
-    runtime = 17
+    runtime = 21
 }
 
 version gitVersion()
