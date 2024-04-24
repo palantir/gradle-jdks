@@ -165,10 +165,11 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
         when:
         runTasksSuccessfully('wrapper').standardOutput
-        String output = runGradlewCommand(List.of("./gradlew", "javaToolchains", "compileJava", "--debug"))
+        String output = runGradlewCommand(List.of("./gradlew", "javaToolchains", "compileJava", "--info"))
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
 
         then:
+
         output.contains("Auto-detection:     Disabled")
         output.contains("Auto-download:      Disabled")
         output.contains("JDK 11.0.22")
@@ -187,7 +188,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
 
         when:
-        String runOutput = runGradlewCommand(List.of("./gradlew", "run", "-i"))
+        String runOutput = runGradlewCommand(List.of("./gradlew", "run", "--info"))
 
         then:
         runOutput.contains("--enable-preview")
