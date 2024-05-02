@@ -169,7 +169,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
 
         then:
-
         output.contains("Auto-detection:     Disabled")
         output.contains("Auto-download:      Disabled")
         output.contains("JDK 11.0.22")
