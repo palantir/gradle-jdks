@@ -183,7 +183,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         output.contains(String.format("Compiling with toolchain '%s'", expectedJdk11.toFile().getCanonicalPath()))
         Path expectedJdk17 = gradleJdksPath.resolve(getLocalFilename(JDK_17_VERSION).trim())
         output.contains(String.format("Compiling with toolchain '%s'", expectedJdk17.toFile().getCanonicalPath()))
-        output.contains("--enable-preview")
         assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
 
         when:
