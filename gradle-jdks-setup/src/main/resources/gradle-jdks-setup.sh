@@ -136,13 +136,13 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
     echo "Distribution $distribution_url already exists in $jdk_installation_directory"
   else
     # Download and extract the distribution into a temporary directory
-    echo "Distribution $distribution_url does not exist, installing in progress ..."
+    echo "Distribution $jdk_installation_directory does not exist, installing $distribution_url in progress ..."
     in_progress_dir="$tmp_work_dir/$distribution_local_path.in-progress"
     mkdir -p "$in_progress_dir"
     cd "$in_progress_dir"
     if command -v curl > /dev/null 2>&1; then
       echo "Using curl to download $distribution_url"
-      #TODO(crogoz): permissions are not allways maintained, if I do this in 2 commands it works
+      #TODO(crogoz): permissions are not always maintained, if I do this in 2 commands it works
       curl -C - "$distribution_url" | tar -pxzf -
     elif command -v wget > /dev/null 2>&1; then
       echo "Using wget to download $distribution_url"

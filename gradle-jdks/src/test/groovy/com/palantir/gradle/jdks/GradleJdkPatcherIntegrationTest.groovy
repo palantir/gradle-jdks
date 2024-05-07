@@ -168,7 +168,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
             javaVersions {
                 libraryTarget = '11'
                 distributionTarget = '17_PREVIEW'
-                daemonTarget = '17'
             }
         '''.stripIndent(true)
         file('src/main/java/Main.java') << java17PreviewCode
@@ -188,7 +187,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
         when:
         runTasksSuccessfully('wrapper').standardOutput
-        String output = runGradlewCommand(List.of("./gradlew", "generateGradleJdksSetup","javaToolchains", "compileJava", "--info", '--configuration-cache'))
+        String output = runGradlewCommand(List.of("./gradlew","javaToolchains", "compileJava", "--info", '--configuration-cache'))
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
 
         then:
