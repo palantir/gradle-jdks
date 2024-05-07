@@ -121,6 +121,10 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
+if [ ! -f "$APP_GRADLE_DIR"/gradle-jdk-major-version ]; then
+  die "ERROR: $APP_GRADLE_DIR/gradle-jdk-major-version not found, please run `./gradlew generateGradleJdksSetup` to generate it."
+fi
+
 for dir in "$APP_GRADLE_DIR"/jdks/*/; do
   major_version_dir=${dir%*/}
   certs_directory="$APP_GRADLE_DIR"/certs
@@ -138,10 +142,11 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
     cd "$in_progress_dir"
     if command -v curl > /dev/null 2>&1; then
       echo "Using curl to download $distribution_url"
-      curl -C - "$distribution_url" | tar -xzf -
+      #TODO(crogoz): permissions are not allways maintained, if I do this in 2 commands it works
+      curl -C - "$distribution_url" | tar -pxzf -
     elif command -v wget > /dev/null 2>&1; then
       echo "Using wget to download $distribution_url"
-      wget -qO- -c "$distribution_url" | tar -xzf -
+      wget -qO- -c "$distribution_url" | tar -pxzf -
     else
       # TODO(crogoz): fallback to java if it exists
       die "ERROR: Neither curl nor wget are installed, Could not set up JAVA_HOME"

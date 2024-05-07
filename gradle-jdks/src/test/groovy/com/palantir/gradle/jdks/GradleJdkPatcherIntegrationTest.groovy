@@ -86,6 +86,28 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
             application {
                 mainClass = 'Main'
             }
+            
+            jdks {
+               /*jdk(11) {
+                  distribution = 'azul-zulu'
+                  jdkVersion = '11.54.25-11.0.14.1'
+               }*/
+               
+               jdk(11) {
+                  distribution = 'amazon-corretto'
+                  jdkVersion = '11.0.22.7.1'
+               }
+               
+               jdk(17) {
+                  distribution = 'amazon-corretto'
+                  jdkVersion = '17.0.3.6.1'
+               }
+               
+               jdk(21) {
+                  distribution = 'amazon-corretto'
+                  jdkVersion = '21.0.2.13.1'
+               }
+            }
         """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
     }
 
@@ -146,6 +168,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
             javaVersions {
                 libraryTarget = '11'
                 distributionTarget = '17_PREVIEW'
+                daemonTarget = '17'
             }
         '''.stripIndent(true)
         file('src/main/java/Main.java') << java17PreviewCode
@@ -165,7 +188,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
         when:
         runTasksSuccessfully('wrapper').standardOutput
-        String output = runGradlewCommand(List.of("./gradlew", "javaToolchains", "compileJava", "--info"))
+        String output = runGradlewCommand(List.of("./gradlew", "generateGradleJdksSetup","javaToolchains", "compileJava", "--info", '--configuration-cache'))
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
 
         then:
