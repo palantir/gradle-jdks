@@ -68,8 +68,8 @@ public final class GradleWrapperMain {
         // Set the daemon Java Home
         String osName = CurrentOs.get().uiName();
         String archName = CurrentArch.get().uiName();
-        Path jdkMajorVersionPath = projectHome.resolve("gradle/gradle-jdk-major-version");
-        String majorVersion = Files.readString(jdkMajorVersionPath).trim();
+        Path daemonKdkMajorVersionPath = projectHome.resolve("gradle/gradle-daemon-jdk-version");
+        String majorVersion = Files.readString(daemonKdkMajorVersionPath).trim();
         Path localPathFile = projectHome
                 .resolve("gradle/jdks")
                 .resolve(majorVersion)

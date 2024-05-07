@@ -307,8 +307,8 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     void populateGradleFiles(String gradleJdkVersion, Set<String> allJdkVersions) {
         assertThat(allJdkVersions).contains(gradleJdkVersion).as("the list of custom toolchains should also include the gradleJdkVersions")
 
-        String gradleJdkMajorVersion = Iterables.get(Splitter.on('.').split(gradleJdkVersion), 0);
-        file('gradle/gradle-jdk-major-version') << gradleJdkMajorVersion + "\n"
+        String gradleDaemonJdkMajorVersion = Iterables.get(Splitter.on('.').split(gradleJdkVersion), 0);
+        file('gradle/gradle-daemon-jdk-version') << gradleDaemonJdkMajorVersion + "\n"
         directory('gradle/jdks')
 
         Files.copy(
