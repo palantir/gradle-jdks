@@ -278,7 +278,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
                 Path.of(String.format(
                         "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
-                projectDir.toPath().resolve("gradle/jdks/gradle-jdks-setup.jar"));
+                projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar"));
 
         when:
         def output = runTasksSuccessfully('wrapper')
@@ -315,7 +315,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
                 Path.of(String.format(
                         "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
-                projectDir.toPath().resolve("gradle/jdks/gradle-jdks-setup.jar"))
+                projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar"))
 
         Files.copy(
                 Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),

@@ -151,7 +151,7 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
     # Finding the java_home
     java_bin=$(find "$in_progress_dir" -type f -name "java" -path "*/bin/java" ! -type l)
     java_home="${java_bin%/*/*}"
-    "$java_home/bin/java" -cp "$APP_GRADLE_DIR"/jdks/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory"
+    "$java_home/bin/java" -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory"
     echo "Successfully installed JDK distribution in $jdk_installation_directory"
   fi
 done

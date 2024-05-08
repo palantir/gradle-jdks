@@ -93,6 +93,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
          * │   ├── certs/
          * │   │   ├── Palantir3rdGenRootCa.serial-number
          * │   ├── gradle-daemon-jdk-version
+         * │   ├── gradle-jdks-setup.sh
          * │   ├── gradle-jdks-setup.jar
          * ├── subProjects/...
          * ...
@@ -127,7 +128,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 Path.of(String.format(
                         "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
-                gradleDirectory.resolve("jdks/gradle-jdks-setup.jar"));
+                gradleDirectory.resolve("gradle-jdks-setup.jar"));
 
         // copy the gradle-jdks-setup.sh to the gradle directory
         Files.copy(

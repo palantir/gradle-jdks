@@ -107,7 +107,7 @@ public final class GradleWrapperMain {
                 gradleJdkConfigurationPath.resolve(osName).resolve(archName).resolve("local-path");
         if (!localPathFile.toFile().exists()) {
             System.out.println(String.format(
-                    "Couldn't find a valid JDK= %s installation for os = %s and arch = %s in %s." + " Skipping ...",
+                    "Couldn't find a valid JDK version %s installation for os=%s and arch=%s in %s. Skipping ...",
                     gradleJdkConfigurationPath.getFileName(),
                     osName,
                     archName,
@@ -152,12 +152,11 @@ public final class GradleWrapperMain {
         if (!location.getScheme().equals("file")) {
             throw new RuntimeException(
                     String.format("Cannot determine classpath for wrapper Jar from codebase '%s'.", location));
-        } else {
-            try {
-                return Paths.get(location);
-            } catch (NoClassDefFoundError e) {
-                return Paths.get(location.getPath());
-            }
+        }
+        try {
+            return Paths.get(location);
+        } catch (NoClassDefFoundError e) {
+            return Paths.get(location.getPath());
         }
     }
 

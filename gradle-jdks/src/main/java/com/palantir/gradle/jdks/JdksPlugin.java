@@ -94,7 +94,7 @@ public final class JdksPlugin implements Plugin<Project> {
                     File gradleJdksSetupJar = rootProject
                             .getRootDir()
                             .toPath()
-                            .resolve("gradle/jdks/gradle-jdks-setup.jar")
+                            .resolve("gradle/gradle-jdks-setup.jar")
                             .toFile();
                     task.getBuildDir().set(task.getTemporaryDir());
                     task.getGradleJdksSetupJar().set(gradleJdksSetupJar.exists() ? gradleJdksSetupJar : null);
