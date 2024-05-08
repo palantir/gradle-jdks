@@ -14,7 +14,6 @@ dependencies {
     api project(':gradle-jdks-distributions')
     api project(':gradle-jdks-json')
     api project(':gradle-jdks-setup')
-    api project(':gradle-jdks-setup-common')
 
     implementation('com.palantir.baseline:gradle-baseline-java') {
         exclude group: 'com.diffplug.spotless', module: 'spotless-plugin-gradle'

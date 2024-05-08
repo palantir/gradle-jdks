@@ -19,7 +19,6 @@ package org.gradle.wrapper;
 import com.palantir.gradle.jdks.CommandRunner;
 import com.palantir.gradle.jdks.CurrentArch;
 import com.palantir.gradle.jdks.CurrentOs;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -27,10 +26,10 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("BanSystemOut")
@@ -58,7 +57,7 @@ public final class GradleWrapperMain {
         method.invoke(null, new Object[] {combinedArgs});
     }
 
-    private static List<String> getAndConfigureJdkAutomanagement() throws IOException {
+    private static List<String> getAndConfigureJdkAutomanagement() {
         // Delegate to gradle-jdks-setup.sh to install the JDK if it hasn't been installed yet
         Path projectHome = projectHome();
         if (!isRunningFromGradlew()) {
@@ -68,49 +67,66 @@ public final class GradleWrapperMain {
         // Set the daemon Java Home
         String osName = CurrentOs.get().uiName();
         String archName = CurrentArch.get().uiName();
-        Path daemonKdkMajorVersionPath = projectHome.resolve("gradle/gradle-daemon-jdk-version");
-        String majorVersion = Files.readString(daemonKdkMajorVersionPath).trim();
+        Path daemonJdkMajorVersionPath = projectHome.resolve("gradle/gradle-daemon-jdk-version");
+        String majorVersion = readFile(daemonJdkMajorVersionPath);
         Path localPathFile = projectHome
                 .resolve("gradle/jdks")
                 .resolve(majorVersion)
                 .resolve(osName)
                 .resolve(archName)
                 .resolve("local-path");
-        String localJdkFileName = Files.readString(localPathFile).trim();
+        String localJdkFileName = readFile(localPathFile);
         Path gradleJdksInstallationDir = getGradleJdksPath();
         Path jdkInstallationPath = gradleJdksInstallationDir.resolve(localJdkFileName);
         System.out.println("Setting daemon Java Home to " + jdkInstallationPath.toAbsolutePath());
         System.setProperty(
                 "org.gradle.java.home", jdkInstallationPath.toAbsolutePath().toString());
 
-        String localPathPattern = String.format("%s/%s/local-path", osName, archName);
         List<String> toolchainsInstallationPaths = getAllInstallationsPaths(
-                projectHome.resolve("gradle/jdks").toFile(), gradleJdksInstallationDir, localPathPattern);
+                projectHome.resolve("gradle/jdks"), gradleJdksInstallationDir, osName, archName);
         System.out.println("Setting custom toolchains locations to " + toolchainsInstallationPaths);
         return toolchainsInstallationPaths;
     }
 
     private static List<String> getAllInstallationsPaths(
-            File gradleJdkConfigurationDir, Path gradleJdksInstallationDir, String localPathPattern)
-            throws IOException {
-        List<String> paths = new ArrayList<>();
-        File[] files = gradleJdkConfigurationDir.listFiles();
-        if (files == null) {
-            return paths;
+            Path gradleJdksConfigurationPath, Path gradleJdksInstallationDir, String osName, String archName) {
+        try (Stream<Path> gradleJdkConfigurationPath =
+                Files.walk(gradleJdksConfigurationPath, 1).filter(Files::isDirectory)) {
+            return gradleJdkConfigurationPath
+                    .flatMap(jdkPath -> getInstallationPath(jdkPath, gradleJdksInstallationDir, osName, archName))
+                    .collect(Collectors.toList());
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        for (File file : files) {
-            if (file.isDirectory()) {
-                paths.addAll(getAllInstallationsPaths(file, gradleJdksInstallationDir, localPathPattern));
-            } else if (file.getPath().endsWith(localPathPattern)) {
-                String localJdkFileName =
-                        Files.readString(file.toPath().toAbsolutePath()).trim();
-                paths.add(gradleJdksInstallationDir
-                        .resolve(localJdkFileName)
-                        .toAbsolutePath()
-                        .toString());
-            }
+    }
+
+    private static Stream<String> getInstallationPath(
+            Path gradleJdkConfigurationPath, Path gradleJdksInstallationDir, String osName, String archName) {
+        Path localPathFile =
+                gradleJdkConfigurationPath.resolve(osName).resolve(archName).resolve("local-path");
+        if (!localPathFile.toFile().exists()) {
+            System.out.println(String.format(
+                    "Couldn't find a valid JDK= %s installation for os = %s and arch = %s in %s." + " Skipping ...",
+                    gradleJdkConfigurationPath.getFileName(),
+                    osName,
+                    archName,
+                    gradleJdkConfigurationPath.toAbsolutePath()));
+            return Stream.empty();
         }
-        return paths;
+        String localJdkFileName = readFile(localPathFile);
+        return Stream.of(gradleJdksInstallationDir
+                .resolve(localJdkFileName)
+                .toAbsolutePath()
+                .toString());
+    }
+
+    private static String readFile(Path path) {
+        try {
+            return Files.readString(path).trim();
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to read file", e);
+        }
     }
 
     private static boolean isRunningFromGradlew() {
@@ -129,8 +145,8 @@ public final class GradleWrapperMain {
                     .getCodeSource()
                     .getLocation()
                     .toURI();
-        } catch (URISyntaxException var3) {
-            throw new RuntimeException(var3);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
 
         if (!location.getScheme().equals("file")) {
@@ -139,7 +155,7 @@ public final class GradleWrapperMain {
         } else {
             try {
                 return Paths.get(location);
-            } catch (NoClassDefFoundError var2) {
+            } catch (NoClassDefFoundError e) {
                 return Paths.get(location.getPath());
             }
         }
