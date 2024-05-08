@@ -114,20 +114,19 @@ public abstract class GradleWrapperPatcher {
             Path newGradleWrapperJar =
                     buildDir.resolve(patchedGradleWrapperJar.getAsFile().get().getName());
             JarResources.createJarFromDirectory(gradleWrapperExtractedDir.toFile(), newGradleWrapperJar.toFile());
-            try {
-                Files.move(
-                        newGradleWrapperJar,
-                        patchedGradleWrapperJar.getAsFile().get().toPath(),
-                        StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException ignored) {
-                Files.move(
-                        newGradleWrapperJar,
-                        patchedGradleWrapperJar.getAsFile().get().toPath(),
-                        StandardCopyOption.REPLACE_EXISTING);
-            }
+            moveFile(
+                    newGradleWrapperJar,
+                    patchedGradleWrapperJar.getAsFile().get().toPath());
         } catch (IOException e) {
             throw new RuntimeException("Failed to patch gradle wrapper jar", e);
+        }
+    }
+
+    private static void moveFile(Path source, Path destination) throws IOException {
+        try {
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

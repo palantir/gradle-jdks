@@ -300,7 +300,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
                 Path.of(String.format(
                         "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
-                projectDir.toPath().resolve("gradle/jdks/gradle-jdks-setup.jar"));
+                projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar"));
 
         when:
         def output = runTasksSuccessfully('wrapper')
@@ -329,15 +329,15 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     void populateGradleFiles(String gradleJdkVersion, Set<String> allJdkVersions) {
         assertThat(allJdkVersions).contains(gradleJdkVersion).as("the list of custom toolchains should also include the gradleJdkVersions")
 
-        String gradleJdkMajorVersion = Iterables.get(Splitter.on('.').split(gradleJdkVersion), 0);
-        file('gradle/gradle-jdk-major-version') << gradleJdkMajorVersion + "\n"
+        String gradleDaemonJdkMajorVersion = Iterables.get(Splitter.on('.').split(gradleJdkVersion), 0);
+        file('gradle/gradle-daemon-jdk-version') << gradleDaemonJdkMajorVersion + "\n"
         directory('gradle/jdks')
 
         Files.copy(
                 Path.of(String.format(
                         "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
-                projectDir.toPath().resolve("gradle/jdks/gradle-jdks-setup.jar"))
+                projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar"))
 
         Files.copy(
                 Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),

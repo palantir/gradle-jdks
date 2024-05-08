@@ -25,7 +25,7 @@
 #   (3) Calls the java class `GradleJdkInstallationSetup` that will move each distribution to
 #   `$GRADLE_USER_HOME/${local_path}` based on the local_path=`gradle/jdks/${majorVersion}/${os}/${arch}/local_path`
 #   and it will set up the certificates based on `gradle/certs` entries for the locally installed distribution
-#   (4) Sets up the JAVA_HOME and PATH env vars to the gradle JDK major version=`gradle/jdks/gradle-jdk-major-version`
+#   (4) Sets up the JAVA_HOME and PATH env vars to the gradle daemon JDK major version=`gradle/gradle-daemon-jdk-version`
 #
 #
 #   Important for running:
@@ -156,14 +156,14 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
     # Finding the java_home
     java_bin=$(find "$in_progress_dir" -type f -name "java" -path "*/bin/java" ! -type l)
     java_home="${java_bin%/*/*}"
-    "$java_home/bin/java" -cp "$APP_GRADLE_DIR"/jdks/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory"
+    "$java_home/bin/java" -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory"
     echo "Successfully installed JDK distribution in $jdk_installation_directory"
   fi
 done
 
 rm -rf "$tmp_work_dir"
 
-gradle_jdk_major_version=$(read_value "$APP_GRADLE_DIR"/gradle-jdk-major-version)
-gradle_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_jdk_major_version"/"$os_name"/"$arch_name"/local-path)
-export JAVA_HOME="$GRADLE_JDKS_HOME"/"$gradle_jdk_distribution_local_path"
+gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
+gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)
+export JAVA_HOME="$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"
 export PATH=$PATH:$JAVA_HOME/bin
