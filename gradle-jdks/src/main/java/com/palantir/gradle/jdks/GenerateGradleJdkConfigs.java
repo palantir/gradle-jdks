@@ -70,7 +70,6 @@ public class GenerateGradleJdkConfigs {
         @Input
         Property<JavaLanguageVersion> getDaemonJavaVersion();
 
-        @Option(names = "fix", description = "Fixes the gradle jdk files")
         @Input
         Property<Boolean> getFix();
 
@@ -89,6 +88,11 @@ public class GenerateGradleJdkConfigs {
 
         public GenerateGradleJdkConfigsTask() {
             this.getFix().convention(false);
+        }
+
+        @Option(names = "fix", required = true, help = true, description = "Fixes the gradle jdk files")
+        public void setFixOption(boolean value) {
+            this.getFix().set(value);
         }
     }
 

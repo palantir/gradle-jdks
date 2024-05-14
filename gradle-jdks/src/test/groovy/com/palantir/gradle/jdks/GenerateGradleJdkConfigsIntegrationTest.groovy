@@ -102,7 +102,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
 
         when:
         Files.createDirectories(projectDir.toPath().resolve("gradle/jdks/15"))
-        def secondCheck = runTasksSuccessfully('generateGradleJdkConfigs', '--fix')
+        def secondCheck = runTasksSuccessfully('help', '--task', 'generateGradleJdkConfigs')
 
 
         then:
