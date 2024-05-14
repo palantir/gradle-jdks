@@ -70,7 +70,7 @@ public class GenerateGradleJdkConfigs {
         @Input
         Property<JavaLanguageVersion> getDaemonJavaVersion();
 
-        @Option(names = "--fix", description = "Fixes the gradle jdk files")
+        @Option(names = "fix", description = "Fixes the gradle jdk files")
         @Input
         Property<Boolean> getFix();
 
