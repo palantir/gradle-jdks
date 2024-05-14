@@ -142,11 +142,23 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
     cd "$in_progress_dir"
     if command -v curl > /dev/null 2>&1; then
       echo "Using curl to download $distribution_url"
-      #TODO(crogoz): permissions are not always maintained, if I do this in 2 commands it works
-      curl -C - "$distribution_url" | tar -pxzf -
+      #
+      if echo "$distribution_url" | grep -q ".zip"; then
+        distribution_name=${distribution_url##*/}
+        curl -C - "$distribution_url" -o "$distribution_name"
+        tar -xzf "$distribution_name"
+      else
+        curl -C - "$distribution_url" | tar -xzf -
+      fi
     elif command -v wget > /dev/null 2>&1; then
       echo "Using wget to download $distribution_url"
-      wget -qO- -c "$distribution_url" | tar -pxzf -
+      if echo "$distribution_url" | grep -q ".zip"; then
+        distribution_name=${distribution_url##*/}
+        curl -C - "$distribution_url" -o "$distribution_name"
+        tar -xzf "$distribution_name"
+      else
+        wget -qO- -c "$distribution_url" | tar -xzf -
+      fi
     else
       # TODO(crogoz): fallback to java if it exists
       die "ERROR: Neither curl nor wget are installed, Could not set up JAVA_HOME"

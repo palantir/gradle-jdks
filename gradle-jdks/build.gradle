@@ -18,6 +18,7 @@ dependencies {
     implementation('com.palantir.baseline:gradle-baseline-java') {
         exclude group: 'com.diffplug.spotless', module: 'spotless-plugin-gradle'
     }
+    implementation 'com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions'
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'
     implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
@@ -69,4 +70,5 @@ tasks.withType(JavaCompile).configureEach {
 tasks.test {
     environment("PROJECT_VERSION", project.version)
     dependsOn ':gradle-jdks-setup:fatJar'
+    systemProperty 'ignoreDeprecations', 'true'
 }

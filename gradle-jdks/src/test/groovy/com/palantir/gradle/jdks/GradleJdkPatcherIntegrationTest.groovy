@@ -88,14 +88,9 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
             }
             
             jdks {
-               /*jdk(11) {
+               jdk(11) {
                   distribution = 'azul-zulu'
                   jdkVersion = '11.54.25-11.0.14.1'
-               }*/
-               
-               jdk(11) {
-                  distribution = 'amazon-corretto'
-                  jdkVersion = '11.0.22.7.1'
                }
                
                jdk(17) {
@@ -111,14 +106,13 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
     }
 
-    private Iterable<File> getPluginClasspathInjector() {
+    private static Iterable<File> getPluginClasspathInjector() {
         File propertiesFile = new File("build/pluginUnderTestMetadata/plugin-under-test-metadata.properties")
         Properties properties = new Properties()
         propertiesFile.withInputStream { inputStream ->
             properties.load(inputStream)
         }
         String classpath = properties.getProperty('implementation-classpath')
-
         return classpath.split(File.pathSeparator).collect { "'" + it + "'" }
     }
 
