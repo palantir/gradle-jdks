@@ -38,7 +38,7 @@ public final class JdksPlugin implements Plugin<Project> {
         rootProject.getPluginManager().apply(BaselineJavaVersions.class);
 
         if (getEnableGradleJdkProperty(rootProject)) {
-            rootProject.getPluginManager().apply(ToolchainsJdksPlugin.class);
+            rootProject.getPluginManager().apply(ToolchainsPlugin.class);
         } else {
             rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);
         }

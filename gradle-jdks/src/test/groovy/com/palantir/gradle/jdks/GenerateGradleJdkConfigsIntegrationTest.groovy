@@ -97,7 +97,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
         Path jarInProject = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar");
         Path originalJar = Path.of("src/main/resources/gradle-jdks-setup.jar");
         Files.exists(jarInProject)
-        GenerateGradleJdkConfigs.checkFilesAreTheSame(jarInProject.toFile(), originalJar.toFile())
+        GradleJdkConfigs.checkFilesAreTheSame(jarInProject.toFile(), originalJar.toFile())
         Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
         Files.exists(scriptPath)
         Files.isExecutable(scriptPath)

@@ -18,23 +18,17 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
-import com.palantir.gradle.jdks.GenerateGradleJdkConfigs.GenerateGradleJdkConfigsTask;
-import com.palantir.gradle.jdks.GenerateGradleJdkConfigs.JdkDistributionConfig;
+import com.palantir.gradle.jdks.GradleJdkConfigs.GradleJdkConfigsTask;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
-import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
-public final class ToolchainsJdksPlugin implements Plugin<Project> {
+public final class ToolchainsPlugin extends JdkDistributionConfigurator implements Plugin<Project> {
 
     @Override
     public void apply(Project rootProject) {
@@ -59,31 +53,21 @@ public final class ToolchainsJdksPlugin implements Plugin<Project> {
 
         baselineJavaVersionsExtension.getSetupJdkToolchains().set(false);
 
-        TaskProvider<GenerateGradleJdkConfigsTask> generateGradleJdkConfigs = rootProject
+        TaskProvider<GradleJdkConfigsTask> generateGradleJdkConfigs = rootProject
                 .getTasks()
-                .register("generateGradleJdkConfigs", GenerateGradleJdkConfigsTask.class, task -> {
+                .register("generateGradleJdkConfigs", GradleJdkConfigsTask.class, task -> {
                     configureGenerateJdkConfigs(
-                            task,
-                            rootProject,
-                            baselineJavaVersionsExtension,
-                            jdksExtension,
-                            jdkDistributions,
-                            jdkDistributionsService);
-                    task.getFix().set(true);
+                            task, rootProject, baselineJavaVersionsExtension, jdksExtension, jdkDistributionsService);
+                    task.getGenerate().set(true);
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().dir(rootProject.provider(() -> rootProject.file("gradle"))));
                 });
-        TaskProvider<GenerateGradleJdkConfigsTask> checkGradleJdkConfigs = rootProject
+        TaskProvider<GradleJdkConfigsTask> checkGradleJdkConfigs = rootProject
                 .getTasks()
-                .register("checkGradleJdkConfigs", GenerateGradleJdkConfigsTask.class, task -> {
+                .register("checkGradleJdkConfigs", GradleJdkConfigsTask.class, task -> {
                     configureGenerateJdkConfigs(
-                            task,
-                            rootProject,
-                            baselineJavaVersionsExtension,
-                            jdksExtension,
-                            jdkDistributions,
-                            jdkDistributionsService);
-                    task.getFix().set(false);
+                            task, rootProject, baselineJavaVersionsExtension, jdksExtension, jdkDistributionsService);
+                    task.getGenerate().set(false);
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().getBuildDirectory().dir("gradleConfigs"));
                 });
@@ -106,76 +90,41 @@ public final class ToolchainsJdksPlugin implements Plugin<Project> {
                             .set(rootProject.file(
                                     rootProject.getRootDir().toPath().resolve("gradle/wrapper/gradle-wrapper.jar")));
                     task.getBuildDir().set(task.getTemporaryDir());
-                    task.getGradleJdksSetupJar().set(rootProject.provider(() -> generateGradleJdkConfigs
-                            .map(GenerateGradleJdkConfigsTask::getOutputGradleDirectory)
-                            .map(dir -> dir.getAsFile().get().toPath().resolve("gradle-jdks-setup.jar"))));
+                    task.getGradleJdksSetupJar()
+                            .set(generateGradleJdkConfigs
+                                    .map(GradleJdkConfigsTask::getOutputGradleDirectory)
+                                    .flatMap(dirProp -> dirProp.getAsFile().map(file -> file.toPath()
+                                            .resolve("gradle-jdks-setup.jar")
+                                            .toFile())));
                 });
+        wrapperTask.configure(task -> task.finalizedBy(wrapperPatcherTask));
         rootProject.allprojects(proj -> proj.getPluginManager().withPlugin("java", unused -> {
-            proj.getPluginManager().apply(SubProjectJdksPlugin.class);
+            proj.getPluginManager().apply(ProjectToolchainsPlugin.class);
         }));
     }
 
     private static void configureGenerateJdkConfigs(
-            GenerateGradleJdkConfigsTask task,
+            GradleJdkConfigsTask task,
             Project rootProject,
             BaselineJavaVersionsExtension baselineJavaVersionsExtension,
             JdksExtension jdksExtension,
-            JdkDistributions jdkDistributions,
             Provider<JdkDistributionsService> jdkDistributionsService) {
         task.getJdkDistributions().set(jdkDistributionsService);
         task.usesService(jdkDistributionsService);
         task.getGradleDirectory()
                 .set(rootProject.getLayout().getProjectDirectory().dir("gradle"));
         task.getDaemonJavaVersion().set(jdksExtension.getDaemonTarget());
-        task.getJavaVersionToJdkDistros().putAll(rootProject.provider(() -> Stream.of(
-                        baselineJavaVersionsExtension.libraryTarget(),
-                        jdksExtension.getDaemonTarget(),
-                        baselineJavaVersionsExtension.distributionTarget().map(ChosenJavaVersion::javaLanguageVersion),
-                        baselineJavaVersionsExtension.runtime().map(ChosenJavaVersion::javaLanguageVersion))
-                .map(Provider::get)
-                .distinct()
-                .collect(Collectors.toMap(
-                        javaVersion -> javaVersion,
-                        javaVersion -> getJdkDistributions(rootProject, javaVersion, jdksExtension)))));
+        task.getJavaVersionToJdkDistros()
+                .putAll(rootProject.provider(() -> getJavaVersionToJdkDistros(
+                        rootProject,
+                        List.of(
+                                baselineJavaVersionsExtension.libraryTarget(),
+                                jdksExtension.getDaemonTarget(),
+                                baselineJavaVersionsExtension
+                                        .distributionTarget()
+                                        .map(ChosenJavaVersion::javaLanguageVersion),
+                                baselineJavaVersionsExtension.runtime().map(ChosenJavaVersion::javaLanguageVersion)),
+                        jdksExtension)));
         task.getCaCerts().putAll(jdksExtension.getCaCerts());
-    }
-
-    public static List<JdkDistributionConfig> getJdkDistributions(
-            Project project, JavaLanguageVersion javaVersion, JdksExtension jdksExtension) {
-        return Arrays.stream(Os.values())
-                .flatMap(os -> Arrays.stream(Arch.values())
-                        .map(arch -> getJdkDistribution(project, os, arch, javaVersion, jdksExtension)))
-                .collect(Collectors.toList());
-    }
-
-    private static JdkDistributionConfig getJdkDistribution(
-            Project project, Os os, Arch arch, JavaLanguageVersion javaVersion, JdksExtension jdksExtension) {
-        Optional<JdkExtension> jdkExtension = jdksExtension.jdkFor(javaVersion, project);
-        if (jdkExtension.isEmpty()) {
-            throw new RuntimeException(String.format(
-                    "Could not find a JDK with major version %s in project '%s'. "
-                            + "Please ensure that you have configured JDKs properly for "
-                            + "gradle-jdks as per the readme: "
-                            + "https://github.com/palantir/gradle-jdks#usage",
-                    javaVersion.toString(), project.getPath()));
-        }
-        String jdkVersion =
-                jdkExtension.get().jdkFor(os).jdkFor(arch).getJdkVersion().get();
-        JdkDistributionName jdkDistributionName =
-                jdkExtension.get().getDistributionName().get();
-        JdkRelease jdkRelease =
-                JdkRelease.builder().arch(arch).os(os).version(jdkVersion).build();
-        JdkSpec jdkSpec = JdkSpec.builder()
-                .distributionName(jdkDistributionName)
-                .release(jdkRelease)
-                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
-                .build();
-        JdkDistributionConfig jdkDistribution = project.getObjects().newInstance(JdkDistributionConfig.class);
-        jdkDistribution.getDistributionName().set(jdkDistributionName.uiName());
-        jdkDistribution.getConsistentHash().set(jdkSpec.consistentShortHash());
-        jdkDistribution.getVersion().set(jdkVersion);
-        jdkDistribution.getArch().set(arch);
-        jdkDistribution.getOs().set(os);
-        return jdkDistribution;
     }
 }

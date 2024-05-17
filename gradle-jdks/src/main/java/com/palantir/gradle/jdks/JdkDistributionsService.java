@@ -30,7 +30,7 @@ public abstract class JdkDistributionsService implements BuildService<Params> {
         this.jdkDistributions = new JdkDistributions();
     }
 
-    public JdkDistribution get(JdkDistributionName jdkDistributionName) {
+    public final JdkDistribution get(JdkDistributionName jdkDistributionName) {
         return jdkDistributions.get(jdkDistributionName);
     }
 }

@@ -51,9 +51,9 @@ import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 @AutoParallelizable
-public class GenerateGradleJdkConfigs {
+public abstract class GradleJdkConfigs {
 
-    private static final Logger log = Logging.getLogger(GenerateGradleJdkConfigs.class);
+    private static final Logger log = Logging.getLogger(GradleJdkConfigs.class);
     private static final String TASK_NAME = "generateGradleJdkConfigs";
     private static final String JDKS_DIR = "jdks";
     private static final String CERTS_DIR = "certs";
@@ -93,7 +93,7 @@ public class GenerateGradleJdkConfigs {
         Property<JavaLanguageVersion> getDaemonJavaVersion();
 
         @Input
-        Property<Boolean> getFix();
+        Property<Boolean> getGenerate();
 
         @Input
         MapProperty<String, String> getCaCerts();
@@ -106,15 +106,15 @@ public class GenerateGradleJdkConfigs {
         DirectoryProperty getOutputGradleDirectory();
     }
 
-    public abstract static class GenerateGradleJdkConfigsTask extends GenerateGradleJdkConfigsTaskImpl {
+    public abstract static class GradleJdkConfigsTask extends GradleJdkConfigsTaskImpl {
 
-        public GenerateGradleJdkConfigsTask() {
-            this.getFix().convention(false);
+        public GradleJdkConfigsTask() {
+            this.getGenerate().convention(false);
         }
 
         @Option(names = "fix", required = true, help = true, description = "Fixes the gradle jdk files")
         public void setFixOption(boolean value) {
-            this.getFix().set(value);
+            this.getGenerate().set(value);
         }
     }
 
@@ -143,7 +143,7 @@ public class GenerateGradleJdkConfigs {
         addGradleJdkSetupScriptTo(params.getOutputGradleDirectory().get());
         addCerts(params.getOutputGradleDirectory().get(), params.getCaCerts().get());
 
-        if (!params.getFix().get()) {
+        if (!params.getGenerate().get()) {
             checkDirectoriesAreTheSame(
                     params.getOutputGradleDirectory().dir(JDKS_DIR).get(),
                     params.getGradleDirectory().dir(JDKS_DIR).get());
@@ -206,7 +206,7 @@ public class GenerateGradleJdkConfigs {
 
     private static void getResourceStream(File outputFile, String resource) {
         try (InputStream inputStream =
-                GenerateGradleJdkConfigsTask.class.getClassLoader().getResourceAsStream(resource)) {
+                GradleJdkConfigsTask.class.getClassLoader().getResourceAsStream(resource)) {
             if (inputStream == null) {
                 throw new IOException(String.format("Resource not found: %s:", resource));
             }

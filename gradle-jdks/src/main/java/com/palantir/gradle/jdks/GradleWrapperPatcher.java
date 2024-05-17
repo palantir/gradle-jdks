@@ -37,7 +37,6 @@ import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
-import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
 @AutoParallelizable
@@ -61,8 +60,7 @@ public abstract class GradleWrapperPatcher {
         Property<File> getOriginalGradleWrapperJar();
 
         @InputFile
-        @Optional
-        RegularFileProperty getGradleJdksSetupJar();
+        Property<File> getGradleJdksSetupJar();
 
         @OutputFile
         RegularFileProperty getPatchedGradlewScript();
@@ -97,13 +95,13 @@ public abstract class GradleWrapperPatcher {
             Path buildDir,
             Property<File> originalGradleWrapperJar,
             RegularFileProperty patchedGradleWrapperJar,
-            RegularFileProperty gradleJdksSetupJar) {
+            Property<File> gradleJdksSetupJar) {
         try {
             Path gradleWrapperExtractedDir = buildDir.resolve("gradle-wrapper-extracted");
             Files.createDirectories(gradleWrapperExtractedDir);
             JarResources.extractJar(originalGradleWrapperJar.get(), gradleWrapperExtractedDir);
             OriginalGradleWrapperMainCreator.create(gradleWrapperExtractedDir);
-            JarResources.extractJar(gradleJdksSetupJar.getAsFile().get(), gradleWrapperExtractedDir);
+            JarResources.extractJar(gradleJdksSetupJar.get(), gradleWrapperExtractedDir);
 
             Path newGradleWrapperJar =
                     buildDir.resolve(patchedGradleWrapperJar.getAsFile().get().getName());

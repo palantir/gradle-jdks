@@ -19,25 +19,23 @@ package com.palantir.gradle.jdks;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersion;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionExtension;
 import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
-import com.palantir.gradle.jdks.GenerateGradleJdkConfigs.GenerateGradleJdkConfigsTask;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.palantir.gradle.jdks.GradleJdkConfigs.GradleJdkConfigsTask;
+import java.util.List;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.provider.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class SubProjectJdksPlugin implements Plugin<Project> {
+public final class ProjectToolchainsPlugin extends JdkDistributionConfigurator implements Plugin<Project> {
 
-    private static final Logger log = LoggerFactory.getLogger(SubProjectJdksPlugin.class);
+    private static final Logger log = LoggerFactory.getLogger(ProjectToolchainsPlugin.class);
 
     @Override
     public void apply(Project project) {
         if (project == project.getRootProject()) {
             return;
         }
-        JdkDistributions jdkDistributions = new JdkDistributions();
+
         JdksExtension jdksExtension = project.getRootProject().getExtensions().getByType(JdksExtension.class);
 
         project.getPluginManager().apply(BaselineJavaVersion.class);
@@ -45,15 +43,13 @@ public final class SubProjectJdksPlugin implements Plugin<Project> {
                 project.getExtensions().getByType(BaselineJavaVersionExtension.class);
         project.getRootProject()
                 .getTasks()
-                .withType(GenerateGradleJdkConfigsTask.class)
-                .configureEach(task -> task.getJavaVersionToJdkDistros().putAll(project.provider(() -> Stream.of(
-                                projectVersions.target().map(ChosenJavaVersion::javaLanguageVersion),
-                                projectVersions.runtime().map(ChosenJavaVersion::javaLanguageVersion))
-                        .map(Provider::get)
-                        .distinct()
-                        .collect(Collectors.toMap(
-                                javaVersion -> javaVersion,
-                                javaVersion -> ToolchainsJdksPlugin.getJdkDistributions(
-                                        project, javaVersion, jdksExtension))))));
+                .withType(GradleJdkConfigsTask.class)
+                .configureEach(task -> task.getJavaVersionToJdkDistros()
+                        .putAll(project.provider(() -> getJavaVersionToJdkDistros(
+                                project,
+                                List.of(
+                                        projectVersions.target().map(ChosenJavaVersion::javaLanguageVersion),
+                                        projectVersions.runtime().map(ChosenJavaVersion::javaLanguageVersion)),
+                                jdksExtension))));
     }
 }

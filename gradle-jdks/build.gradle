@@ -67,12 +67,6 @@ tasks.withType(JavaCompile).configureEach {
     it.options.errorprone.disable 'StrictUnusedVariable'
 }
 
-tasks.test {
-    environment("PROJECT_VERSION", project.version)
-    dependsOn ':gradle-jdks-setup:fatJar'
-    systemProperty 'ignoreDeprecations', 'true'
-}
-
 tasks.register('copyGradleJdkJar', Copy) {
     dependsOn ':gradle-jdks-setup:fatJar'
     def sourceJar = "${project(':gradle-jdks-setup').projectDir}/build/libs/gradle-jdks-setup-all-${project.version}.jar"
@@ -82,5 +76,13 @@ tasks.register('copyGradleJdkJar', Copy) {
     into "${projectDir}/src/main/resources"
     rename { 'gradle-jdks-setup.jar' }
 }
+
+tasks.test {
+    environment("PROJECT_VERSION", project.version)
+    dependsOn copyGradleJdkJar
+    systemProperty 'ignoreDeprecations', 'true'
+}
+
+
 
 tasks.build.dependsOn tasks.copyGradleJdkJar
