@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,7 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
@@ -53,10 +55,10 @@ public abstract class GradleWrapperPatcher {
     interface Params {
 
         @InputFile
-        RegularFileProperty getOriginalGradlewScript();
+        Property<File> getOriginalGradlewScript();
 
         @InputFile
-        RegularFileProperty getOriginalGradleWrapperJar();
+        Property<File> getOriginalGradleWrapperJar();
 
         @InputFile
         @Optional
@@ -72,17 +74,9 @@ public abstract class GradleWrapperPatcher {
         RegularFileProperty getBuildDir();
     }
 
-    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {
-
-        public GradleWrapperPatcherTask() {
-            onlyIf(t -> getGradleJdksSetupJar()
-                    .map(setupJar -> setupJar.getAsFile().exists())
-                    .getOrElse(false));
-        }
-    }
+    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {}
 
     static void action(Params params) {
-
         log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
         patchGradlewContent(params.getOriginalGradlewScript(), params.getPatchedGradlewScript());
         patchGradlewJar(
@@ -93,21 +87,21 @@ public abstract class GradleWrapperPatcher {
     }
 
     private static void patchGradlewContent(
-            RegularFileProperty originalGradlewScript, RegularFileProperty patchedGradlewScript) {
+            Property<File> originalGradlewScript, RegularFileProperty patchedGradlewScript) {
         List<String> linesNoPatch =
-                getLinesWithoutPatch(originalGradlewScript.getAsFile().get().toPath());
+                getLinesWithoutPatch(originalGradlewScript.get().toPath());
         write(patchedGradlewScript.getAsFile().get().toPath(), getNewGradlewWithPatchContent(linesNoPatch));
     }
 
     private static void patchGradlewJar(
             Path buildDir,
-            RegularFileProperty originalGradleWrapperJar,
+            Property<File> originalGradleWrapperJar,
             RegularFileProperty patchedGradleWrapperJar,
             RegularFileProperty gradleJdksSetupJar) {
         try {
             Path gradleWrapperExtractedDir = buildDir.resolve("gradle-wrapper-extracted");
             Files.createDirectories(gradleWrapperExtractedDir);
-            JarResources.extractJar(originalGradleWrapperJar.getAsFile().get(), gradleWrapperExtractedDir);
+            JarResources.extractJar(originalGradleWrapperJar.get(), gradleWrapperExtractedDir);
             OriginalGradleWrapperMainCreator.create(gradleWrapperExtractedDir);
             JarResources.extractJar(gradleJdksSetupJar.getAsFile().get(), gradleWrapperExtractedDir);
 

@@ -54,6 +54,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
                   distribution = 'amazon-corretto'
                   jdkVersion = '21.0.2.13.1'
                }
+               daemonTarget = '11'
             }
         """.stripIndent(true)
     }
@@ -66,17 +67,23 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
             javaVersions {
                 libraryTarget = '11'
                 distributionTarget = '17_PREVIEW'
-                daemonTarget = '21'
                 runtime = '17_PREVIEW'
+            }
+            jdks {
+              daemonTarget = '21'
             }
         '''.stripIndent(true)
 
         when:
-        def firstCheck = runTasksSuccessfully('check')
+        def checkResult = runTasksWithFailure('check')
 
         then:
-        firstCheck.wasExecuted(':generateGradleJdkConfigs')
-        !firstCheck.wasUpToDate(':generateGradleJdkConfigs')
+        checkResult.standardError.contains("The gradle configuration files in `gradle/jdks` are out of date")
+
+        when:
+        runTasksSuccessfully('generateGradleJdkConfigs')
+
+        then:
         for (String majorVersion : Stream.of("11", "17", "21")) {
             for (Os os : Os.values()) {
                 for (Arch arch : Arch.values()) {
@@ -87,7 +94,10 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
             }
         }
         Files.exists(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version"))
-        Files.exists(projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar"))
+        Path jarInProject = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar");
+        Path originalJar = Path.of("src/main/resources/gradle-jdks-setup.jar");
+        Files.exists(jarInProject)
+        GenerateGradleJdkConfigs.checkFilesAreTheSame(jarInProject.toFile(), originalJar.toFile())
         Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
         Files.exists(scriptPath)
         Files.isExecutable(scriptPath)
@@ -96,20 +106,25 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
         Files.readString(certFile).trim() == "18126334688741185161"
 
         when:
-        def upToDateCheck = runTasksSuccessfully('wrapper', 'check')
+        def secondCheck = runTasksSuccessfully('check')
+        def upToDateCheck = runTasksSuccessfully('check')
 
         then:
-        upToDateCheck.wasUpToDate(':generateGradleJdkConfigs')
+        !secondCheck.wasUpToDate(':checkGradleJdkConfigs')
+        upToDateCheck.wasUpToDate(':checkGradleJdkConfigs')
+
+        when:
+        def upToDateGenerate = runTasksSuccessfully('generateGradleJdkConfigs')
+
+        then:
+        upToDateGenerate.wasUpToDate(':generateGradleJdkConfigs')
 
         when:
         Files.delete(projectDir.toPath().resolve("gradle/jdks/17/macos/x86/download-url"))
-        def secondCheck = runTasksSuccessfully('generateGradleJdkConfigs')
+        def notUpToDateGenerate = runTasksSuccessfully('generateGradleJdkConfigs')
 
         then:
-        secondCheck.wasExecuted(':generateGradleJdkConfigs')
-        !secondCheck.wasUpToDate(':generateGradleJdkConfigs')
-        !projectDir.toPath().resolve("gradle/jdks/15").toFile().exists()
-
+        !notUpToDateGenerate.wasUpToDate(':generateGradleJdkConfigs')
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]

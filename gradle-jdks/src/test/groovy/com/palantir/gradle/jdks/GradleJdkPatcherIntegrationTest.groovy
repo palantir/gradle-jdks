@@ -101,6 +101,8 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
                   distribution = 'amazon-corretto'
                   jdkVersion = '21.0.2.13.1'
                }
+               
+               daemonTarget = '11'
             }
             
             javaVersions {
@@ -163,12 +165,13 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
         gradleVersion = gradleVersionNumber
 
+        file('src/main/java/Main.java') << java17PreviewCode
+
         //language=groovy
         def subprojectLib = addSubproject 'subprojectLib', '''
             apply plugin: 'java-library'
             javaVersion {
-                target = 21
-                runtime = 21
+               target = 21
             }
         '''.stripIndent(true)
         writeHelloWorld(subprojectLib)
@@ -180,7 +183,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
                 library()
             }
         '''.stripIndent(true)
-        file(subprojectLib1.toPath().resolve('src/main/java/Main.java').toAbsolutePath().toString()) << java17PreviewCode
+        writeHelloWorld(subprojectLib1)
 
         when:
         runTasksSuccessfully('wrapper').standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
@@ -223,16 +226,11 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
     def '#gradleVersionNumber: gradlew file is correctly generated'() {
         gradleVersion = gradleVersionNumber
-
-        when:
-        def output = runTasksSuccessfully('wrapper')
-
-        then:
-        output.wasSkipped(':wrapperJdkPatcher')
-        List<String> initialRows = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
-
-        when:
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+
+        when:
+        runTasksSuccessfully('wrapper')
+        List<String> initialRows = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
         def outputWithJdkEnabled = runTasksSuccessfully('wrapper')
 
         then:
@@ -254,43 +252,9 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         def output = runTasksSuccessfully('wrapper')
 
         then:
-        output.wasSkipped(':wrapperJdkPatcher')
+        !output.standardOutput.contains('wrapperJdkPatcher')
         !output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         !file("gradlew").text.contains("gradle-jdks-setup.sh")
-    }
-
-    def 'fails if the JDK setup files are missing' () {
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
-        gradleVersion = gradleVersionNumber
-        directory('gradle')
-        Files.copy(
-                Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),
-                projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh"));
-        directory('gradle/jdks')
-        Files.copy(
-                Path.of(String.format(
-                        "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
-                        System.getenv().get("PROJECT_VERSION"))),
-                projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar"));
-
-        when:
-        def output = runTasksSuccessfully('wrapper')
-
-        then:
-        output.wasExecuted(':wrapperJdkPatcher')
-        !output.wasSkipped(':wrapperJdkPatcher')
-        output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
-        file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
-
-        when:
-        String wrapperResult1 = upgradeGradleWrapper()
-
-        then:
-        file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
-        wrapperResult1.contains("not found, aborting Gradle JDK setup")
-
-        where:
-        gradleVersionNumber << [ GRADLE_7VERSION, GRADLE_8VERSION ]
     }
 
 

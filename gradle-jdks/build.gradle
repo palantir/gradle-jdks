@@ -75,7 +75,10 @@ tasks.test {
 
 tasks.register('copyGradleJdkJar', Copy) {
     dependsOn ':gradle-jdks-setup:fatJar'
-    from "${project(':gradle-jdks-setup').projectDir}/build/libs/gradle-jdks-setup-all-${project.version}.jar"
+    def sourceJar = "${project(':gradle-jdks-setup').projectDir}/build/libs/gradle-jdks-setup-all-${project.version}.jar"
+    inputs.file sourceJar
+    outputs.dir "${projectDir}/src/main/resources"
+    from sourceJar
     into "${projectDir}/src/main/resources"
     rename { 'gradle-jdks-setup.jar' }
 }

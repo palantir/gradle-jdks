@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import com.palantir.gradle.jdks.setup.CaResources;
@@ -65,19 +66,25 @@ public class GenerateGradleJdkConfigs {
     interface JdkDistributionConfig {
 
         @Input
-        Property<String> getDownloadUrl();
+        Property<String> getDistributionName();
 
         @Input
-        Property<String> getLocalPath();
+        Property<String> getVersion();
 
         @Input
         Property<Os> getOs();
 
         @Input
         Property<Arch> getArch();
+
+        @Input
+        Property<String> getConsistentHash();
     }
 
     interface Params {
+
+        @Internal
+        Property<JdkDistributionsService> getJdkDistributions();
 
         @Nested
         MapProperty<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros();
@@ -113,7 +120,11 @@ public class GenerateGradleJdkConfigs {
 
     static void action(Params params) {
         params.getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
-            jdkDistros.forEach(jdkDistro -> createJdkFiles(params, javaVersion, jdkDistro));
+            jdkDistros.forEach(jdkDistro -> createJdkFiles(
+                    params.getJdkDistributions().get(),
+                    params.getOutputGradleDirectory().get(),
+                    javaVersion,
+                    jdkDistro));
         });
 
         try {
@@ -132,10 +143,10 @@ public class GenerateGradleJdkConfigs {
         addGradleJdkSetupScriptTo(params.getOutputGradleDirectory().get());
         addCerts(params.getOutputGradleDirectory().get(), params.getCaCerts().get());
 
-        if (!params.getGradleDirectory().equals(params.getOutputGradleDirectory())) {
+        if (!params.getFix().get()) {
             checkDirectoriesAreTheSame(
-                    params.getGradleDirectory().dir(JDKS_DIR).get(),
-                    params.getOutputGradleDirectory().dir(JDKS_DIR).get());
+                    params.getOutputGradleDirectory().dir(JDKS_DIR).get(),
+                    params.getGradleDirectory().dir(JDKS_DIR).get());
             checkFilesAreTheSame(
                     params.getGradleDirectory()
                             .file(GRADLE_JDKS_SETUP_JAR)
@@ -155,6 +166,7 @@ public class GenerateGradleJdkConfigs {
                             .get()
                             .getAsFile());
             // TODO(crogoz): check that we already patched ./gradlew & gradle-jars
+
         }
     }
 
@@ -170,20 +182,6 @@ public class GenerateGradleJdkConfigs {
                     throw new RuntimeException(e);
                 }
             });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void checkFilesAreTheSame(File originalPath, File outputPath) {
-        try {
-            byte[] originalBytes = Files.readAllBytes(originalPath.toPath());
-            byte[] outputBytes = Files.readAllBytes(outputPath.toPath());
-            if (!Arrays.equals(originalBytes, outputBytes)) {
-                throw new ExceptionWithSuggestion(
-                        String.format("The gradle file %s is out of date", outputPath),
-                        String.format("./gradlew %s --fix", TASK_NAME));
-            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -206,14 +204,14 @@ public class GenerateGradleJdkConfigs {
         getResourceStream(gradleDirectory.file(GRADLE_JDKS_SETUP_JAR).getAsFile(), GRADLE_JDKS_SETUP_JAR);
     }
 
-    private static void getResourceStream(File asFile, String gradleJdksSetupScript) {
+    private static void getResourceStream(File outputFile, String resource) {
         try (InputStream inputStream =
-                GenerateGradleJdkConfigsTask.class.getClassLoader().getResourceAsStream(gradleJdksSetupScript)) {
+                GenerateGradleJdkConfigsTask.class.getClassLoader().getResourceAsStream(resource)) {
             if (inputStream == null) {
-                throw new IOException(String.format("Resource not found: %s:", gradleJdksSetupScript));
+                throw new IOException(String.format("Resource not found: %s:", resource));
             }
 
-            try (OutputStream outputStream = new FileOutputStream(asFile)) {
+            try (OutputStream outputStream = new FileOutputStream(outputFile)) {
                 inputStream.transferTo(outputStream);
             }
         } catch (IOException e) {
@@ -221,36 +219,54 @@ public class GenerateGradleJdkConfigs {
         }
     }
 
-    private static void checkDirectoriesAreTheSame(Directory originalDir, Directory outputDir) {
+    @VisibleForTesting
+    static void checkFilesAreTheSame(File originalPath, File outputPath) {
         try {
-            Files.walkFileTree(originalDir.getAsFile().toPath(), new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    FileVisitResult result = super.visitFile(file, attrs);
-                    Path relativize = originalDir.getAsFile().toPath().relativize(file);
-                    Path fileInOther = outputDir.getAsFile().toPath().resolve(relativize);
-                    byte[] otherBytes = Files.readAllBytes(fileInOther);
-                    byte[] theseBytes = Files.readAllBytes(file);
-                    if (!Arrays.equals(otherBytes, theseBytes)) {
-                        throw new ExceptionWithSuggestion(
-                                "The gradle configuration files in `gradle/jdks` are out of date",
-                                String.format("./gradlew %s --fix", TASK_NAME));
-                    }
-                    return result;
-                }
-            });
+            byte[] originalBytes = Files.readAllBytes(originalPath.toPath());
+            byte[] outputBytes = Files.readAllBytes(outputPath.toPath());
+            if (!Arrays.equals(originalBytes, outputBytes)) {
+                throw new ExceptionWithSuggestion(
+                        String.format("The gradle file %s is out of date", outputPath),
+                        String.format("./gradlew %s", TASK_NAME));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void createJdkFiles(
-            Params params, JavaLanguageVersion javaVersion, JdkDistributionConfig jdkDistribution) {
+    private static void checkDirectoriesAreTheSame(Directory dir1, Directory dir2) {
         try {
-            log.info("Received {} {}", javaVersion, jdkDistribution);
-            Path outputDir = params.getGradleDirectory()
+            Files.walkFileTree(dir1.getAsFile().toPath(), new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    FileVisitResult result = super.visitFile(file, attrs);
+                    Path relativize = dir1.getAsFile().toPath().relativize(file);
+                    Path fileInOther = dir2.getAsFile().toPath().resolve(relativize);
+                    byte[] otherBytes = Files.readAllBytes(fileInOther);
+                    byte[] theseBytes = Files.readAllBytes(file);
+                    if (!Arrays.equals(otherBytes, theseBytes)) {
+                        throw new ExceptionWithSuggestion(
+                                "The gradle configuration files in `gradle/jdks` are out of date",
+                                String.format("./gradlew %s", TASK_NAME));
+                    }
+                    return result;
+                }
+            });
+        } catch (IOException e) {
+            throw new ExceptionWithSuggestion(
+                    "The gradle configuration files in `gradle/jdks` are out of date",
+                    String.format("./gradlew %s", TASK_NAME));
+        }
+    }
+
+    private static void createJdkFiles(
+            JdkDistributionsService jdkDistributionsService,
+            Directory gradleDirectory,
+            JavaLanguageVersion javaVersion,
+            JdkDistributionConfig jdkDistribution) {
+        try {
+            Path outputDir = gradleDirectory
                     .dir(JDKS_DIR)
-                    .get()
                     .getAsFile()
                     .toPath()
                     .resolve(javaVersion.toString())
@@ -258,9 +274,27 @@ public class GenerateGradleJdkConfigs {
                     .resolve(jdkDistribution.getArch().get().uiName());
             Files.createDirectories(outputDir);
             Path downloadUrlPath = outputDir.resolve(DOWNLOAD_URL);
-            writeToFile(downloadUrlPath, jdkDistribution.getDownloadUrl().get());
+            JdkRelease jdkRelease = JdkRelease.builder()
+                    .version(jdkDistribution.getVersion().get())
+                    .os(jdkDistribution.getOs().get())
+                    .arch(jdkDistribution.getArch().get())
+                    .build();
+            JdkDistributionName jdkDistributionName = JdkDistributionName.fromStringThrowing(
+                    jdkDistribution.getDistributionName().get());
+            JdkPath jdkPath = jdkDistributionsService.get(jdkDistributionName).path(jdkRelease);
+            String downloadUrl = String.format(
+                    "%s/%s.%s",
+                    jdkDistributionsService.get(jdkDistributionName).defaultBaseUrl(),
+                    jdkPath.filename(),
+                    jdkPath.extension());
+            String localFileName = String.format(
+                    "%s-%s-%s",
+                    jdkDistributionName,
+                    jdkDistribution.getVersion().get(),
+                    jdkDistribution.getConsistentHash().get());
+            writeToFile(downloadUrlPath, downloadUrl);
             Path localPath = outputDir.resolve(LOCAL_PATH);
-            writeToFile(localPath, jdkDistribution.getLocalPath().get());
+            writeToFile(localPath, localFileName);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -53,7 +53,7 @@ public final class SubProjectJdksPlugin implements Plugin<Project> {
                         .distinct()
                         .collect(Collectors.toMap(
                                 javaVersion -> javaVersion,
-                                javaVersion -> JdksPlugin.getJdkDistributions(
-                                        project, jdkDistributions, javaVersion, jdksExtension))))));
+                                javaVersion -> ToolchainsJdksPlugin.getJdkDistributions(
+                                        project, javaVersion, jdksExtension))))));
     }
 }

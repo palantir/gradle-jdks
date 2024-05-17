@@ -105,7 +105,7 @@ public final class GradleWrapperMain {
         Path localPathFile =
                 gradleJdkConfigurationPath.resolve(osName).resolve(archName).resolve("local-path");
         if (!localPathFile.toFile().exists()) {
-            System.out.printf("Couldn't find a valid JDK version installation %s. Skipping ...%n", localPathFile);
+            System.out.printf("Couldn't find a valid JDK installation %s. Skipping ...%n", localPathFile);
             return Stream.empty();
         }
         String localJdkFileName = readFile(localPathFile);

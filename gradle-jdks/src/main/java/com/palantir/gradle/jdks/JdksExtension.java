@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
 import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.utils.lazilyconfiguredmapping.LazilyConfiguredMapping;
 import groovy.lang.Closure;
@@ -27,6 +28,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class JdksExtension {
@@ -34,11 +36,12 @@ public abstract class JdksExtension {
     private final LazilyConfiguredMapping<JavaLanguageVersion, JdkExtension, Project> jdks;
     private final MapProperty<String, String> caCerts;
     private final DirectoryProperty jdkStorageLocation;
+    private final Property<JavaLanguageVersion> daemonTarget;
 
     @Inject
     protected abstract ObjectFactory getObjectFactory();
 
-    public JdksExtension() {
+    public JdksExtension(Project project) {
         this.jdkDistributions =
                 new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkDistributionExtension.class));
         this.jdks = new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkExtension.class));
@@ -54,8 +57,19 @@ public abstract class JdksExtension {
                 MapProperty.class, getObjectFactory().mapProperty(String.class, String.class));
         this.jdkStorageLocation = SynchronizedInterface.synchronizeAllInterfaceMethods(
                 DirectoryProperty.class, getObjectFactory().directoryProperty());
+        this.daemonTarget = project.getObjects().property(JavaLanguageVersion.class);
+
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
+        daemonTarget.finalizeValueOnRead();
+    }
+
+    public final Property<JavaLanguageVersion> getDaemonTarget() {
+        return daemonTarget;
+    }
+
+    public final void setDaemonTarget(String value) {
+        daemonTarget.set(ChosenJavaVersion.fromString(value).javaLanguageVersion());
     }
 
     public final MapProperty<String, String> getCaCerts() {
