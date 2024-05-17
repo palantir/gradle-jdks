@@ -20,8 +20,10 @@ import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
@@ -32,6 +34,8 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
 @AutoParallelizable
@@ -51,15 +55,41 @@ public abstract class GradleWrapperPatcher {
         @InputFile
         RegularFileProperty getOriginalGradlewScript();
 
+        @InputFile
+        RegularFileProperty getOriginalGradleWrapperJar();
+
+        @InputFile
+        @Optional
+        RegularFileProperty getGradleJdksSetupJar();
+
         @OutputFile
         RegularFileProperty getPatchedGradlewScript();
+
+        @OutputFile
+        RegularFileProperty getPatchedGradleWrapperJar();
+
+        @Internal
+        RegularFileProperty getBuildDir();
     }
 
-    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {}
+    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {
+
+        public GradleWrapperPatcherTask() {
+            onlyIf(t -> getGradleJdksSetupJar()
+                    .map(setupJar -> setupJar.getAsFile().exists())
+                    .getOrElse(false));
+        }
+    }
 
     static void action(Params params) {
+
         log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
         patchGradlewContent(params.getOriginalGradlewScript(), params.getPatchedGradlewScript());
+        patchGradlewJar(
+                params.getBuildDir().get().getAsFile().toPath(),
+                params.getOriginalGradleWrapperJar(),
+                params.getPatchedGradleWrapperJar(),
+                params.getGradleJdksSetupJar());
     }
 
     private static void patchGradlewContent(
@@ -67,6 +97,37 @@ public abstract class GradleWrapperPatcher {
         List<String> linesNoPatch =
                 getLinesWithoutPatch(originalGradlewScript.getAsFile().get().toPath());
         write(patchedGradlewScript.getAsFile().get().toPath(), getNewGradlewWithPatchContent(linesNoPatch));
+    }
+
+    private static void patchGradlewJar(
+            Path buildDir,
+            RegularFileProperty originalGradleWrapperJar,
+            RegularFileProperty patchedGradleWrapperJar,
+            RegularFileProperty gradleJdksSetupJar) {
+        try {
+            Path gradleWrapperExtractedDir = buildDir.resolve("gradle-wrapper-extracted");
+            Files.createDirectories(gradleWrapperExtractedDir);
+            JarResources.extractJar(originalGradleWrapperJar.getAsFile().get(), gradleWrapperExtractedDir);
+            OriginalGradleWrapperMainCreator.create(gradleWrapperExtractedDir);
+            JarResources.extractJar(gradleJdksSetupJar.getAsFile().get(), gradleWrapperExtractedDir);
+
+            Path newGradleWrapperJar =
+                    buildDir.resolve(patchedGradleWrapperJar.getAsFile().get().getName());
+            JarResources.createJarFromDirectory(gradleWrapperExtractedDir.toFile(), newGradleWrapperJar.toFile());
+            moveFile(
+                    newGradleWrapperJar,
+                    patchedGradleWrapperJar.getAsFile().get().toPath());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to patch gradle wrapper jar", e);
+        }
+    }
+
+    private static void moveFile(Path source, Path destination) throws IOException {
+        try {
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     private static void write(Path destPath, String content) {
@@ -145,7 +206,7 @@ public abstract class GradleWrapperPatcher {
                 GradleWrapperPatcher.class.getClassLoader().getResourceAsStream(GRADLEW_PATCH)) {
             return IOUtils.readLines(inputStream, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Unable to read the gradlew patch file", e);
         }
     }
 }

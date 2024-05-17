@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.setup;
+package com.palantir.gradle.jdks;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -32,9 +34,17 @@ import java.util.stream.Stream;
 public final class CommandRunner {
 
     public static String run(List<String> commandArguments) {
+        return run(commandArguments, Optional.empty());
+    }
+
+    public static String run(List<String> commandArguments, Optional<File> directory) {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
         try {
-            Process process = new ProcessBuilder().command(commandArguments).start();
+            ProcessBuilder processBuilder = new ProcessBuilder().command(commandArguments);
+            if (directory.isPresent()) {
+                processBuilder.directory(directory.get());
+            }
+            Process process = processBuilder.start();
             CompletableFuture<String> outputFuture =
                     CompletableFuture.supplyAsync(() -> readAllInput(process.getInputStream()), executorService);
             CompletableFuture<String> errorOutputFuture =
@@ -64,7 +74,7 @@ public final class CommandRunner {
         }
     }
 
-    static String readAllInput(InputStream inputStream) {
+    public static String readAllInput(InputStream inputStream) {
         try (Stream<String> lines =
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
             return lines.collect(Collectors.joining("\n"));

@@ -22,6 +22,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution;
 import com.palantir.gradle.jdks.Arch;
+import com.palantir.gradle.jdks.CommandRunner;
 import com.palantir.gradle.jdks.CurrentArch;
 import com.palantir.gradle.jdks.JdkPath;
 import com.palantir.gradle.jdks.JdkRelease;
@@ -43,7 +44,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
             new BigInteger("143266978916655856878034712317230054538369994");
     private static final String AMAZON_CERT_ALIAS = "AmazonRootCA1Test";
     private static final String NON_EXISTING_CERT_ALIAS = "NonExistingCert";
-    private static final String SUCCESSFUL_OUTPUT = "Successfully installed JDK distribution, setting JAVA_HOME to";
+    private static final String SUCCESSFUL_OUTPUT = "Successfully installed JDK distribution in";
     private static final String JDK_VERSION = "11.0.21.9.1";
     private static final Arch ARCH = CurrentArch.get();
     private static final String TEST_HASH = "integration-tests";
@@ -91,14 +92,15 @@ public class GradleJdkInstallationSetupIntegrationTest {
          * │   │   │   │   │   ├── local-path
          * │   ├── certs/
          * │   │   ├── Palantir3rdGenRootCa.serial-number
-         * │   ├── gradle-jdk-major-version
+         * │   ├── gradle-daemon-jdk-version
+         * │   ├── gradle-jdks-setup.sh
          * │   ├── gradle-jdks-setup.jar
          * ├── subProjects/...
          * ...
          */
         String jdkMajorVersion = Iterables.get(Splitter.on('.').split(jdkVersion), 0);
         Path gradleDirectory = Files.createDirectories(workingDir.resolve("gradle"));
-        Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-jdk-major-version"));
+        Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-daemon-jdk-version"));
         writeFileContent(gradleJdkVersion, jdkMajorVersion.toString());
         JdkPath jdkPath = CORRETTO_JDK_DISTRIBUTION.path(
                 JdkRelease.builder().version(jdkVersion).os(os).arch(ARCH).build());
@@ -124,9 +126,9 @@ public class GradleJdkInstallationSetupIntegrationTest {
         // copy the jar from build/libs to the gradle directory
         Files.copy(
                 Path.of(String.format(
-                        "../gradle-jdks-setup/build/libs/gradle-jdks-setup-%s.jar",
+                        "../gradle-jdks-setup/build/libs/gradle-jdks-setup-all-%s.jar",
                         System.getenv().get("PROJECT_VERSION"))),
-                gradleDirectory.resolve("jdks/gradle-jdks-setup.jar"));
+                gradleDirectory.resolve("gradle-jdks-setup.jar"));
 
         // copy the gradle-jdks-setup.sh to the gradle directory
         Files.copy(
@@ -198,7 +200,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         String expectedDistributionPath =
                 String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
         assertThat(output)
-                .contains(SUCCESSFUL_OUTPUT)
+                .contains(String.format("%s %s", SUCCESSFUL_OUTPUT, expectedDistributionPath))
                 .contains(String.format("Java home is: %s", expectedDistributionPath))
                 .containsPattern(String.format("Java path is: java is ([^/]*\\s)*%s", expectedDistributionPath))
                 .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))

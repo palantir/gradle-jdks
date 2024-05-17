@@ -2,6 +2,7 @@ apply plugin: 'java'
 apply plugin: 'com.palantir.external-publish-jar'
 
 dependencies {
+    api project(':gradle-jdks-setup-common')
     api 'com.fasterxml.jackson.core:jackson-annotations'
 
     testImplementation 'org.junit.jupiter:junit-jupiter'
