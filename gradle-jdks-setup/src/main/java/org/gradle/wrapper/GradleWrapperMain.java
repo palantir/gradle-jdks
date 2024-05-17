@@ -63,7 +63,6 @@ public final class GradleWrapperMain {
         if (!isRunningFromGradlew()) {
             CommandRunner.run(List.of("./gradle/gradle-jdks-setup.sh"), Optional.of(projectHome.toFile()));
         }
-
         // Set the daemon Java Home
         String osName = CurrentOs.get().uiName();
         String archName = CurrentArch.get().uiName();
@@ -91,7 +90,7 @@ public final class GradleWrapperMain {
     private static List<String> getAllInstallationsPaths(
             Path gradleJdksConfigurationPath, Path gradleJdksInstallationDir, String osName, String archName) {
         try (Stream<Path> gradleJdkConfigurationPath =
-                Files.walk(gradleJdksConfigurationPath, 1).filter(Files::isDirectory)) {
+                Files.list(gradleJdksConfigurationPath).filter(Files::isDirectory)) {
             return gradleJdkConfigurationPath
                     .flatMap(jdkPath -> getInstallationPath(jdkPath, gradleJdksInstallationDir, osName, archName))
                     .collect(Collectors.toList());
@@ -106,12 +105,7 @@ public final class GradleWrapperMain {
         Path localPathFile =
                 gradleJdkConfigurationPath.resolve(osName).resolve(archName).resolve("local-path");
         if (!localPathFile.toFile().exists()) {
-            System.out.println(String.format(
-                    "Couldn't find a valid JDK version %s installation for os=%s and arch=%s in %s. Skipping ...",
-                    gradleJdkConfigurationPath.getFileName(),
-                    osName,
-                    archName,
-                    gradleJdkConfigurationPath.toAbsolutePath()));
+            System.out.printf("Couldn't find a valid JDK version installation %s. Skipping ...%n", localPathFile);
             return Stream.empty();
         }
         String localJdkFileName = readFile(localPathFile);

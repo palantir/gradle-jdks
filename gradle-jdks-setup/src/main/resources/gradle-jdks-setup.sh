@@ -121,8 +121,8 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
-if [ ! -f "$APP_GRADLE_DIR"/gradle-jdk-major-version ]; then
-  die "ERROR: $APP_GRADLE_DIR/gradle-jdk-major-version not found, please run `./gradlew generateGradleJdksSetup` to generate it."
+if [ ! -f "$APP_GRADLE_DIR"/gradle-daemon-jdk-version ]; then
+  die "ERROR: $APP_GRADLE_DIR/gradle-daemon-jdk-version not found, please run `./gradlew generateGradleJdkConfigs` to generate it."
 fi
 
 for dir in "$APP_GRADLE_DIR"/jdks/*/; do

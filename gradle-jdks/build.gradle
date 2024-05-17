@@ -72,3 +72,12 @@ tasks.test {
     dependsOn ':gradle-jdks-setup:fatJar'
     systemProperty 'ignoreDeprecations', 'true'
 }
+
+tasks.register('copyGradleJdkJar', Copy) {
+    dependsOn ':gradle-jdks-setup:fatJar'
+    from "${project(':gradle-jdks-setup').projectDir}/build/libs/gradle-jdks-setup-all-${project.version}.jar"
+    into "${projectDir}/src/main/resources"
+    rename { 'gradle-jdks-setup.jar' }
+}
+
+tasks.build.dependsOn tasks.copyGradleJdkJar
