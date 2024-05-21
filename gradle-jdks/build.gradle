@@ -83,6 +83,4 @@ tasks.test {
     systemProperty 'ignoreDeprecations', 'true'
 }
 
-
-
-tasks.build.dependsOn tasks.copyGradleJdkJar
+tasks.named('processResources').map {task -> task.dependsOn(copyGradleJdkJar) }

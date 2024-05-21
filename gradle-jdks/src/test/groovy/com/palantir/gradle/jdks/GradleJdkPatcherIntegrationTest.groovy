@@ -34,7 +34,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     private static String JDK_11_VERSION = "11.54.25-11.0.14.1"
     private static String JDK_17_VERSION = "17.0.3.6.1"
     private static String JDK_21_VERSION = "21.0.2.13.1"
-
     private static final int JAVA_17_BYTECODE = 61
     private static final int ENABLE_PREVIEW_BYTECODE = 65535
 
@@ -256,7 +255,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         !output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         !file("gradlew").text.contains("gradle-jdks-setup.sh")
     }
-
 
     String getLocalFilename(String jdkVersion) {
        return  String.format("amazon-corretto-%s-%s\n", jdkVersion);

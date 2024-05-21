@@ -124,7 +124,6 @@ esac
 if [ ! -f "$APP_GRADLE_DIR"/gradle-daemon-jdk-version ]; then
   die "ERROR: $APP_GRADLE_DIR/gradle-daemon-jdk-version not found, please run `./gradlew generateGradleJdkConfigs` to generate it."
 fi
-
 for dir in "$APP_GRADLE_DIR"/jdks/*/; do
   major_version_dir=${dir%*/}
   certs_directory="$APP_GRADLE_DIR"/certs

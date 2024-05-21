@@ -37,6 +37,7 @@ import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 
 @AutoParallelizable
@@ -60,6 +61,7 @@ public abstract class GradleWrapperPatcher {
         Property<File> getOriginalGradleWrapperJar();
 
         @InputFile
+        @Optional
         Property<File> getGradleJdksSetupJar();
 
         @OutputFile
@@ -72,9 +74,15 @@ public abstract class GradleWrapperPatcher {
         RegularFileProperty getBuildDir();
     }
 
-    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {}
+    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {
+
+        public GradleWrapperPatcherTask() {
+            onlyIf(t -> getGradleJdksSetupJar().map(File::exists).getOrElse(false));
+        }
+    }
 
     static void action(Params params) {
+
         log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
         patchGradlewContent(params.getOriginalGradlewScript(), params.getPatchedGradlewScript());
         patchGradlewJar(

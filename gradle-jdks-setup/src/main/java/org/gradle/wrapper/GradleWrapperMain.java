@@ -63,6 +63,7 @@ public final class GradleWrapperMain {
         if (!isRunningFromGradlew()) {
             CommandRunner.run(List.of("./gradle/gradle-jdks-setup.sh"), Optional.of(projectHome.toFile()));
         }
+
         // Set the daemon Java Home
         String osName = CurrentOs.get().uiName();
         String archName = CurrentArch.get().uiName();
@@ -77,7 +78,7 @@ public final class GradleWrapperMain {
         String localJdkFileName = readFile(localPathFile);
         Path gradleJdksInstallationDir = getGradleJdksPath();
         Path jdkInstallationPath = gradleJdksInstallationDir.resolve(localJdkFileName);
-        System.out.println("Setting daemon Java Home to " + jdkInstallationPath.toAbsolutePath());
+        System.out.println("Setting daemon Java Home to crogoz" + jdkInstallationPath.toAbsolutePath());
         System.setProperty(
                 "org.gradle.java.home", jdkInstallationPath.toAbsolutePath().toString());
 
@@ -90,7 +91,7 @@ public final class GradleWrapperMain {
     private static List<String> getAllInstallationsPaths(
             Path gradleJdksConfigurationPath, Path gradleJdksInstallationDir, String osName, String archName) {
         try (Stream<Path> gradleJdkConfigurationPath =
-                Files.list(gradleJdksConfigurationPath).filter(Files::isDirectory)) {
+                Files.walk(gradleJdksConfigurationPath, 1).filter(Files::isDirectory)) {
             return gradleJdkConfigurationPath
                     .flatMap(jdkPath -> getInstallationPath(jdkPath, gradleJdksInstallationDir, osName, archName))
                     .collect(Collectors.toList());
