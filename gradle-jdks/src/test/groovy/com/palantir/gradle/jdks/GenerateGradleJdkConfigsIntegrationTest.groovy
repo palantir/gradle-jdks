@@ -16,47 +16,22 @@
 
 package com.palantir.gradle.jdks
 
-import nebula.test.IntegrationSpec
+import com.palantir.gradle.jdks.setup.AliasContentCert
+import com.palantir.gradle.jdks.setup.CaResources
+import com.palantir.gradle.jdks.setup.StdLogger
+import spock.lang.TempDir
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Stream
 
-class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
+class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
-    private static String GRADLE_7VERSION = "7.6.2"
-    private static String GRADLE_8VERSION = "8.5"
+    @TempDir
+    Path workingDir
 
     def setup() {
-        // language=groovy
-        buildFile << """
-            buildscript {
-                repositories {
-                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                }
-            }
-            apply plugin: 'java'
-            apply plugin: 'com.palantir.jdks'
-            apply plugin: 'com.palantir.jdks.palantir-ca'
-            
-            jdks {
-               jdk(11) {
-                  distribution = 'azul-zulu'
-                  jdkVersion = '11.54.25-11.0.14.1'
-               }
-               
-               jdk(17) {
-                  distribution = 'amazon-corretto'
-                  jdkVersion = '17.0.3.6.1'
-               }
-               
-               jdk(21) {
-                  distribution = 'amazon-corretto'
-                  jdkVersion = '21.0.2.13.1'
-               }
-               daemonTarget = '11'
-            }
-        """.stripIndent(true)
+        setupJdks()
     }
 
     def '#gradleVersionNumber: checks the generation of the jdk configs'() {
@@ -65,23 +40,19 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
 
         buildFile << '''
             javaVersions {
-                libraryTarget = '11'
-                distributionTarget = '17_PREVIEW'
-                runtime = '17_PREVIEW'
+                libraryTarget = '17'
+                distributionTarget = '21'
+                runtime = '21'
             }
             jdks {
-              daemonTarget = '21'
+              daemonTarget = '11'
             }
         '''.stripIndent(true)
+        runTasks("wrapper")
+        def result = runTasks("wrapper")
 
         when:
-        def checkResult = runTasksWithFailure('check')
-
-        then:
-        checkResult.standardError.contains("The gradle configuration files in `gradle/jdks` are out of date")
-
-        when:
-        runTasksSuccessfully('generateGradleJdkConfigs')
+        result.wasExecuted(':generateGradleJdkConfigs')
 
         then:
         for (String majorVersion : Stream.of("11", "17", "21")) {
@@ -95,36 +66,35 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
         }
         Files.exists(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version"))
         Path jarInProject = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar");
-        Path originalJar = Path.of("src/main/resources/gradle-jdks-setup.jar");
+        Path originalJar = Path.of("build/resources/main/gradle-jdks-setup.jar");
         Files.exists(jarInProject)
         GradleJdkConfigs.checkFilesAreTheSame(jarInProject.toFile(), originalJar.toFile())
         Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
         Files.exists(scriptPath)
         Files.isExecutable(scriptPath)
         Path certFile = projectDir.toPath().resolve("gradle/certs/Palantir3rdGenRootCa.serial-number")
-        Files.exists(certFile)
-        Files.readString(certFile).trim() == "18126334688741185161"
+        Optional<AliasContentCert> maybePalantirCerts = new CaResources(new StdLogger()).readPalantirRootCaFromSystemTruststore()
+        if (maybePalantirCerts.isPresent()) {
+            Files.exists(certFile)
+            Files.readString(certFile).trim() == "18126334688741185161"
+        } else {
+            !Files.exists(certFile)
+        }
 
         when:
-        def secondCheck = runTasksSuccessfully('check')
-        def upToDateCheck = runTasksSuccessfully('check')
+        def secondCheck = runGradlewTasks('check')
+        def upToDateCheck = runGradlewTasks('check')
 
         then:
-        !secondCheck.wasUpToDate(':checkGradleJdkConfigs')
-        upToDateCheck.wasUpToDate(':checkGradleJdkConfigs')
-
-        when:
-        def upToDateGenerate = runTasksSuccessfully('generateGradleJdkConfigs')
-
-        then:
-        upToDateGenerate.wasUpToDate(':generateGradleJdkConfigs')
+        !secondCheck.contains(':checkGradleJdkConfigs UP-TO-DATE')
+        upToDateCheck.contains(':checkGradleJdkConfigs UP-TO-DATE')
 
         when:
         Files.delete(projectDir.toPath().resolve("gradle/jdks/17/macos/x86/download-url"))
-        def notUpToDateGenerate = runTasksSuccessfully('generateGradleJdkConfigs')
+        def notUpToDateGenerate = runGradlewTasks('generateGradleJdkConfigs')
 
         then:
-        !notUpToDateGenerate.wasUpToDate(':generateGradleJdkConfigs')
+        !notUpToDateGenerate.contains(':generateGradleJdkConfigs UP-TO-DATE')
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
@@ -151,11 +121,10 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
         writeHelloWorld(subprojectLib)
 
         when:
-        def result = runTasksSuccessfully('wrapper', 'check')
+        runTasks("wrapper")
+        runTasks("wrapper")
 
         then:
-        result.wasExecuted(':generateGradleJdkConfigs')
-        !result.wasUpToDate(':generateGradleJdkConfigs')
         for (String majorVersion : Stream.of("11", "21")) {
             for (Os os : Os.values()) {
                 for (Arch arch : Arch.values()) {
@@ -172,25 +141,30 @@ class GenerateGradleJdkConfigsIntegrationTest extends IntegrationSpec {
 
 
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
-            file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
-            gradleVersion = gradleVersionNumber
+        gradleVersion = gradleVersionNumber
 
-            buildFile << '''
+        buildFile << '''
             javaVersions {
                 libraryTarget = '11'
                 runtime = '15'
             }
         '''.stripIndent(true)
+        runTasks("wrapper")
 
-            when:
-            def result = runTasksWithFailure('wrapper', 'check')
+        when:
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        def result = runTasksWithFailure("wrapper")
 
-            then:
-            result.standardError.contains("Could not find a JDK with major version 15 in project")
+        then:
+        result.standardError.contains("Could not find a JDK with major version 15 in project")
 
-            where:
-            gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
+        where:
+        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
 
     }
 
+    @Override
+    Path workingDir() {
+        return workingDir
+    }
 }

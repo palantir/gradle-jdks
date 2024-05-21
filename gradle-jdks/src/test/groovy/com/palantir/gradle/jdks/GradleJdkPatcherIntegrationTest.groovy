@@ -19,26 +19,23 @@ package com.palantir.gradle.jdks
 import com.palantir.gradle.jdks.setup.CaResources
 import com.palantir.gradle.jdks.setup.StdLogger
 import nebula.test.functional.ExecutionResult
-
 import spock.lang.TempDir
-import java.util.regex.Matcher
-import java.util.regex.Pattern
-import nebula.test.IntegrationSpec
+
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
-class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
+class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
 
-    private static String GRADLE_7VERSION = "7.6.2"
-    private static String GRADLE_8VERSION = "8.5"
+    @TempDir
+    Path workingDir
+
     private static String JDK_11_VERSION = "11.54.25-11.0.14.1"
     private static String JDK_17_VERSION = "17.0.3.6.1"
     private static String JDK_21_VERSION = "21.0.2.13.1"
     private static final int JAVA_17_BYTECODE = 61
     private static final int ENABLE_PREVIEW_BYTECODE = 65535
-
-    @TempDir
-    private Path workingDir
 
     def java17PreviewCode = '''
         public class Main {
@@ -57,23 +54,11 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
 
     def setup() {
 
+        setupJdks()
+
         // language=groovy
         buildFile << """
-            buildscript {
-                repositories {
-                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                }
-                // we need to inject the classpath of the plugin under test manually. The tests call the `./gradlew` 
-                // command directly in the tests (so not using the nebula-test workflow).
-                dependencies {
-                    classpath files(FILES)
-                }
-            }
-            apply plugin: 'java'
-            apply plugin: 'com.palantir.jdks'
             apply plugin: 'application'
-            apply plugin: 'com.palantir.jdks.palantir-ca'
 
             tasks.register('getGradleJavaHomeProp') {
                 doLast {
@@ -84,43 +69,13 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
             application {
                 mainClass = 'Main'
             }
-            
-            jdks {
-               jdk(11) {
-                  distribution = 'azul-zulu'
-                  jdkVersion = '11.54.25-11.0.14.1'
-               }
-               
-               jdk(17) {
-                  distribution = 'amazon-corretto'
-                  jdkVersion = '17.0.3.6.1'
-               }
-               
-               jdk(21) {
-                  distribution = 'amazon-corretto'
-                  jdkVersion = '21.0.2.13.1'
-               }
-               
-               daemonTarget = '11'
-            }
-            
+
             javaVersions {
                 libraryTarget = '11'
                 distributionTarget = '17_PREVIEW'
             }
         """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
     }
-
-    private static Iterable<File> getPluginClasspathInjector() {
-        File propertiesFile = new File("build/pluginUnderTestMetadata/plugin-under-test-metadata.properties")
-        Properties properties = new Properties()
-        propertiesFile.withInputStream { inputStream ->
-            properties.load(inputStream)
-        }
-        String classpath = properties.getProperty('implementation-classpath')
-        return classpath.split(File.pathSeparator).collect { "'" + it + "'" }
-    }
-
 
     def '#gradleVersionNumber: patches gradleWrapper to set up JDK'() {
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
@@ -143,9 +98,9 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         then:
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
         Path gradleJdksPath = workingDir.resolve("gradle-jdks")
-        String expectedLocalPath = gradleJdksPath.resolve(getLocalFilename(JDK_17_VERSION))
+        Path expectedLocalPath = gradleJdksPath.resolve(String.format("azul-zulu-11.54.25-11.0.14.1-%s", getHashForDistribution(JdkDistributionName.AZUL_ZULU, JDK_11_VERSION)))
         wrapperResult1.contains(String.format("Successfully installed JDK distribution in %s", expectedLocalPath))
-        String expectedJdkLog = "JVM:          17.0.3 (Amazon.com Inc. 17.0.9+8-LTS)"
+        String expectedJdkLog = "JVM:          11.0.14.1 (Azul Systems, Inc. 11.0.14.1+1-LTS)"
         wrapperResult1.contains(expectedJdkLog)
         wrapperResult1.contains("Gradle 7.6.2")
         wrapperResult1.contains("Gradle java home is " + expectedLocalPath)
@@ -156,7 +111,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         wrapperResult2.contains("Gradle java home is " + expectedLocalPath)
 
         where:
-        gradleVersionNumber << [ GRADLE_7VERSION ]
+        gradleVersionNumber << [GRADLE_7VERSION]
     }
 
     def '#gradleVersionNumber: javaToolchains correctly set-up'() {
@@ -188,7 +143,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         runTasksSuccessfully('wrapper').standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         ExecutionResult wrapperResult = runTasksSuccessfully('wrapper')
         wrapperResult.standardOutput.contains("Successfully installed JDK distribution in")
-        String output = runGradlewCommand(List.of("./gradlew","javaToolchains", "compileJava", "--info", '--configuration-cache'))
+        String output = runGradlewTasks("javaToolchains", "compileJava", "--info", '--configuration-cache')
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
 
         then:
@@ -212,7 +167,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
 
         when:
-        String runOutput = runGradlewCommand(List.of("./gradlew", "run", "--info"))
+        String runOutput = runGradlewTasks("run", "--info")
 
         then:
         runOutput.contains("--enable-preview")
@@ -220,16 +175,16 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         runOutput.contains("BUILD SUCCESSFUL")
 
         where:
-        gradleVersionNumber << [ GRADLE_8VERSION ]
+        gradleVersionNumber << [GRADLE_8VERSION]
     }
 
     def '#gradleVersionNumber: gradlew file is correctly generated'() {
         gradleVersion = gradleVersionNumber
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
-
-        when:
         runTasksSuccessfully('wrapper')
         List<String> initialRows = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
+
+        when:
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
         def outputWithJdkEnabled = runTasksSuccessfully('wrapper')
 
         then:
@@ -243,7 +198,7 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         rowsAfterPatching.size() == 0
 
         where:
-        gradleVersionNumber << [ GRADLE_7VERSION, GRADLE_8VERSION ]
+        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
     }
 
     def 'no gradleWrapper patch if gradle.jdk.setup.enabled == false'() {
@@ -254,24 +209,6 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
         !output.standardOutput.contains('wrapperJdkPatcher')
         !output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         !file("gradlew").text.contains("gradle-jdks-setup.sh")
-    }
-
-    String getLocalFilename(String jdkVersion) {
-       return  String.format("amazon-corretto-%s-%s\n", jdkVersion);
-    }
-
-    String upgradeGradleWrapper() {
-        return runGradlewCommand(List.of("./gradlew", "getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace"))
-    }
-
-    String runGradlewCommand(List<String> gradlewCommand) {
-        ProcessBuilder processBuilder = new ProcessBuilder()
-                .command(gradlewCommand)
-                .directory(projectDir).redirectErrorStream(true)
-        processBuilder.environment().put("GRADLE_USER_HOME", workingDir.toAbsolutePath().toString())
-        Process process = processBuilder.start()
-        process.waitFor()
-        return CommandRunner.readAllInput(process.getInputStream())
     }
 
     private static final int BYTECODE_IDENTIFIER = (int) 0xCAFEBABE
@@ -294,15 +231,22 @@ class GradleJdkPatcherIntegrationTest extends IntegrationSpec {
     }
 
     private static String getHashForDistribution(JdkDistributionName jdkDistributionName, String jdkVersion) {
+        Map<String, String> certs = new CaResources(new StdLogger()).readPalantirRootCaFromSystemTruststore()
+                .map(cert -> Map.of(cert.getAlias(), cert.getContent())).orElseGet(Map::of)
         return JdkSpec.builder()
                 .release(JdkRelease.builder()
-                    .arch(CurrentArch.get())
-                    .os(CurrentOs.get())
-                    .version(jdkVersion)
-                    .build())
+                        .arch(CurrentArch.get())
+                        .os(CurrentOs.get())
+                        .version(jdkVersion)
+                        .build())
                 .distributionName(jdkDistributionName)
-                .caCerts(CaCerts.from(new CaResources(new StdLogger()).readPalantirRootCaFromSystemTruststore()
-                .map(cert -> Map.of(cert.getAlias(), cert.getContent())).get()))
-                .build().consistentShortHash();
+                .caCerts(CaCerts.from(certs))
+                .build()
+                .consistentShortHash()
+    }
+
+    @Override
+    Path workingDir() {
+        return workingDir
     }
 }

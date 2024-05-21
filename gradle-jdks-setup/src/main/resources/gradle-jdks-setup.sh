@@ -153,7 +153,7 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
       echo "Using wget to download $distribution_url"
       if echo "$distribution_url" | grep -q ".zip"; then
         distribution_name=${distribution_url##*/}
-        curl -C - "$distribution_url" -o "$distribution_name"
+        wget -c "$distribution_url" -O "$distribution_name"
         tar -xzf "$distribution_name"
       else
         wget -qO- -c "$distribution_url" | tar -xzf -

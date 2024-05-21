@@ -32,7 +32,6 @@ build/
 out/
 reports/
 
-gradle-jdks/src/main/resources/gradle-jdks-setup.jar
 
 # SublimeText + TextMate + Vim
 *.sublime-workspace

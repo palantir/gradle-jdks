@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import com.palantir.gradle.jdks.setup.CaResources;
-import groovyjarjarpicocli.CommandLine.Option;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -110,11 +109,6 @@ public abstract class GradleJdkConfigs {
 
         public GradleJdkConfigsTask() {
             this.getGenerate().convention(false);
-        }
-
-        @Option(names = "fix", required = true, help = true, description = "Fixes the gradle jdk files")
-        public void setFixOption(boolean value) {
-            this.getGenerate().set(value);
         }
     }
 
@@ -208,7 +202,7 @@ public abstract class GradleJdkConfigs {
         try (InputStream inputStream =
                 GradleJdkConfigsTask.class.getClassLoader().getResourceAsStream(resource)) {
             if (inputStream == null) {
-                throw new IOException(String.format("Resource not found: %s:", resource));
+                throw new RuntimeException(String.format("Resource not found: %s:", resource));
             }
 
             try (OutputStream outputStream = new FileOutputStream(outputFile)) {
