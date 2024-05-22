@@ -30,29 +30,22 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
     @TempDir
     Path workingDir
 
-    def setup() {
-        setupJdks()
-    }
+    def '#gradleVersionNumber: checks the generation of the latest jdk configs'() {
+        when:
+        setupJdksLatest()
 
-    def '#gradleVersionNumber: checks the generation of the jdk configs'() {
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
         gradleVersion = gradleVersionNumber
 
         buildFile << '''
             javaVersions {
-                libraryTarget = '17'
-                distributionTarget = '21'
-                runtime = '21'
-            }
-            jdks {
-              daemonTarget = '11'
+                libraryTarget = '11'
+                distributionTarget = '17'
+                runtime = '17'
             }
         '''.stripIndent(true)
-        runTasks("wrapper")
-        def result = runTasks("wrapper")
-
-        when:
-        result.wasExecuted(':generateGradleJdkConfigs')
+        runTasksSuccessfully("wrapper", '--info')
+        runTasksSuccessfully("wrapper", '--info')
 
         then:
         for (String majorVersion : Stream.of("11", "17", "21")) {
@@ -100,7 +93,9 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
     }
 
-    def '#gradleVersionNumber: checks the generation of the jdk configs with subprojects'() {
+    def '#gradleVersionNumber: checks the generation of hardcoded jdk configs with subprojects'() {
+        when:
+        setupJdksHardodedVersions()
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
         gradleVersion = gradleVersionNumber
 
@@ -120,7 +115,6 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         '''.stripIndent(true)
         writeHelloWorld(subprojectLib)
 
-        when:
         runTasks("wrapper")
         runTasks("wrapper")
 
@@ -141,6 +135,9 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
 
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
+        when:
+        setupJdksHardodedVersions()
+
         gradleVersion = gradleVersionNumber
 
         buildFile << '''
@@ -150,8 +147,6 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
             }
         '''.stripIndent(true)
         runTasks("wrapper")
-
-        when:
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
         def result = runTasksWithFailure("wrapper")
 

@@ -65,10 +65,10 @@ public abstract class GradleJdkConfigs {
     interface JdkDistributionConfig {
 
         @Input
-        Property<String> getDistributionName();
+        Property<String> getDownloadUrl();
 
         @Input
-        Property<String> getVersion();
+        Property<String> getLocalPath();
 
         @Input
         Property<Os> getOs();
@@ -81,9 +81,6 @@ public abstract class GradleJdkConfigs {
     }
 
     interface Params {
-
-        @Internal
-        Property<JdkDistributionsService> getJdkDistributions();
 
         @Nested
         MapProperty<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros();
@@ -114,11 +111,8 @@ public abstract class GradleJdkConfigs {
 
     static void action(Params params) {
         params.getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
-            jdkDistros.forEach(jdkDistro -> createJdkFiles(
-                    params.getJdkDistributions().get(),
-                    params.getOutputGradleDirectory().get(),
-                    javaVersion,
-                    jdkDistro));
+            jdkDistros.forEach(jdkDistro ->
+                    createJdkFiles(params.getOutputGradleDirectory().get(), javaVersion, jdkDistro));
         });
 
         try {
@@ -254,10 +248,7 @@ public abstract class GradleJdkConfigs {
     }
 
     private static void createJdkFiles(
-            JdkDistributionsService jdkDistributionsService,
-            Directory gradleDirectory,
-            JavaLanguageVersion javaVersion,
-            JdkDistributionConfig jdkDistribution) {
+            Directory gradleDirectory, JavaLanguageVersion javaVersion, JdkDistributionConfig jdkDistribution) {
         try {
             Path outputDir = gradleDirectory
                     .dir(JDKS_DIR)
@@ -268,27 +259,9 @@ public abstract class GradleJdkConfigs {
                     .resolve(jdkDistribution.getArch().get().uiName());
             Files.createDirectories(outputDir);
             Path downloadUrlPath = outputDir.resolve(DOWNLOAD_URL);
-            JdkRelease jdkRelease = JdkRelease.builder()
-                    .version(jdkDistribution.getVersion().get())
-                    .os(jdkDistribution.getOs().get())
-                    .arch(jdkDistribution.getArch().get())
-                    .build();
-            JdkDistributionName jdkDistributionName = JdkDistributionName.fromStringThrowing(
-                    jdkDistribution.getDistributionName().get());
-            JdkPath jdkPath = jdkDistributionsService.get(jdkDistributionName).path(jdkRelease);
-            String downloadUrl = String.format(
-                    "%s/%s.%s",
-                    jdkDistributionsService.get(jdkDistributionName).defaultBaseUrl(),
-                    jdkPath.filename(),
-                    jdkPath.extension());
-            String localFileName = String.format(
-                    "%s-%s-%s",
-                    jdkDistributionName,
-                    jdkDistribution.getVersion().get(),
-                    jdkDistribution.getConsistentHash().get());
-            writeToFile(downloadUrlPath, downloadUrl);
+            writeToFile(downloadUrlPath, jdkDistribution.getDownloadUrl().get());
             Path localPath = outputDir.resolve(LOCAL_PATH);
-            writeToFile(localPath, localFileName);
+            writeToFile(localPath, jdkDistribution.getLocalPath().get());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

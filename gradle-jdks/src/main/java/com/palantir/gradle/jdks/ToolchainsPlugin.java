@@ -23,7 +23,6 @@ import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import java.util.List;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
@@ -42,11 +41,6 @@ public final class ToolchainsPlugin extends JdkDistributionConfigurator implemen
                         + "are managed by the configured custom toolchains.");
         JdkDistributions jdkDistributions = new JdkDistributions();
 
-        Provider<JdkDistributionsService> jdkDistributionsService = rootProject
-                .getGradle()
-                .getSharedServices()
-                .registerIfAbsent("jdkDistributionsService", JdkDistributionsService.class, spec -> {});
-
         JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
         BaselineJavaVersionsExtension baselineJavaVersionsExtension =
                 rootProject.getExtensions().getByType(BaselineJavaVersionsExtension.class);
@@ -57,7 +51,7 @@ public final class ToolchainsPlugin extends JdkDistributionConfigurator implemen
                 .getTasks()
                 .register("generateGradleJdkConfigs", GradleJdkConfigsTask.class, task -> {
                     configureGenerateJdkConfigs(
-                            task, rootProject, baselineJavaVersionsExtension, jdksExtension, jdkDistributionsService);
+                            task, rootProject, baselineJavaVersionsExtension, jdksExtension, jdkDistributions);
                     task.getGenerate().set(true);
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().dir(rootProject.provider(() -> rootProject.file("gradle"))));
@@ -66,7 +60,7 @@ public final class ToolchainsPlugin extends JdkDistributionConfigurator implemen
                 .getTasks()
                 .register("checkGradleJdkConfigs", GradleJdkConfigsTask.class, task -> {
                     configureGenerateJdkConfigs(
-                            task, rootProject, baselineJavaVersionsExtension, jdksExtension, jdkDistributionsService);
+                            task, rootProject, baselineJavaVersionsExtension, jdksExtension, jdkDistributions);
                     task.getGenerate().set(false);
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().getBuildDirectory().dir("gradleConfigs"));
@@ -108,15 +102,14 @@ public final class ToolchainsPlugin extends JdkDistributionConfigurator implemen
             Project rootProject,
             BaselineJavaVersionsExtension baselineJavaVersionsExtension,
             JdksExtension jdksExtension,
-            Provider<JdkDistributionsService> jdkDistributionsService) {
-        task.getJdkDistributions().set(jdkDistributionsService);
-        task.usesService(jdkDistributionsService);
+            JdkDistributions jdkDistributions) {
         task.getGradleDirectory()
                 .set(rootProject.getLayout().getProjectDirectory().dir("gradle"));
         task.getDaemonJavaVersion().set(jdksExtension.getDaemonTarget());
         task.getJavaVersionToJdkDistros()
                 .putAll(rootProject.provider(() -> getJavaVersionToJdkDistros(
                         rootProject,
+                        jdkDistributions,
                         List.of(
                                 baselineJavaVersionsExtension.libraryTarget(),
                                 jdksExtension.getDaemonTarget(),

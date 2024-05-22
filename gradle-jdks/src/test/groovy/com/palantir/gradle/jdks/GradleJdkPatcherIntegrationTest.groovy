@@ -54,7 +54,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
 
     def setup() {
 
-        setupJdks()
+        setupJdksHardodedVersions()
 
         // language=groovy
         buildFile << """
@@ -140,13 +140,17 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         writeHelloWorld(subprojectLib1)
 
         when:
-        runTasksSuccessfully('wrapper').standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
-        ExecutionResult wrapperResult = runTasksSuccessfully('wrapper')
-        wrapperResult.standardOutput.contains("Successfully installed JDK distribution in")
+        ExecutionResult firstWrapperRun = runTasksSuccessfully('wrapper', '--info')
+
+        then:
+        firstWrapperRun.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
+
+        when:
         String output = runGradlewTasks("javaToolchains", "compileJava", "--info", '--configuration-cache')
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
 
         then:
+        output.contains("Successfully installed JDK distribution in")
         output.contains("Auto-detection:     Disabled")
         output.contains("Auto-download:      Disabled")
         output.contains("JDK 11.0.14.1")

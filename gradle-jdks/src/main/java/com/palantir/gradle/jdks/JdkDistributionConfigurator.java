@@ -22,32 +22,50 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.Provider;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class JdkDistributionConfigurator {
 
+    private static Logger logger = Logging.getLogger(JdkDistributionConfigurator.class);
+
     public static Map<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros(
-            Project project, List<Provider<JavaLanguageVersion>> javaVersions, JdksExtension jdksExtension) {
+            Project project,
+            JdkDistributions jdkDistributions,
+            List<Provider<JavaLanguageVersion>> javaVersions,
+            JdksExtension jdksExtension) {
         return javaVersions.stream()
                 .map(Provider::get)
                 .distinct()
                 .collect(Collectors.toMap(
                         javaVersion -> javaVersion,
-                        javaVersion -> getJdkDistributionConfigs(project, javaVersion, jdksExtension)));
+                        javaVersion ->
+                                getJdkDistributionConfigs(project, jdkDistributions, javaVersion, jdksExtension)));
     }
 
     private static List<JdkDistributionConfig> getJdkDistributionConfigs(
-            Project project, JavaLanguageVersion javaVersion, JdksExtension jdksExtension) {
+            Project project,
+            JdkDistributions jdkDistributions,
+            JavaLanguageVersion javaVersion,
+            JdksExtension jdksExtension) {
         return Arrays.stream(Os.values())
                 .flatMap(os -> Arrays.stream(Arch.values())
-                        .map(arch -> getJdkDistributionConfig(project, os, arch, javaVersion, jdksExtension)))
+                        .flatMap(arch -> getJdkDistributionConfig(
+                                project, jdkDistributions, os, arch, javaVersion, jdksExtension)))
                 .collect(Collectors.toList());
     }
 
-    private static JdkDistributionConfig getJdkDistributionConfig(
-            Project project, Os os, Arch arch, JavaLanguageVersion javaVersion, JdksExtension jdksExtension) {
+    private static Stream<JdkDistributionConfig> getJdkDistributionConfig(
+            Project project,
+            JdkDistributions jdkDistributions,
+            Os os,
+            Arch arch,
+            JavaLanguageVersion javaVersion,
+            JdksExtension jdksExtension) {
         Optional<JdkExtension> jdkExtension = jdksExtension.jdkFor(javaVersion, project);
         if (jdkExtension.isEmpty()) {
             throw new RuntimeException(String.format(
@@ -57,23 +75,40 @@ public abstract class JdkDistributionConfigurator {
                             + "https://github.com/palantir/gradle-jdks#usage",
                     javaVersion.toString(), project.getPath()));
         }
-        String jdkVersion =
-                jdkExtension.get().jdkFor(os).jdkFor(arch).getJdkVersion().get();
+        Optional<String> jdkVersion = Optional.ofNullable(
+                jdkExtension.get().jdkFor(os).jdkFor(arch).getJdkVersion().getOrNull());
+        if (jdkVersion.isEmpty()) {
+            logger.info("No JDK version configured for javaVersion={} os={} arch={}", javaVersion, os, arch);
+            return Stream.empty();
+        }
         JdkDistributionName jdkDistributionName =
                 jdkExtension.get().getDistributionName().get();
         JdkRelease jdkRelease =
-                JdkRelease.builder().arch(arch).os(os).version(jdkVersion).build();
+                JdkRelease.builder().arch(arch).os(os).version(jdkVersion.get()).build();
         JdkSpec jdkSpec = JdkSpec.builder()
                 .distributionName(jdkDistributionName)
                 .release(jdkRelease)
                 .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
                 .build();
         JdkDistributionConfig jdkDistribution = project.getObjects().newInstance(JdkDistributionConfig.class);
-        jdkDistribution.getDistributionName().set(jdkDistributionName.uiName());
         jdkDistribution.getConsistentHash().set(jdkSpec.consistentShortHash());
-        jdkDistribution.getVersion().set(jdkVersion);
         jdkDistribution.getArch().set(arch);
         jdkDistribution.getOs().set(os);
-        return jdkDistribution;
+        JdkPath jdkPath = jdkDistributions.get(jdkDistributionName).path(jdkRelease);
+        jdkDistribution
+                .getDownloadUrl()
+                .set(String.format(
+                        "%s/%s.%s",
+                        jdkDistributions.get(jdkDistributionName).defaultBaseUrl(),
+                        jdkPath.filename(),
+                        jdkPath.extension()));
+        jdkDistribution
+                .getLocalPath()
+                .set(String.format(
+                        "%s-%s-%s",
+                        jdkDistributionName,
+                        jdkVersion.get(),
+                        jdkDistribution.getConsistentHash().get()));
+        return Stream.of(jdkDistribution);
     }
 }

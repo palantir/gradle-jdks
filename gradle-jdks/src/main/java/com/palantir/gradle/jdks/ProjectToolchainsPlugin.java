@@ -36,6 +36,7 @@ public final class ProjectToolchainsPlugin extends JdkDistributionConfigurator i
             return;
         }
 
+        JdkDistributions jdkDistributions = new JdkDistributions();
         JdksExtension jdksExtension = project.getRootProject().getExtensions().getByType(JdksExtension.class);
 
         project.getPluginManager().apply(BaselineJavaVersion.class);
@@ -47,6 +48,7 @@ public final class ProjectToolchainsPlugin extends JdkDistributionConfigurator i
                 .configureEach(task -> task.getJavaVersionToJdkDistros()
                         .putAll(project.provider(() -> getJavaVersionToJdkDistros(
                                 project,
+                                jdkDistributions,
                                 List.of(
                                         projectVersions.target().map(ChosenJavaVersion::javaLanguageVersion),
                                         projectVersions.runtime().map(ChosenJavaVersion::javaLanguageVersion)),

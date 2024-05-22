@@ -22,12 +22,12 @@ import java.nio.file.Path
 
 abstract class GradleJdkIntegrationTest extends IntegrationSpec {
 
-    static String GRADLE_7VERSION = "7.6.2"
+    static String GRADLE_7VERSION = "7.6.4"
     static String GRADLE_8VERSION = "8.5"
 
     abstract Path workingDir();
 
-    def setupJdks() {
+    def setupJdksHardodedVersions() {
         // language=groovy
         buildFile << """
             buildscript {
@@ -67,6 +67,33 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
         """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
     }
 
+    def setupJdksLatest() {
+        // language=groovy
+        buildFile << """
+            buildscript {
+                repositories {
+                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+                }
+                // we need to inject the classpath of the plugin under test manually. The tests call the `./gradlew` 
+                // command directly in the tests (so not using the nebula-test workflow).
+                dependencies {
+                    classpath files(FILES)
+                    classpath 'com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.14.0'
+                }
+            }
+            
+            apply plugin: 'java'
+            apply plugin: 'com.palantir.jdks'
+            apply plugin: 'com.palantir.jdks.latest'
+            apply plugin: 'com.palantir.jdks.palantir-ca'
+            
+            jdks {
+               daemonTarget = '11'
+            }
+        """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
+    }
+
     String upgradeGradleWrapper() {
         return runGradlewTasks("getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace")
     }
@@ -74,7 +101,6 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     String runGradlewTasks(String... tasks) {
         ProcessBuilder processBuilder = getProcessBuilder(tasks)
         Process process = processBuilder.start()
-        //assert process.waitFor() == 0
         return CommandRunner.readAllInput(process.getInputStream())
     }
 
