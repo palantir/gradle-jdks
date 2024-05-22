@@ -83,7 +83,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         upToDateCheck.contains(':checkGradleJdkConfigs UP-TO-DATE')
 
         when:
-        Files.delete(projectDir.toPath().resolve("gradle/jdks/17/macos/x86/download-url"))
+        Files.delete(projectDir.toPath().resolve(String.format("gradle/jdks/17/%s/%s/download-url", CurrentOs.get().uiName(), CurrentArch.get().uiName())))
         def notUpToDateGenerate = runGradlewTasks('generateGradleJdkConfigs')
 
         then:

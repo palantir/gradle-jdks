@@ -102,7 +102,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         wrapperResult1.contains(String.format("Successfully installed JDK distribution in %s", expectedLocalPath))
         String expectedJdkLog = "JVM:          11.0.14.1 (Azul Systems, Inc. 11.0.14.1+1-LTS)"
         wrapperResult1.contains(expectedJdkLog)
-        wrapperResult1.contains("Gradle 7.6.2")
+        wrapperResult1.contains("Gradle 7.6.4")
         wrapperResult1.contains("Gradle java home is " + expectedLocalPath)
         file('gradle/wrapper/gradle-wrapper.properties').text.contains("gradle-8.4-bin.zip")
         wrapperResult2.contains(String.format("already exists in %s", expectedLocalPath))
