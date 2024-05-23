@@ -59,10 +59,7 @@ public final class CommandRunner {
                         String.join(" ", commandArguments), exitCode, errorOutput, output));
             }
             return output;
-        } catch (IOException e) {
-            throw new RuntimeException(
-                    String.format("Failed to run command '%s'. ", String.join(" ", commandArguments)), e);
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             throw new RuntimeException(
                     String.format("Failed to run command '%s'. ", String.join(" ", commandArguments)), e);
         } catch (ExecutionException e) {

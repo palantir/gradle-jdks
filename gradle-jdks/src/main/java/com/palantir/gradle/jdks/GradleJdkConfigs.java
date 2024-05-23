@@ -31,6 +31,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
@@ -55,7 +56,7 @@ public abstract class GradleJdkConfigs {
     private static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
     private static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     private static final String GRADLE_DAEMON_JDK_VERSION = "gradle-daemon-jdk-version";
-    private static final ExceptionWithSuggestion REGENERATE_FILES_ERROR = new ExceptionWithSuggestion(
+    private static final Supplier<ExceptionWithSuggestion> REGENERATE_FILES_ERROR = () -> new ExceptionWithSuggestion(
             "Gradle JDK configuration is out of date, please run `./gradlew generateGradleJdkConfigs` to update the"
                     + " JDKs",
             "./gradlew generateGradleJdkConfigs");

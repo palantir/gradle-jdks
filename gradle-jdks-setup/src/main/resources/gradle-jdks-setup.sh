@@ -121,9 +121,6 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
-if [ ! -f "$APP_GRADLE_DIR"/gradle-daemon-jdk-version ]; then
-  die "ERROR: $APP_GRADLE_DIR/gradle-daemon-jdk-version not found, please run `./gradlew generateGradleJdkConfigs` to generate it."
-fi
 for dir in "$APP_GRADLE_DIR"/jdks/*/; do
   major_version_dir=${dir%*/}
   certs_directory="$APP_GRADLE_DIR"/certs
@@ -141,23 +138,28 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
     cd "$in_progress_dir"
     if command -v curl > /dev/null 2>&1; then
       echo "Using curl to download $distribution_url"
-      #
-      if echo "$distribution_url" | grep -q ".zip"; then
-        distribution_name=${distribution_url##*/}
-        curl -C - "$distribution_url" -o "$distribution_name"
-        tar -xzf "$distribution_name"
-      else
-        curl -C - "$distribution_url" | tar -xzf -
-      fi
+      case "$distribution_url" in
+        *.zip)
+          distribution_name=${distribution_url##*/}
+          curl -C - "$distribution_url" -o "$distribution_name"
+          tar -xzf "$distribution_name"
+          ;;
+        *)
+          curl -C - "$distribution_url" | tar -xzf -
+          ;;
+      esac
     elif command -v wget > /dev/null 2>&1; then
       echo "Using wget to download $distribution_url"
-      if echo "$distribution_url" | grep -q ".zip"; then
-        distribution_name=${distribution_url##*/}
-        wget -c "$distribution_url" -O "$distribution_name"
-        tar -xzf "$distribution_name"
-      else
-        wget -qO- -c "$distribution_url" | tar -xzf -
-      fi
+      case "$distribution_url" in
+        *.zip)
+          distribution_name=${distribution_url##*/}
+          wget -c "$distribution_url" -O "$distribution_name"
+          tar -xzf "$distribution_name"
+          ;;
+        *)
+          wget -qO- -c "$distribution_url" | tar -xzf -
+          ;;
+      esac
     else
       # TODO(crogoz): fallback to java if it exists
       die "ERROR: Neither curl nor wget are installed, Could not set up JAVA_HOME"

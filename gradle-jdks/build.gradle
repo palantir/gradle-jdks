@@ -73,8 +73,7 @@ tasks.test {
 }
 
 tasks.withType(ProcessResources.class).configureEach {
-    dependsOn ':gradle-jdks-setup:fatJar'
-    from("${project(':gradle-jdks-setup').projectDir}/build/libs/gradle-jdks-setup-all-${project.version}.jar") {
+    from(project(':gradle-jdks-setup').tasks.named('fatJar')) {
         rename { 'gradle-jdks-setup.jar' }
     }
 }

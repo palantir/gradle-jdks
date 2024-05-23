@@ -280,7 +280,7 @@ public final class CaResources {
             X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
             return cert.getSerialNumber().toString();
         } catch (CertificateException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(String.format("Could not get serial number for certificate %s", certContent), e);
         }
     }
 }

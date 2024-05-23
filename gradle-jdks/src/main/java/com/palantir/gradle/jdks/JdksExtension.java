@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
 import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.utils.lazilyconfiguredmapping.LazilyConfiguredMapping;
 import groovy.lang.Closure;
@@ -61,7 +60,7 @@ public abstract class JdksExtension {
 
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
-        daemonTarget.finalizeValueOnRead();
+        this.getDaemonTarget().finalizeValueOnRead();
     }
 
     public final Property<JavaLanguageVersion> getDaemonTarget() {
@@ -69,7 +68,11 @@ public abstract class JdksExtension {
     }
 
     public final void setDaemonTarget(String value) {
-        daemonTarget.set(ChosenJavaVersion.fromString(value).javaLanguageVersion());
+        getDaemonTarget().set(JavaLanguageVersion.of(value));
+    }
+
+    public final void setDaemonTarget(int value) {
+        getDaemonTarget().set(JavaLanguageVersion.of(value));
     }
 
     public final MapProperty<String, String> getCaCerts() {

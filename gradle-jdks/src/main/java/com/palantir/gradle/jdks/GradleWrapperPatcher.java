@@ -29,6 +29,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
@@ -49,9 +50,10 @@ public abstract class GradleWrapperPatcher {
     private static final String GRADLEW_PATCH = "gradlew-patch.sh";
     private static final String COMMENT_BLOCK = "###";
     private static final String SHEBANG = "#!";
-    private static final ExceptionWithSuggestion REGENERATE_WRAPPER_PATCHER = new ExceptionWithSuggestion(
-            "Gradle Wrapper files are out of date, please run `./gradlew wrapperJdkPatcher` to update the JDKs",
-            "./gradlew wrapperJdkPatcher");
+    private static final Supplier<ExceptionWithSuggestion> REGENERATE_WRAPPER_PATCHER =
+            () -> new ExceptionWithSuggestion(
+                    "Gradle Wrapper files are out of date, please run `./gradlew wrapperJdkPatcher` to update the JDKs",
+                    "./gradlew wrapperJdkPatcher");
 
     // DO NOT CHANGE the header and the footer, they are used to identify the patch block
     private static final String GRADLEW_PATCH_HEADER = "# >>> Gradle JDK setup >>>";

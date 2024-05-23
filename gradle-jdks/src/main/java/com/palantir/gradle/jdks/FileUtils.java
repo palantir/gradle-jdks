@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import java.io.File;
 import java.io.IOException;
@@ -26,38 +25,38 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
+import java.util.Optional;
+import java.util.function.Supplier;
 import org.gradle.api.file.Directory;
 
 public final class FileUtils {
 
-    public static void checkFilesAreTheSame(
-            File originalPath, File outputPath, ExceptionWithSuggestion exceptionIfFailed) {
-        try {
-            byte[] originalBytes = Files.readAllBytes(originalPath.toPath());
-            byte[] outputBytes = Files.readAllBytes(outputPath.toPath());
-            if (!Arrays.equals(originalBytes, outputBytes)) {
-                throw exceptionIfFailed;
-            }
-        } catch (IOException e) {
-            throw exceptionIfFailed;
-        }
+    public static void checkFilesAreTheSame(File originalPath, File outputPath) {
+        checkFilesAreTheSame(originalPath, outputPath, Optional.empty());
     }
 
-    @VisibleForTesting
-    static void checkFilesAreTheSame(File originalPath, File outputPath) {
+    public static void checkFilesAreTheSame(
+            File originalPath, File outputPath, Supplier<ExceptionWithSuggestion> exceptionIfFailed) {
+        checkFilesAreTheSame(originalPath, outputPath, Optional.of(exceptionIfFailed));
+    }
+
+    public static void checkFilesAreTheSame(
+            File originalPath, File outputPath, Optional<Supplier<ExceptionWithSuggestion>> exceptionIfFailed) {
         try {
             byte[] originalBytes = Files.readAllBytes(originalPath.toPath());
             byte[] outputBytes = Files.readAllBytes(outputPath.toPath());
             if (!Arrays.equals(originalBytes, outputBytes)) {
-                throw new RuntimeException("Files are not the same");
+                throw exceptionIfFailed
+                        .orElseThrow(() -> new RuntimeException("Files are not the same"))
+                        .get();
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw exceptionIfFailed.map(Supplier::get).orElseThrow(() -> new RuntimeException(e));
         }
     }
 
     public static void checkDirectoriesAreTheSame(
-            Directory dir1, Directory dir2, ExceptionWithSuggestion exceptionIfFailed) {
+            Directory dir1, Directory dir2, Supplier<ExceptionWithSuggestion> exceptionIfFailed) {
         try {
             Files.walkFileTree(dir1.getAsFile().toPath(), new SimpleFileVisitor<>() {
                 @Override
@@ -68,13 +67,13 @@ public final class FileUtils {
                     byte[] otherBytes = Files.readAllBytes(fileInOther);
                     byte[] theseBytes = Files.readAllBytes(file);
                     if (!Arrays.equals(otherBytes, theseBytes)) {
-                        throw exceptionIfFailed;
+                        throw exceptionIfFailed.get();
                     }
                     return result;
                 }
             });
         } catch (IOException e) {
-            throw exceptionIfFailed;
+            throw exceptionIfFailed.get();
         }
     }
 
