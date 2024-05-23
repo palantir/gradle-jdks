@@ -65,36 +65,58 @@ public final class ToolchainsPlugin extends JdkDistributionConfigurator implemen
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().getBuildDirectory().dir("gradleConfigs"));
                 });
-        rootProject
-                .getTasks()
-                .named(LifecycleBasePlugin.CHECK_TASK_NAME)
-                .configure(check -> check.dependsOn(checkGradleJdkConfigs));
 
         TaskProvider<Wrapper> wrapperTask = rootProject.getTasks().named("wrapper", Wrapper.class);
         TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
                 .getTasks()
                 .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
-                    task.getOriginalGradlewScript().set(wrapperTask.map(Wrapper::getScriptFile));
-                    // TODO(crogoz): changeMe + below
+                    configureWrapperJdkPatcher(task, wrapperTask, generateGradleJdkConfigs);
                     task.getPatchedGradlewScript()
                             .set(rootProject.file(
                                     rootProject.getRootDir().toPath().resolve("gradlew")));
-                    task.getOriginalGradleWrapperJar().set(wrapperTask.map(Wrapper::getJarFile));
                     task.getPatchedGradleWrapperJar()
                             .set(rootProject.file(
                                     rootProject.getRootDir().toPath().resolve("gradle/wrapper/gradle-wrapper.jar")));
-                    task.getBuildDir().set(task.getTemporaryDir());
-                    task.getGradleJdksSetupJar()
-                            .set(generateGradleJdkConfigs
-                                    .map(GradleJdkConfigsTask::getOutputGradleDirectory)
-                                    .flatMap(dirProp -> dirProp.getAsFile().map(file -> file.toPath()
-                                            .resolve("gradle-jdks-setup.jar")
-                                            .toFile())));
+                    task.getGenerate().set(true);
                 });
+        TaskProvider<GradleWrapperPatcherTask> checkWrapperPatcher = rootProject
+                .getTasks()
+                .register("checkWrapperPatcher", GradleWrapperPatcherTask.class, task -> {
+                    configureWrapperJdkPatcher(task, wrapperTask, generateGradleJdkConfigs);
+                    task.getPatchedGradlewScript()
+                            .set(rootProject.getLayout().getBuildDirectory().file("checkWrapperPatcher/gradlew"));
+                    task.getPatchedGradleWrapperJar()
+                            .set(rootProject
+                                    .getLayout()
+                                    .getBuildDirectory()
+                                    .file("checkWrapperPatcher/gradle-wrapper.jar"));
+                    task.getGenerate().set(false);
+                });
+
+        rootProject
+                .getTasks()
+                .named(LifecycleBasePlugin.CHECK_TASK_NAME)
+                .configure(check -> check.dependsOn(checkGradleJdkConfigs, checkWrapperPatcher));
+
         wrapperTask.configure(task -> task.finalizedBy(wrapperPatcherTask));
         rootProject.allprojects(proj -> proj.getPluginManager().withPlugin("java", unused -> {
             proj.getPluginManager().apply(ProjectToolchainsPlugin.class);
         }));
+    }
+
+    private static void configureWrapperJdkPatcher(
+            GradleWrapperPatcherTask task,
+            TaskProvider<Wrapper> wrapperTask,
+            TaskProvider<GradleJdkConfigsTask> generateGradleJdkConfigs) {
+        task.getOriginalGradlewScript().set(wrapperTask.map(Wrapper::getScriptFile));
+        task.getOriginalGradleWrapperJar().set(wrapperTask.map(Wrapper::getJarFile));
+        task.getBuildDir().set(task.getTemporaryDir());
+        task.getGradleJdksSetupJar()
+                .set(generateGradleJdkConfigs
+                        .map(GradleJdkConfigsTask::getOutputGradleDirectory)
+                        .flatMap(dirProp -> dirProp.getAsFile().map(file -> file.toPath()
+                                .resolve("gradle-jdks-setup.jar")
+                                .toFile())));
     }
 
     private static void configureGenerateJdkConfigs(

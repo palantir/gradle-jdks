@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
+import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +36,7 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
@@ -47,6 +49,9 @@ public abstract class GradleWrapperPatcher {
     private static final String GRADLEW_PATCH = "gradlew-patch.sh";
     private static final String COMMENT_BLOCK = "###";
     private static final String SHEBANG = "#!";
+    private static final ExceptionWithSuggestion REGENERATE_WRAPPER_PATCHER = new ExceptionWithSuggestion(
+            "Gradle Wrapper files are out of date, please run `./gradlew wrapperJdkPatcher` to update the JDKs",
+            "./gradlew wrapperJdkPatcher");
 
     // DO NOT CHANGE the header and the footer, they are used to identify the patch block
     private static final String GRADLEW_PATCH_HEADER = "# >>> Gradle JDK setup >>>";
@@ -64,6 +69,9 @@ public abstract class GradleWrapperPatcher {
         @Optional
         Property<File> getGradleJdksSetupJar();
 
+        @Input
+        Property<Boolean> getGenerate();
+
         @OutputFile
         RegularFileProperty getPatchedGradlewScript();
 
@@ -77,19 +85,31 @@ public abstract class GradleWrapperPatcher {
     public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {
 
         public GradleWrapperPatcherTask() {
+            getGenerate().convention(false);
             onlyIf(t -> getGradleJdksSetupJar().map(File::exists).getOrElse(false));
         }
     }
 
     static void action(Params params) {
-
-        log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
+        if (params.getGenerate().get()) {
+            log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
+        }
         patchGradlewContent(params.getOriginalGradlewScript(), params.getPatchedGradlewScript());
         patchGradlewJar(
                 params.getBuildDir().get().getAsFile().toPath(),
                 params.getOriginalGradleWrapperJar(),
                 params.getPatchedGradleWrapperJar(),
                 params.getGradleJdksSetupJar());
+        if (!params.getGenerate().get()) {
+            FileUtils.checkFilesAreTheSame(
+                    params.getPatchedGradlewScript().get().getAsFile(),
+                    params.getOriginalGradlewScript().get(),
+                    REGENERATE_WRAPPER_PATCHER);
+            FileUtils.checkFilesAreTheSame(
+                    params.getPatchedGradleWrapperJar().get().getAsFile(),
+                    params.getOriginalGradleWrapperJar().get(),
+                    REGENERATE_WRAPPER_PATCHER);
+        }
     }
 
     private static void patchGradlewContent(

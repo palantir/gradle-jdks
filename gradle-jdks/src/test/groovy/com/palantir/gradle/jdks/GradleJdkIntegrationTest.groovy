@@ -27,7 +27,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
 
     abstract Path workingDir();
 
-    def setupJdksHardodedVersions() {
+    def setupJdksHardcodedVersions() {
         // language=groovy
         buildFile << """
             buildscript {

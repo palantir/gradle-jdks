@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import com.palantir.gradle.jdks.setup.CaResources;
@@ -26,13 +25,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,7 +48,6 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 public abstract class GradleJdkConfigs {
 
     private static final Logger log = Logging.getLogger(GradleJdkConfigs.class);
-    private static final String TASK_NAME = "generateGradleJdkConfigs";
     private static final String JDKS_DIR = "jdks";
     private static final String CERTS_DIR = "certs";
     private static final String DOWNLOAD_URL = "download-url";
@@ -61,6 +55,10 @@ public abstract class GradleJdkConfigs {
     private static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
     private static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     private static final String GRADLE_DAEMON_JDK_VERSION = "gradle-daemon-jdk-version";
+    private static final ExceptionWithSuggestion REGENERATE_FILES_ERROR = new ExceptionWithSuggestion(
+            "Gradle JDK configuration is out of date, please run `./gradlew generateGradleJdkConfigs` to update the"
+                    + " JDKs",
+            "./gradlew generateGradleJdkConfigs");
 
     interface JdkDistributionConfig {
 
@@ -132,10 +130,11 @@ public abstract class GradleJdkConfigs {
         addCerts(params.getOutputGradleDirectory().get(), params.getCaCerts().get());
 
         if (!params.getGenerate().get()) {
-            checkDirectoriesAreTheSame(
+            FileUtils.checkDirectoriesAreTheSame(
                     params.getOutputGradleDirectory().dir(JDKS_DIR).get(),
-                    params.getGradleDirectory().dir(JDKS_DIR).get());
-            checkFilesAreTheSame(
+                    params.getGradleDirectory().dir(JDKS_DIR).get(),
+                    REGENERATE_FILES_ERROR);
+            FileUtils.checkFilesAreTheSame(
                     params.getGradleDirectory()
                             .file(GRADLE_JDKS_SETUP_JAR)
                             .get()
@@ -143,8 +142,9 @@ public abstract class GradleJdkConfigs {
                     params.getOutputGradleDirectory()
                             .file(GRADLE_JDKS_SETUP_JAR)
                             .get()
-                            .getAsFile());
-            checkFilesAreTheSame(
+                            .getAsFile(),
+                    REGENERATE_FILES_ERROR);
+            FileUtils.checkFilesAreTheSame(
                     params.getGradleDirectory()
                             .file(GRADLE_JDKS_SETUP_SCRIPT)
                             .get()
@@ -152,9 +152,8 @@ public abstract class GradleJdkConfigs {
                     params.getOutputGradleDirectory()
                             .file(GRADLE_JDKS_SETUP_SCRIPT)
                             .get()
-                            .getAsFile());
-            // TODO(crogoz): check that we already patched ./gradlew & gradle-jars
-
+                            .getAsFile(),
+                    REGENERATE_FILES_ERROR);
         }
     }
 
@@ -204,46 +203,6 @@ public abstract class GradleJdkConfigs {
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    @VisibleForTesting
-    static void checkFilesAreTheSame(File originalPath, File outputPath) {
-        try {
-            byte[] originalBytes = Files.readAllBytes(originalPath.toPath());
-            byte[] outputBytes = Files.readAllBytes(outputPath.toPath());
-            if (!Arrays.equals(originalBytes, outputBytes)) {
-                throw new ExceptionWithSuggestion(
-                        String.format("The gradle file %s is out of date", outputPath),
-                        String.format("./gradlew %s", TASK_NAME));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void checkDirectoriesAreTheSame(Directory dir1, Directory dir2) {
-        try {
-            Files.walkFileTree(dir1.getAsFile().toPath(), new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    FileVisitResult result = super.visitFile(file, attrs);
-                    Path relativize = dir1.getAsFile().toPath().relativize(file);
-                    Path fileInOther = dir2.getAsFile().toPath().resolve(relativize);
-                    byte[] otherBytes = Files.readAllBytes(fileInOther);
-                    byte[] theseBytes = Files.readAllBytes(file);
-                    if (!Arrays.equals(otherBytes, theseBytes)) {
-                        throw new ExceptionWithSuggestion(
-                                "The gradle configuration files in `gradle/jdks` are out of date",
-                                String.format("./gradlew %s", TASK_NAME));
-                    }
-                    return result;
-                }
-            });
-        } catch (IOException e) {
-            throw new ExceptionWithSuggestion(
-                    "The gradle configuration files in `gradle/jdks` are out of date",
-                    String.format("./gradlew %s", TASK_NAME));
         }
     }
 

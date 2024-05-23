@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks
 
+
 import com.palantir.gradle.jdks.setup.AliasContentCert
 import com.palantir.gradle.jdks.setup.CaResources
 import com.palantir.gradle.jdks.setup.StdLogger
@@ -31,7 +32,6 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
     Path workingDir
 
     def '#gradleVersionNumber: checks the generation of the latest jdk configs'() {
-        when:
         setupJdksLatest()
 
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
@@ -44,6 +44,8 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
                 runtime = '17'
             }
         '''.stripIndent(true)
+
+        when:
         runTasksSuccessfully("wrapper", '--info')
         runTasksSuccessfully("wrapper", '--info')
 
@@ -61,7 +63,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         Path jarInProject = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar");
         Path originalJar = Path.of("build/resources/main/gradle-jdks-setup.jar");
         Files.exists(jarInProject)
-        GradleJdkConfigs.checkFilesAreTheSame(jarInProject.toFile(), originalJar.toFile())
+        FileUtils.checkFilesAreTheSame(jarInProject.toFile(), originalJar.toFile())
         Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
         Files.exists(scriptPath)
         Files.isExecutable(scriptPath)
@@ -75,18 +77,20 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         }
 
         when:
-        def secondCheck = runGradlewTasks('check')
-        def upToDateCheck = runGradlewTasks('check')
+        def secondCheck = runGradlewTasks('check', '--info')
+        def upToDateCheck = runGradlewTasks('check', '--info')
 
         then:
         !secondCheck.contains(':checkGradleJdkConfigs UP-TO-DATE')
         upToDateCheck.contains(':checkGradleJdkConfigs UP-TO-DATE')
 
         when:
-        Files.delete(projectDir.toPath().resolve(String.format("gradle/jdks/17/%s/%s/download-url", CurrentOs.get().uiName(), CurrentArch.get().uiName())))
-        def notUpToDateGenerate = runGradlewTasks('generateGradleJdkConfigs')
+        Files.write(projectDir.toPath().resolve(String.format("gradle/jdks/17/%s/%s/local-path", CurrentOs.get().uiName(), CurrentArch.get().uiName())), "some_path".getBytes())
+        def checkGradleJdkConfigs = runGradlewTasks('check', '--info')
+        def notUpToDateGenerate = runGradlewTasks('generateGradleJdkConfigs', '--info')
 
         then:
+        checkGradleJdkConfigs.contains("Gradle JDK configuration is out of date")
         !notUpToDateGenerate.contains(':generateGradleJdkConfigs UP-TO-DATE')
 
         where:
@@ -94,8 +98,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
     }
 
     def '#gradleVersionNumber: checks the generation of hardcoded jdk configs with subprojects'() {
-        when:
-        setupJdksHardodedVersions()
+        setupJdksHardcodedVersions()
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
         gradleVersion = gradleVersionNumber
 
@@ -115,6 +118,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         '''.stripIndent(true)
         writeHelloWorld(subprojectLib)
 
+        when:
         runTasks("wrapper")
         runTasks("wrapper")
 
@@ -136,7 +140,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
         when:
-        setupJdksHardodedVersions()
+        setupJdksHardcodedVersions()
 
         gradleVersion = gradleVersionNumber
 
