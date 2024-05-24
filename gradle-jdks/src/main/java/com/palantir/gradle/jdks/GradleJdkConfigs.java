@@ -31,7 +31,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
@@ -50,16 +49,8 @@ public abstract class GradleJdkConfigs {
 
     private static final Logger log = Logging.getLogger(GradleJdkConfigs.class);
     private static final String JDKS_DIR = "jdks";
-    private static final String CERTS_DIR = "certs";
-    private static final String DOWNLOAD_URL = "download-url";
-    private static final String LOCAL_PATH = "local-path";
     private static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
     private static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
-    private static final String GRADLE_DAEMON_JDK_VERSION = "gradle-daemon-jdk-version";
-    private static final Supplier<ExceptionWithSuggestion> REGENERATE_FILES_ERROR = () -> new ExceptionWithSuggestion(
-            "Gradle JDK configuration is out of date, please run `./gradlew generateGradleJdkConfigs` to update the"
-                    + " JDKs",
-            "./gradlew generateGradleJdkConfigs");
 
     interface JdkDistributionConfig {
 
@@ -117,7 +108,7 @@ public abstract class GradleJdkConfigs {
         try {
             writeToFile(
                     params.getOutputGradleDirectory()
-                            .file(GRADLE_DAEMON_JDK_VERSION)
+                            .file("gradle-daemon-jdk-version")
                             .get()
                             .getAsFile()
                             .toPath(),
@@ -134,7 +125,10 @@ public abstract class GradleJdkConfigs {
             FileUtils.checkDirectoriesAreTheSame(
                     params.getOutputGradleDirectory().dir(JDKS_DIR).get(),
                     params.getGradleDirectory().dir(JDKS_DIR).get(),
-                    REGENERATE_FILES_ERROR);
+                    () -> new ExceptionWithSuggestion(
+                            "Gradle JDK configuration directory is out of date, please run `./gradlew"
+                                    + " generateGradleJdkConfigs` to update the JDKs",
+                            "./gradlew generateGradleJdkConfigs"));
             FileUtils.checkFilesAreTheSame(
                     params.getGradleDirectory()
                             .file(GRADLE_JDKS_SETUP_JAR)
@@ -144,7 +138,10 @@ public abstract class GradleJdkConfigs {
                             .file(GRADLE_JDKS_SETUP_JAR)
                             .get()
                             .getAsFile(),
-                    REGENERATE_FILES_ERROR);
+                    () -> new ExceptionWithSuggestion(
+                            "Gradle JDK setup jar is out of date, please run `./gradlew"
+                                    + " generateGradleJdkConfigs` to update the JDKs",
+                            "./gradlew generateGradleJdkConfigs"));
             FileUtils.checkFilesAreTheSame(
                     params.getGradleDirectory()
                             .file(GRADLE_JDKS_SETUP_SCRIPT)
@@ -154,13 +151,16 @@ public abstract class GradleJdkConfigs {
                             .file(GRADLE_JDKS_SETUP_SCRIPT)
                             .get()
                             .getAsFile(),
-                    REGENERATE_FILES_ERROR);
+                    () -> new ExceptionWithSuggestion(
+                            "Gradle JDK setup script is out of date, please run `./gradlew"
+                                    + " generateGradleJdkConfigs` to update the JDKs",
+                            "./gradlew generateGradleJdkConfigs"));
         }
     }
 
     private static void addCerts(Directory gradleDirectory, Map<String, String> caCerts) {
         try {
-            File certsDir = gradleDirectory.file(CERTS_DIR).getAsFile();
+            File certsDir = gradleDirectory.file("certs").getAsFile();
             Files.createDirectories(certsDir.toPath());
             caCerts.forEach((alias, content) -> {
                 try {
@@ -218,9 +218,9 @@ public abstract class GradleJdkConfigs {
                     .resolve(jdkDistribution.getOs().get().uiName())
                     .resolve(jdkDistribution.getArch().get().uiName());
             Files.createDirectories(outputDir);
-            Path downloadUrlPath = outputDir.resolve(DOWNLOAD_URL);
+            Path downloadUrlPath = outputDir.resolve("download-url");
             writeToFile(downloadUrlPath, jdkDistribution.getDownloadUrl().get());
-            Path localPath = outputDir.resolve(LOCAL_PATH);
+            Path localPath = outputDir.resolve("local-path");
             writeToFile(localPath, jdkDistribution.getLocalPath().get());
         } catch (IOException e) {
             throw new RuntimeException(e);

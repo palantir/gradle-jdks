@@ -101,5 +101,9 @@ public final class OriginalGradleWrapperMainCreator {
                 .toString();
     }
 
+    public static Path getGradleWrapperClassPath(Path buildDir) {
+        return buildDir.resolve(OLD_CLASS_NAME.replace('.', '/') + ".class").toAbsolutePath();
+    }
+
     private OriginalGradleWrapperMainCreator() {}
 }

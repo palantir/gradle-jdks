@@ -20,6 +20,7 @@ package com.palantir.gradle.jdks
 import com.palantir.gradle.jdks.setup.AliasContentCert
 import com.palantir.gradle.jdks.setup.CaResources
 import com.palantir.gradle.jdks.setup.StdLogger
+import nebula.test.functional.ExecutionResult
 import spock.lang.TempDir
 
 import java.nio.file.Files
@@ -47,7 +48,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
         when:
         runTasksSuccessfully("wrapper", '--info')
-        runTasksSuccessfully("wrapper", '--info')
+        ExecutionResult result = runTasksSuccessfully("wrapper", '--info')
 
         then:
         for (String majorVersion : Stream.of("11", "17", "21")) {
@@ -77,11 +78,9 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         }
 
         when:
-        def secondCheck = runGradlewTasks('check', '--info')
         def upToDateCheck = runGradlewTasks('check', '--info')
 
         then:
-        !secondCheck.contains(':checkGradleJdkConfigs UP-TO-DATE')
         upToDateCheck.contains(':checkGradleJdkConfigs UP-TO-DATE')
 
         when:
@@ -90,7 +89,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         def notUpToDateGenerate = runGradlewTasks('generateGradleJdkConfigs', '--info')
 
         then:
-        checkGradleJdkConfigs.contains("Gradle JDK configuration is out of date")
+        checkGradleJdkConfigs.contains("Gradle JDK configuration directory is out of date")
         !notUpToDateGenerate.contains(':generateGradleJdkConfigs UP-TO-DATE')
 
         where:

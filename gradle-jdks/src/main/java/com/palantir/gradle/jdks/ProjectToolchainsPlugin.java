@@ -26,7 +26,7 @@ import org.gradle.api.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ProjectToolchainsPlugin extends JdkDistributionConfigurator implements Plugin<Project> {
+public final class ProjectToolchainsPlugin implements Plugin<Project> {
 
     private static final Logger log = LoggerFactory.getLogger(ProjectToolchainsPlugin.class);
 
@@ -46,7 +46,7 @@ public final class ProjectToolchainsPlugin extends JdkDistributionConfigurator i
                 .getTasks()
                 .withType(GradleJdkConfigsTask.class)
                 .configureEach(task -> task.getJavaVersionToJdkDistros()
-                        .putAll(project.provider(() -> getJavaVersionToJdkDistros(
+                        .putAll(project.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
                                 project,
                                 jdkDistributions,
                                 List.of(

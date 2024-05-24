@@ -29,7 +29,7 @@ import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.Provider;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
-public abstract class JdkDistributionConfigurator {
+public final class JdkDistributionConfigurator {
 
     private static Logger logger = Logging.getLogger(JdkDistributionConfigurator.class);
 
@@ -111,4 +111,6 @@ public abstract class JdkDistributionConfigurator {
                         jdkDistribution.getConsistentHash().get()));
         return Stream.of(jdkDistribution);
     }
+
+    private JdkDistributionConfigurator() {}
 }

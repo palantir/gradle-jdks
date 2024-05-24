@@ -26,7 +26,7 @@ import java.nio.file.Path
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
+class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
 
     @TempDir
     Path workingDir
