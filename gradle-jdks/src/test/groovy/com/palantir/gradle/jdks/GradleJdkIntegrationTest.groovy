@@ -16,6 +16,8 @@
 
 package com.palantir.gradle.jdks
 
+import com.palantir.gradle.jdks.setup.CaResources
+import com.palantir.gradle.jdks.setup.StdLogger
 import nebula.test.IntegrationSpec
 
 import java.nio.file.Path
@@ -124,5 +126,39 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
         }
         String classpath = properties.getProperty('implementation-classpath')
         return classpath.split(File.pathSeparator).collect { "'" + it + "'" }
+    }
+
+    private static final int BYTECODE_IDENTIFIER = (int) 0xCAFEBABE
+
+    // See http://illegalargumentexception.blogspot.com/2009/07/java-finding-class-versions.html
+    static void assertBytecodeVersion(File file, int expectedMajorBytecodeVersion,
+                                      int expectedMinorBytecodeVersion) {
+        try (InputStream stream = new FileInputStream(file)
+             DataInputStream dis = new DataInputStream(stream)) {
+            int magic = dis.readInt()
+            if (magic != BYTECODE_IDENTIFIER) {
+                throw new IllegalArgumentException("File " + file + " does not appear to be java bytecode")
+            }
+            int minorBytecodeVersion = dis.readUnsignedShort()
+            int majorBytecodeVersion = dis.readUnsignedShort()
+
+            assert majorBytecodeVersion == expectedMajorBytecodeVersion
+            assert minorBytecodeVersion == expectedMinorBytecodeVersion
+        }
+    }
+
+    static String getHashForDistribution(JdkDistributionName jdkDistributionName, String jdkVersion) {
+        Map<String, String> certs = new CaResources(new StdLogger()).readPalantirRootCaFromSystemTruststore()
+                .map(cert -> Map.of(cert.getAlias(), cert.getContent())).orElseGet(Map::of)
+        return JdkSpec.builder()
+                .release(JdkRelease.builder()
+                        .arch(CurrentArch.get())
+                        .os(CurrentOs.get())
+                        .version(jdkVersion)
+                        .build())
+                .distributionName(jdkDistributionName)
+                .caCerts(CaCerts.from(certs))
+                .build()
+                .consistentShortHash()
     }
 }
