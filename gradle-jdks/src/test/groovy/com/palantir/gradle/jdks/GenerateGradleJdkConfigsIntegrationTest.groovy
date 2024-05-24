@@ -16,15 +16,14 @@
 
 package com.palantir.gradle.jdks
 
-
 import com.palantir.gradle.jdks.setup.AliasContentCert
 import com.palantir.gradle.jdks.setup.CaResources
 import com.palantir.gradle.jdks.setup.StdLogger
-import nebula.test.functional.ExecutionResult
 import spock.lang.TempDir
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.stream.Collectors
 import java.util.stream.Stream
 
 class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
@@ -32,13 +31,15 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
     @TempDir
     Path workingDir
 
-    def '#gradleVersionNumber: checks the generation of the latest jdk configs'() {
+    def '#gradleVersionNumber: generates the latest jdk configs set up by baseline-java-versions'() {
         setupJdksLatest()
 
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
         gradleVersion = gradleVersionNumber
 
         buildFile << '''
+            apply plugin: 'com.palantir.baseline-java-versions'
+            
             javaVersions {
                 libraryTarget = '11'
                 distributionTarget = '17'
@@ -48,7 +49,6 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
         when:
         runTasksSuccessfully("wrapper", '--info')
-        ExecutionResult result = runTasksSuccessfully("wrapper", '--info')
 
         then:
         for (String majorVersion : Stream.of("11", "17", "21")) {
@@ -96,6 +96,22 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
     }
 
+    def '#gradleVersionNumber: generates all the latest jdk configs'() {
+        setupJdksLatest()
+
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        gradleVersion = gradleVersionNumber
+
+        when:
+        runTasksSuccessfully("wrapper", '--info')
+
+        then:
+        assert Files.list(projectDir.toPath().resolve(String.format("gradle/jdks"))).filter(Files::isDirectory).map(path -> path.getFileName().toString()).collect(Collectors.toSet()) == Set.of("8", "11", "17", "21")
+
+        where:
+        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
+    }
+
     def '#gradleVersionNumber: checks the generation of hardcoded jdk configs with subprojects'() {
         setupJdksHardcodedVersions()
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
@@ -119,7 +135,6 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
         when:
         runTasks("wrapper")
-        runTasks("wrapper")
 
         then:
         for (String majorVersion : Stream.of("11", "21")) {
@@ -138,7 +153,6 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
 
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
-        when:
         setupJdksHardcodedVersions()
 
         gradleVersion = gradleVersionNumber
@@ -149,8 +163,9 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
                 runtime = '15'
             }
         '''.stripIndent(true)
-        runTasks("wrapper")
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+
+        when:
         def result = runTasksWithFailure("wrapper")
 
         then:
