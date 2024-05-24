@@ -78,10 +78,10 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         }
 
         when:
-        def upToDateCheck = runGradlewTasks('check', '--info')
+        def checkResult = runGradlewTasks('check', '--info')
 
         then:
-        upToDateCheck.contains(':checkGradleJdkConfigs UP-TO-DATE')
+        !checkResult.contains(':checkGradleJdkConfigs UP-TO-DATE')
 
         when:
         Files.write(projectDir.toPath().resolve(String.format("gradle/jdks/17/%s/%s/local-path", CurrentOs.get().uiName(), CurrentArch.get().uiName())), "new-path\n".getBytes())
