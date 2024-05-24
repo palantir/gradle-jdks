@@ -17,10 +17,10 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
-import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
 import com.palantir.gradle.jdks.GradleJdkConfigs.GradleJdkConfigsTask;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
-import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskProvider;
@@ -42,16 +42,26 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         JdkDistributions jdkDistributions = new JdkDistributions();
 
         JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
-        BaselineJavaVersionsExtension baselineJavaVersionsExtension =
-                rootProject.getExtensions().getByType(BaselineJavaVersionsExtension.class);
+        rootProject.getPluginManager().withPlugin("com.palantir.baseline-java-versions", unused -> {
+            BaselineJavaVersionsExtension baselineJavaVersionsExtension =
+                    rootProject.getExtensions().getByType(BaselineJavaVersionsExtension.class);
 
-        baselineJavaVersionsExtension.getSetupJdkToolchains().set(false);
+            baselineJavaVersionsExtension.getSetupJdkToolchains().set(false);
+            jdksExtension.getJdksInUse().set(rootProject.provider(() -> Stream.of(
+                            baselineJavaVersionsExtension.libraryTarget().get(),
+                            jdksExtension.getDaemonTarget().get(),
+                            baselineJavaVersionsExtension
+                                    .distributionTarget()
+                                    .get()
+                                    .javaLanguageVersion(),
+                            baselineJavaVersionsExtension.runtime().get().javaLanguageVersion())
+                    .collect(Collectors.toSet())));
+        });
 
         TaskProvider<GradleJdkConfigsTask> generateGradleJdkConfigs = rootProject
                 .getTasks()
                 .register("generateGradleJdkConfigs", GradleJdkConfigsTask.class, task -> {
-                    configureGenerateJdkConfigs(
-                            task, rootProject, baselineJavaVersionsExtension, jdksExtension, jdkDistributions);
+                    configureGenerateJdkConfigs(task, rootProject, jdksExtension, jdkDistributions);
                     task.getGenerate().set(true);
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().dir(rootProject.provider(() -> rootProject.file("gradle"))));
@@ -59,8 +69,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         TaskProvider<GradleJdkConfigsTask> checkGradleJdkConfigs = rootProject
                 .getTasks()
                 .register("checkGradleJdkConfigs", GradleJdkConfigsTask.class, task -> {
-                    configureGenerateJdkConfigs(
-                            task, rootProject, baselineJavaVersionsExtension, jdksExtension, jdkDistributions);
+                    configureGenerateJdkConfigs(task, rootProject, jdksExtension, jdkDistributions);
                     task.getGenerate().set(false);
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().getBuildDirectory().dir("gradleConfigs"));
@@ -130,7 +139,6 @@ public final class ToolchainsPlugin implements Plugin<Project> {
     private static void configureGenerateJdkConfigs(
             GradleJdkConfigsTask task,
             Project rootProject,
-            BaselineJavaVersionsExtension baselineJavaVersionsExtension,
             JdksExtension jdksExtension,
             JdkDistributions jdkDistributions) {
         task.getGradleDirectory()
@@ -140,13 +148,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                 .putAll(rootProject.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
                         rootProject,
                         jdkDistributions,
-                        List.of(
-                                baselineJavaVersionsExtension.libraryTarget(),
-                                jdksExtension.getDaemonTarget(),
-                                baselineJavaVersionsExtension
-                                        .distributionTarget()
-                                        .map(ChosenJavaVersion::javaLanguageVersion),
-                                baselineJavaVersionsExtension.runtime().map(ChosenJavaVersion::javaLanguageVersion)),
+                        jdksExtension.getJdksInUse().get(),
                         jdksExtension)));
         task.getCaCerts().putAll(jdksExtension.getCaCerts());
     }

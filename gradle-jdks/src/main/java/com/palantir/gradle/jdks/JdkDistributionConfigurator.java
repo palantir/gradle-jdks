@@ -21,12 +21,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.api.provider.Provider;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public final class JdkDistributionConfigurator {
@@ -36,11 +36,9 @@ public final class JdkDistributionConfigurator {
     public static Map<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros(
             Project project,
             JdkDistributions jdkDistributions,
-            List<Provider<JavaLanguageVersion>> javaVersions,
+            Set<JavaLanguageVersion> javaVersions,
             JdksExtension jdksExtension) {
         return javaVersions.stream()
-                .map(Provider::get)
-                .distinct()
                 .collect(Collectors.toMap(
                         javaVersion -> javaVersion,
                         javaVersion ->

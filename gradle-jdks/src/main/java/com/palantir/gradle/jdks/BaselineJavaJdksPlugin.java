@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.baseline.plugins.javaversions.BaselineJavaVersions;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import java.util.Optional;
 import org.gradle.api.Plugin;
@@ -32,6 +33,8 @@ public final class BaselineJavaJdksPlugin implements Plugin<Project> {
         if (JdksPlugin.getEnableGradleJdkProperty(rootProject)) {
             throw new RuntimeException("Cannot apply BaselineJavaJdksPlugin with gradle.jdk.setup.enabled");
         }
+        rootProject.getPluginManager().apply(BaselineJavaVersions.class);
+
         JdkDistributions jdkDistributions = new JdkDistributions();
 
         JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);

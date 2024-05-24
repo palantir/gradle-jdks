@@ -16,11 +16,9 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.baseline.plugins.javaversions.BaselineJavaVersion;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionExtension;
-import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
-import com.palantir.gradle.jdks.GradleJdkConfigs.GradleJdkConfigsTask;
-import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.slf4j.Logger;
@@ -36,22 +34,15 @@ public final class ProjectToolchainsPlugin implements Plugin<Project> {
             return;
         }
 
-        JdkDistributions jdkDistributions = new JdkDistributions();
         JdksExtension jdksExtension = project.getRootProject().getExtensions().getByType(JdksExtension.class);
 
-        project.getPluginManager().apply(BaselineJavaVersion.class);
-        BaselineJavaVersionExtension projectVersions =
-                project.getExtensions().getByType(BaselineJavaVersionExtension.class);
-        project.getRootProject()
-                .getTasks()
-                .withType(GradleJdkConfigsTask.class)
-                .configureEach(task -> task.getJavaVersionToJdkDistros()
-                        .putAll(project.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
-                                project,
-                                jdkDistributions,
-                                List.of(
-                                        projectVersions.target().map(ChosenJavaVersion::javaLanguageVersion),
-                                        projectVersions.runtime().map(ChosenJavaVersion::javaLanguageVersion)),
-                                jdksExtension))));
+        project.getPluginManager().withPlugin("com.palantir.baseline-java-version", unused -> {
+            BaselineJavaVersionExtension projectVersions =
+                    project.getExtensions().getByType(BaselineJavaVersionExtension.class);
+            jdksExtension.getJdksInUse().addAll(project.provider(() -> Stream.of(
+                            projectVersions.target().get().javaLanguageVersion(),
+                            projectVersions.runtime().get().javaLanguageVersion())
+                    .collect(Collectors.toSet())));
+        });
     }
 }

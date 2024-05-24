@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.baseline.plugins.javaversions.BaselineJavaVersions;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Optional;
@@ -35,7 +34,6 @@ public final class JdksPlugin implements Plugin<Project> {
         if (rootProject.getRootProject() != rootProject) {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
-        rootProject.getPluginManager().apply(BaselineJavaVersions.class);
 
         if (getEnableGradleJdkProperty(rootProject)) {
             rootProject.getPluginManager().apply(ToolchainsPlugin.class);

@@ -44,6 +44,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
             
             apply plugin: 'java'
             apply plugin: 'com.palantir.jdks'
+            apply plugin: 'com.palantir.baseline-java-versions'
             apply plugin: 'com.palantir.jdks.palantir-ca'
             
             jdks {
