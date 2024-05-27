@@ -81,7 +81,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         firstWrapperRun.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
 
         when:
-        String output = runGradlewTasks("javaToolchains", "compileJava", "--info")
+        String output = runGradlewTasksSuccessfully("javaToolchains", "compileJava", "--info")
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
 
         then:
@@ -106,7 +106,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
 
         when:
-        String runOutput = runGradlewTasks("run", "--info")
+        String runOutput = runGradlewTasksSuccessfully("run", "--info")
 
         then:
         runOutput.contains("--enable-preview")

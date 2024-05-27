@@ -98,13 +98,15 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     }
 
     String upgradeGradleWrapper() {
-        return runGradlewTasks("getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace")
+        return runGradlewTasksSuccessfully("getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace")
     }
 
-    String runGradlewTasks(String... tasks) {
+    String runGradlewTasksSuccessfully(String... tasks) {
         ProcessBuilder processBuilder = getProcessBuilder(tasks)
         Process process = processBuilder.start()
-        return CommandRunner.readAllInput(process.getInputStream())
+        String output = CommandRunner.readAllInput(process.getInputStream())
+        assert output.contains("BUILD SUCCESSFUL")
+        return output
     }
 
     ProcessBuilder getProcessBuilder(String... tasks) {

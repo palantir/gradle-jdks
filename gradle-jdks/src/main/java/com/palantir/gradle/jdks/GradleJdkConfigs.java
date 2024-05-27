@@ -49,7 +49,7 @@ public abstract class GradleJdkConfigs {
 
     private static final Logger log = Logging.getLogger(GradleJdkConfigs.class);
     private static final String JDKS_DIR = "jdks";
-    private static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
+    public static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
     private static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
 
     interface JdkDistributionConfig {
