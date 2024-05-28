@@ -70,7 +70,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         }
 
         when:
-        def checkResult = runGradlewTasksSuccessfully('check', '--info')
+        def checkResult = runGradlewTasksSuccessfully('check', '--info', '--stacktrace')
 
         then:
         !checkResult.contains(':checkWrapperPatcher UP-TO-DATE')
@@ -79,13 +79,13 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         when:
         Files.write(projectDir.toPath().resolve(String.format("gradle/jdks/17/%s/%s/local-path", CurrentOs.get().uiName(), CurrentArch.get().uiName())), "new-path\n".getBytes())
 
-        def checkGradleJdkConfigs = runGradlewTasksSuccessfully('check', '--info')
-        //def notUpToDateGenerate = runGradlewTasksSuccessfully('generateGradleJdkConfigs', '--info', '--stacktrace')
+        def checkGradleJdkConfigs = runGradlewTasksWithFailure('check', '--info')
+        def notUpToDateGenerate = runGradlewTasksSuccessfully('generateGradleJdkConfigs', '--info', '--stacktrace')
 
         then:
         !checkGradleJdkConfigs.contains("checkGradleJdkConfigs UP-TO-DATE")
-        checkGradleJdkConfigs.contains("Gradle JDK configuration directory is out of date")
-        //!notUpToDateGenerate.contains(':generateGradleJdkConfigs UP-TO-DATE')
+        checkGradleJdkConfigs.contains("Gradle JDK configurations are out of date, please run")
+        !notUpToDateGenerate.contains(':generateGradleJdkConfigs UP-TO-DATE')
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]

@@ -102,10 +102,21 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     }
 
     String runGradlewTasksSuccessfully(String... tasks) {
+        String output = runGradlewTasks(tasks)
+        assert output.contains("BUILD SUCCESSFUL")
+        return output
+    }
+
+    String runGradlewTasksWithFailure(String... tasks) {
+        String output = runGradlewTasks(tasks)
+        assert output.contains("BUILD FAILED")
+        return output
+    }
+
+    private String runGradlewTasks(String... tasks) {
         ProcessBuilder processBuilder = getProcessBuilder(tasks)
         Process process = processBuilder.start()
         String output = CommandRunner.readAllInput(process.getInputStream())
-        assert output.contains("BUILD SUCCESSFUL")
         return output
     }
 

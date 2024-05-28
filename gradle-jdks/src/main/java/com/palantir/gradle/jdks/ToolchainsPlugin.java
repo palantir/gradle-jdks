@@ -17,7 +17,8 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
-import com.palantir.gradle.jdks.GradleJdkConfigs.GradleJdkConfigsTask;
+import com.palantir.gradle.jdks.CheckGradleJdkConfigs.CheckGradleJdkConfigsTask;
+import com.palantir.gradle.jdks.GenerateGradleJdkConfigs.GenerateGradleJdkConfigsTask;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,29 +64,41 @@ public final class ToolchainsPlugin implements Plugin<Project> {
 
         TaskProvider<Wrapper> wrapperTask = rootProject.getTasks().named("wrapper", Wrapper.class);
 
-        TaskProvider<GradleJdkConfigsTask> generateGradleJdkConfigs = rootProject
+        TaskProvider<GenerateGradleJdkConfigsTask> generateGradleJdkConfigs = rootProject
                 .getTasks()
-                .register("generateGradleJdkConfigs", GradleJdkConfigsTask.class, task -> {
-                    configureGenerateJdkConfigs(task, rootProject, jdksExtension, jdkDistributions);
-                    task.getGradleDirectory()
-                            .set(rootProject.getLayout().getProjectDirectory().dir("gradle"));
-                    task.getGenerate().set(true);
+                .register("generateGradleJdkConfigs", GenerateGradleJdkConfigsTask.class, task -> {
+                    task.getDaemonJavaVersion().set(jdksExtension.getDaemonTarget());
+                    task.getJavaVersionToJdkDistros()
+                            .putAll(rootProject.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
+                                    rootProject,
+                                    jdkDistributions,
+                                    jdksExtension.getJdksInUse().get(),
+                                    jdksExtension)));
+                    task.getCaCerts().putAll(jdksExtension.getCaCerts());
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().dir(rootProject.provider(() -> rootProject.file("gradle"))));
                     task.dependsOn(wrapperTask);
                 });
-        TaskProvider<GradleJdkConfigsTask> checkGradleJdkConfigs = rootProject
+        TaskProvider<CheckGradleJdkConfigsTask> checkGradleJdkConfigs = rootProject
                 .getTasks()
-                .register("checkGradleJdkConfigs", GradleJdkConfigsTask.class, task -> {
-                    configureGenerateJdkConfigs(task, rootProject, jdksExtension, jdkDistributions);
-                    task.getGradleDirectory().fileProvider(rootProject.provider(() -> generateGradleJdkConfigs
+                .register("checkGradleJdkConfigs", CheckGradleJdkConfigsTask.class, task -> {
+                    task.getDaemonJavaVersion().set(rootProject.provider(() -> generateGradleJdkConfigs
+                            .get()
+                            .getDaemonJavaVersion()
+                            .get()));
+                    task.getJavaVersionToJdkDistros().putAll(rootProject.provider(() -> generateGradleJdkConfigs
+                            .get()
+                            .getJavaVersionToJdkDistros()
+                            .get()));
+                    task.getCaCerts()
+                            .putAll(rootProject.provider(() ->
+                                    generateGradleJdkConfigs.get().getCaCerts().get()));
+                    task.getInputGradleDirectory().set(rootProject.provider(() -> generateGradleJdkConfigs
                             .get()
                             .getOutputGradleDirectory()
-                            .getAsFile()
                             .get()));
-                    task.getGenerate().set(false);
-                    task.getOutputGradleDirectory()
-                            .set(rootProject.getLayout().getBuildDirectory().dir("gradleConfigs"));
+                    task.getDummyOutputFile()
+                            .set(rootProject.getLayout().getBuildDirectory().file("checkGradleJdkConfigs"));
                 });
 
         TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
@@ -96,7 +109,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     task.getBuildDir().set(task.getTemporaryDir());
                     task.getGradleJdksSetupJar()
                             .fileProvider(generateGradleJdkConfigs
-                                    .map(GradleJdkConfigsTask::getOutputGradleDirectory)
+                                    .map(GenerateGradleJdkConfigsTask::getOutputGradleDirectory)
                                     .flatMap(dirProp -> dirProp.getAsFile().map(file -> file.toPath()
                                             .resolve("gradle-jdks-setup.jar")
                                             .toFile())));
@@ -125,12 +138,12 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                             .getAsFile()
                             .get()));
                     task.getBuildDir().set(task.getTemporaryDir());
-                    task.getGradleJdksSetupJar()
-                            .fileProvider(checkGradleJdkConfigs
-                                    .flatMap(GradleJdkConfigsTask::getGradleDirectory)
-                                    .map(gradleDir -> gradleDir
-                                            .file(GradleJdkConfigs.GRADLE_JDKS_SETUP_JAR)
-                                            .getAsFile()));
+                    task.getGradleJdksSetupJar().fileProvider(rootProject.provider(() -> generateGradleJdkConfigs
+                            .get()
+                            .getOutputGradleDirectory()
+                            .file(GradleJdkConfigResources.GRADLE_JDKS_SETUP_JAR)
+                            .get()
+                            .getAsFile()));
                     task.getPatchedGradlewScript()
                             .set(rootProject.getLayout().getBuildDirectory().file("checkWrapperPatcher/gradlew"));
                     task.getPatchedGradleWrapperJar()
@@ -155,20 +168,5 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         rootProject.allprojects(proj -> proj.getPluginManager().withPlugin("java", unused -> {
             proj.getPluginManager().apply(ProjectToolchainsPlugin.class);
         }));
-    }
-
-    private static void configureGenerateJdkConfigs(
-            GradleJdkConfigsTask task,
-            Project rootProject,
-            JdksExtension jdksExtension,
-            JdkDistributions jdkDistributions) {
-        task.getDaemonJavaVersion().set(jdksExtension.getDaemonTarget());
-        task.getJavaVersionToJdkDistros()
-                .putAll(rootProject.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
-                        rootProject,
-                        jdkDistributions,
-                        jdksExtension.getJdksInUse().get(),
-                        jdksExtension)));
-        task.getCaCerts().putAll(jdksExtension.getCaCerts());
     }
 }

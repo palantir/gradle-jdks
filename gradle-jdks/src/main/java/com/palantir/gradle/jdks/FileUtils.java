@@ -19,25 +19,15 @@ package com.palantir.gradle.jdks;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.gradle.api.file.Directory;
 
 public final class FileUtils {
 
     public static void checkFilesAreTheSame(File originalPath, File outputPath) {
         checkFilesAreTheSame(originalPath, outputPath, Optional.empty());
-    }
-
-    public static void checkFilesAreTheSame(
-            File originalPath, File outputPath, Supplier<ExceptionWithSuggestion> exceptionIfFailed) {
-        checkFilesAreTheSame(originalPath, outputPath, Optional.of(exceptionIfFailed));
     }
 
     public static void checkFilesAreTheSame(
@@ -52,28 +42,6 @@ public final class FileUtils {
             }
         } catch (IOException e) {
             throw exceptionIfFailed.map(Supplier::get).orElseThrow(() -> new RuntimeException(e));
-        }
-    }
-
-    public static void checkDirectoriesAreTheSame(
-            Directory dir1, Directory dir2, Supplier<ExceptionWithSuggestion> exceptionIfFailed) {
-        try {
-            Files.walkFileTree(dir1.getAsFile().toPath(), new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    FileVisitResult result = super.visitFile(file, attrs);
-                    Path relativize = dir1.getAsFile().toPath().relativize(file);
-                    Path fileInOther = dir2.getAsFile().toPath().resolve(relativize);
-                    byte[] otherBytes = Files.readAllBytes(fileInOther);
-                    byte[] theseBytes = Files.readAllBytes(file);
-                    if (!Arrays.equals(otherBytes, theseBytes)) {
-                        throw exceptionIfFailed.get();
-                    }
-                    return result;
-                }
-            });
-        } catch (IOException e) {
-            throw exceptionIfFailed.get();
         }
     }
 

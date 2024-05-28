@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.jdks.GradleJdkConfigs.JdkDistributionConfig;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +75,7 @@ public final class JdkDistributionConfigurator {
         Optional<String> jdkVersion = Optional.ofNullable(
                 jdkExtension.get().jdkFor(os).jdkFor(arch).getJdkVersion().getOrNull());
         if (jdkVersion.isEmpty()) {
-            logger.info("No JDK version configured for javaVersion={} os={} arch={}", javaVersion, os, arch);
+            logger.debug("No JDK version configured for javaVersion={} os={} arch={}.", javaVersion, os, arch);
             return Stream.empty();
         }
         JdkDistributionName jdkDistributionName =

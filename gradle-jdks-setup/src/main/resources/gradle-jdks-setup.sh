@@ -84,7 +84,7 @@ read_value() {
   if [ ! -f "$1" ]; then
     die "ERROR: $1 not found, aborting Gradle JDK setup"
   fi
-  read -r value < "$1"
+  read -r value < "$1" || die "ERROR: Unable to read value from $1. Make sure it ends with a newline."
   echo "$value"
 }
 
@@ -176,6 +176,7 @@ done
 
 rm -rf "$tmp_work_dir"
 
+# TODO(crogoz): what happens if gradle-daemon-jdk-version doesn't exist or the jdk for that version doesn't exist ?
 gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
 gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)
 export JAVA_HOME="$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"
