@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.base.Preconditions;
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import java.io.File;
@@ -192,11 +193,10 @@ public abstract class GradleWrapperPatcher {
     private static List<String> getPatchedLines(File gradlewFile) {
         List<String> initialLines = readAllLines(gradlewFile.toPath());
         Optional<Pair<Integer, Integer>> startEndPatch = getPatchLineNumbers(initialLines);
-        if (startEndPatch.isEmpty()) {
-            return List.of();
-        }
-        return initialLines.subList(
-                startEndPatch.get().getLeft(), startEndPatch.get().getRight() + 1);
+        return startEndPatch
+                .map(integerIntegerPair ->
+                        initialLines.subList(integerIntegerPair.getLeft(), integerIntegerPair.getRight() + 1))
+                .orElseGet(List::of);
     }
 
     private static Optional<Pair<Integer, Integer>> getPatchLineNumbers(List<String> content) {
@@ -260,6 +260,7 @@ public abstract class GradleWrapperPatcher {
     private static List<String> getGradlewPatch() {
         try (InputStream inputStream =
                 GradleWrapperPatcher.class.getClassLoader().getResourceAsStream(GRADLEW_PATCH)) {
+            Preconditions.checkArgument(inputStream != null);
             return IOUtils.readLines(inputStream, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException("Unable to read the gradlew patch file", e);
