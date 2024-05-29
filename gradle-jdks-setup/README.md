@@ -98,14 +98,13 @@ jdks {
 ```
 gradle.jdk.setup.enabled=true
 ```
-5. Upgrade the following commands to configure the Gradle entry point to use the JDK setup:
+5. Run the following to configure the Gradle entry points to use the JDK setup:
 ```bash
-./gradlew wrapper # updates the ./gradlew script to use the JDK setup
-./gradlew wrapper # updates the gradle/gradle-wrapper.jar to use the JDK setup
+./gradlew wrapper 
 ```
 The commands above will run the tasks: 
 - `wrapperJdkPatcher` which updates the entryPoints (`./gradlew` and `gradle/gradle-wrapper.jar`) to use the JDK setup
-- `generateGradleJdkConfigs` which generates in the project's `gradle/` a list of files and directories that configure JDK versions and distributions, the certs and the `gradle-daemon-jdk-version`. See more about the generated structure of the directories [here](todo). These files will need to be committed to the git repo.
+- `generateGradleJdkConfigs` which generates in the project's `gradle/` a list of files and directories that configure the JDK versions and distributions, the certs and `gradle-daemon-jdk-version`. See more about the generated structure of the directories [here](todo). These files will need to be committed to the git repo.
 
 
 ### Gradle JDK Configuration directory structure

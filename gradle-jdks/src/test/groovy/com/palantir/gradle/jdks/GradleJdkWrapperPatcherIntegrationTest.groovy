@@ -32,6 +32,7 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
     def setup() {
 
         setupJdksHardcodedVersions()
+        applyBaselineJavaVersions()
 
         // language=groovy
         buildFile << """

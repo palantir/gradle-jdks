@@ -29,6 +29,23 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
 
     abstract Path workingDir();
 
+    def applyApplicationPlugin() {
+        buildFile << """
+            apply plugin: 'application'
+            
+            application {
+                mainClass = 'Main'
+            }
+        """.stripIndent(true)
+    }
+
+    def applyBaselineJavaVersions() {
+        // language=groovy
+        buildFile << """
+            apply plugin: 'com.palantir.baseline-java-versions'
+        """.stripIndent(true)
+    }
+
     def setupJdksHardcodedVersions() {
         // language=groovy
         buildFile << """
@@ -46,7 +63,6 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
             
             apply plugin: 'java'
             apply plugin: 'com.palantir.jdks'
-            apply plugin: 'com.palantir.baseline-java-versions'
             apply plugin: 'com.palantir.jdks.palantir-ca'
             
             jdks {

@@ -110,6 +110,8 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
     def '#gradleVersionNumber: checks the generation of hardcoded jdk configs with subprojects'() {
         setupJdksHardcodedVersions()
+        applyBaselineJavaVersions()
+
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
         gradleVersion = gradleVersionNumber
 
@@ -142,6 +144,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
         setupJdksHardcodedVersions()
+        applyBaselineJavaVersions()
 
         gradleVersion = gradleVersionNumber
 

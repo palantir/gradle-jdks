@@ -61,7 +61,7 @@ public abstract class GradleJdkConfigs extends DefaultTask {
     public abstract void applyCertAction(File certFile, String alias, String content);
 
     @TaskAction
-    public void action() {
+    public final void action() {
         getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
             jdkDistros.forEach(jdkDistribution -> {
                 Path outputDir = gradleDirectory()

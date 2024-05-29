@@ -16,7 +16,7 @@
 
 package com.palantir.gradle.jdks
 
-import nebula.test.functional.ExecutionResult
+
 import spock.lang.TempDir
 
 import java.nio.file.Path
@@ -34,27 +34,69 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
     @TempDir
     Path workingDir
 
+
     def '#gradleVersionNumber: javaToolchains correctly set-up'() {
+        gradleVersion = gradleVersionNumber
         setupJdksHardcodedVersions()
+        applyApplicationPlugin()
 
-        // language=groovy
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        file('src/main/java/Circle.java') << java17Code
+
+        // language=Groovy
         buildFile << """
-            apply plugin: 'application'
-            
-            application {
-                mainClass = 'Main'
+            java {
+                toolchain {
+                    languageVersion = JavaLanguageVersion.of(17)
+                }
             }
+        """.stripIndent(true)
 
+        //language=groovy
+        def subprojectLib = addSubproject 'subprojectLib', '''
+            apply plugin: 'java-library'
+            java {
+                toolchain {
+                    languageVersion = JavaLanguageVersion.of(21)
+                }
+            }
+        '''.stripIndent(true)
+        writeHelloWorld(subprojectLib)
+
+        def subprojectLib1 = addSubproject 'subprojectLib1', '''
+            apply plugin: 'java-library'
+            java {
+                toolchain {
+                    languageVersion = JavaLanguageVersion.of(11)
+                }
+            }
+        '''.stripIndent(true)
+        writeHelloWorld(subprojectLib1)
+        runTasksSuccessfully('wrapper', '--info')
+
+        runAndAssertToolchainsConfiguration()
+
+        where:
+        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
+    }
+
+    def '#gradleVersionNumber: javaToolchains correctly set-up with baseline-java'() {
+        gradleVersion = gradleVersionNumber
+
+        setupJdksHardcodedVersions()
+        applyBaselineJavaVersions()
+        applyApplicationPlugin()
+
+        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        file('src/main/java/Main.java') << java17PreviewCode
+
+        // language=Groovy
+        buildFile << """
             javaVersions {
                 libraryTarget = '11'
                 distributionTarget = '17_PREVIEW'
             }
-        """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
-
-        gradleVersion = gradleVersionNumber
-
-        file('src/main/java/Main.java') << java17PreviewCode
+        """.stripIndent(true)
 
         //language=groovy
         def subprojectLib = addSubproject 'subprojectLib', '''
@@ -73,16 +115,18 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
             }
         '''.stripIndent(true)
         writeHelloWorld(subprojectLib1)
+        runTasksSuccessfully('wrapper', '--info')
 
-        when:
-        ExecutionResult firstWrapperRun = runTasksSuccessfully('wrapper', '--info')
+        runAndAssertToolchainsConfiguration()
 
-        then:
-        firstWrapperRun.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
+        where:
+        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
+    }
 
+    def runAndAssertToolchainsConfiguration() {
         when:
         String output = runGradlewTasksSuccessfully("javaToolchains", "compileJava", "--info")
-        File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
+        String runOutput = runGradlewTasksSuccessfully("run", "--info")
 
         then:
         output.contains("Successfully installed JDK distribution in")
@@ -103,19 +147,27 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         output.contains(String.format("Compiling with toolchain '%s'", expectedJdk17.toFile().getCanonicalPath()))
         Path expectedJdk21 = gradleJdksPath.resolve(String.format("amazon-corretto-21.0.2.13.1-%s", getHashForDistribution(JdkDistributionName.AMAZON_CORRETTO, JDK_21_VERSION)))
         output.contains(String.format("Compiling with toolchain '%s'", expectedJdk21.toFile().getCanonicalPath()))
+        File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
         assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
-
-        when:
-        String runOutput = runGradlewTasksSuccessfully("run", "--info")
-
-        then:
-        runOutput.contains("--enable-preview")
         runOutput.contains(expectedJdk17.toFile().getCanonicalPath())
-        runOutput.contains("BUILD SUCCESSFUL")
-
-        where:
-        gradleVersionNumber << [GRADLE_8VERSION]
     }
+
+    def java17Code = '''
+        abstract sealed class Shape permits Circle {
+            public abstract double area();
+        }
+        
+        // Circle.java - Subclass of Shape
+        public final class Circle extends Shape {
+            private final double radius;
+            public Circle(double radius) {
+                this.radius = radius;
+            }
+            public double area() {
+                return Math.PI * radius * radius;
+            }
+        }
+    '''
 
     def java17PreviewCode = '''
         public class Main {

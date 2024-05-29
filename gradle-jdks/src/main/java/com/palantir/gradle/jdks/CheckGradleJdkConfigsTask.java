@@ -40,24 +40,24 @@ public abstract class CheckGradleJdkConfigsTask extends GradleJdkConfigs {
     public abstract RegularFileProperty getDummyOutputFile();
 
     @Override
-    public Directory gradleDirectory() {
+    public final Directory gradleDirectory() {
         return getInputGradleDirectory().get();
     }
 
     @Override
-    public void applyGradleJdkFileAction(
+    public final void applyGradleJdkFileAction(
             Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistribution) {
         assertFileContent(downloadUrlPath, jdkDistribution.getDownloadUrl().get());
         assertFileContent(localUrlPath, jdkDistribution.getLocalPath().get());
     }
 
     @Override
-    public void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
+    public final void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
         assertFileContent(gradleJdkDaemonVersion, getDaemonJavaVersion().get().toString());
     }
 
     @Override
-    public void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
+    public final void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
         try {
             byte[] expectedBytes = getResourceContent(resourceName);
             byte[] actualBytes = Files.readAllBytes(gradleJdkJarFile.toPath());
@@ -68,13 +68,13 @@ public abstract class CheckGradleJdkConfigsTask extends GradleJdkConfigs {
     }
 
     @Override
-    public void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
+    public final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
         assertFileContent(
                 gradleJdkScriptFile.toPath(), new String(getResourceContent(resourceName), StandardCharsets.UTF_8));
     }
 
     @Override
-    public void applyCertAction(File certFile, String alias, String content) {
+    public final void applyCertAction(File certFile, String alias, String content) {
         assertFileContent(certFile.toPath(), CaResources.getSerialNumber(content));
     }
 

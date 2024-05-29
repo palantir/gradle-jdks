@@ -41,12 +41,12 @@ public abstract class GenerateGradleJdkConfigsTask extends GradleJdkConfigs {
     public abstract DirectoryProperty getOutputGradleDirectory();
 
     @Override
-    public Directory gradleDirectory() {
+    public final Directory gradleDirectory() {
         return getOutputGradleDirectory().get();
     }
 
     @Override
-    public void applyGradleJdkFileAction(
+    public final void applyGradleJdkFileAction(
             Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistribution) {
         try {
             Files.createDirectories(downloadUrlPath.getParent());
@@ -59,7 +59,7 @@ public abstract class GenerateGradleJdkConfigsTask extends GradleJdkConfigs {
     }
 
     @Override
-    public void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
+    public final void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
         try {
             writeConfigurationFile(
                     gradleJdkDaemonVersion, getDaemonJavaVersion().get().toString());
@@ -69,12 +69,12 @@ public abstract class GenerateGradleJdkConfigsTask extends GradleJdkConfigs {
     }
 
     @Override
-    public void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
+    public final void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
         writeResourceStreamToFile(resourceName, gradleJdkJarFile);
     }
 
     @Override
-    public void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
+    public final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
         try {
             writeResourceStreamToFile(resourceName, gradleJdkScriptFile);
             Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(gradleJdkScriptFile.toPath());
@@ -86,7 +86,7 @@ public abstract class GenerateGradleJdkConfigsTask extends GradleJdkConfigs {
     }
 
     @Override
-    public void applyCertAction(File certFile, String alias, String content) {
+    public final void applyCertAction(File certFile, String alias, String content) {
         try {
             Files.createDirectories(certFile.getParentFile().toPath());
             writeConfigurationFile(certFile.toPath(), CaResources.getSerialNumber(content));
