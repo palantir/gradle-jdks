@@ -34,14 +34,13 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
     @TempDir
     Path workingDir
 
-
     def '#gradleVersionNumber: javaToolchains correctly set-up'() {
         gradleVersion = gradleVersionNumber
         setupJdksHardcodedVersions()
         applyApplicationPlugin()
 
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
-        file('src/main/java/Circle.java') << java17Code
+        file('src/main/java/Main.java') << java17Code
 
         // language=Groovy
         buildFile << """
@@ -74,7 +73,15 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         writeHelloWorld(subprojectLib1)
         runTasksSuccessfully('wrapper', '--info')
 
-        runAndAssertToolchainsConfiguration()
+        when:
+        String output = runGradlewTasksSuccessfully("javaToolchains", "compileJava", "--info")
+        String runOutput = runGradlewTasksSuccessfully("run", "--info")
+
+        then:
+        assertToolchainsOutput(output, runOutput)
+        File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
+        assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, 0)
+
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
@@ -117,19 +124,21 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         writeHelloWorld(subprojectLib1)
         runTasksSuccessfully('wrapper', '--info')
 
-        runAndAssertToolchainsConfiguration()
-
-        where:
-        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
-    }
-
-    def runAndAssertToolchainsConfiguration() {
         when:
         String output = runGradlewTasksSuccessfully("javaToolchains", "compileJava", "--info")
         String runOutput = runGradlewTasksSuccessfully("run", "--info")
 
         then:
-        output.contains("Successfully installed JDK distribution in")
+        assertToolchainsOutput(output, runOutput)
+        File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
+        assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
+
+        where:
+        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
+    }
+
+    def assertToolchainsOutput(String output, String runOutput) {
+        output.contains("Successfully installed JDK distribution insad")
         output.contains("Auto-detection:     Disabled")
         output.contains("Auto-download:      Disabled")
         output.contains("JDK 11.0.14.1")
@@ -139,6 +148,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         while (matcher.find()) {
             String detectedByPattern = matcher.group(1)
             detectedByPattern.contains("Gradle property 'org.gradle.java.installations.paths'")
+                    || detectedByPattern.contains("system property 'org.gradle.java.installations.paths'")
         }
         Path gradleJdksPath = workingDir.resolve("gradle-jdks")
         Path expectedJdk11 = gradleJdksPath.resolve(String.format("azul-zulu-11.54.25-11.0.14.1-%s", getHashForDistribution(JdkDistributionName.AZUL_ZULU, JDK_11_VERSION)))
@@ -147,24 +157,18 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         output.contains(String.format("Compiling with toolchain '%s'", expectedJdk17.toFile().getCanonicalPath()))
         Path expectedJdk21 = gradleJdksPath.resolve(String.format("amazon-corretto-21.0.2.13.1-%s", getHashForDistribution(JdkDistributionName.AMAZON_CORRETTO, JDK_21_VERSION)))
         output.contains(String.format("Compiling with toolchain '%s'", expectedJdk21.toFile().getCanonicalPath()))
-        File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
-        assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
+
         runOutput.contains(expectedJdk17.toFile().getCanonicalPath())
     }
 
     def java17Code = '''
-        abstract sealed class Shape permits Circle {
-            public abstract double area();
-        }
-        
-        // Circle.java - Subclass of Shape
-        public final class Circle extends Shape {
-            private final double radius;
-            public Circle(double radius) {
-                this.radius = radius;
+        public class Main {
+            sealed interface MyUnion {
+                record Foo(int number) implements MyUnion {}
             }
-            public double area() {
-                return Math.PI * radius * radius;
+        
+            public static void main(String[] args) {
+                MyUnion myUnion = new MyUnion.Foo(1234);
             }
         }
     '''

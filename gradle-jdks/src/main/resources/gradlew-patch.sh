@@ -1,5 +1,4 @@
 # >>> Gradle JDK setup >>>
-# TODO(crogoz): what if we disable the gradle.jdk.setup.enabled=false?
 # !! Contents within this block are managed by 'palantir/gradle-jdks' !!
 if [ -f gradle/gradle-jdks-setup.sh ]; then
     if ! . gradle/gradle-jdks-setup.sh; then

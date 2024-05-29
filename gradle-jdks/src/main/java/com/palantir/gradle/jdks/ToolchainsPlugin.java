@@ -80,6 +80,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         TaskProvider<CheckGradleJdkConfigsTask> checkGradleJdkConfigs = rootProject
                 .getTasks()
                 .register("checkGradleJdkConfigs", CheckGradleJdkConfigsTask.class, task -> {
+                    // Using providers to avoid implicit dependency on generateGradleJdkConfigs
                     task.getDaemonJavaVersion().set(rootProject.provider(() -> generateGradleJdkConfigs
                             .get()
                             .getDaemonJavaVersion()
@@ -124,7 +125,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         TaskProvider<GradleWrapperPatcherTask> checkWrapperPatcher = rootProject
                 .getTasks()
                 .register("checkWrapperPatcher", GradleWrapperPatcherTask.class, task -> {
-                    // Using provider to avoid an implicit dependency on wrapperPatcherTask
+                    // Using providers to avoid implicit dependency on wrapperPatcherTask and generateGradleJdkConfigs
                     task.getOriginalGradlewScript().fileProvider(rootProject.provider(() -> wrapperPatcherTask
                             .get()
                             .getPatchedGradlewScript()

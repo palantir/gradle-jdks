@@ -161,7 +161,6 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
           ;;
       esac
     else
-      # TODO(crogoz): fallback to java if it exists
       die "ERROR: Neither curl nor wget are installed, Could not set up JAVA_HOME"
     fi
     cd - || exit
@@ -176,7 +175,6 @@ done
 
 rm -rf "$tmp_work_dir"
 
-# TODO(crogoz): what happens if gradle-daemon-jdk-version doesn't exist or the jdk for that version doesn't exist ?
 gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
 gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)
 export JAVA_HOME="$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"
