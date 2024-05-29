@@ -84,7 +84,7 @@ read_value() {
   if [ ! -f "$1" ]; then
     die "ERROR: $1 not found, aborting Gradle JDK setup"
   fi
-  read -r value < "$1" || die "ERROR: Unable to read value from $1. Make sure it ends with a newline."
+  read -r value < "$1" || die "ERROR: Unable to read value from $1. Make sure the file ends with a newline."
   echo "$value"
 }
 

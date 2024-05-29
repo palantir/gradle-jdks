@@ -17,8 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
-import com.palantir.gradle.jdks.CheckGradleJdkConfigs.CheckGradleJdkConfigsTask;
-import com.palantir.gradle.jdks.GenerateGradleJdkConfigs.GenerateGradleJdkConfigsTask;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -111,7 +109,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                             .fileProvider(generateGradleJdkConfigs
                                     .map(GenerateGradleJdkConfigsTask::getOutputGradleDirectory)
                                     .flatMap(dirProp -> dirProp.getAsFile().map(file -> file.toPath()
-                                            .resolve("gradle-jdks-setup.jar")
+                                            .resolve(GradleJdkConfigs.GRADLE_JDKS_SETUP_JAR)
                                             .toFile())));
                     task.getPatchedGradlewScript()
                             .set(rootProject.file(
@@ -141,7 +139,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     task.getGradleJdksSetupJar().fileProvider(rootProject.provider(() -> generateGradleJdkConfigs
                             .get()
                             .getOutputGradleDirectory()
-                            .file(GradleJdkConfigResources.GRADLE_JDKS_SETUP_JAR)
+                            .file(GradleJdkConfigs.GRADLE_JDKS_SETUP_JAR)
                             .get()
                             .getAsFile()));
                     task.getPatchedGradlewScript()

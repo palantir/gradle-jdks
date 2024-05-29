@@ -133,12 +133,9 @@ New JDK distributions are easily added - you just need to:
 4. Write some tests to check the path is being built correctly - [Azul Zulu example](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/test/groovy/com/palantir/gradle/jdks/AzulZuluJdkDistributionTest.java).
 5. Make a PR.
 
-## What does this not do?
-
-1. **Run the Gradle wrapper/daemon with a certain JDK**
-   * This plugin will only run common tasks that require JDKs, like `JavaCompile`, `Test`, `JavaExec`, `GroovyCompile` etc (the aforementioned `com.palantir.baseline-java-versions` does this).
-   * The daemon itself still requires a preinstalled JDK.
-   * In future, we hope to implement this feature, although it is not currently scheduled to be worked on.
+## [Beta Feature] Run the Gradle wrapper/daemon with a certain JDK
+   * More details in [grade-jdks-setup](gradle-jdks-setup/README.md)
+   * Disabled by default for now
 
 ## How can I see what JDK tasks are running with?
 

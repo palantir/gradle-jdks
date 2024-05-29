@@ -77,14 +77,15 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         !checkResult.contains(':checkGradleJdkConfigs UP-TO-DATE')
 
         when:
+        String jdk17Path = String.format("gradle/jdks/17/%s/%s/local-path", CurrentOs.get().uiName(), CurrentArch.get().uiName());
         Files.write(projectDir.toPath().resolve(String.format("gradle/jdks/17/%s/%s/local-path", CurrentOs.get().uiName(), CurrentArch.get().uiName())), "new-path\n".getBytes())
 
         def checkGradleJdkConfigs = runGradlewTasksWithFailure('check', '--info')
-        def notUpToDateGenerate = runGradlewTasksSuccessfully('generateGradleJdkConfigs', '--info', '--stacktrace')
+        def notUpToDateGenerate = runGradlewTasksSuccessfully('generateGradleJdkConfigs', '--info')
 
         then:
         !checkGradleJdkConfigs.contains("checkGradleJdkConfigs UP-TO-DATE")
-        checkGradleJdkConfigs.contains("Gradle JDK configurations are out of date, please run")
+        checkGradleJdkConfigs.contains(String.format("Gradle JDK configuration file `%s` is out of date", jdk17Path))
         !notUpToDateGenerate.contains(':generateGradleJdkConfigs UP-TO-DATE')
 
         where:
