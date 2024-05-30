@@ -129,10 +129,10 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
   # Check if distribution exists in $GRADLE_JDKS_HOME
   jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
   if [ -d "$jdk_installation_directory" ]; then
-    echo "Distribution $distribution_url already exists in $jdk_installation_directory"
+    echo "Distribution '$distribution_url' already exists in '$jdk_installation_directory'"
   else
     # Download and extract the distribution into a temporary directory
-    echo "Distribution $jdk_installation_directory does not exist, installing $distribution_url in progress ..."
+    echo "JDK installation '$jdk_installation_directory' does not exist, installing '$distribution_url' in progress ..."
     in_progress_dir="$tmp_work_dir/$distribution_local_path.in-progress"
     mkdir -p "$in_progress_dir"
     cd "$in_progress_dir"

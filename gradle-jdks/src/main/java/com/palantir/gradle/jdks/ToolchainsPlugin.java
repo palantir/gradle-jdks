@@ -28,7 +28,6 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
 public final class ToolchainsPlugin implements Plugin<Project> {
 
-    private static final String SETUP_JDKS_TASK_NAME = "setupJdks";
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
 
     @Override
@@ -158,7 +157,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                 .named(LifecycleBasePlugin.CHECK_TASK_NAME)
                 .configure(check -> check.dependsOn(checkGradleJdkConfigs, checkWrapperPatcher));
 
-        rootProject.getTasks().register(SETUP_JDKS_TASK_NAME, setupJdksTask -> {
+        rootProject.getTasks().register("setupJdks", setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");
             setupJdksTask.setGroup(GRADLE_JDK_GROUP);
             setupJdksTask.dependsOn(generateGradleJdkConfigs, wrapperPatcherTask);
