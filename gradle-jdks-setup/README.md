@@ -220,16 +220,17 @@ The modifications are as follows:
 
 ## Implementation details
 
-The new workflow is set-up by [JdksPlugin]
+The new workflow is set up by [ToolchainsPlugin](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/ToolchainsPlugin.java) which gets applied if `gradle.jdk.setup.enabled=true`.
+The plugin won't apply anymore the `baseline-java-versions` plugin, allowing for the configuration of the Java Toolchains as described in the [Gradle docs ](https://docs.gradle.org/current/userguide/toolchains.html)
 
-### Tasks
+The tasks registers the following tasks:
 - `wrapperPatcherTask` - finalizes the `wrapper` task, such that everytime the `gradle-wrapper.jar` and/or `./gradlew` files are updated, we will also patch them
 - `checkWrapperPatcher` - checks that the `gradle-wrapper.jar` and the `./gradlew` scripts contain the expected JDKs setup modifications/patches
 - `generateGradleJdkConfigs` - generates the [`gradle/` configurations](#gradle-jdk-configuration-directory-structure) required for running the JDKs setup
-- `checkGradleJdkConfigs` - checks that all the `gradle/` configurations are up-to-date. Eg. if the `jdks-latest` plugin is updated, we need to make sure the `gradle/jdks` files reflect the jdk versions.
+- `checkGradleJdkConfigs` - checks that all the `gradle/` configurations are up-to-date. E.g. if the `jdks-latest` plugin is updated, we need to make sure the `gradle/jdks` files reflect the jdk versions.
 - `setupJdks` - lifecycle task that runs both the `wrapperPatcherTask` and `generateGradleJdkConfigs`
 
 
 ## Unsupported for now
 
-- This workflow is not supported on Windows
+- This workflow is not supported on `Windows` at the moment
