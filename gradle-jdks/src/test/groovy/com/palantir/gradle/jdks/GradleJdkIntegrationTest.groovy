@@ -114,7 +114,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     }
 
     String upgradeGradleWrapper() {
-        return runGradlewTasksSuccessfully("getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V", "--stacktrace")
+        return runGradlewTasksSuccessfully("getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V")
     }
 
     String runGradlewTasksSuccessfully(String... tasks) {

@@ -185,8 +185,7 @@ project-root/
   - contains a list of directories in the format `<jdk_major_version>/<os>/<arch>` that contain 2 files: 
     - `download-url` full url path for the jdk, os and arch. Rendered from `JdksExtension#jdks` configured in step 2
     - `local-path` the local name of the file. Rendered based on the distribution-name, version and the [hash](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdkSpec.java) 
-  - if [`com.palantir.baseline-java-versions` (another gradle plugin - more docs in link)](https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions) is configured, then it only generates the JDK versions configured by the [`javaVersions` & `javaVersion` extensions](https://github.com/palantir/gradle-baseline#compalantirbaseline-java-versions)
-  - otherwise it generates all the JDK versions configured in [JdksExtension](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdksExtension.java)
+  - it generates all the JDK versions configured in [JdksExtension](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdksExtension.java)
 
 
 ## How it works ?
@@ -218,12 +217,12 @@ The modifications are as follows:
   * Sets custom toolchain JDK installation paths [Gradle reference](https://docs.gradle.org/8.5/userguide/toolchains.html#sec:custom_loc)
   * Delegates back to the original `OriginalGradleWrapperMain.main(args)`
 
-## Implementation details
+## ToolchainsPlugin tasks
 
 The new workflow is set up by [ToolchainsPlugin](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/ToolchainsPlugin.java) which gets applied if `gradle.jdk.setup.enabled=true`.
 The plugin won't apply anymore the `baseline-java-versions` plugin, allowing for the configuration of the Java Toolchains as described in the [Gradle docs ](https://docs.gradle.org/current/userguide/toolchains.html)
 
-The tasks registers the following tasks:
+The plugin registers the following tasks:
 - `wrapperPatcherTask` - finalizes the `wrapper` task, such that everytime the `gradle-wrapper.jar` and/or `./gradlew` files are updated, we will also patch them
 - `checkWrapperPatcher` - checks that the `gradle-wrapper.jar` and the `./gradlew` scripts contain the expected JDKs setup modifications/patches
 - `generateGradleJdkConfigs` - generates the [`gradle/` configurations](#gradle-jdk-configuration-directory-structure) required for running the JDKs setup
@@ -231,6 +230,7 @@ The tasks registers the following tasks:
 - `setupJdks` - lifecycle task that runs both the `wrapperPatcherTask` and `generateGradleJdkConfigs`
 
 
-## Unsupported for now
+## Unsupported
 
 - This workflow is not supported on `Windows` at the moment
+- We only support Java language Versions specifications >= 11 (see `gradle-jdks-setup/build.gradle` `javaVersion` specifications).

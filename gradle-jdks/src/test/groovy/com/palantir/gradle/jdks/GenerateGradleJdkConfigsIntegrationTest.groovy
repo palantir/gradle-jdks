@@ -31,15 +31,14 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
     @TempDir
     Path workingDir
 
-    def '#gradleVersionNumber: generates the latest jdk configs set up by baseline-java-versions'() {
+    def '#gradleVersionNumber: generates the latest jdk configs'() {
         setupJdksLatest()
+        applyBaselineJavaVersions()
 
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
         gradleVersion = gradleVersionNumber
 
         buildFile << '''
-            apply plugin: 'com.palantir.baseline-java-versions'
-            
             javaVersions {
                 libraryTarget = '11'
                 distributionTarget = '17'
@@ -51,7 +50,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         runTasksSuccessfully("wrapper", '--info')
 
         then:
-        checkJdksVersions(projectDir, Set.of("11", "17"))
+        checkJdksVersions(projectDir, Set.of("11", "17", "21"))
         Files.exists(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version"))
         Path jarInProject = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar");
         Path originalJar = Path.of("build/resources/main/gradle-jdks-setup.jar");
@@ -70,7 +69,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         }
 
         when:
-        def checkResult = runGradlewTasksSuccessfully('check', '--info', '--stacktrace')
+        def checkResult = runGradlewTasksSuccessfully('check', '--info')
 
         then:
         !checkResult.contains(':checkWrapperPatcher UP-TO-DATE')
@@ -92,56 +91,6 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
     }
 
-    def '#gradleVersionNumber: generates all the latest jdk configs'() {
-        setupJdksLatest()
-
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
-        gradleVersion = gradleVersionNumber
-
-        when:
-        runTasksSuccessfully("wrapper", '--info')
-
-        then:
-        checkJdksVersions(projectDir, Set.of("8", "11", "17", "21"))
-
-        where:
-        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
-    }
-
-    def '#gradleVersionNumber: checks the generation of hardcoded jdk configs with subprojects'() {
-        setupJdksHardcodedVersions()
-        applyBaselineJavaVersions()
-
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
-        gradleVersion = gradleVersionNumber
-
-        buildFile << '''
-            javaVersions {
-                libraryTarget = '11'
-            }
-        '''.stripIndent(true)
-
-        def subprojectLib = addSubproject 'subprojectLib', '''
-            apply plugin: 'java-library'
-            
-            javaVersion {
-                target = 21
-                runtime = 21
-            }
-        '''.stripIndent(true)
-        writeHelloWorld(subprojectLib)
-
-        when:
-        runTasks("wrapper")
-
-        then:
-        checkJdksVersions(projectDir, Set.of("11", "21"))
-
-        where:
-        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
-    }
-
-
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
         setupJdksHardcodedVersions()
         applyBaselineJavaVersions()
@@ -150,17 +99,28 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
 
         buildFile << '''
             javaVersions {
-                libraryTarget = '11'
-                runtime = '15'
+                distributionTarget = '15'
             }
         '''.stripIndent(true)
+        writeHelloWorld(projectDir)
         file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        runTasksSuccessfully("wrapper")
 
         when:
-        def result = runTasksWithFailure("wrapper")
+        def result = runGradlewTasksWithFailure("compileJava")
 
         then:
-        result.standardError.contains("Could not find a JDK with major version 15 in project")
+        switch (gradleVersionNumber) {
+            case GRADLE_7VERSION:
+                result.contains("No compatible toolchains found for request specification: {languageVersion=15, vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false).")
+                break;
+            case GRADLE_8VERSION:
+                result.contains(" No matching toolchains found for requested specification: {languageVersion=15, vendor=any, implementation=vendor-specific}")
+                        && result.contains("No locally installed toolchains match and toolchain auto-provisioning is not enabled.")
+                break;
+            default:
+                throw new RuntimeException(String.format("Unexpected gradleVersionNumber", gradleVersionNumber))
+        }
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]

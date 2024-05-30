@@ -26,7 +26,6 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
@@ -35,8 +34,7 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 public abstract class JdksExtension {
     private final LazilyConfiguredMapping<JdkDistributionName, JdkDistributionExtension, Void> jdkDistributions;
     private final LazilyConfiguredMapping<JavaLanguageVersion, JdkExtension, Project> jdks;
-    private final SetProperty<JavaLanguageVersion> jdksInUse;
-    private final ListProperty<JavaLanguageVersion> configuredJavaVersions;
+    private final SetProperty<JavaLanguageVersion> configuredJavaVersions;
     private final MapProperty<String, String> caCerts;
     private final DirectoryProperty jdkStorageLocation;
     private final Property<JavaLanguageVersion> daemonTarget;
@@ -48,9 +46,7 @@ public abstract class JdksExtension {
         this.jdkDistributions =
                 new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkDistributionExtension.class));
         this.jdks = new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkExtension.class));
-        this.jdksInUse = getObjectFactory().setProperty(JavaLanguageVersion.class);
-        this.configuredJavaVersions = getObjectFactory().listProperty(JavaLanguageVersion.class);
-        this.jdksInUse.convention(project.provider(configuredJavaVersions::get));
+        this.configuredJavaVersions = getObjectFactory().setProperty(JavaLanguageVersion.class);
         // there is an extremely subtle race condition whereby a property can be mid finalization in one
         // worker thread, and being read from another worker thread, and if the finalization happens just
         // as the other thread is already reading, it can cause very infrequent build failure. While
@@ -68,7 +64,7 @@ public abstract class JdksExtension {
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
         this.getDaemonTarget().finalizeValueOnRead();
-        this.getJdksInUse().finalizeValueOnRead();
+        this.getConfiguredJavaVersions().finalizeValueOnRead();
     }
 
     public final Property<JavaLanguageVersion> getDaemonTarget() {
@@ -95,8 +91,8 @@ public abstract class JdksExtension {
         jdks.put(lazyJdks::configureJdkFor);
     }
 
-    public final SetProperty<JavaLanguageVersion> getJdksInUse() {
-        return jdksInUse;
+    public final SetProperty<JavaLanguageVersion> getConfiguredJavaVersions() {
+        return configuredJavaVersions;
     }
 
     public final void jdk(JavaLanguageVersion javaLanguageVersion, Action<JdkExtension> action) {

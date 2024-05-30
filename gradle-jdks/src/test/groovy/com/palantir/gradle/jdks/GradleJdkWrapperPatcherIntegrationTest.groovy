@@ -83,7 +83,7 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
         wrapperResult1.contains("Gradle 7.6.4")
         wrapperResult1.contains("Gradle java home is " + expectedLocalPath)
         file('gradle/wrapper/gradle-wrapper.properties').text.contains("gradle-8.4-bin.zip")
-        wrapperResult2.contains(String.format("already exists in %s", expectedLocalPath))
+        wrapperResult2.contains(String.format("already exists in '%s'", expectedLocalPath))
         wrapperResult2.contains(expectedJdkLog)
         wrapperResult2.contains("Gradle 8.4")
         wrapperResult2.contains("Gradle java home is " + expectedLocalPath)
