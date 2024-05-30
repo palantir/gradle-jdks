@@ -110,10 +110,7 @@ public abstract class GradleWrapperPatcher {
         List<String> originalPatchLines = getGradlewPatch();
         if (!scriptPatchLines.equals(originalPatchLines)) {
             throw new ExceptionWithSuggestion(
-                    String.format(
-                            "Gradle Wrapper script is out of date, please run `./gradlew wrapperJdkPatcher`"
-                                    + " to update the JDKs scriptPatchLines %s originalPatchLines %s",
-                            scriptPatchLines, originalPatchLines),
+                    "Gradle Wrapper script is out of date, please run `./gradlew wrapperJdkPatcher`",
                     "./gradlew wrapperJdkPatcher");
         }
     }

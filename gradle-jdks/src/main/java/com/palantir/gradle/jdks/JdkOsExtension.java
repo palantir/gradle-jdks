@@ -35,7 +35,7 @@ public abstract class JdkOsExtension {
     public JdkOsExtension() {
         for (Arch arch : Arch.values()) {
             JdkOsArchExtension jdkOsArchExtension = getObjectFactory().newInstance(JdkOsArchExtension.class);
-            jdkOsArchExtension.getJdkVersion().convention(getJdkVersion());
+            jdkOsArchExtension.getJdkVersion().set(getJdkVersion());
             jdkOsArchExtensions.put(arch, jdkOsArchExtension);
         }
     }
