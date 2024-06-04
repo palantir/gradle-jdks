@@ -60,11 +60,8 @@ done
 
 APP_BASE_NAME=${0##*/}
 APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
-if [ "${APP_HOME%gradle}" != "$APP_HOME" ]; then
-  APP_GRADLE_DIR="$APP_HOME"
-else
-  APP_GRADLE_DIR="$APP_HOME"/gradle
-fi
+APP_HOME=${APP_HOME%/gradle}
+APP_GRADLE_DIR="$APP_HOME"/gradle
 
 tmp_work_dir=$(mktemp -d)
 GRADLE_USER_HOME=${GRADLE_USER_HOME:-"$HOME"/.gradle}
@@ -121,6 +118,8 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
+all_jdk_symlinks=""
+
 for dir in "$APP_GRADLE_DIR"/jdks/*/; do
   major_version_dir=${dir%*/}
   certs_directory="$APP_GRADLE_DIR"/certs
@@ -171,11 +170,18 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
     "$java_home"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory" || die "Failed to set up JDK $jdk_installation_directory"
     echo "Successfully installed JDK distribution in $jdk_installation_directory"
   fi
+  # Updating the current symlink to the $jdk_installation_directory
+  major_jdk_version="${major_version_dir##*/}"
+  jdk_local_symlink="$APP_HOME"/jdk-"$major_jdk_version"
+  all_jdk_symlinks="$all_jdk_symlinks","$jdk_local_symlink"
+  ln -vfsn "$jdk_installation_directory" "$jdk_local_symlink"
 done
 
 rm -rf "$tmp_work_dir"
 
 gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
+gradle_daemon_jdk_local_symlink="$APP_HOME"/jdk-"$gradle_daemon_jdk_version"
 gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)
-export JAVA_HOME="$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"
-export PATH=$PATH:$JAVA_HOME/bin
+
+# Writing the JDK setup properties to the gradle.properties file
+"$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkPropertiesSetup "$APP_HOME" "$gradle_daemon_jdk_local_symlink" "$all_jdk_symlinks"

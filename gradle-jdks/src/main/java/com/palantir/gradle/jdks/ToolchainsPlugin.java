@@ -101,48 +101,14 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     task.getPatchedGradlewScript()
                             .set(rootProject.file(
                                     rootProject.getRootDir().toPath().resolve("gradlew")));
-                    task.getPatchedGradleWrapperJar()
-                            .set(rootProject.file(
-                                    rootProject.getRootDir().toPath().resolve("gradle/wrapper/gradle-wrapper.jar")));
                     task.getGenerate().set(true);
                 });
         wrapperTask.configure(task -> task.finalizedBy(wrapperPatcherTask));
 
-        TaskProvider<GradleWrapperPatcherTask> checkWrapperPatcher = rootProject
-                .getTasks()
-                .register("checkWrapperPatcher", GradleWrapperPatcherTask.class, task -> {
-                    // Using providers to avoid implicit dependency on wrapperPatcherTask and generateGradleJdkConfigs
-                    task.getOriginalGradlewScript().fileProvider(rootProject.provider(() -> wrapperPatcherTask
-                            .get()
-                            .getPatchedGradlewScript()
-                            .getAsFile()
-                            .get()));
-                    task.getOriginalGradleWrapperJar().fileProvider(rootProject.provider(() -> wrapperPatcherTask
-                            .get()
-                            .getPatchedGradleWrapperJar()
-                            .getAsFile()
-                            .get()));
-                    task.getBuildDir().set(task.getTemporaryDir());
-                    task.getGradleJdksSetupJar().fileProvider(rootProject.provider(() -> generateGradleJdkConfigs
-                            .get()
-                            .getOutputGradleDirectory()
-                            .file(GradleJdkConfigs.GRADLE_JDKS_SETUP_JAR)
-                            .get()
-                            .getAsFile()));
-                    task.getPatchedGradlewScript()
-                            .set(rootProject.getLayout().getBuildDirectory().file("checkWrapperPatcher/gradlew"));
-                    task.getPatchedGradleWrapperJar()
-                            .set(rootProject
-                                    .getLayout()
-                                    .getBuildDirectory()
-                                    .file("checkWrapperPatcher/gradle-wrapper.jar"));
-                    task.getGenerate().set(false);
-                });
-
         rootProject
                 .getTasks()
                 .named(LifecycleBasePlugin.CHECK_TASK_NAME)
-                .configure(check -> check.dependsOn(checkGradleJdkConfigs, checkWrapperPatcher));
+                .configure(check -> check.dependsOn(checkGradleJdkConfigs));
 
         rootProject.getTasks().register("setupJdks", setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");

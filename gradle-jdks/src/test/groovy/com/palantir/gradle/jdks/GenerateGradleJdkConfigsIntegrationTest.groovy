@@ -54,7 +54,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         Files.exists(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version"))
         Path jarInProject = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar");
         Path originalJar = Path.of("build/resources/main/gradle-jdks-setup.jar");
-        FileUtils.checkFilesAreTheSame(jarInProject.toFile(), originalJar.toFile())
+        jarInProject.text == originalJar.text
         Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
         Files.isExecutable(scriptPath)
         Path certFile = projectDir.toPath().resolve("gradle/certs/Palantir3rdGenRootCa.serial-number")
