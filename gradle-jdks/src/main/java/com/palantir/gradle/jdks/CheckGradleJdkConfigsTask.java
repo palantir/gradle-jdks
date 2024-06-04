@@ -40,7 +40,7 @@ public abstract class CheckGradleJdkConfigsTask extends GradleJdkConfigs {
     public abstract RegularFileProperty getDummyOutputFile();
 
     @Override
-    public final Directory gradleDirectory() {
+    protected final Directory gradleDirectory() {
         return getInputGradleDirectory().get();
     }
 

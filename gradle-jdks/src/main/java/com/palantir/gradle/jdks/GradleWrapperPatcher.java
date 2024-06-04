@@ -30,11 +30,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.Range;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -116,22 +115,23 @@ public abstract class GradleWrapperPatcher {
     }
 
     private static void checkGradleJarContainsPatch(File buildDir, File gradleWrapperJar, File gradleJdksSetupJar) {
-        try {
-            Path gradleWrapperExtractedDir = buildDir.toPath().resolve("check-gradle-wrapper-patcher/gradle-wrapper");
-            Files.createDirectories(gradleWrapperExtractedDir);
-            JarResources.extractJar(gradleWrapperJar, gradleWrapperExtractedDir);
-            Path gradleWrapperMain =
-                    OriginalGradleWrapperMainCreator.getGradleWrapperClassPath(gradleWrapperExtractedDir);
-            OriginalGradleWrapperMainCreator.create(gradleWrapperExtractedDir);
-            Path gradleJdksExtracted = buildDir.toPath().resolve("check-gradle-wrapper-patcher/gradle-jdks");
-            Files.createDirectories(gradleJdksExtracted);
-            JarResources.extractJar(gradleJdksSetupJar, gradleJdksExtracted);
-            Path gradleWrapperMainFromSetupJar =
-                    OriginalGradleWrapperMainCreator.getGradleWrapperClassPath(gradleJdksExtracted);
-            FileUtils.checkFilesAreTheSame(gradleWrapperMain.toFile(), gradleWrapperMainFromSetupJar.toFile());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to check gradle wrapper jar", e);
+        Path gradleWrapperExtractedDir = buildDir.toPath().resolve("check-gradle-wrapper-patcher/gradle-wrapper");
+        JarResources.extractJar(gradleWrapperJar, gradleWrapperExtractedDir);
+        Path gradleWrapperMain = OriginalGradleWrapperMainCreator.getGradleWrapperClassPath(gradleWrapperExtractedDir);
+        OriginalGradleWrapperMainCreator.create(gradleWrapperExtractedDir);
+        Path gradleJdksExtracted = buildDir.toPath().resolve("check-gradle-wrapper-patcher/gradle-jdks");
+        JarResources.extractJar(gradleJdksSetupJar, gradleJdksExtracted);
+        Path gradleWrapperMainFromSetupJar =
+                OriginalGradleWrapperMainCreator.getGradleWrapperClassPath(gradleJdksExtracted);
+        if (!Files.exists(gradleWrapperMain)) {
+            throw new ExceptionWithSuggestion(
+                    String.format(
+                            "Unable to find %s class. Please regenerate the gradle-wrapper.jar by running "
+                                    + "`./gradlew wrapper`",
+                            gradleWrapperMain),
+                    "./gradlew wrapper");
         }
+        FileUtils.checkFilesAreTheSame(gradleWrapperMain.toFile(), gradleWrapperMainFromSetupJar.toFile());
     }
 
     private static void patchGradlewContent(File originalGradlewScript, RegularFileProperty patchedGradlewScript) {
@@ -141,26 +141,26 @@ public abstract class GradleWrapperPatcher {
 
     private static void patchGradlewJar(
             File buildDir, File originalGradleWrapperJar, File patchedGradleWrapperJar, File gradleJdksSetupJar) {
-        try {
-            Path gradleWrapperExtractedDir = buildDir.toPath().resolve("gradle-wrapper-extracted");
-            Files.createDirectories(gradleWrapperExtractedDir);
-            JarResources.extractJar(originalGradleWrapperJar, gradleWrapperExtractedDir);
-            OriginalGradleWrapperMainCreator.create(gradleWrapperExtractedDir);
-            JarResources.extractJar(gradleJdksSetupJar, gradleWrapperExtractedDir);
-
-            Path newGradleWrapperJar = buildDir.toPath().resolve(patchedGradleWrapperJar.getName());
-            JarResources.createJarFromDirectory(gradleWrapperExtractedDir.toFile(), newGradleWrapperJar.toFile());
-            moveFile(newGradleWrapperJar, patchedGradleWrapperJar.toPath());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to patch gradle wrapper jar", e);
-        }
+        Path gradleWrapperExtractedDir = buildDir.toPath().resolve("gradle-wrapper-extracted");
+        JarResources.extractJar(originalGradleWrapperJar, gradleWrapperExtractedDir);
+        OriginalGradleWrapperMainCreator.create(gradleWrapperExtractedDir);
+        JarResources.extractJar(gradleJdksSetupJar, gradleWrapperExtractedDir);
+        Path newGradleWrapperJar = buildDir.toPath().resolve(patchedGradleWrapperJar.getName());
+        JarResources.createJarFromDirectory(gradleWrapperExtractedDir.toFile(), newGradleWrapperJar.toFile());
+        moveFile(newGradleWrapperJar, patchedGradleWrapperJar.toPath());
     }
 
-    private static void moveFile(Path source, Path destination) throws IOException {
+    private static void moveFile(Path source, Path destination) {
         try {
             Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (AtomicMoveNotSupportedException ignored) {
-            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+            try {
+                Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new RuntimeException(String.format("Failed to move %s to %s", source, destination), e);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Failed to move %s to %s", source, destination), e);
         }
     }
 
@@ -174,12 +174,12 @@ public abstract class GradleWrapperPatcher {
 
     private static List<String> getLinesWithoutPatch(File gradlewFile) {
         List<String> initialLines = readAllLines(gradlewFile.toPath());
-        Optional<Pair<Integer, Integer>> startEndPatch = getPatchLineNumbers(initialLines);
-        if (startEndPatch.isEmpty()) {
+        Optional<Range<Integer>> patchLineRange = getPatchLineNumbers(initialLines);
+        if (patchLineRange.isEmpty()) {
             return initialLines;
         }
-        int startIndex = startEndPatch.get().getLeft();
-        int endIndex = startEndPatch.get().getRight();
+        int startIndex = patchLineRange.get().getMinimum();
+        int endIndex = patchLineRange.get().getMaximum();
         List<String> linesNoPatch = initialLines.subList(0, startIndex);
         if (endIndex + 1 < initialLines.size()) {
             linesNoPatch.addAll(initialLines.subList(endIndex + 1, initialLines.size()));
@@ -189,28 +189,41 @@ public abstract class GradleWrapperPatcher {
 
     private static List<String> getPatchedLines(File gradlewFile) {
         List<String> initialLines = readAllLines(gradlewFile.toPath());
-        Optional<Pair<Integer, Integer>> startEndPatch = getPatchLineNumbers(initialLines);
-        return startEndPatch
+        return getPatchLineNumbers(initialLines)
                 .map(integerIntegerPair ->
-                        initialLines.subList(integerIntegerPair.getLeft(), integerIntegerPair.getRight() + 1))
+                        initialLines.subList(integerIntegerPair.getMinimum(), integerIntegerPair.getMaximum() + 1))
                 .orElseGet(List::of);
     }
 
-    private static Optional<Pair<Integer, Integer>> getPatchLineNumbers(List<String> content) {
-        OptionalInt startIndex = IntStream.range(0, content.size())
+    private static Optional<Range<Integer>> getPatchLineNumbers(List<String> content) {
+        IntStream startPatchIdxStream = IntStream.range(0, content.size())
                 .filter(i -> content.get(i).equals(GRADLEW_PATCH_HEADER))
-                .findFirst();
-        if (startIndex.isEmpty()) {
+                .limit(2);
+        List<Integer> startPatchIndexes = startPatchIdxStream.boxed().collect(Collectors.toList());
+        Preconditions.checkState(
+                startPatchIndexes.size() <= 1,
+                String.format(
+                        "Invalid gradle JDK patch, expected at most 1 Gradle JDK setup header, but got %s",
+                        startPatchIndexes.size()));
+        Optional<Integer> startIndex = startPatchIndexes.stream().findFirst();
+        if (startPatchIndexes.isEmpty()) {
             return Optional.empty();
         }
-        OptionalInt endIndex = IntStream.range(startIndex.getAsInt(), content.size())
+        IntStream endPatchIdxStream = IntStream.range(startIndex.get(), content.size())
                 .filter(i -> content.get(i).equals(GRADLEW_PATCH_FOOTER))
-                .findFirst();
+                .limit(2);
+        List<Integer> endPatchIndexes = endPatchIdxStream.boxed().collect(Collectors.toList());
+        Preconditions.checkState(
+                endPatchIndexes.size() <= 1,
+                String.format(
+                        "Invalid gradle JDK patch, expected at most 1 Gradle JDK setup footer, but got %s",
+                        endPatchIndexes.size()));
+        Optional<Integer> endIndex = endPatchIndexes.stream().findFirst();
         if (endIndex.isEmpty()) {
             throw new RuntimeException(
                     String.format("Invalid gradle JDK patch, missing the closing footer %s", GRADLEW_PATCH_FOOTER));
         }
-        return Optional.of(Pair.of(startIndex.getAsInt(), endIndex.getAsInt()));
+        return Optional.of(Range.of(startIndex.get(), endIndex.get()));
     }
 
     private static String getNewGradlewWithPatchContent(List<String> initialLines) {

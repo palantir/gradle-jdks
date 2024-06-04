@@ -35,7 +35,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         setupJdksLatest()
         applyBaselineJavaVersions()
 
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
         gradleVersion = gradleVersionNumber
 
         buildFile << '''
@@ -54,15 +54,12 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         Files.exists(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version"))
         Path jarInProject = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar");
         Path originalJar = Path.of("build/resources/main/gradle-jdks-setup.jar");
-        Files.exists(jarInProject)
         FileUtils.checkFilesAreTheSame(jarInProject.toFile(), originalJar.toFile())
         Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
-        Files.exists(scriptPath)
         Files.isExecutable(scriptPath)
         Path certFile = projectDir.toPath().resolve("gradle/certs/Palantir3rdGenRootCa.serial-number")
         Optional<AliasContentCert> maybePalantirCerts = new CaResources(new StdLogger()).readPalantirRootCaFromSystemTruststore()
         if (maybePalantirCerts.isPresent()) {
-            Files.exists(certFile)
             Files.readString(certFile).trim() == "18126334688741185161"
         } else {
             !Files.exists(certFile)
@@ -76,15 +73,17 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
         !checkResult.contains(':checkGradleJdkConfigs UP-TO-DATE')
 
         when:
-        String jdk17Path = String.format("gradle/jdks/17/%s/%s/local-path", CurrentOs.get().uiName(), CurrentArch.get().uiName());
-        Files.write(projectDir.toPath().resolve(String.format("gradle/jdks/17/%s/%s/local-path", CurrentOs.get().uiName(), CurrentArch.get().uiName())), "new-path\n".getBytes())
+        String os = CurrentOs.get().uiName()
+        String arch = CurrentArch.get().uiName()
+        String jdk17Path = "gradle/jdks/17/${os}/${arch}/local-path"
+        Files.write(projectDir.toPath().resolve(jdk17Path), "new-path\n".getBytes())
 
         def checkGradleJdkConfigs = runGradlewTasksWithFailure('check', '--info')
         def notUpToDateGenerate = runGradlewTasksSuccessfully('generateGradleJdkConfigs', '--info')
 
         then:
         !checkGradleJdkConfigs.contains("checkGradleJdkConfigs UP-TO-DATE")
-        checkGradleJdkConfigs.contains(String.format("Gradle JDK configuration file `%s` is out of date", jdk17Path))
+        checkGradleJdkConfigs.contains("Gradle JDK configuration file `${jdk17Path}` is out of date")
         !notUpToDateGenerate.contains(':generateGradleJdkConfigs UP-TO-DATE')
 
         where:
@@ -103,7 +102,7 @@ class GenerateGradleJdkConfigsIntegrationTest extends GradleJdkIntegrationTest {
             }
         '''.stripIndent(true)
         writeHelloWorld(projectDir)
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
         runTasksSuccessfully("wrapper")
 
         when:

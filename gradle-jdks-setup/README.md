@@ -86,7 +86,7 @@ jdks {
 ```
 4. Enable the jdk setup by adding the following to `gradle.properties`:
 ```
-gradle.jdk.setup.enabled=true
+palantir.jdk.setup.enabled=true
 ```
 5. Run the following to configure the Gradle entry points to use the JDK setup:
 ```bash
@@ -219,7 +219,7 @@ The modifications are as follows:
 
 ## ToolchainsPlugin tasks
 
-The new workflow is set up by [ToolchainsPlugin](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/ToolchainsPlugin.java) which gets applied if `gradle.jdk.setup.enabled=true`.
+The new workflow is set up by [ToolchainsPlugin](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/ToolchainsPlugin.java) which gets applied if `palantir.jdk.setup.enabled=true`.
 The plugin won't apply anymore the `baseline-java-versions` plugin, allowing for the configuration of the Java Toolchains as described in the [Gradle docs ](https://docs.gradle.org/current/userguide/toolchains.html)
 
 The plugin registers the following tasks:

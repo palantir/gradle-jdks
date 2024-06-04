@@ -19,6 +19,7 @@ package com.palantir.gradle.jdks
 import com.palantir.gradle.jdks.setup.CaResources
 import com.palantir.gradle.jdks.setup.StdLogger
 import nebula.test.IntegrationSpec
+import org.apache.commons.lang3.Range
 
 import java.nio.file.Path
 
@@ -114,7 +115,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     }
 
     String upgradeGradleWrapper() {
-        return runGradlewTasksSuccessfully("getGradleJavaHomeProp", "wrapper", "--gradle-version", "8.4", "-V")
+        return runGradlewTasksSuccessfully("wrapper", "--gradle-version", "8.4")
     }
 
     String runGradlewTasksSuccessfully(String... tasks) {
@@ -160,19 +161,14 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     private static final int BYTECODE_IDENTIFIER = (int) 0xCAFEBABE
 
     // See http://illegalargumentexception.blogspot.com/2009/07/java-finding-class-versions.html
-    static void assertBytecodeVersion(File file, int expectedMajorBytecodeVersion,
-                                      int expectedMinorBytecodeVersion) {
+    static Range readBytecodeVersion(File file) {
         try (InputStream stream = new FileInputStream(file)
              DataInputStream dis = new DataInputStream(stream)) {
             int magic = dis.readInt()
             if (magic != BYTECODE_IDENTIFIER) {
                 throw new IllegalArgumentException("File " + file + " does not appear to be java bytecode")
             }
-            int minorBytecodeVersion = dis.readUnsignedShort()
-            int majorBytecodeVersion = dis.readUnsignedShort()
-
-            assert majorBytecodeVersion == expectedMajorBytecodeVersion
-            assert minorBytecodeVersion == expectedMinorBytecodeVersion
+            return Range.of(dis.readUnsignedShort(), dis.readUnsignedShort())
         }
     }
 

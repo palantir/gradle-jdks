@@ -55,5 +55,15 @@ public final class FileUtils {
         });
     }
 
+    public static void createDirectories(Path directoryPath) {
+        try {
+            if (!Files.exists(directoryPath)) {
+                Files.createDirectories(directoryPath);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Could not create directory %s", directoryPath), e);
+        }
+    }
+
     private FileUtils() {}
 }

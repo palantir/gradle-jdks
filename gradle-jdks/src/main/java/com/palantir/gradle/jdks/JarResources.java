@@ -16,9 +16,9 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.FileUtils;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +30,7 @@ import java.util.jar.JarOutputStream;
 public final class JarResources {
 
     public static void extractJar(File jarFile, Path sourceDirectory) {
+        FileUtils.createDirectories(sourceDirectory);
         try (JarInputStream jarInputStream = new JarInputStream(new FileInputStream(jarFile))) {
             JarEntry jarEntry;
             while ((jarEntry = jarInputStream.getNextJarEntry()) != null) {
@@ -43,8 +44,6 @@ public final class JarResources {
                     }
                 }
             }
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("Could not extract jar", e);
         } catch (IOException e) {
             throw new RuntimeException("Could not extract jar", e);
         }

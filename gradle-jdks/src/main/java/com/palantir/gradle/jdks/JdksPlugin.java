@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public final class JdksPlugin implements Plugin<Project> {
 
-    private static final String ENABLE_GRADLE_JDK_SETUP = "gradle.jdk.setup.enabled";
+    private static final String ENABLE_GRADLE_JDK_SETUP = "palantir.jdk.setup.enabled";
     private static final Logger log = LoggerFactory.getLogger(JdksPlugin.class);
 
     @Override

@@ -47,12 +47,10 @@ public final class GradleJdkInstallationSetup {
         caResources.maybeImportCertsInJdk(destinationJdkInstallationDir, certSerialNumbersToNames);
     }
 
-    private static void copy(ILogger logger, Path destinationJdkInstallationDirectory) throws IOException {
+    private static void copy(ILogger logger, Path destinationJdkInstallationDirectory) {
         Path currentJavaHome = Path.of(System.getProperty("java.home"));
         Path jdksInstallationDirectory = destinationJdkInstallationDirectory.getParent();
-        if (!jdksInstallationDirectory.toFile().exists()) {
-            Files.createDirectories(jdksInstallationDirectory);
-        }
+        FileUtils.createDirectories(jdksInstallationDirectory);
         Path lockFile = jdksInstallationDirectory.resolve(destinationJdkInstallationDirectory.getFileName() + ".lock");
         try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             channel.lock();

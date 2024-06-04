@@ -41,7 +41,7 @@ public abstract class GenerateGradleJdkConfigsTask extends GradleJdkConfigs {
     public abstract DirectoryProperty getOutputGradleDirectory();
 
     @Override
-    public final Directory gradleDirectory() {
+    protected final Directory gradleDirectory() {
         return getOutputGradleDirectory().get();
     }
 

@@ -56,7 +56,7 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
     }
 
     def '#gradleVersionNumber: patches gradleWrapper to set up JDK'() {
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
         gradleVersion = gradleVersionNumber
 
         when:
@@ -70,23 +70,33 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
 
         when:
-        String wrapperResult1 = upgradeGradleWrapper()
-        String wrapperResult2 = upgradeGradleWrapper()
+        String wrapperResult = upgradeGradleWrapper()
 
         then:
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
         Path gradleJdksPath = workingDir.resolve("gradle-jdks")
         Path expectedLocalPath = gradleJdksPath.resolve(String.format("azul-zulu-11.54.25-11.0.14.1-%s", getHashForDistribution(JdkDistributionName.AZUL_ZULU, JDK_11_VERSION)))
-        wrapperResult1.contains(String.format("Successfully installed JDK distribution in %s", expectedLocalPath))
-        String expectedJdkLog = "JVM:          11.0.14.1 (Azul Systems, Inc. 11.0.14.1+1-LTS)"
-        wrapperResult1.contains(expectedJdkLog)
-        wrapperResult1.contains("Gradle 7.6.4")
-        wrapperResult1.contains("Gradle java home is " + expectedLocalPath)
+        wrapperResult.contains(String.format("Successfully installed JDK distribution in %s", expectedLocalPath))
         file('gradle/wrapper/gradle-wrapper.properties').text.contains("gradle-8.4-bin.zip")
-        wrapperResult2.contains(String.format("already exists in '%s'", expectedLocalPath))
-        wrapperResult2.contains(expectedJdkLog)
-        wrapperResult2.contains("Gradle 8.4")
-        wrapperResult2.contains("Gradle java home is " + expectedLocalPath)
+
+        when:
+        String gradleVersionResult = runGradlewTasksSuccessfully("-V")
+
+        then: 'the gradle version is 8.4 and the gradle daemon JVM is set to 11'
+        gradleVersionResult.contains("Gradle 8.4")
+        gradleVersionResult.contains("JVM:          11.0.14.1 (Azul Systems, Inc. 11.0.14.1+1-LTS)")
+
+        when: 'run the getGradleJavaHomeProp task'
+        String getGradleJavaHome = runGradlewTasksSuccessfully("getGradleJavaHomeProp")
+
+        then: 'the java home is set to the daemon\' s jdk target version'
+        getGradleJavaHome.contains("Gradle java home is " + expectedLocalPath)
+
+        when: 'run the ./gradlew script again'
+        String gradleVersionResult2 = runGradlewTasksSuccessfully("-V")
+
+        then: 'the jdks are already installed'
+        gradleVersionResult2.contains(String.format("already exists in '%s'", expectedLocalPath))
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION]
@@ -98,7 +108,7 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
         List<String> initialRows = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
 
         when:
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
         def outputWithJdkEnabled = runTasksSuccessfully('wrapper')
 
         then:
@@ -115,7 +125,7 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
     }
 
-    def 'no gradleWrapper patch if gradle.jdk.setup.enabled == false'() {
+    def 'no gradleWrapper patch if palantir.jdk.setup.enabled == false'() {
         when:
         def output = runTasksSuccessfully('wrapper')
 

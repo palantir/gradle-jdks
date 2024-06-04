@@ -47,7 +47,7 @@ public abstract class GradleJdkConfigs extends DefaultTask {
     @Input
     public abstract MapProperty<String, String> getCaCerts();
 
-    public abstract Directory gradleDirectory();
+    abstract Directory gradleDirectory();
 
     public abstract void applyGradleJdkFileAction(
             Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistributionConfig);

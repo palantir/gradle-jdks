@@ -16,7 +16,7 @@
 
 package com.palantir.gradle.jdks
 
-
+import org.apache.commons.lang3.Range
 import spock.lang.TempDir
 
 import java.nio.file.Path
@@ -39,7 +39,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         setupJdksHardcodedVersions()
         applyApplicationPlugin()
 
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
         file('src/main/java/Main.java') << java17Code
 
         // language=Groovy
@@ -52,7 +52,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         """.stripIndent(true)
 
         //language=groovy
-        def subprojectLib = addSubproject 'subprojectLib', '''
+        def subprojectLib21 = addSubproject 'subproject-lib-21', '''
             apply plugin: 'java-library'
             java {
                 toolchain {
@@ -60,9 +60,9 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
                 }
             }
         '''.stripIndent(true)
-        writeHelloWorld(subprojectLib)
+        writeHelloWorld(subprojectLib21)
 
-        def subprojectLib1 = addSubproject 'subprojectLib1', '''
+        def subprojectLib11 = addSubproject 'subproject-lib-11', '''
             apply plugin: 'java-library'
             java {
                 toolchain {
@@ -70,8 +70,14 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
                 }
             }
         '''.stripIndent(true)
-        writeHelloWorld(subprojectLib1)
+        writeHelloWorld(subprojectLib11)
         runTasksSuccessfully('wrapper', '--info')
+
+        when:
+        String gradleVersionOutput = runGradlewTasksSuccessfully("-V")
+
+        then:
+        gradleVersionOutput.contains("JVM:          11.")
 
         when:
         String output = runGradlewTasksSuccessfully("javaToolchains", "compileJava", "--info")
@@ -80,7 +86,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         then:
         assertToolchainsOutput(output, runOutput)
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
-        assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, 0)
+        readBytecodeVersion(compiledClass) == Range.of(JAVA_17_BYTECODE, 0)
 
 
         where:
@@ -94,7 +100,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         applyBaselineJavaVersions()
         applyApplicationPlugin()
 
-        file('gradle.properties') << 'gradle.jdk.setup.enabled=true'
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
         file('src/main/java/Main.java') << java17PreviewCode
 
         // language=Groovy
@@ -106,22 +112,22 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         """.stripIndent(true)
 
         //language=groovy
-        def subprojectLib = addSubproject 'subprojectLib', '''
+        def subprojectLib21 = addSubproject 'subproject-lib-21', '''
             apply plugin: 'java-library'
             javaVersion {
                target = 21
             }
         '''.stripIndent(true)
-        writeHelloWorld(subprojectLib)
+        writeHelloWorld(subprojectLib21)
 
         //language=groovy
-        def subprojectLib1 = addSubproject 'subprojectLib1', '''
+        def subprojectLib11 = addSubproject 'subproject-lib-11', '''
             apply plugin: 'java-library'
             javaVersion {
                 library()
             }
         '''.stripIndent(true)
-        writeHelloWorld(subprojectLib1)
+        writeHelloWorld(subprojectLib11)
         runTasksSuccessfully('wrapper', '--info')
 
         when:
@@ -131,7 +137,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         then:
         assertToolchainsOutput(output, runOutput)
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
-        assertBytecodeVersion(compiledClass, JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
+        readBytecodeVersion(compiledClass) == Range.of(JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]

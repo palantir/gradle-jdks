@@ -59,7 +59,7 @@ public abstract class JdksExtension {
                 MapProperty.class, getObjectFactory().mapProperty(String.class, String.class));
         this.jdkStorageLocation = SynchronizedInterface.synchronizeAllInterfaceMethods(
                 DirectoryProperty.class, getObjectFactory().directoryProperty());
-        this.daemonTarget = project.getObjects().property(JavaLanguageVersion.class);
+        this.daemonTarget = getObjectFactory().property(JavaLanguageVersion.class);
 
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
