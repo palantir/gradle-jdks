@@ -22,9 +22,47 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public final class FileUtils {
+
+    public static List<Path> collectRelativePaths(Path source) {
+        try {
+            List<Path> paths = new ArrayList<>();
+            Files.walkFileTree(source, new FileVisitor<Path>() {
+
+                @Override
+                public FileVisitResult preVisitDirectory(Path _dir, BasicFileAttributes _attrs) {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes _attrs) {
+                    paths.add(source.relativize(file));
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path _file, IOException _exc) {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path _dir, IOException _exc) {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                public List<Path> getPaths() {
+                    return paths;
+                }
+            });
+            return paths;
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Could not collect the files in directory %s", source), e);
+        }
+    }
 
     public static void copyDirectory(Path source, Path destination) throws IOException {
         Files.walkFileTree(source, new FileVisitor<Path>() {

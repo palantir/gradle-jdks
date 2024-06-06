@@ -76,7 +76,6 @@ die () {
     exit 1
 } >&2
 
-
 read_value() {
   if [ ! -f "$1" ]; then
     die "ERROR: $1 not found, aborting Gradle JDK setup"
@@ -183,5 +182,8 @@ gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-versi
 gradle_daemon_jdk_local_symlink="$APP_HOME"/jdk-"$gradle_daemon_jdk_version"
 gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)
 
-# Writing the JDK setup properties to the gradle.properties file
+# [Both ./gradlew & Intelij setup] Writing the JDK setup properties
 "$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkPropertiesSetup "$APP_HOME" "$gradle_daemon_jdk_local_symlink" "$all_jdk_symlinks"
+
+# [Used by ./gradlew only] Setting the Gradle Daemon Java Home to the JDK distribution
+set -- "-Dorg.gradle.java.home=$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path" "$@"

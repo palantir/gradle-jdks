@@ -17,9 +17,11 @@
 package com.palantir.gradle.jdks.setup;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,9 +37,6 @@ public final class GradleJdkPropertiesSetup {
         updateGradleProperties(
                 projectDir.resolve("gradle.properties"),
                 Map.of(
-                        // Set the gradle java home
-                        "org.gradle.java.home",
-                        gradleJdkSymlink,
                         // Set the custom toolchains locations
                         "org.gradle.java.installations.paths",
                         allJdkSymlinks,
@@ -46,10 +45,56 @@ public final class GradleJdkPropertiesSetup {
                         "false",
                         "org.gradle.java.installations.auto-detect",
                         "false"));
+        // [Intelij specific] Set the gradle java home using GRADLE_LOCAL_JAVA_HOME config.properties read by Intelij
+        try {
+            Files.createDirectories(projectDir.resolve(".gradle"));
+            Files.write(
+                    projectDir.resolve(".gradle/config.properties"),
+                    String.format("java.home=%s", gradleJdkSymlink).getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to set the java.home value in .gradle/config.properties.", e);
+        }
+
+        // [Intelij] Update the .idea files with the startup script and the GRADLE_LOCAL_JAVA_HOME gradleJvm setup
+        URL ideaConfigurations = GradleJdkPropertiesSetup.class.getClassLoader().getResource(".idea");
+        if (ideaConfigurations == null) {
+            throw new RuntimeException("Unable to find the .idea configurations in the resources.");
+        }
+        Path targetProjectIdea = projectDir.resolve(".idea");
+        try {
+            FileUtils.copyDirectory(Path.of(ideaConfigurations.getPath()), targetProjectIdea);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        // [Intelij] Update .gitignore to not ignore the newly added .idea files
+        updateIdeaGitignore(FileUtils.collectRelativePaths(targetProjectIdea));
+    }
+
+    private static void updateIdeaGitignore(List<Path> pathsToBeCommitted) {
+        Path gitignoreFile = Paths.get(".gitignore");
+        // try to add the lines after ".idea/" in .gitignore if it exists
+        try {
+            List<String> gitignoreLines = Files.readAllLines(gitignoreFile);
+            int ideaIndex = gitignoreLines.indexOf(".idea/");
+            int indexToInsert = ideaIndex != -1 ? ideaIndex + 1 : gitignoreLines.size();
+            if (ideaIndex != -1) {
+                gitignoreLines.add(ideaIndex, ".idea/*");
+            }
+            gitignoreLines.add(indexToInsert, "# Gradle JDK setup in Intelij");
+            gitignoreLines.addAll(
+                    indexToInsert + 1,
+                    pathsToBeCommitted.stream()
+                            .map(Path::toString)
+                            .map(s -> "!.idea/" + s)
+                            .collect(Collectors.toList()));
+            Files.write(gitignoreFile, gitignoreLines);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to update the .gitignore file.", e);
+        }
     }
 
     private static String parseGradleJdk(String gradleJdk) {
-        return String.format("./%s", Path.of(gradleJdk).getFileName().toString());
+        return Path.of(gradleJdk).toString();
     }
 
     private static String parseToolchains(String toolchains) {
@@ -57,7 +102,7 @@ public final class GradleJdkPropertiesSetup {
                 .filter(s -> !s.isEmpty())
                 .map(Path::of)
                 .map(Path::getFileName)
-                .map(path -> String.format("./%s", path))
+                .map(Path::toString)
                 .collect(Collectors.joining(","));
     }
 

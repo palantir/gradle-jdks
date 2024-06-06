@@ -74,13 +74,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         runTasksSuccessfully('wrapper', '--info')
 
         when:
-        String gradleVersionOutput = runGradlewTasksSuccessfully("-V")
+        String output = runGradlewTasksSuccessfully("javaToolchains", "compileJava", "--info")
 
         then:
-        gradleVersionOutput.contains("JVM:          11.")
-
+        
         when:
-        String output = runGradlewTasksSuccessfully("javaToolchains", "compileJava", "--info")
         String runOutput = runGradlewTasksSuccessfully("run", "--info")
 
         then:

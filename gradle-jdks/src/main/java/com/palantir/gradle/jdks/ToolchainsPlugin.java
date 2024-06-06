@@ -18,16 +18,24 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
-public final class ToolchainsPlugin implements Plugin<Project> {
+public class ToolchainsPlugin implements Plugin<Project> {
 
+    private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
     private static final JavaLanguageVersion MINIMUM_SUPPORTED_JAVA_VERSION = JavaLanguageVersion.of(11);
 
@@ -103,7 +111,20 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                                     rootProject.getRootDir().toPath().resolve("gradlew")));
                     task.getGenerate().set(true);
                 });
-        wrapperTask.configure(task -> task.finalizedBy(wrapperPatcherTask));
+        wrapperTask.configure(task -> {
+            Path propertiesPath = task.getPropertiesFile().toPath();
+            if (propertiesPath.toFile().exists()) {
+                try {
+                    Properties properties = new Properties();
+                    properties.load(new FileInputStream(propertiesPath.toFile()));
+                    Optional.ofNullable(properties.getProperty("distributionUrl"))
+                            .ifPresent(task::setDistributionUrl);
+                } catch (IOException e) {
+                    logger.error("Unable to read the gradle-wrapper.properties file", e);
+                }
+            }
+            task.finalizedBy(wrapperPatcherTask);
+        });
 
         rootProject
                 .getTasks()
