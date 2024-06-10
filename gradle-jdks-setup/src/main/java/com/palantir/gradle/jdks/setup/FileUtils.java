@@ -53,10 +53,6 @@ public final class FileUtils {
                 public FileVisitResult postVisitDirectory(Path _dir, IOException _exc) {
                     return FileVisitResult.CONTINUE;
                 }
-
-                public List<Path> getPaths() {
-                    return paths;
-                }
             });
             return paths;
         } catch (IOException e) {
@@ -66,6 +62,7 @@ public final class FileUtils {
 
     public static void copyDirectory(Path source, Path destination) throws IOException {
         Files.walkFileTree(source, new FileVisitor<Path>() {
+
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes _attrs) throws IOException {
                 Files.createDirectories(destination.resolve(source.relativize(dir)));

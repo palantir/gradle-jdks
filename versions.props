@@ -13,6 +13,7 @@ org.apache.commons:commons-compress = 1.26.1
 com.palantir.gradle.auto-parallelizable:* = 1.4.0
 org.ow2.asm:asm = 9.7
 com.palantir.gradle.failure-reports:* = 1.9.0
+org.xmlunit:* = 2.8.4
 
 # dependency-upgrader:OFF
 com.palantir.baseline:* = 5.53.0

@@ -16,110 +16,123 @@
 
 package com.palantir.gradle.jdks
 
-
+import com.palantir.gradle.jdks.setup.AliasContentCert
+import com.palantir.gradle.jdks.setup.CaResources
+import com.palantir.gradle.jdks.setup.GradleJdkPatchHelper
+import com.palantir.gradle.jdks.setup.StdLogger
 import spock.lang.TempDir
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.stream.Collectors
+import java.util.stream.Stream
+
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
-
-    private static String JDK_11_VERSION = "11.54.25-11.0.14.1"
 
     @TempDir
     Path workingDir
 
     def setup() {
-
         setupJdksHardcodedVersions()
-        applyBaselineJavaVersions()
+    }
 
-        // language=groovy
-        buildFile << """
-            apply plugin: 'application'
-
-            tasks.register('getGradleJavaHomeProp') {
-                doLast {
-                    println "Gradle java home is " + System.getProperty('org.gradle.java.home')
-                }
-            }
+    def '#gradleVersionNumber: successfully generates Gradle JDK setup files'() {
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        gradleVersion = gradleVersionNumber
+        String gitignoreContent = """
+            #Intelij
+            .idea/
             
-            application {
-                mainClass = 'Main'
-            }
+            # My custom setup
+            something else
+            another thing
+        """.stripIndent(true)
+        file(".gitignore") << gitignoreContent
 
-            javaVersions {
-                libraryTarget = '11'
-                distributionTarget = '17_PREVIEW'
-            }
-        """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
-    }
+        when: 'running wrapper task'
+        def wrapperResult = runTasksSuccessfully('wrapper')
 
-    def '#gradleVersionNumber: patches gradleWrapper to set up JDK'() {
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
-        gradleVersion = gradleVersionNumber
-
-        when:
-        def output = runTasksSuccessfully('wrapper', 'getGradleJavaHomeProp')
-
-        then:
-        output.wasExecuted(':wrapperJdkPatcher')
-        !output.wasSkipped(':wrapperJdkPatcher')
-        output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
-        output.standardOutput.contains("Gradle java home is null")
+        then: './gradlew file is patched'
+        wrapperResult.wasExecuted(':wrapperJdkPatcher')
+        !wrapperResult.wasSkipped(':wrapperJdkPatcher')
+        wrapperResult.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
+        file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_HEADER).size() == 1
+        file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_FOOTER).size() == 1
 
-        when:
-        String wrapperResult = upgradeGradleWrapper()
+        and: 'the `gradle/` configuration files are generated'
+        wrapperResult.wasExecuted(':generateGradleJdkConfigs')
+        !wrapperResult.wasSkipped(':generateGradleJdkConfigs')
+        checkJdksVersions(projectDir, Set.of("11", "17", "21"))
+        Files.readString(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version")).trim() == "11"
+        /*Path jarInProject = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar");
+        Path originalJar = Path.of("build/resources/main/gradle-jdks-setup.jar");
+        jarInProject.text == originalJar.text*/
+        Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
+        Files.isExecutable(scriptPath)
+        Path certFile = projectDir.toPath().resolve("gradle/certs/Palantir3rdGenRootCa.serial-number")
+        Optional<AliasContentCert> maybePalantirCerts = new CaResources(new StdLogger()).readPalantirRootCaFromSystemTruststore()
+        if (maybePalantirCerts.isPresent()) {
+            Files.readString(certFile).trim() == "18126334688741185161"
+        } else {
+            !Files.exists(certFile)
+        }
 
-        then:
-        file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
-        Path gradleJdksPath = workingDir.resolve("gradle-jdks")
-        Path expectedLocalPath = gradleJdksPath.resolve(String.format("azul-zulu-11.54.25-11.0.14.1-%s", getHashForDistribution(JdkDistributionName.AZUL_ZULU, JDK_11_VERSION)))
-        wrapperResult.contains(String.format("Successfully installed JDK distribution in %s", expectedLocalPath))
-        file('gradle/wrapper/gradle-wrapper.properties').text.contains("gradle-8.4-bin.zip")
+        when: 'we are running the patched ./gradlew script. Any task can be used. The setup should be done by the script.'
+        def output = runGradlewTasksSuccessfully('setupJdks')
 
-        when:
-        String gradleVersionResult = runGradlewTasksSuccessfully("-V")
-
-        then: 'the gradle version is 8.4 and the gradle daemon JVM is set to 11'
-        gradleVersionResult.contains("Gradle 8.4")
-        gradleVersionResult.contains("JVM:          11.0.14.1 (Azul Systems, Inc. 11.0.14.1+1-LTS)")
-
-        when: 'run the getGradleJavaHomeProp task'
-        String getGradleJavaHome = runGradlewTasksSuccessfully("getGradleJavaHomeProp")
-
-        then: 'the java home is set to the daemon\' s jdk target version'
-        getGradleJavaHome.contains("Gradle java home is " + expectedLocalPath)
-
-        when: 'run the ./gradlew script again'
-        String gradleVersionResult2 = runGradlewTasksSuccessfully("-V")
-
-        then: 'the jdks are already installed'
-        gradleVersionResult2.contains(String.format("already exists in '%s'", expectedLocalPath))
-
-        where:
-        gradleVersionNumber << [GRADLE_7VERSION]
-    }
-
-    def '#gradleVersionNumber: gradlew file is correctly generated'() {
-        gradleVersion = gradleVersionNumber
-        runTasksSuccessfully('wrapper')
-        List<String> initialRows = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
-
-        when:
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
-        def outputWithJdkEnabled = runTasksSuccessfully('wrapper')
+        then: '.idea files are generated'
+        output.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
+        Path jdkPropertiesFile = projectDir.toPath().resolve(".idea")
+        Path ideaConfigurations = Path.of("../gradle-jdks-setup/src/main/resources/ideaConfigurations")
+        try (Stream<Path> gradleJdkConfigurationPath =
+                Files.list(ideaConfigurations).filter(Files::isRegularFile)) {
+            assertTrue(gradleJdkConfigurationPath.allMatch(
+                    path -> Files.exists(jdkPropertiesFile.resolve(path.relativize(ideaConfigurations)))))
+        } catch (IOException e) {
+            throw new RuntimeException("Could not list the ideaConfigurations files", e);
+        }
 
         then:
-        !outputWithJdkEnabled.wasSkipped(':wrapperJdkPatcher')
-        outputWithJdkEnabled.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
-        List<String> rowsAfterPatching = Files.readAllLines(projectDir.toPath().resolve('gradlew'))
+        String gradleXmlContent = Files.readString(projectDir.toPath().resolve(".idea/gradle.xml"))
+        gradleXmlContent.contains("<option name=\"gradleJvm\" value=\"#GRADLE_LOCAL_JAVA_HOME\" />")
 
-        List<String> gradlewPatchRows = Files.readAllLines(Path.of('src/main/resources/gradlew-patch.sh'))
-        rowsAfterPatching.removeAll(initialRows)
-        rowsAfterPatching.removeAll(gradlewPatchRows)
-        rowsAfterPatching.size() == 0
+        and: 'gradle.properties files contain the jdk properties'
+        Properties properties = new Properties();
+        properties.load(new FileInputStream(projectDir.toPath().resolve("gradle.properties").toFile()))
+        properties.getProperty("org.gradle.java.installations.paths") == "jdk-11,jdk-17,jdk-21"
+
+        and: '.gitignore ignores the .idea directory and the jdk-* symlinks'
+        String expectedGitignoreContent = """
+            #Intelij
+            .idea/*
+            
+            # My custom setup
+            something else
+            another thing
+            # >>> Gradle JDK setup >>>
+            .idea/*
+            !.idea/gradle.xml
+            !.idea/runConfigurations/run_gradle_jdks_setup.xml
+            !.idea/startup.xml
+            jdk-*
+            # <<< Gradle JDK setup <<<""".stripIndent(true)
+        Files.readString(projectDir.toPath().resolve(".gitignore")) == expectedGitignoreContent
+
+        when:
+        and: 'jdk symlinks are created'
+        ProcessBuilder jdkProcessBuilder = new ProcessBuilder(projectDir.toPath().resolve("jdk-21/bin/java").toString(), "-version").redirectErrorStream(true)
+
+        then:
+        CommandRunner.readAllInput(jdkProcessBuilder.start().getInputStream()).contains(JDK_21_VERSION)
+
+        when: 'we trigger the generation of the gradle JDK setup files'
+        runGradlewTasksSuccessfully('setupJdks')
+
+        then: '.gitignore is not modified'
+        Files.readString(projectDir.toPath().resolve(".gitignore")) == expectedGitignoreContent
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
@@ -130,9 +143,20 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
         def output = runTasksSuccessfully('wrapper')
 
         then:
-        !output.standardOutput.contains('wrapperJdkPatcher')
-        !output.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
+        !output.wasExecuted('wrapperJdkPatcher')
         !file("gradlew").text.contains("gradle-jdks-setup.sh")
+    }
+
+    private static void checkJdksVersions(File projectDir, Set<String> versions) {
+        assert Files.list(projectDir.toPath().resolve("gradle/jdks")).filter(Files::isDirectory)
+                .map(path -> path.getFileName().toString())
+                .collect(Collectors.toSet()) == versions
+        String osName = CurrentOs.get().uiName();
+        String archName = CurrentArch.get().uiName();
+        versions.stream().findFirst().ifPresent(version -> {
+            assert Files.exists(projectDir.toPath().resolve("gradle/jdks/${version}/${osName}/${archName}/download-url"))
+            assert Files.exists(projectDir.toPath().resolve("gradle/jdks/${version}/${osName}/${archName}/local-path"))
+        })
     }
 
     @Override

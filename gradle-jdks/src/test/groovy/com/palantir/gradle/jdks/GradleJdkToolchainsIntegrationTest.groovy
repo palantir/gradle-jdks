@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks
 
 import org.apache.commons.lang3.Range
+import org.apache.commons.lang3.tuple.Pair
 import spock.lang.TempDir
 
 import java.nio.file.Path
@@ -25,10 +26,9 @@ import java.util.regex.Pattern
 
 class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
 
-    private static String JDK_11_VERSION = "11.54.25-11.0.14.1"
-    private static String JDK_17_VERSION = "17.0.3.6.1"
-    private static String JDK_21_VERSION = "21.0.2.13.1"
+    private static final int JAVA_11_BYTECODE = 55
     private static final int JAVA_17_BYTECODE = 61
+    private static final int JAVA_21_BYTECODE = 65
     private static final int ENABLE_PREVIEW_BYTECODE = 65535
 
     @TempDir
@@ -40,7 +40,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         applyApplicationPlugin()
 
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
-        file('src/main/java/Main.java') << java17Code
+        file('src/main/java/Main.java') << getMainJavaCode()
 
         // language=Groovy
         buildFile << """
@@ -49,63 +49,76 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
                     languageVersion = JavaLanguageVersion.of(17)
                 }
             }
+            
+            tasks.register("printGradleHome") {
+                doLast {
+                    println "java.home: " + System.getProperty("java.home")
+                }
+            }
         """.stripIndent(true)
+        runTasksSuccessfully("wrapper")
 
-        //language=groovy
-        def subprojectLib21 = addSubproject 'subproject-lib-21', '''
-            apply plugin: 'java-library'
-            java {
-                toolchain {
-                    languageVersion = JavaLanguageVersion.of(21)
-                }
-            }
-        '''.stripIndent(true)
-        writeHelloWorld(subprojectLib21)
+        when: 'running javaToolchains task'
+        String output = runGradlewTasksSuccessfully("javaToolchains")
 
-        def subprojectLib11 = addSubproject 'subproject-lib-11', '''
-            apply plugin: 'java-library'
-            java {
-                toolchain {
-                    languageVersion = JavaLanguageVersion.of(11)
-                }
-            }
-        '''.stripIndent(true)
-        writeHelloWorld(subprojectLib11)
-        runTasksSuccessfully('wrapper', '--info')
+        then: 'the only discovered jdk versions are coming from gradle.properties'
+        output.contains("Auto-detection:     Disabled")
+        output.contains("Auto-download:      Disabled")
+        output.contains("JDK ${SIMPLIFIED_JDK_11_VERSION}")
+        output.contains("JDK ${SIMPLIFIED_JDK_17_VERSION}")
+        output.contains("JDK ${SIMPLIFIED_JDK_21_VERSION}")
+        Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(output)
+        while (matcher.find()) {
+            String detectedByPattern = matcher.group(1)
+            detectedByPattern.contains('org.gradle.java.installations.paths')
+        }
 
-        when:
-        String output = runGradlewTasksSuccessfully("javaToolchains", "compileJava", "--info")
+        when: 'running printGradleHome task'
+        String gradleHomeOutput = runGradlewTasksSuccessfully("printGradleHome")
 
         then:
-        
-        when:
-        String runOutput = runGradlewTasksSuccessfully("run", "--info")
+        Path daemonJvm = new File(projectDir, "jdk-11").toPath().toRealPath()
+        gradleHomeOutput.contains("java.home: ${daemonJvm}")
+
+        when: 'running compileJava task'
+        runGradlewTasksSuccessfully("compileJava")
 
         then:
-        assertToolchainsOutput(output, runOutput)
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
         readBytecodeVersion(compiledClass) == Range.of(JAVA_17_BYTECODE, 0)
 
+        when:
+        String runOutput = runGradlewTasksSuccessfully("run")
+
+        then:
+        Path compileJvm = new File(projectDir, "jdk-17").toPath().toRealPath()
+        runOutput.contains("Java home: ${compileJvm}")
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
     }
 
+
     def '#gradleVersionNumber: javaToolchains correctly set-up with baseline-java'() {
         gradleVersion = gradleVersionNumber
-
         setupJdksHardcodedVersions()
         applyBaselineJavaVersions()
         applyApplicationPlugin()
 
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
-        file('src/main/java/Main.java') << java17PreviewCode
+        file('src/main/java/Main.java') << getMainJavaCode()
 
         // language=Groovy
         buildFile << """
             javaVersions {
                 libraryTarget = '11'
                 distributionTarget = '17_PREVIEW'
+            }
+            
+            tasks.register("printGradleHome") {
+                doLast {
+                    println "java.home: " + System.getProperty("java.home")
+                }
             }
         """.stripIndent(true)
 
@@ -116,7 +129,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
                target = 21
             }
         '''.stripIndent(true)
-        writeHelloWorld(subprojectLib21)
+        writeJavaSourceFile(getMainJavaCode(), subprojectLib21)
 
         //language=groovy
         def subprojectLib11 = addSubproject 'subproject-lib-11', '''
@@ -125,72 +138,73 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
                 library()
             }
         '''.stripIndent(true)
-        writeHelloWorld(subprojectLib11)
-        runTasksSuccessfully('wrapper', '--info')
+        writeJavaSourceFile(getMainJavaCode(), subprojectLib11)
+        runTasksSuccessfully('wrapper')
 
-        when:
-        String output = runGradlewTasksSuccessfully("javaToolchains", "compileJava", "--info")
-        String runOutput = runGradlewTasksSuccessfully("run", "--info")
+        when: 'running printGradleHome task'
+        String gradleHomeOutput = runGradlewTasksSuccessfully("printGradleHome")
 
         then:
-        assertToolchainsOutput(output, runOutput)
+        Path daemonJvm = new File(projectDir, "jdk-11").toPath().toRealPath()
+        gradleHomeOutput.contains("java.home: ${daemonJvm}")
+
+        when: 'compiling projects'
+        runGradlewTasksSuccessfully("compileJava")
+
+        then: 'the main project is compiled with `distributionTarget` version'
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
-        readBytecodeVersion(compiledClass) == Range.of(JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
+        readBytecodeVersion(compiledClass) == Pair.of(JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
+
+        and: 'the library is compiled with `libraryTarget` version'
+        File subproject11Class = new File(subprojectLib11, "build/classes/java/main/Main.class")
+        readBytecodeVersion(subproject11Class) == Pair.of(JAVA_11_BYTECODE, 0)
+
+        and: 'the project is compiled with the overridden `target` version'
+        File subproject21Class = new File(subprojectLib11, "build/classes/java/main/Main.class")
+        readBytecodeVersion(subproject21Class) == Pair.of(JAVA_21_BYTECODE, 0)
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
     }
 
-    def assertToolchainsOutput(String output, String runOutput) {
-        output.contains("Successfully installed JDK distribution insad")
-        output.contains("Auto-detection:     Disabled")
-        output.contains("Auto-download:      Disabled")
-        output.contains("JDK 11.0.14.1")
-        output.contains("JDK 17.0.3")
-        output.contains("JDK 21.0.2")
-        Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(output)
-        while (matcher.find()) {
-            String detectedByPattern = matcher.group(1)
-            detectedByPattern.contains("Gradle property 'org.gradle.java.installations.paths'")
-                    || detectedByPattern.contains("system property 'org.gradle.java.installations.paths'")
-        }
-        Path gradleJdksPath = workingDir.resolve("gradle-jdks")
-        Path expectedJdk11 = gradleJdksPath.resolve(String.format("azul-zulu-11.54.25-11.0.14.1-%s", getHashForDistribution(JdkDistributionName.AZUL_ZULU, JDK_11_VERSION)))
-        output.contains(String.format("Compiling with toolchain '%s'", expectedJdk11.toFile().getCanonicalPath()))
-        Path expectedJdk17 = gradleJdksPath.resolve(String.format("amazon-corretto-17.0.3.6.1-%s", getHashForDistribution(JdkDistributionName.AMAZON_CORRETTO, JDK_17_VERSION)))
-        output.contains(String.format("Compiling with toolchain '%s'", expectedJdk17.toFile().getCanonicalPath()))
-        Path expectedJdk21 = gradleJdksPath.resolve(String.format("amazon-corretto-21.0.2.13.1-%s", getHashForDistribution(JdkDistributionName.AMAZON_CORRETTO, JDK_21_VERSION)))
-        output.contains(String.format("Compiling with toolchain '%s'", expectedJdk21.toFile().getCanonicalPath()))
+    def '#gradleVersionNumber: fails if the jdk version is not configured'() {
+        setupJdksHardcodedVersions()
+        applyBaselineJavaVersions()
 
-        runOutput.contains(expectedJdk17.toFile().getCanonicalPath())
+        gradleVersion = gradleVersionNumber
+
+        buildFile << '''
+            javaVersions {
+                distributionTarget = '15'
+            }
+        '''.stripIndent(true)
+        writeHelloWorld(projectDir)
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        // generate the ./gradlew task
+        runTasksSuccessfully("wrapper")
+
+        when:
+        def result = runGradlewTasksWithFailure("compileJava")
+
+        then:
+        expectedErrorLines.forEach { expectedErrorLine -> result.contains(expectedErrorLine) }
+
+        where:
+        gradleVersionNumber | expectedErrorLines
+        GRADLE_7VERSION     | ["No compatible toolchains found for request specification: {languageVersion=15, vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false)."]
+        GRADLE_8VERSION     | ["No matching toolchains found for requested specification: {languageVersion=15, vendor=any, implementation=vendor-specific}", "No locally installed toolchains match and toolchain auto-provisioning is not enabled."]
     }
 
-    def java17Code = '''
-        public class Main {
-            sealed interface MyUnion {
-                record Foo(int number) implements MyUnion {}
-            }
-        
-            public static void main(String[] args) {
-                MyUnion myUnion = new MyUnion.Foo(1234);
-            }
-        }
-    '''
-
-    def java17PreviewCode = '''
-        public class Main {
-            sealed interface MyUnion {
-                record Foo(int number) implements MyUnion {}
-            }
-        
-            public static void main(String[] args) {
-                MyUnion myUnion = new MyUnion.Foo(1234);
-                switch (myUnion) {
-                    case MyUnion.Foo foo -> System.out.println("Java 17 pattern matching switch: " + foo.number);
+    def getMainJavaCode() {
+        return '''
+                public class Main {
+                    public static void main(String[] args) {
+                        String javaHome = System.getProperty("java.home");
+                        System.out.println("Java home: " + javaHome);
+                    }
                 }
-            }
-        }
-        '''
+            '''.stripIndent(true)
+    }
 
     @Override
     Path workingDir() {

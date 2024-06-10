@@ -19,6 +19,8 @@ package com.palantir.gradle.jdks;
 import com.google.common.base.Preconditions;
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
+import com.palantir.gradle.jdks.setup.GradleJdkPatchHelper;
+import com.palantir.gradle.jdks.setup.GradleJdkPatchHelper.PatchLineNumbers;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +33,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.Range;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -115,12 +116,12 @@ public abstract class GradleWrapperPatcher {
 
     private static List<String> getLinesWithoutPatch(File gradlewFile) {
         List<String> initialLines = readAllLines(gradlewFile.toPath());
-        Optional<Range<Integer>> patchLineRange = getPatchLineNumbers(initialLines);
+        Optional<PatchLineNumbers> patchLineRange = GradleJdkPatchHelper.getPatchLineNumbers(initialLines);
         if (patchLineRange.isEmpty()) {
             return initialLines;
         }
-        int startIndex = patchLineRange.get().getMinimum();
-        int endIndex = patchLineRange.get().getMaximum();
+        int startIndex = patchLineRange.get().getStartIndex();
+        int endIndex = patchLineRange.get().getEndIndex();
         List<String> linesNoPatch = initialLines.subList(0, startIndex);
         if (endIndex + 1 < initialLines.size()) {
             linesNoPatch.addAll(initialLines.subList(endIndex + 1, initialLines.size()));
@@ -130,41 +131,10 @@ public abstract class GradleWrapperPatcher {
 
     private static List<String> getPatchedLines(File gradlewFile) {
         List<String> initialLines = readAllLines(gradlewFile.toPath());
-        return getPatchLineNumbers(initialLines)
+        return GradleJdkPatchHelper.getPatchLineNumbers(initialLines)
                 .map(integerIntegerPair ->
-                        initialLines.subList(integerIntegerPair.getMinimum(), integerIntegerPair.getMaximum() + 1))
+                        initialLines.subList(integerIntegerPair.getStartIndex(), integerIntegerPair.getEndIndex() + 1))
                 .orElseGet(List::of);
-    }
-
-    private static Optional<Range<Integer>> getPatchLineNumbers(List<String> content) {
-        IntStream startPatchIdxStream = IntStream.range(0, content.size())
-                .filter(i -> content.get(i).equals(GRADLEW_PATCH_HEADER))
-                .limit(2);
-        List<Integer> startPatchIndexes = startPatchIdxStream.boxed().collect(Collectors.toList());
-        Preconditions.checkState(
-                startPatchIndexes.size() <= 1,
-                String.format(
-                        "Invalid gradle JDK patch, expected at most 1 Gradle JDK setup header, but got %s",
-                        startPatchIndexes.size()));
-        Optional<Integer> startIndex = startPatchIndexes.stream().findFirst();
-        if (startPatchIndexes.isEmpty()) {
-            return Optional.empty();
-        }
-        IntStream endPatchIdxStream = IntStream.range(startIndex.get(), content.size())
-                .filter(i -> content.get(i).equals(GRADLEW_PATCH_FOOTER))
-                .limit(2);
-        List<Integer> endPatchIndexes = endPatchIdxStream.boxed().collect(Collectors.toList());
-        Preconditions.checkState(
-                endPatchIndexes.size() <= 1,
-                String.format(
-                        "Invalid gradle JDK patch, expected at most 1 Gradle JDK setup footer, but got %s",
-                        endPatchIndexes.size()));
-        Optional<Integer> endIndex = endPatchIndexes.stream().findFirst();
-        if (endIndex.isEmpty()) {
-            throw new RuntimeException(
-                    String.format("Invalid gradle JDK patch, missing the closing footer %s", GRADLEW_PATCH_FOOTER));
-        }
-        return Optional.of(Range.of(startIndex.get(), endIndex.get()));
     }
 
     private static String getNewGradlewWithPatchContent(List<String> initialLines) {

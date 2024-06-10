@@ -14,6 +14,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'commons-io:commons-io'
+    testImplementation 'org.xmlunit:xmlunit-assertj'
 
     integrationTestImplementation project(':gradle-jdks')
     integrationTestImplementation 'commons-io:commons-io'
