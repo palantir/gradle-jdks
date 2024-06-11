@@ -50,10 +50,6 @@ public abstract class GradleWrapperPatcher {
     private static final String COMMENT_BLOCK = "###";
     private static final String SHEBANG = "#!";
 
-    // DO NOT CHANGE the header and the footer, they are used to identify the patch block
-    private static final String GRADLEW_PATCH_HEADER = "# >>> Gradle JDK setup >>>";
-    private static final String GRADLEW_PATCH_FOOTER = "# <<< Gradle JDK setup <<<";
-
     interface Params {
 
         @InputFile

@@ -16,8 +16,8 @@
 
 package com.palantir.gradle.jdks.setup;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -39,60 +39,39 @@ public final class XmlPatcher {
 
     private static final String GRADLE_LOCAL_JAVA_HOME = "#GRADLE_LOCAL_JAVA_HOME";
 
-    public static void updateGradleJvmValue(String xmlFilePath) {
+    public static void updateGradleJvmValue(Path xmlFilePath) {
         try {
-            // Load and parse the XML file
-            File xmlFile = new File(xmlFilePath);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
-            Document document = builder.parse(xmlFile);
+            Document document = builder.parse(xmlFilePath.toFile());
             document.getDocumentElement().normalize();
 
-            // Create XPath expression to find the gradleJvm option
             XPathFactory xPathFactory = XPathFactory.newInstance();
             XPath xpath = xPathFactory.newXPath();
             String xpathExpression = "//GradleProjectSettings/option[@name='gradleJvm']";
 
-            // Find the gradleJvm option node
             Node gradleJvmOption = (Node) xpath.evaluate(xpathExpression, document, XPathConstants.NODE);
-
             if (gradleJvmOption != null) {
-                // Update the value of the gradleJvm option
                 Element element = (Element) gradleJvmOption;
                 element.setAttribute("value", GRADLE_LOCAL_JAVA_HOME);
-
-                // Save the modified XML file
-                TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                Transformer transformer = transformerFactory.newTransformer();
-                DOMSource source = new DOMSource(document);
-                StreamResult result = new StreamResult(xmlFile);
-                transformer.transform(source, result);
-
                 System.out.println(
                         String.format("Updated the gradleJvm to GRADLE_LOCAL_JAVA_HOME in file `%s`.", xmlFilePath));
             } else {
-                // GradleProjectSettings element
+                // Creating the new gradleJvm option
                 Node gradleProjectSettings =
                         (Node) xpath.evaluate("//GradleProjectSettings", document, XPathConstants.NODE);
-
-                // Create the new option element
                 Element newOption = document.createElement("option");
                 newOption.setAttribute("name", "gradleJvm");
                 newOption.setAttribute("value", GRADLE_LOCAL_JAVA_HOME);
-
-                // Add the option to GradleProjectSettings
                 gradleProjectSettings.appendChild(newOption);
-
-                // Save the modified XML file
-                TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                Transformer transformer = transformerFactory.newTransformer();
-                DOMSource source = new DOMSource(document);
-                StreamResult result = new StreamResult(xmlFile);
-                transformer.transform(source, result);
-
                 System.out.println(
                         String.format("Added the gradleJvm configuration setting to file `%s`.", xmlFilePath));
             }
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(document);
+            StreamResult result = new StreamResult(xmlFilePath.toFile());
+            transformer.transform(source, result);
         } catch (ParserConfigurationException
                 | SAXException
                 | IOException

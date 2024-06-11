@@ -32,7 +32,7 @@ public class XmlPatcherTest {
     void can_patch_gradle_xml_file() throws IOException {
         Path gradleXmlFile = tempDir.resolve("gradle.xml");
         Files.copy(Path.of("src/test/resources/idea_generated_gradle.xml"), gradleXmlFile);
-        XmlPatcher.updateGradleJvmValue(gradleXmlFile.toAbsolutePath().toString());
+        XmlPatcher.updateGradleJvmValue(gradleXmlFile.toAbsolutePath());
         XmlAssert.assertThat(Files.readString(gradleXmlFile))
                 .and(Path.of("src/test/resources/expected_idea_patched_gradle.xml"))
                 .ignoreWhitespace()

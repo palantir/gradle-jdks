@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks.setup;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.JarURLConnection;
@@ -25,10 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -38,8 +39,7 @@ public final class GradleJdkPropertiesSetup {
 
     public static void main(String[] args) {
         Path projectDir = Path.of(args[0]);
-        String gradleJdkSymlink = parseGradleJdk(args[1]);
-        String allJdkSymlinks = parseToolchains(args[2]);
+        String allJdkSymlinks = parseToolchains(args[1]);
         updateGradleProperties(
                 projectDir.resolve("gradle.properties"),
                 Map.of(
@@ -51,66 +51,52 @@ public final class GradleJdkPropertiesSetup {
                         "false",
                         "org.gradle.java.installations.auto-detect",
                         "false"));
-        // [Intelij specific] Set the gradle java home using GRADLE_LOCAL_JAVA_HOME config.properties read by Intelij
-        try {
-            Files.createDirectories(projectDir.resolve(".gradle"));
-            Files.write(
-                    projectDir.resolve(".gradle/config.properties"),
-                    String.format("java.home=%s", gradleJdkSymlink).getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to set the java.home value in .gradle/config.properties.", e);
-        }
 
-        // [Intelij] Update the .idea files with the startup script and the GRADLE_LOCAL_JAVA_HOME gradleJvm setup
+        // [Intelij] Update the .idea files with the startup script
         Path targetProjectIdea = projectDir.resolve(".idea");
-        writeIdeaFiles(targetProjectIdea);
+        List<Path> newIdeaFiles = writeIdeaFiles(targetProjectIdea);
 
         // [Intelij] Update .gitignore to not ignore the newly added .idea files & ignore the jdk-* symlinks
-        updateIdeaGitignore(projectDir.resolve(".gitignore"), FileUtils.collectRelativePaths(targetProjectIdea));
+        updateIdeaGitignore(projectDir, newIdeaFiles);
     }
 
-    private static void writeIdeaFiles(Path targetProjectIdea) {
+    private static List<Path> writeIdeaFiles(Path targetProjectIdea) {
         URL ideaConfigurations = GradleJdkPropertiesSetup.class.getClassLoader().getResource("ideaConfigurations");
         try {
-            copyJarResourcesRecursively(targetProjectIdea, (JarURLConnection) ideaConfigurations.openConnection());
+            return getAndCopyJarResources(targetProjectIdea, (JarURLConnection) ideaConfigurations.openConnection());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void copyJarResourcesRecursively(Path destination, JarURLConnection jarConnection)
+    private static List<Path> getAndCopyJarResources(Path destination, JarURLConnection jarConnection)
             throws IOException {
+        List<Path> newIdeaFiles = new ArrayList<>();
         JarFile jarFile = jarConnection.getJarFile();
         for (Iterator<JarEntry> it = jarFile.entries().asIterator(); it.hasNext(); ) {
             JarEntry entry = it.next();
             if (entry.getName().startsWith(jarConnection.getEntryName())
                     && !entry.getName().equals(jarConnection.getEntryName())) {
                 String entryName = entry.getName().replace(jarConnection.getEntryName() + "/", "");
+                Path destinationFile = destination.resolve(entryName);
                 if (!entry.isDirectory()) {
                     try (InputStream entryInputStream = jarFile.getInputStream(entry)) {
-                        if (entryName.endsWith("gradle.xml") && Files.exists(destination.resolve(entryName))) {
-                            XmlPatcher.updateGradleJvmValue(destination
-                                    .resolve(entryName)
-                                    .toAbsolutePath()
-                                    .toString());
-                        } else {
-                            Files.copy(
-                                    entryInputStream,
-                                    destination.resolve(entryName),
-                                    StandardCopyOption.REPLACE_EXISTING);
-                        }
+                        Files.copy(
+                                entryInputStream, destination.resolve(entryName), StandardCopyOption.REPLACE_EXISTING);
+                        newIdeaFiles.add(destinationFile);
                     }
                 } else {
-                    FileUtils.createDirectories(destination.resolve(entryName));
+                    FileUtils.createDirectories(destinationFile);
                 }
             }
         }
+        return newIdeaFiles;
     }
 
-    private static void updateIdeaGitignore(Path gitignoreFile, List<Path> pathsToBeCommitted) {
+    private static void updateIdeaGitignore(Path projectDir, List<Path> pathsToBeCommitted) {
         // try to add the lines after ".idea/" in .gitignore if it exists
         try {
-
+            Path gitignoreFile = projectDir.resolve(".gitignore");
             if (!Files.exists(gitignoreFile)) {
                 Files.createFile(gitignoreFile);
             }
@@ -120,16 +106,16 @@ public final class GradleJdkPropertiesSetup {
                 gitignoreLines.remove(ideaIndex);
                 gitignoreLines.add(ideaIndex, ".idea/*");
             }
-            List<String> gitignorePatch = getGitignorePatch(pathsToBeCommitted);
-            writeContentWithPatch(gitignoreFile, gitignoreLines, gitignorePatch);
+            List<String> gitignorePatch = getGitignorePatch(projectDir, pathsToBeCommitted);
+            List<String> linesNoPatch = GradleJdkPatchHelper.getLinesWithoutPatch(gitignoreLines);
+            writeContentWithPatch(gitignoreFile, linesNoPatch, gitignorePatch);
 
         } catch (IOException e) {
             throw new RuntimeException("Unable to update the .gitignore file.", e);
         }
     }
 
-    public static void writeContentWithPatch(Path file, List<String> initialLines, List<String> patchLines) {
-        List<String> linesNoPatch = GradleJdkPatchHelper.getLinesWithoutPatch(initialLines);
+    public static void writeContentWithPatch(Path file, List<String> linesNoPatch, List<String> patchLines) {
         try {
             Files.write(
                     file,
@@ -141,17 +127,15 @@ public final class GradleJdkPropertiesSetup {
         }
     }
 
-    private static List<String> getGitignorePatch(List<Path> pathsToBeCommitted) {
-        Stream<String> newIdeaFiles =
-                pathsToBeCommitted.stream().map(Path::toString).map(s -> "!.idea/" + s);
+    private static List<String> getGitignorePatch(Path projectDir, List<Path> pathsToBeCommitted) {
+        Stream<String> newIdeaFiles = pathsToBeCommitted.stream()
+                .map(projectDir::relativize)
+                .map(Path::toString)
+                .map(path -> String.format("!%s", path));
         return Stream.concat(
                         Stream.concat(Stream.of(GradleJdkPatchHelper.PATCH_HEADER, ".idea/*"), newIdeaFiles),
                         Stream.of("jdk-*", GradleJdkPatchHelper.PATCH_FOOTER))
                 .collect(Collectors.toList());
-    }
-
-    private static String parseGradleJdk(String gradleJdk) {
-        return Path.of(gradleJdk).toString();
     }
 
     private static String parseToolchains(String toolchains) {
@@ -163,36 +147,50 @@ public final class GradleJdkPropertiesSetup {
                 .collect(Collectors.joining(","));
     }
 
-    public static void updateGradleProperties(Path gradlePropertiesFile, Map<String, String> properties) {
+    public static void updateGradleProperties(Path gradlePropertiesFile, Map<String, String> gradleJdkProperties) {
         try {
+            // use the patching mechanism, such that we can include extra comments.
             if (!Files.exists(gradlePropertiesFile)) {
                 Files.createFile(gradlePropertiesFile);
             }
             List<String> initialLines = Files.readAllLines(gradlePropertiesFile);
-            Set<String> presentProperties = initialLines.stream()
-                    .map(line -> {
+            List<String> linesNoPatch = GradleJdkPatchHelper.getLinesWithoutPatch(initialLines);
+            List<String> linesWithoutNewProperties = linesNoPatch.stream()
+                    .filter(line -> {
                         String[] keyValue = line.split("=");
-                        return keyValue[0].trim();
+                        String name = keyValue[0].trim();
+                        String value = keyValue[1].trim();
+                        return !gradleJdkProperties.containsKey(name)
+                                || (gradleJdkProperties.containsKey(name)
+                                        && gradleJdkProperties.get(name).equals(value));
                     })
-                    .collect(Collectors.toSet());
-            Stream<String> newProperties = properties.entrySet().stream()
-                    .filter(entry -> !presentProperties.contains(entry.getKey()))
-                    .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()));
-            Stream<String> updatedProperties = initialLines.stream().map(line -> {
-                String[] keyValue = line.split("=");
-                String key = keyValue[0].trim();
-                if (properties.containsKey(key)) {
-                    return String.format("%s=%s", key, properties.get(keyValue[0]));
-                }
-                return line;
-            });
-
-            Files.write(
-                    gradlePropertiesFile,
-                    Stream.concat(updatedProperties, newProperties).collect(Collectors.toList()),
-                    StandardCharsets.UTF_8);
+                    .collect(Collectors.toList());
+            if (linesWithoutNewProperties.size() != linesNoPatch.size()) {
+                System.out.println(
+                        "Some gradle properties from gradle.properties file were updated by the Gradle JDK setup.");
+            }
+            String gradleJdkPatch = getGradlePropertiesPatch(gradleJdkProperties);
+            writeContentWithPatch(gradlePropertiesFile, linesWithoutNewProperties, List.of(gradleJdkPatch));
         } catch (IOException e) {
             throw new RuntimeException("Unable to update the gradle.properties file", e);
+        }
+    }
+
+    public static String getGradlePropertiesPatch(Map<String, String> gradleJdkProperties) throws IOException {
+        String gradleJdkLines = gradleJdkProperties.entrySet().stream()
+                .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining("\n"));
+        try (InputStream inputStream =
+                GradleJdkPropertiesSetup.class.getClassLoader().getResourceAsStream("gradleProperties.template")) {
+            if (inputStream == null) {
+                throw new RuntimeException("Resource not found: gradleProperties.template");
+            }
+            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                inputStream.transferTo(outputStream);
+                return outputStream.toString(StandardCharsets.UTF_8).replace("_GRADLE_JDK_PROPERTIES_", gradleJdkLines);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read gradleProperties.template");
         }
     }
 
