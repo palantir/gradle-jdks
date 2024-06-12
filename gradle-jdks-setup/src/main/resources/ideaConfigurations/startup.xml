@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectStartupSharedConfiguration">
     <configurations>
-      <configuration id="Shell Script.run gradle-jdks-setup" name="run gradle-jdks-setup" />
+      <configuration id="Shell Script.runGradlew" name="runGradlew" />
     </configurations>
   </component>
 </project>

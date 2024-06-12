@@ -3,4 +3,4 @@
 # Remove only if `palantir.jdk.setup.enabled` is false or if the project needs to run on non-supported OS (e.g. windows)
 # The change to remove the setup shouldn't be committed to the repository, unless the project is only run on non-supported OSs.
 _GRADLE_JDK_PROPERTIES_
-# >>> Gradle JDK setup >>>
+# <<< Gradle JDK setup <<<

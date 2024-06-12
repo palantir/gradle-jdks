@@ -181,16 +181,16 @@ public final class GradleJdkPropertiesSetup {
                 .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
                 .collect(Collectors.joining("\n"));
         try (InputStream inputStream =
-                GradleJdkPropertiesSetup.class.getClassLoader().getResourceAsStream("gradleProperties.template")) {
+                GradleJdkPropertiesSetup.class.getClassLoader().getResourceAsStream("gradle_properties.template")) {
             if (inputStream == null) {
-                throw new RuntimeException("Resource not found: gradleProperties.template");
+                throw new RuntimeException("Resource not found: gradle_properties.template");
             }
             try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
                 inputStream.transferTo(outputStream);
                 return outputStream.toString(StandardCharsets.UTF_8).replace("_GRADLE_JDK_PROPERTIES_", gradleJdkLines);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read gradleProperties.template");
+            throw new RuntimeException("Failed to read gradle_properties.template");
         }
     }
 

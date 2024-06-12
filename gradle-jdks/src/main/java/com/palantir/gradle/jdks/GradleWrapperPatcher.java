@@ -55,12 +55,6 @@ public abstract class GradleWrapperPatcher {
         @InputFile
         RegularFileProperty getOriginalGradlewScript();
 
-        @InputFile
-        RegularFileProperty getOriginalGradleWrapperJar();
-
-        @InputFile
-        RegularFileProperty getGradleJdksSetupJar();
-
         @Input
         Property<Boolean> getGenerate();
 

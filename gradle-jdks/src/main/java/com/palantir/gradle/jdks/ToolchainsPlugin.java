@@ -98,18 +98,12 @@ public class ToolchainsPlugin implements Plugin<Project> {
                 .getTasks()
                 .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
                     task.getOriginalGradlewScript().fileProvider(wrapperTask.map(Wrapper::getScriptFile));
-                    task.getOriginalGradleWrapperJar().fileProvider(wrapperTask.map(Wrapper::getJarFile));
                     task.getBuildDir().set(task.getTemporaryDir());
-                    task.getGradleJdksSetupJar()
-                            .fileProvider(generateGradleJdkConfigs
-                                    .map(GenerateGradleJdkConfigsTask::getOutputGradleDirectory)
-                                    .flatMap(dirProp -> dirProp.getAsFile().map(file -> file.toPath()
-                                            .resolve(GradleJdkConfigs.GRADLE_JDKS_SETUP_JAR)
-                                            .toFile())));
                     task.getPatchedGradlewScript()
                             .set(rootProject.file(
                                     rootProject.getRootDir().toPath().resolve("gradlew")));
                     task.getGenerate().set(true);
+                    task.dependsOn(generateGradleJdkConfigs);
                 });
         wrapperTask.configure(task -> {
             Path propertiesPath = task.getPropertiesFile().toPath();
