@@ -16,7 +16,7 @@
 
 package com.palantir.gradle.jdks
 
-import org.apache.commons.lang3.Range
+
 import org.apache.commons.lang3.tuple.Pair
 import spock.lang.TempDir
 
@@ -85,7 +85,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
 
         then:
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
-        readBytecodeVersion(compiledClass) == Range.of(JAVA_17_BYTECODE, 0)
+        readBytecodeVersion(compiledClass) == Pair.of(0, JAVA_17_BYTECODE)
 
         when:
         String runOutput = runGradlewTasksSuccessfully("run")
@@ -153,15 +153,15 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
 
         then: 'the main project is compiled with `distributionTarget` version'
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
-        readBytecodeVersion(compiledClass) == Pair.of(JAVA_17_BYTECODE, ENABLE_PREVIEW_BYTECODE)
+        readBytecodeVersion(compiledClass) == Pair.of(ENABLE_PREVIEW_BYTECODE, JAVA_17_BYTECODE)
 
         and: 'the library is compiled with `libraryTarget` version'
         File subproject11Class = new File(subprojectLib11, "build/classes/java/main/Main.class")
-        readBytecodeVersion(subproject11Class) == Pair.of(JAVA_11_BYTECODE, 0)
+        readBytecodeVersion(subproject11Class) == Pair.of(0, JAVA_11_BYTECODE)
 
         and: 'the project is compiled with the overridden `target` version'
         File subproject21Class = new File(subprojectLib11, "build/classes/java/main/Main.class")
-        readBytecodeVersion(subproject21Class) == Pair.of(JAVA_21_BYTECODE, 0)
+        readBytecodeVersion(subproject21Class) == Pair.of(0, JAVA_21_BYTECODE)
 
         where:
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]

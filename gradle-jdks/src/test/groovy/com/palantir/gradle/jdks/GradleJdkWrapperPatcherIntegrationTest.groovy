@@ -95,11 +95,7 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
             throw new RuntimeException("Could not list the ideaConfigurations files", e);
         }
 
-        then:
-        String gradleXmlContent = Files.readString(projectDir.toPath().resolve(".idea/gradle.xml"))
-        gradleXmlContent.contains("<option name=\"gradleJvm\" value=\"#GRADLE_LOCAL_JAVA_HOME\" />")
-
-        and: 'gradle.properties files contain the jdk properties'
+        then: 'gradle.properties files contain the jdk properties'
         Properties properties = new Properties();
         properties.load(new FileInputStream(projectDir.toPath().resolve("gradle.properties").toFile()))
         properties.getProperty("org.gradle.java.installations.paths") == "jdk-11,jdk-17,jdk-21"
@@ -114,14 +110,13 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
             another thing
             # >>> Gradle JDK setup >>>
             .idea/*
-            !.idea/gradle.xml
-            !.idea/runConfigurations/run_gradle_jdks_setup.xml
             !.idea/startup.xml
+            !.idea/runConfigurations/runGradlew.xml
+            !.idea/runConfigurations/setupJdks.xml
             jdk-*
             # <<< Gradle JDK setup <<<""".stripIndent(true)
         Files.readString(projectDir.toPath().resolve(".gitignore")) == expectedGitignoreContent
 
-        when:
         and: 'jdk symlinks are created'
         ProcessBuilder jdkProcessBuilder = new ProcessBuilder(projectDir.toPath().resolve("jdk-21/bin/java").toString(), "-version").redirectErrorStream(true)
 
