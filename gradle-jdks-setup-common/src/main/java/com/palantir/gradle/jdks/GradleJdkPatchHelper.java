@@ -56,7 +56,7 @@ public class GradleJdkPatchHelper {
     }
 
     public static List<String> getLinesWithoutPatch(List<String> initialLines) {
-        Optional<PatchLineNumbers> patchLineRange = GradleJdkPatchHelper.getPatchLineNumbers(initialLines);
+        Optional<PatchLineNumbers> patchLineRange = getPatchLineNumbers(initialLines);
         if (patchLineRange.isEmpty()) {
             return initialLines;
         }
@@ -71,9 +71,9 @@ public class GradleJdkPatchHelper {
 
     public static void maybeRemovePatch(Path filePath) {
         try {
-            List<String> intialLines = Files.readAllLines(filePath);
-            List<String> linesWithoutPatch = getLinesWithoutPatch(intialLines);
-            if (!linesWithoutPatch.equals(intialLines)) {
+            List<String> initialLines = Files.readAllLines(filePath);
+            List<String> linesWithoutPatch = getLinesWithoutPatch(initialLines);
+            if (!linesWithoutPatch.equals(initialLines)) {
                 Files.write(
                         filePath,
                         String.join("\n", linesWithoutPatch).getBytes(StandardCharsets.UTF_8),

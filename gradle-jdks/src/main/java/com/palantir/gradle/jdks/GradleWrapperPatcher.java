@@ -19,7 +19,6 @@ package com.palantir.gradle.jdks;
 import com.google.common.base.Preconditions;
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
-import com.palantir.gradle.jdks.GradleJdkPatchHelper.PatchLineNumbers;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
@@ -91,7 +89,8 @@ public abstract class GradleWrapperPatcher {
     }
 
     private static void patchGradlewContent(File originalGradlewScript, RegularFileProperty patchedGradlewScript) {
-        List<String> linesNoPatch = getLinesWithoutPatch(originalGradlewScript);
+        List<String> initialLines = readAllLines(originalGradlewScript.toPath());
+        List<String> linesNoPatch = GradleJdkPatchHelper.getLinesWithoutPatch(initialLines);
         write(patchedGradlewScript.getAsFile().get().toPath(), getNewGradlewWithPatchContent(linesNoPatch));
     }
 
@@ -101,21 +100,6 @@ public abstract class GradleWrapperPatcher {
         } catch (IOException e) {
             throw new RuntimeException("Unable to write file", e);
         }
-    }
-
-    private static List<String> getLinesWithoutPatch(File gradlewFile) {
-        List<String> initialLines = readAllLines(gradlewFile.toPath());
-        Optional<PatchLineNumbers> patchLineRange = GradleJdkPatchHelper.getPatchLineNumbers(initialLines);
-        if (patchLineRange.isEmpty()) {
-            return initialLines;
-        }
-        int startIndex = patchLineRange.get().getStartIndex();
-        int endIndex = patchLineRange.get().getEndIndex();
-        List<String> linesNoPatch = initialLines.subList(0, startIndex);
-        if (endIndex + 1 < initialLines.size()) {
-            linesNoPatch.addAll(initialLines.subList(endIndex + 1, initialLines.size()));
-        }
-        return linesNoPatch;
     }
 
     private static List<String> getPatchedLines(File gradlewFile) {
