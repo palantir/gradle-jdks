@@ -41,8 +41,23 @@ public final class IntelijGradleJdkSetup {
     }
 
     private static void unixRunGradleJdksSetup(Path projectDir) {
-        CommandRunner.runWithInheritIO(List.of("./gradlew setupJdks"), projectDir.toFile());
-        CommandRunner.runWithInheritIO(List.of("./gradlew"), projectDir.toFile());
+        System.out.println("Generating the Gradle JDK configurations...");
+        // 1. generate all the `gradle/` configurations first
+        CommandRunner.runWithInheritIO(List.of("./gradlew", "generateGradleJdkConfigs"), projectDir.toFile());
+        // 2. run the ./gradle/gradle-jdks-setup.sh script to install the JDKs. We cannot run directly `./gradlew`
+        // because the current JVM might not have the certificates we need (eg. Palantir certs) when running Gradle
+        // tasks.
+        System.out.println("Installing and setting up the JDKs...");
+        CommandRunner.runWithInheritIO(List.of("./gradle/gradle-jdks-setup.sh"), projectDir.toFile());
+
+        // [Intelij] Patch gradle.xml file to set gradleJvm to #GRADLE_LOCAL_JAVA_HOME
+        Path gradleXml = projectDir.resolve(".idea/gradle.xml");
+        if (gradleXml.toFile().exists()) {
+            XmlPatcher.updateGradleJvmValue(gradleXml);
+        } else {
+            System.err.println(
+                    "Could not update the gradle configuration programmatically. Please configure `Gradle JVM` to  GRADLE_LOCAL_JAVA_HOME in ( Settings | Build, Execution, Deployment | Build Tools | Gradle | Gradle JVM).");
+        }
     }
 
     private static void maybeDisableGradleJdkSetup(Path projectDir) {

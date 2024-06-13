@@ -110,8 +110,7 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
             # >>> Gradle JDK setup >>>
             .idea/*
             !.idea/startup.xml
-            !.idea/runConfigurations/runGradlew.xml
-            !.idea/runConfigurations/setupJdks.xml
+            !.idea/runConfigurations/IntelijGradleJdkSetup.xml
             jdk-*
             # <<< Gradle JDK setup <<<""".stripIndent(true)
         Files.readString(projectDir.toPath().resolve(".gitignore")) == expectedGitignoreContent

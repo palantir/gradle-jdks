@@ -180,10 +180,11 @@ done
 rm -rf "$tmp_work_dir"
 
 gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
+gradle_daemon_jdk_local_symlink="$APP_HOME"/jdk-"$gradle_daemon_jdk_version"
 gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)
 
 # [Both ./gradlew & Intelij setup] Writing the JDK setup properties
-"$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkPropertiesSetup "$APP_HOME" "$all_jdk_symlinks"
+"$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkPropertiesSetup "$APP_HOME" "$gradle_daemon_jdk_local_symlink" "$all_jdk_symlinks"
 
 # [Used by ./gradlew only] Setting the Gradle Daemon Java Home to the JDK distribution
 set -- "-Dorg.gradle.java.home=$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path" "$@"

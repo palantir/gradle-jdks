@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectStartupSharedConfiguration">
     <configurations>
-      <configuration id="Shell Script.runGradlew" name="runGradlew" />
+      <configuration id="JAR Application.IntelijGradleJdkSetup" name="IntelijGradleJdkSetup" />
     </configurations>
   </component>
 </project>

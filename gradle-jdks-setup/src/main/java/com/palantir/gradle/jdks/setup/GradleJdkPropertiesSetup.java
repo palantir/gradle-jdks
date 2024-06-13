@@ -44,7 +44,8 @@ public final class GradleJdkPropertiesSetup {
 
     public static void main(String[] args) {
         Path projectDir = Path.of(args[0]);
-        String allJdkSymlinks = parseToolchains(args[1]);
+        String gradleJdkSymlink = parseGradleJdk(args[1]);
+        String allJdkSymlinks = parseToolchains(args[2]);
         updateGradleProperties(
                 projectDir.resolve("gradle.properties"),
                 Map.of(
@@ -56,13 +57,27 @@ public final class GradleJdkPropertiesSetup {
                         "false",
                         "org.gradle.java.installations.auto-detect",
                         "false"));
-
         // [Intelij] Update the .idea files with the startup script
         Path targetProjectIdea = projectDir.resolve(".idea");
         List<Path> newIdeaFiles = writeIdeaFiles(targetProjectIdea);
 
+        // [Intelij specific] Set the gradle java.home in .gradle/config.properties. This is the value for the Intelij
+        // env variable GRADLE_LOCAL_JAVA_HOME
+        try {
+            Files.createDirectories(projectDir.resolve(".gradle"));
+            Files.write(
+                    projectDir.resolve(".gradle/config.properties"),
+                    String.format("java.home=%s", gradleJdkSymlink).getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to set the java.home value in .gradle/config.properties.", e);
+        }
+
         // Update .gitignore to not ignore the newly added .idea files & ignore the jdk-* symlinks
         updateIdeaGitignore(projectDir, newIdeaFiles);
+    }
+
+    private static String parseGradleJdk(String gradleJdk) {
+        return Path.of(gradleJdk).toAbsolutePath().toString();
     }
 
     private static List<Path> writeIdeaFiles(Path targetProjectIdea) {
