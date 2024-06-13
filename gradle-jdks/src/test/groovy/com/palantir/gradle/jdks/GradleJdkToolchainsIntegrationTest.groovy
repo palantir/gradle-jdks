@@ -106,7 +106,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         applyApplicationPlugin()
 
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
-        file('src/main/java/Main.java') << getMainJavaCode()
+        file('src/main/java/Main.java') << java17PreviewCode
 
         // language=Groovy
         buildFile << """
@@ -149,7 +149,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 
         when: 'compiling projects'
-        runGradlewTasksSuccessfully("compileJava")
+        def output = runGradlewTasksSuccessfully("compileJava", "--info")
 
         then: 'the main project is compiled with `distributionTarget` version'
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
@@ -160,7 +160,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         readBytecodeVersion(subproject11Class) == Pair.of(0, JAVA_11_BYTECODE)
 
         and: 'the project is compiled with the overridden `target` version'
-        File subproject21Class = new File(subprojectLib11, "build/classes/java/main/Main.class")
+        File subproject21Class = new File(subprojectLib21, "build/classes/java/main/Main.class")
         readBytecodeVersion(subproject21Class) == Pair.of(0, JAVA_21_BYTECODE)
 
         where:
@@ -195,14 +195,31 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         GRADLE_8VERSION     | ["No matching toolchains found for requested specification: {languageVersion=15, vendor=any, implementation=vendor-specific}", "No locally installed toolchains match and toolchain auto-provisioning is not enabled."]
     }
 
+    def java17PreviewCode = '''
+        public class Main {
+            sealed interface MyUnion {
+                record Foo(int number) implements MyUnion {}
+            }
+        
+            public static void main(String[] args) {
+                MyUnion myUnion = new MyUnion.Foo(1234);
+                switch (myUnion) {
+                    case MyUnion.Foo foo -> System.out.println("Java 17 pattern matching switch: " + foo.number);
+                }
+                String javaHome = System.getProperty("java.home");
+                System.out.println("Java home: " + javaHome);
+            }
+        }
+        '''
+
     def getMainJavaCode() {
         return '''
-                public class Main {
-                    public static void main(String[] args) {
-                        String javaHome = System.getProperty("java.home");
-                        System.out.println("Java home: " + javaHome);
-                    }
+            public class Main {
+                public static void main(String[] args) {
+                    String javaHome = System.getProperty("java.home");
+                    System.out.println("Java home: " + javaHome);
                 }
+            }
             '''.stripIndent(true)
     }
 

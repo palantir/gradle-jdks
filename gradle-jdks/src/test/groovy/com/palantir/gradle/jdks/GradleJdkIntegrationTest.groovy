@@ -16,8 +16,7 @@
 
 package com.palantir.gradle.jdks
 
-import com.palantir.gradle.jdks.setup.CaResources
-import com.palantir.gradle.jdks.setup.StdLogger
+
 import nebula.test.IntegrationSpec
 import org.apache.commons.lang3.tuple.Pair
 
@@ -186,22 +185,9 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
             if (magic != BYTECODE_IDENTIFIER) {
                 throw new IllegalArgumentException("File " + file + " does not appear to be java bytecode")
             }
-            return Pair.of(dis.readUnsignedShort(), dis.readUnsignedShort())
+            int minorBytecodeVersion = dis.readUnsignedShort()
+            int majorBytecodeVersion = dis.readUnsignedShort()
+            return Pair.of(minorBytecodeVersion, majorBytecodeVersion)
         }
-    }
-
-    static String getHashForDistribution(JdkDistributionName jdkDistributionName, String jdkVersion) {
-        Map<String, String> certs = new CaResources(new StdLogger()).readPalantirRootCaFromSystemTruststore()
-                .map(cert -> Map.of(cert.getAlias(), cert.getContent())).orElseGet(Map::of)
-        return JdkSpec.builder()
-                .release(JdkRelease.builder()
-                        .arch(CurrentArch.get())
-                        .os(CurrentOs.get())
-                        .version(jdkVersion)
-                        .build())
-                .distributionName(jdkDistributionName)
-                .caCerts(CaCerts.from(certs))
-                .build()
-                .consistentShortHash()
     }
 }
