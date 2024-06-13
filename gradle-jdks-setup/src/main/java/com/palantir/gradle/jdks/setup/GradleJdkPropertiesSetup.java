@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks.setup;
 
+import com.palantir.gradle.jdks.GradleJdkPatchHelper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +36,10 @@ import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * This class is responsible for setting up the Gradle properties and adding IntelliJ IDEA startup files for the
+ * Gradle JDK setup. Called by the patched `./gradlew` script.
+ */
 public final class GradleJdkPropertiesSetup {
 
     public static void main(String[] args) {
@@ -56,7 +61,7 @@ public final class GradleJdkPropertiesSetup {
         Path targetProjectIdea = projectDir.resolve(".idea");
         List<Path> newIdeaFiles = writeIdeaFiles(targetProjectIdea);
 
-        // [Intelij] Update .gitignore to not ignore the newly added .idea files & ignore the jdk-* symlinks
+        // Update .gitignore to not ignore the newly added .idea files & ignore the jdk-* symlinks
         updateIdeaGitignore(projectDir, newIdeaFiles);
     }
 
@@ -94,7 +99,6 @@ public final class GradleJdkPropertiesSetup {
     }
 
     private static void updateIdeaGitignore(Path projectDir, List<Path> pathsToBeCommitted) {
-        // try to add the lines after ".idea/" in .gitignore if it exists
         try {
             Path gitignoreFile = projectDir.resolve(".gitignore");
             if (!Files.exists(gitignoreFile)) {

@@ -18,7 +18,6 @@ package com.palantir.gradle.jdks
 
 import com.palantir.gradle.jdks.setup.AliasContentCert
 import com.palantir.gradle.jdks.setup.CaResources
-import com.palantir.gradle.jdks.setup.GradleJdkPatchHelper
 import com.palantir.gradle.jdks.setup.StdLogger
 import spock.lang.TempDir
 

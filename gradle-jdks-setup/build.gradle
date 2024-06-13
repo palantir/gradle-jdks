@@ -26,7 +26,7 @@ dependencies {
 tasks.register('fatJar', Jar) {
     dependsOn tasks.jar, ':gradle-jdks-setup-common:jar'
     manifest {
-        attributes 'Main-Class': 'com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup'
+        attributes 'Main-Class': 'com.palantir.gradle.jdks.setup.IntelijGradleJdkSetup'
     }
     archiveBaseName = 'gradle-jdks-setup-all'
     duplicatesStrategy = DuplicatesStrategy.FAIL

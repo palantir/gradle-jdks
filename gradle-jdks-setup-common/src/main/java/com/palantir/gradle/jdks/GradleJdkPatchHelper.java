@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.setup;
+package com.palantir.gradle.jdks;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -63,6 +67,22 @@ public class GradleJdkPatchHelper {
             linesNoPatch.addAll(initialLines.subList(endIndex + 1, initialLines.size()));
         }
         return linesNoPatch;
+    }
+
+    public static void maybeRemovePatch(Path filePath) {
+        try {
+            List<String> intialLines = Files.readAllLines(filePath);
+            List<String> linesWithoutPatch = getLinesWithoutPatch(intialLines);
+            if (!linesWithoutPatch.equals(intialLines)) {
+                Files.write(
+                        filePath,
+                        String.join("\n", linesWithoutPatch).getBytes(StandardCharsets.UTF_8),
+                        StandardOpenOption.TRUNCATE_EXISTING,
+                        StandardOpenOption.WRITE);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Unable to read file %s", filePath), e);
+        }
     }
 
     public static byte[] getContentWithPatch(List<String> initialLines, List<String> patchLines, int insertIndex) {

@@ -71,6 +71,27 @@ public final class CommandRunner {
         }
     }
 
+    public static void runWithInheritIO(List<String> commandArguments, File directory) {
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder().command(commandArguments);
+            processBuilder.directory(directory);
+            processBuilder.inheritIO();
+            Process process = processBuilder.start();
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new RuntimeException(String.format(
+                        "Failed to run command '%s'. " + "Failed with exit code %d.",
+                        String.join(" ", commandArguments), exitCode));
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(
+                    String.format("Failed to run command '%s'. ", String.join(" ", commandArguments)), e);
+        } finally {
+            executorService.shutdown();
+        }
+    }
+
     public static String readAllInput(InputStream inputStream) {
         try (Stream<String> lines =
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
