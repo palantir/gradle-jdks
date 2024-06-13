@@ -55,7 +55,7 @@ public final class CommandRunner {
             if (exitCode != 0) {
                 throw new RuntimeException(String.format(
                         "Failed to run command '%s'. "
-                                + "Failed with exit code %d.Error output:\n\n%s\n\nStandard Output:\n\n%s",
+                                + "Failed with exit code %d.\nError output:\n\n%s\n\nStandard Output:\n\n%s",
                         String.join(" ", commandArguments), exitCode, errorOutput, output));
             }
             return output;
@@ -81,7 +81,7 @@ public final class CommandRunner {
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 throw new RuntimeException(String.format(
-                        "Failed to run command '%s'. " + "Failed with exit code %d.",
+                        "Failed to run command '%s'. Failed with exit code %d.",
                         String.join(" ", commandArguments), exitCode));
             }
         } catch (IOException | InterruptedException e) {

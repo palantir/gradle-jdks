@@ -1,9 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="GradleWrapperJar" type="JarApplication">
-    <option name="JAR_PATH" value="$PROJECT_DIR$/../opensource/gradle-failure-reports/gradle/wrapper/gradle-wrapper.jar" />
-    <option name="PROGRAM_PARAMETERS" value="com.palantir.gradle.jdks.setup.GradleJdkPropertiesSetup $PROJECT_DIR$" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="ALTERNATIVE_JRE_PATH" />
-    <method v="2" />
-  </configuration>
-</component>

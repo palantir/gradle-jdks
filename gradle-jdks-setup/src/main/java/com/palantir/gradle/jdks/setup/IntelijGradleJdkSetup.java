@@ -55,7 +55,7 @@ public final class IntelijGradleJdkSetup {
         if (gradleXml.toFile().exists()) {
             XmlPatcher.updateGradleJvmValue(gradleXml);
         } else {
-            System.err.println(
+            throw new RuntimeException(
                     "Could not update the gradle configuration programmatically. Please configure `Gradle JVM` to "
                         + " GRADLE_LOCAL_JAVA_HOME in ( Settings | Build, Execution, Deployment | Build Tools | Gradle"
                         + " | Gradle JVM).");
