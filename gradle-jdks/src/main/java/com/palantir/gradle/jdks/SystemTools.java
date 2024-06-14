@@ -26,6 +26,13 @@ final class SystemTools {
         return "java";
     }
 
+    static String javac() {
+        if (Os.current() == Os.WINDOWS) {
+            return "javac.exe";
+        }
+        return "javac";
+    }
+
     static String keytool() {
         if (CurrentOs.get() == Os.WINDOWS) {
             return "keytool.exe";
