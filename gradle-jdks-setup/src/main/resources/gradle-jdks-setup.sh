@@ -25,7 +25,7 @@
 #   (3) Calls the java class `GradleJdkInstallationSetup` that will move each distribution to
 #   `$GRADLE_USER_HOME/${local_path}` based on the local_path=`gradle/jdks/${majorVersion}/${os}/${arch}/local_path`
 #   and it will set up the certificates based on `gradle/certs` entries for the locally installed distribution
-#   (4) Sets up the JAVA_HOME and PATH env vars to the gradle daemon JDK major version=`gradle/gradle-daemon-jdk-version`
+#   (4) Calls `GradleJdkPropertiesSetup` to set the Intelij & gradle properties and sets `org.gradle.java.home` used by `./gradlew` to the Gradle daemon JDK major version=`gradle/gradle-daemon-jdk-version`
 #
 #
 #   Important for running:
@@ -36,7 +36,6 @@
 #         * various built-in commands including «command» and «set».
 #
 ##############################################################################
-# TODO(crogoz): Print the version of the ./gradlew we are running with!
 
 set -e
 if (set -o  pipefail 2>/dev/null); then
