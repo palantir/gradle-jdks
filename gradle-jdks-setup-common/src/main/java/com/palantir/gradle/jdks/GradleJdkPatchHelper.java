@@ -97,7 +97,7 @@ public final class GradleJdkPatchHelper {
 
     public static Optional<PatchLineNumbers> getPatchLineNumbers(List<String> content) {
         IntStream startPatchIdxStream = IntStream.range(0, content.size())
-                .filter(i -> content.get(i).equals(PATCH_HEADER))
+                .filter(i -> content.get(i).endsWith(PATCH_HEADER))
                 .limit(2);
         List<Integer> startPatchIndexes = startPatchIdxStream.boxed().collect(Collectors.toList());
         checkState(
@@ -110,7 +110,7 @@ public final class GradleJdkPatchHelper {
             return Optional.empty();
         }
         IntStream endPatchIdxStream = IntStream.range(startIndex.get(), content.size())
-                .filter(i -> content.get(i).equals(PATCH_FOOTER))
+                .filter(i -> content.get(i).endsWith(PATCH_FOOTER))
                 .limit(2);
         List<Integer> endPatchIndexes = endPatchIdxStream.boxed().collect(Collectors.toList());
         checkState(

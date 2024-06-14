@@ -93,10 +93,10 @@ palantir.jdk.setup.enabled=true
 ./gradlew setupJdks 
 ```
 The commands above will run the tasks: 
-- `wrapperJdkPatcher` which updates the entryPoints (`./gradlew` and `gradle/gradle-wrapper.jar`) to use the JDK setup
 - `generateGradleJdkConfigs` which generates in the project's `gradle/` a list of files and directories that configure the JDK versions and distributions, the certs and `gradle-daemon-jdk-version`. See more about the generated structure of the directories [here](#gradle-jdk-configuration-directory-structure). These files will need to be committed to the git repo.
+- `wrapperJdkPatcher` which updates the entryPoints (`./gradlew` and `gradle/gradle-wrapper.jar`) to use the JDK setup
 
-6. Check the configured toolchains:
+6. Run `./gradlew` to install and configure the JDKs and check the configured toolchains:
 ```
 ./gradlew javaToolchains
 ```
@@ -187,6 +187,24 @@ project-root/
     - `local-path` the local name of the file. Rendered based on the distribution-name, version and the [hash](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdkSpec.java) 
   - it generates all the JDK versions configured in [JdksExtension](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdksExtension.java)
 
+Running the patched `./gradlew` script will add extra configurations required for Intelij:
+```
+project-root/
+├── .gradle/
+│   ├── config.properties
+├── .idea/
+│   ├── runConfigurations/
+│   │   ├── IntelijGradleJdkSetup.xml
+│   ├── startup.xml
+```
+
+- `.gradle/config.properties` - sets up `java.home` to the gradle JDK daemon path.
+- `.idea/runConfigurations/IntelijGradleJdkSetup.xml` - sets up the Intelij Gradle JDK setup. Patches `.idea/gradle.xml` file (if it exists).
+- `.idea/startup.xml` tells Intelij to run the Configuration `IntelijGradleJdkSetup`
+
+Other file changes:
+- `gradle.properties` is patched to disable `Auto-detection` and `Auto-download` and sets the `org.gradle.java.installations.paths` to the JDKs installed by the `./gradlew` script.
+- `.idea/gradle.xml` if the file exists (it is not a new Intelij plugin), then the `gradleJvm` option is set to `#GRADLE_LOCAL_JAVA_HOME` which is read from `.gradle/config.properties`. If the file doesn't yet exists, it prompts the user to set the configuration manually in `Settings | Build, Execution, Deployment | Build Tools | Gradle | Gradle JVM
 
 ## How it works ?
 There are 2 main entry points for running Gradle. Both of these would need to support installing/using the specified JDK. 
@@ -206,16 +224,8 @@ The patch script does the following:
 
 
 ### Running a Gradle build from inside `Intellij`
-`Intelij` doesn't use the `./gradlew` script, instead it runs Gradle by executing `GradleWrapperMain’s` main method in `gradle/gradle-wrapper.jar` using java directly.
-We are modifying `gradle/gradle-wrapper.jar` to use the JDK setup by patching through the [`wrapperJdkPatcher` task.](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/GradleWrapperPatcher.java).
-The modifications are as follows:
-* The original `GradleWrapperMain` class inside the jar is renamed to `OriginalGradleWrapperMain` using asm (see [OriginalGradleWrapperMainCreator](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/OriginalGradleWrapperMainCreator.java))
-* Adds our implementation of [`GradleWrapperMain` that sets up the JDKs](src/main/java/org/gradle/wrapper/GradleWrapperMain.java)
-  * delegates to the [`gradle-jdks-setup.sh` script](src/main/resources/gradle-jdks-setup.sh) to install the toolchains
-  * Set the daemon Java Home [Gradle reference](https://docs.gradle.org/8.5/userguide/build_environment.html#:~:text=is%20true.-,org.gradle.java.home,-%3D(path%20to%20JDK)
-  * Disables Auto-provisioning JDKs [Gradle reference](https://docs.gradle.org/8.5/userguide/toolchains.html#sub:disable_auto_provision) and Auto-detection [Gradle reference](https://docs.gradle.org/8.5/userguide/toolchains.html#sub:disable_auto_detect)
-  * Sets custom toolchain JDK installation paths [Gradle reference](https://docs.gradle.org/8.5/userguide/toolchains.html#sec:custom_loc)
-  * Delegates back to the original `OriginalGradleWrapperMain.main(args)`
+`Intelij` doesn't use the `./gradlew` script, instead it uses the [Gradle Tooling API](https://docs.gradle.org/current/userguide/third_party_integration.html#sec:embedding_introduction).
+In order to do the Gradle JDK setup in Intelij as well, we are introducing a [Startup Task](https://www.jetbrains.com/help/idea/settings-tools-startup-tasks.html) that will run [IntelijGradleJdkSetup](src/main/java/com/palantir/gradle/jdks/setup/IntelijGradleJdkSetup.java) which will install the JDKs & configure the Intelij Gradle JVM.
 
 ## ToolchainsPlugin tasks
 
@@ -224,7 +234,7 @@ The plugin won't apply anymore the `baseline-java-versions` plugin, allowing for
 
 The plugin registers the following tasks:
 - `wrapperPatcherTask` - finalizes the `wrapper` task, such that everytime the `gradle-wrapper.jar` and/or `./gradlew` files are updated, we will also patch them
-- `checkWrapperPatcher` - checks that the `gradle-wrapper.jar` and the `./gradlew` scripts contain the expected JDKs setup modifications/patches
+- `checkWrapperPatcher` - checks that the `./gradlew` script contains the expected JDKs setup patch
 - `generateGradleJdkConfigs` - generates the [`gradle/` configurations](#gradle-jdk-configuration-directory-structure) required for running the JDKs setup
 - `checkGradleJdkConfigs` - checks that all the `gradle/` configurations are up-to-date. E.g. if the `jdks-latest` plugin is updated, we need to make sure the `gradle/jdks` files reflect the jdk versions.
 - `setupJdks` - lifecycle task that runs both the `wrapperPatcherTask` and `generateGradleJdkConfigs`
@@ -232,5 +242,5 @@ The plugin registers the following tasks:
 
 ## Unsupported
 
-- This workflow is not supported on `Windows` at the moment
+- This workflow is disabled on `Windows` at the moment.
 - We only support Java language Versions specifications >= 11 (see `gradle-jdks-setup/build.gradle` `javaVersion` specifications).

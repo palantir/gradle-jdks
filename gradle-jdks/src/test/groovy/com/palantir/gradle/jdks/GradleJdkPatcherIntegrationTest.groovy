@@ -28,7 +28,7 @@ import java.util.stream.Stream
 
 import static org.junit.jupiter.api.Assertions.assertTrue
 
-class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
+class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
 
     @TempDir
     Path workingDir
@@ -60,6 +60,11 @@ class GradleJdkWrapperPatcherIntegrationTest extends GradleJdkIntegrationTest {
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
         file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_HEADER).size() == 1
         file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_FOOTER).size() == 1
+
+        and: './gradlew.bat file is patched'
+        file("gradlew.bat").text.contains(Path.of("src/main/resources/batch-patch.bat").text)
+        file("gradlew.bat").text.findAll("@rem # >>> Gradle JDK setup >>>").size() == 1
+        file("gradlew.bat").text.findAll("@rem # <<< Gradle JDK setup <<<").size() == 1
 
         and: 'the `gradle/` configuration files are generated'
         wrapperResult.wasExecuted(':generateGradleJdkConfigs')

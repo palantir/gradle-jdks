@@ -97,10 +97,14 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                 .getTasks()
                 .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
                     task.getOriginalGradlewScript().fileProvider(wrapperTask.map(Wrapper::getScriptFile));
+                    task.getOriginalBatchScript().fileProvider(wrapperTask.map(Wrapper::getBatchScript));
                     task.getBuildDir().set(task.getTemporaryDir());
                     task.getPatchedGradlewScript()
                             .set(rootProject.file(
                                     rootProject.getRootDir().toPath().resolve("gradlew")));
+                    task.getPatchedBatchScript()
+                            .set(rootProject.file(
+                                    rootProject.getRootDir().toPath().resolve("gradlew.bat")));
                     task.getGenerate().set(true);
                     task.dependsOn(generateGradleJdkConfigs);
                 });
