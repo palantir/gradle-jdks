@@ -36,6 +36,7 @@ tasks.register('fatJar', Jar) {
 
 tasks.withType(JavaCompile) {
     options.errorprone.disable 'PreferSafeLoggableExceptions', 'StringSplitter'
+
 }
 
 tasks.integrationTest {

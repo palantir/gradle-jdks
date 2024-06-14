@@ -39,6 +39,7 @@ public final class XmlPatcher {
 
     private static final String GRADLE_LOCAL_JAVA_HOME = "#GRADLE_LOCAL_JAVA_HOME";
 
+    @SuppressWarnings("BanSystemOut")
     public static void updateGradleJvmValue(Path xmlFilePath) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -80,4 +81,6 @@ public final class XmlPatcher {
             throw new RuntimeException("Failed to update the gradleJvm option in the XML file.", e);
         }
     }
+
+    private XmlPatcher() {}
 }

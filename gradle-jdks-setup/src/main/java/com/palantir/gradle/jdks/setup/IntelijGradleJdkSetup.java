@@ -22,6 +22,7 @@ import com.palantir.gradle.jdks.GradleJdkPatchHelper;
 import java.nio.file.Path;
 import java.util.List;
 
+@SuppressWarnings("BanSystemOut")
 public final class IntelijGradleJdkSetup {
 
     private IntelijGradleJdkSetup() {}
@@ -40,6 +41,7 @@ public final class IntelijGradleJdkSetup {
         }
     }
 
+    @SuppressWarnings("BanSystemOut")
     private static void unixRunGradleJdksSetup(Path projectDir) {
         System.out.println("Generating the Gradle JDK configurations...");
         // 1. generate all the `gradle/` configurations first
@@ -57,8 +59,8 @@ public final class IntelijGradleJdkSetup {
         } else {
             throw new RuntimeException(
                     "Could not update the gradle configuration programmatically. Please configure `Gradle JVM` to "
-                        + " GRADLE_LOCAL_JAVA_HOME in ( Settings | Build, Execution, Deployment | Build Tools | Gradle"
-                        + " | Gradle JVM).");
+                            + " GRADLE_LOCAL_JAVA_HOME in ( Settings | Build, Execution, Deployment | Build Tools | "
+                            + "Gradle | Gradle JVM).");
         }
     }
 

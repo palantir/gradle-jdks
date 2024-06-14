@@ -166,6 +166,7 @@ public final class GradleJdkPropertiesSetup {
                 .collect(Collectors.joining(","));
     }
 
+    @SuppressWarnings("BanSystemOut")
     public static void updateGradleProperties(Path gradlePropertiesFile, Map<String, String> gradleJdkProperties) {
         try {
             // use the patching mechanism, such that we can include extra comments.

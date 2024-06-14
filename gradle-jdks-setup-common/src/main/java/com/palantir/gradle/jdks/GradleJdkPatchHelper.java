@@ -27,13 +27,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class GradleJdkPatchHelper {
+public final class GradleJdkPatchHelper {
 
     // DO NOT CHANGE the header and the footer, they are used to identify the patch block
     public static final String PATCH_HEADER = "# >>> Gradle JDK setup >>>";
     public static final String PATCH_FOOTER = "# <<< Gradle JDK setup <<<";
 
-    public static class PatchLineNumbers {
+    public static final class PatchLineNumbers {
         private final Integer startIndex;
         private final Integer endIndex;
 
@@ -131,4 +131,6 @@ public class GradleJdkPatchHelper {
             throw new IllegalArgumentException(errorMessage);
         }
     }
+
+    private GradleJdkPatchHelper() {}
 }

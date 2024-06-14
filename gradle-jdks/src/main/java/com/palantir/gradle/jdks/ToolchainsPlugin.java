@@ -33,7 +33,7 @@ import org.gradle.api.tasks.wrapper.Wrapper;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
-public class ToolchainsPlugin implements Plugin<Project> {
+public final class ToolchainsPlugin implements Plugin<Project> {
 
     private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
