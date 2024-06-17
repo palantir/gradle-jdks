@@ -96,7 +96,10 @@ public final class JdkDistributionConfigurator {
                 .getDownloadUrl()
                 .set(String.format(
                         "%s/%s.%s",
-                        jdkDistributions.get(jdkDistributionName).defaultBaseUrl(),
+                        jdksExtension
+                                .jdkDistributionFor(jdkDistributionName)
+                                .getBaseUrl()
+                                .get(),
                         jdkPath.filename(),
                         jdkPath.extension()));
         jdkDistribution

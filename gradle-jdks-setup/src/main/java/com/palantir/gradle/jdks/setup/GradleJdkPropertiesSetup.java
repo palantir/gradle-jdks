@@ -113,22 +113,17 @@ public final class GradleJdkPropertiesSetup {
         return newIdeaFiles;
     }
 
-    private static void updateIdeaGitignore(Path projectDir, List<Path> pathsToBeCommitted) {
+    static void updateIdeaGitignore(Path projectDir, List<Path> pathsToBeCommitted) {
         try {
             Path gitignoreFile = projectDir.resolve(".gitignore");
             if (!Files.exists(gitignoreFile)) {
                 Files.createFile(gitignoreFile);
             }
             List<String> gitignoreLines = Files.readAllLines(gitignoreFile);
-            int ideaIndex = gitignoreLines.indexOf(".idea/");
-            if (ideaIndex != -1) {
-                gitignoreLines.remove(ideaIndex);
-                gitignoreLines.add(ideaIndex, ".idea/*");
-            }
+            gitignoreLines.removeAll(List.of(".idea/", ".idea"));
             List<String> gitignorePatch = getGitignorePatch(projectDir, pathsToBeCommitted);
             List<String> linesNoPatch = GradleJdkPatchHelper.getLinesWithoutPatch(gitignoreLines);
             writeContentWithPatch(gitignoreFile, linesNoPatch, gitignorePatch);
-
         } catch (IOException e) {
             throw new RuntimeException("Unable to update the .gitignore file.", e);
         }
@@ -167,7 +162,7 @@ public final class GradleJdkPropertiesSetup {
     }
 
     @SuppressWarnings("BanSystemOut")
-    public static void updateGradleProperties(Path gradlePropertiesFile, Map<String, String> gradleJdkProperties) {
+    static void updateGradleProperties(Path gradlePropertiesFile, Map<String, String> gradleJdkProperties) {
         try {
             // use the patching mechanism, such that we can include extra comments.
             if (!Files.exists(gradlePropertiesFile)) {
@@ -178,11 +173,11 @@ public final class GradleJdkPropertiesSetup {
             List<String> linesWithoutNewProperties = linesNoPatch.stream()
                     .filter(line -> {
                         String[] keyValue = line.split("=");
+                        if (keyValue.length != 2) {
+                            return true;
+                        }
                         String name = keyValue[0].trim();
-                        String value = keyValue[1].trim();
-                        return !gradleJdkProperties.containsKey(name)
-                                || (gradleJdkProperties.containsKey(name)
-                                        && gradleJdkProperties.get(name).equals(value));
+                        return !gradleJdkProperties.containsKey(name);
                     })
                     .collect(Collectors.toList());
             if (linesWithoutNewProperties.size() != linesNoPatch.size()) {
@@ -196,9 +191,10 @@ public final class GradleJdkPropertiesSetup {
         }
     }
 
-    public static String getGradlePropertiesPatch(Map<String, String> gradleJdkProperties) throws IOException {
+    private static String getGradlePropertiesPatch(Map<String, String> gradleJdkProperties) throws IOException {
         String gradleJdkLines = gradleJdkProperties.entrySet().stream()
                 .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
+                .sorted()
                 .collect(Collectors.joining("\n"));
         try (InputStream inputStream =
                 GradleJdkPropertiesSetup.class.getClassLoader().getResourceAsStream("gradle_properties.template")) {

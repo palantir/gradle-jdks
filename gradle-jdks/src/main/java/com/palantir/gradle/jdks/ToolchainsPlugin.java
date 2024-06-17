@@ -18,11 +18,6 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -96,8 +91,12 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
                 .getTasks()
                 .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
-                    task.getOriginalGradlewScript().fileProvider(wrapperTask.map(Wrapper::getScriptFile));
-                    task.getOriginalBatchScript().fileProvider(wrapperTask.map(Wrapper::getBatchScript));
+                    task.getOriginalGradlewScript()
+                            .fileProvider(
+                                    rootProject.provider(() -> wrapperTask.get().getScriptFile()));
+                    task.getOriginalBatchScript()
+                            .fileProvider(
+                                    rootProject.provider(() -> wrapperTask.get().getBatchScript()));
                     task.getBuildDir().set(task.getTemporaryDir());
                     task.getPatchedGradlewScript()
                             .set(rootProject.file(
@@ -109,17 +108,6 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     task.dependsOn(generateGradleJdkConfigs);
                 });
         wrapperTask.configure(task -> {
-            Path propertiesPath = task.getPropertiesFile().toPath();
-            if (propertiesPath.toFile().exists()) {
-                try {
-                    Properties properties = new Properties();
-                    properties.load(new FileInputStream(propertiesPath.toFile()));
-                    Optional.ofNullable(properties.getProperty("distributionUrl"))
-                            .ifPresent(task::setDistributionUrl);
-                } catch (IOException e) {
-                    logger.error("Unable to read the gradle-wrapper.properties file", e);
-                }
-            }
             task.finalizedBy(wrapperPatcherTask);
         });
 

@@ -136,6 +136,32 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
     }
 
+    def '#gradleVersionNumber: sets up the right distributionUrl for download-urls'() {
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        gradleVersion = gradleVersionNumber
+        // language=groovy
+        buildFile << '''
+            import com.palantir.gradle.jdks.JdkDistributionName
+            import com.palantir.gradle.jdks.JdksExtension
+            JdksExtension jdksExtension = rootProject.getExtensions().getByType(JdksExtension.class);
+            jdksExtension.jdkDistribution(JdkDistributionName.AZUL_ZULU, azulZulu -> {
+                azulZulu.getBaseUrl().set("https://myCustomValue");
+            });
+        '''
+
+        when: 'running wrapper task'
+        runTasksSuccessfully('wrapper')
+
+        then:
+        String osName = CurrentOs.get().uiName();
+        String archName = CurrentArch.get().uiName();
+        projectDir.toPath().resolve("gradle/jdks/11/${osName}/${archName}/download-url").text.startsWith("https://myCustomValue");
+
+        where:
+        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
+
+    }
+
     def 'no gradleWrapper patch if palantir.jdk.setup.enabled == false'() {
         when:
         def output = runTasksSuccessfully('wrapper')
