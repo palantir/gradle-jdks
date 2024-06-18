@@ -1,4 +1,4 @@
-# Run ./gradlew writeVersionsLock to regenerate this file
+# Run ./gradlew writeVersionsLocks to regenerate this file
 aopalliance:aopalliance:1.0 (1 constraints: 170a83ac)
 com.fasterxml.jackson.core:jackson-annotations:2.15.3 (2 constraints: c717fa71)
 com.fasterxml.jackson.core:jackson-core:2.15.3 (1 constraints: 8b123e21)
