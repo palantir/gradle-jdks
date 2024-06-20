@@ -1,0 +1,16 @@
+<idea-plugin url="https://github.com/palantir/gradle-jdks">
+  <id>palantir-gradle-jdks</id>
+  <name>palantir-gradle-jdks</name>
+  <vendor url="https://github.com/palantir/gradle-jdks">
+    Palantir
+  </vendor>
+
+  <depends>com.intellij.modules.java</depends>
+  <depends>com.intellij.modules.lang</depends>
+  <depends>com.intellij.modules.platform</depends>
+  <depends>org.jetbrains.plugins.gradle</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <postStartupActivity implementation="com.palantir.gradle.jdks.InitialConfigurationStartupActivity"/>
+  </extensions>
+</idea-plugin>

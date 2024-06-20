@@ -17,32 +17,17 @@
 package com.palantir.gradle.jdks.setup;
 
 import com.palantir.gradle.jdks.CommandRunner;
-import com.palantir.gradle.jdks.CurrentOs;
-import com.palantir.gradle.jdks.GradleJdkPatchHelper;
 import java.nio.file.Path;
 import java.util.List;
 
 @SuppressWarnings("BanSystemOut")
 public final class IntelijGradleJdkSetup {
 
-    private IntelijGradleJdkSetup() {}
-
-    public static void main(String[] args) throws Exception {
-        Path projectDir = Path.of(args[0]);
-        switch (CurrentOs.get()) {
-            case MACOS:
-            case LINUX_MUSL:
-            case LINUX_GLIBC:
-                unixRunGradleJdksSetup(projectDir);
-                break;
-            case WINDOWS:
-                maybeDisableGradleJdkSetup(projectDir);
-                break;
-        }
-    }
+    public IntelijGradleJdkSetup() {}
 
     @SuppressWarnings("BanSystemOut")
-    private static void unixRunGradleJdksSetup(Path projectDir) {
+    public static void main(String[] args) throws Exception {
+        Path projectDir = Path.of(args[0]);
         System.out.println("Generating the Gradle JDK configurations...");
         // 1. generate all the `gradle/` configurations first
         CommandRunner.runWithInheritIO(List.of("./gradlew", "generateGradleJdkConfigs"), projectDir.toFile());
@@ -51,21 +36,5 @@ public final class IntelijGradleJdkSetup {
         // tasks.
         System.out.println("Installing and setting up the JDKs...");
         CommandRunner.runWithInheritIO(List.of("./gradle/gradle-jdks-setup.sh"), projectDir.toFile());
-
-        // [Intelij] Patch gradle.xml file to set gradleJvm to #GRADLE_LOCAL_JAVA_HOME
-        Path gradleXml = projectDir.resolve(".idea/gradle.xml");
-        if (gradleXml.toFile().exists()) {
-            XmlPatcher.updateGradleJvmValue(gradleXml);
-        } else {
-            throw new RuntimeException(
-                    "Could not update the gradle configuration programmatically. Please configure `Gradle JVM` to "
-                            + " GRADLE_LOCAL_JAVA_HOME in ( Settings | Build, Execution, Deployment | Build Tools | "
-                            + "Gradle | Gradle JVM).");
-        }
-    }
-
-    private static void maybeDisableGradleJdkSetup(Path projectDir) {
-        // On Windows, we want to revert the gradle.properties Gradle JDK setup patch for now
-        GradleJdkPatchHelper.maybeRemovePatch(projectDir.resolve("gradle.properties"));
     }
 }

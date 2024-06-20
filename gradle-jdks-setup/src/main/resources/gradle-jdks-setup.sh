@@ -117,7 +117,7 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
-all_jdk_symlinks=""
+all_toolchains=""
 
 for dir in "$APP_GRADLE_DIR"/jdks/*/; do
   major_version_dir=${dir%*/}
@@ -169,21 +169,17 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
     "$java_home"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory" || die "Failed to set up JDK $jdk_installation_directory"
     echo "Successfully installed JDK distribution in $jdk_installation_directory"
   fi
-  # Updating the current symlink to the $jdk_installation_directory
-  major_jdk_version="${major_version_dir##*/}"
-  jdk_local_symlink="$APP_HOME"/jdk-"$major_jdk_version"
-  all_jdk_symlinks="$all_jdk_symlinks","$jdk_local_symlink"
-  ln -vfsn "$jdk_installation_directory" "$jdk_local_symlink"
+  if [ -z "${all_toolchains}" ]; then
+    all_toolchains="$jdk_installation_directory"
+  else
+    all_toolchains="$all_toolchains","$jdk_installation_directory"
+  fi
 done
 
 rm -rf "$tmp_work_dir"
 
 gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
-gradle_daemon_jdk_local_symlink="$APP_HOME"/jdk-"$gradle_daemon_jdk_version"
 gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)
 
-# [Both ./gradlew & Intelij setup] Writing the JDK setup properties
-"$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkPropertiesSetup "$APP_HOME" "$gradle_daemon_jdk_local_symlink" "$all_jdk_symlinks"
-
 # [Used by ./gradlew only] Setting the Gradle Daemon Java Home to the JDK distribution
-set -- "-Dorg.gradle.java.home=$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path" "$@"
+set -- "-Porg.gradle.java.home=$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path" "-Porg.gradle.java.installations.auto-download=false" "-Porg.gradle.java.installations.auto-detect=false" "-Porg.gradle.java.installations.paths=$all_toolchains" "$@"

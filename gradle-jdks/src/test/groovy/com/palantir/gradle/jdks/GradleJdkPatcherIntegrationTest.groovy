@@ -49,14 +49,13 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
             another thing
         """.stripIndent(true)
         file(".gitignore") << gitignoreContent
+        runTasksSuccessfully("wrapper")
 
-        when: 'running wrapper task'
-        def wrapperResult = runTasksSuccessfully('wrapper')
+        when: 'running setupJdks task'
+        def output = runGradlewTasksSuccessfully('setupJdks', '--stacktrace')
 
         then: './gradlew file is patched'
-        wrapperResult.wasExecuted(':wrapperJdkPatcher')
-        !wrapperResult.wasSkipped(':wrapperJdkPatcher')
-        wrapperResult.standardOutput.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
+        output.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
         file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_HEADER).size() == 1
         file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_FOOTER).size() == 1
@@ -67,8 +66,6 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         file("gradlew.bat").text.findAll("@rem # <<< Gradle JDK setup <<<").size() == 1
 
         and: 'the `gradle/` configuration files are generated'
-        wrapperResult.wasExecuted(':generateGradleJdkConfigs')
-        !wrapperResult.wasSkipped(':generateGradleJdkConfigs')
         checkJdksVersions(projectDir, Set.of("11", "17", "21"))
         Files.readString(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version")).trim() == "11"
         /*Path jarInProject = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar");
@@ -84,10 +81,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
             !Files.exists(certFile)
         }
 
-        when: 'we are running the patched ./gradlew script. Any task can be used. The setup should be done by the script.'
-        def output = runGradlewTasksSuccessfully('setupJdks')
-
-        then: '.idea files are generated'
+        and: '.idea files are generated'
         output.contains("Gradle JDK setup is enabled, patching the gradle wrapper files")
         Path jdkPropertiesFile = projectDir.toPath().resolve(".idea")
         Path ideaConfigurations = Path.of("../gradle-jdks-setup/src/main/resources/ideaConfigurations")
@@ -99,7 +93,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
             throw new RuntimeException("Could not list the ideaConfigurations files", e);
         }
 
-        then: 'gradle.properties files contain the jdk properties'
+        and: 'gradle.properties files contain the jdk properties'
         Properties properties = new Properties();
         properties.load(new FileInputStream(projectDir.toPath().resolve("gradle.properties").toFile()))
         properties.getProperty("org.gradle.java.installations.paths") == "jdk-11,jdk-17,jdk-21"
@@ -107,7 +101,6 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         and: '.gitignore ignores the .idea directory and the jdk-* symlinks'
         String expectedGitignoreContent = """
             #Intelij
-            .idea/*
             
             # My custom setup
             something else
@@ -120,7 +113,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
             # <<< Gradle JDK setup <<<""".stripIndent(true)
         Files.readString(projectDir.toPath().resolve(".gitignore")) == expectedGitignoreContent
 
-        and: 'jdk symlinks are created'
+        when: 'jdk symlinks are created'
         ProcessBuilder jdkProcessBuilder = new ProcessBuilder(projectDir.toPath().resolve("jdk-21/bin/java").toString(), "-version").redirectErrorStream(true)
 
         then:

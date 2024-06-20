@@ -92,17 +92,13 @@ palantir.jdk.setup.enabled=true
 ```bash
 ./gradlew setupJdks 
 ```
-The commands above will run the tasks: 
+The commands above will trigger the tasks: 
 - `generateGradleJdkConfigs` which generates in the project's `gradle/` a list of files and directories that configure the JDK versions and distributions, the certs and `gradle-daemon-jdk-version`. See more about the generated structure of the directories [here](#gradle-jdk-configuration-directory-structure). These files will need to be committed to the git repo.
 - `wrapperJdkPatcher` which updates the entryPoints (`./gradlew` and `gradle/gradle-wrapper.jar`) to use the JDK setup
+- `setupJdks` is calling the patched `./gradlew(.bat) javaToolchains` script to install and configure the JDKs and check the configured toolchains:
 
-6. Run `./gradlew` to install and configure the JDKs and check the configured toolchains:
-```
-./gradlew javaToolchains
-```
 The output should look like:
 ```
-$ ./gradlew  javaToolchains
 Distribution https://corretto.aws/downloads/resources/11.0.23.9.1/amazon-corretto-11.0.23.9.1-macosx-aarch64.tar.gz already exists in /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4
 Distribution https://corretto.aws/downloads/resources/17.0.11.9.1/amazon-corretto-17.0.11.9.1-macosx-aarch64.tar.gz already exists in /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-17.0.11.9.1-f0e4bf13f7416be0
 Setting daemon Java Home to /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4

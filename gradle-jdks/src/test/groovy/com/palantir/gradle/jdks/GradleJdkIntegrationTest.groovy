@@ -59,6 +59,22 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
 
     def setupJdksHardcodedVersions() {
         // language=groovy
+        settingsFile << """
+            buildscript {
+                repositories {
+                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+                }
+                // we need to inject the classpath of the plugin under test manually. The tests call the `./gradlew` 
+                // command directly in the tests (so not using the nebula-test workflow).
+                dependencies {
+                    classpath files(FILES)
+                }
+            }
+            
+            apply plugin: 'com.palantir.jdks-properties'
+        """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
+        // language=groovy
         buildFile << """
             buildscript {
                 repositories {

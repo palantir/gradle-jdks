@@ -52,7 +52,8 @@ public final class GradleJdkInstallationSetup {
         Path jdksInstallationDirectory = destinationJdkInstallationDirectory.getParent();
         FileUtils.createDirectories(jdksInstallationDirectory);
         Path lockFile = jdksInstallationDirectory.resolve(destinationJdkInstallationDirectory.getFileName() + ".lock");
-        try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+        try (FileChannel channel = FileChannel.open(
+                lockFile, StandardOpenOption.READ, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             channel.lock();
             // double-check, now that we hold the lock
             if (Files.exists(destinationJdkInstallationDirectory)) {

@@ -39,7 +39,6 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         if (!JdksPlugin.getEnableGradleJdkProperty(rootProject)) {
             throw new RuntimeException("Cannot apply ToolchainsJdksPlugin without enabling palantir.jdk.setup.enabled");
         }
-
         rootProject
                 .getLogger()
                 .info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects "
@@ -116,9 +115,12 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                 .named(LifecycleBasePlugin.CHECK_TASK_NAME)
                 .configure(check -> check.dependsOn(checkGradleJdkConfigs));
 
-        rootProject.getTasks().register("setupJdks", setupJdksTask -> {
+        rootProject.getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");
             setupJdksTask.setGroup(GRADLE_JDK_GROUP);
+            setupJdksTask.getProjectDir().set(rootProject.file(rootProject.getPath()));
+            setupJdksTask.getGradlewBatScript().set(wrapperPatcherTask.get().getPatchedBatchScript());
+            setupJdksTask.getGradlewScript().set(wrapperPatcherTask.get().getPatchedGradlewScript());
             setupJdksTask.dependsOn(generateGradleJdkConfigs, wrapperPatcherTask);
         });
     }

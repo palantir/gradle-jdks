@@ -51,7 +51,6 @@ public final class JdksPlugin implements Plugin<Project> {
 
     public static JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
         JdksExtension jdksExtension = rootProject.getExtensions().create("jdks", JdksExtension.class);
-
         jdksExtension
                 .getJdkStorageLocation()
                 .set(rootProject

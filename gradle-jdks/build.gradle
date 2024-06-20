@@ -52,14 +52,20 @@ gradlePlugin {
             description = 'Includes the Palantir CA from the system truststore'
             implementationClass = 'com.palantir.gradle.jdks.PalantirCaPlugin'
         }
+        patchJdks {
+            id = 'com.palantir.jdks-properties'
+            displayName = 'Palantir JDK Auto-provisioning Plugin'
+            description = 'Auto-provisions specific versions of JDKs'
+            implementationClass = 'com.palantir.gradle.jdks.PatchToolchainJdkPlugin'
+        }
     }
 }
 
-pluginBundle {
+gradlePlugin {
     website = 'https://github.com/palantir/gradle-jdks'
     vcsUrl = 'https://github.com/palantir/gradle-jdks'
     description = 'Download specific JDKs versions automatically'
-    tags = ['java', 'jdks']
+    //tags = ['java', 'jdks']
 }
 
 tasks.withType(JavaCompile).configureEach {
