@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
 
 public final class JdksPlugin implements Plugin<Project> {
 
-    private static final String ENABLE_GRADLE_JDK_SETUP = "palantir.jdk.setup.enabled";
     private static final Logger log = LoggerFactory.getLogger(JdksPlugin.class);
+    private static final String ENABLE_GRADLE_JDK_SETUP = "palantir.jdk.setup.enabled";
 
     @Override
     public void apply(Project rootProject) {
@@ -35,23 +35,15 @@ public final class JdksPlugin implements Plugin<Project> {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
 
-        if (getEnableGradleJdkProperty(rootProject)) {
+        if (isGradleJdkSetupEnabled(rootProject)) {
             rootProject.getPluginManager().apply(ToolchainsPlugin.class);
         } else {
             rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);
         }
     }
 
-    public static boolean getEnableGradleJdkProperty(Project project) {
-        return !CurrentOs.get().equals(Os.WINDOWS)
-                && Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
-                        .map(prop -> Boolean.parseBoolean(((String) prop)))
-                        .orElse(false);
-    }
-
     public static JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
         JdksExtension jdksExtension = rootProject.getExtensions().create("jdks", JdksExtension.class);
-
         jdksExtension
                 .getJdkStorageLocation()
                 .set(rootProject
@@ -68,5 +60,13 @@ public final class JdksPlugin implements Plugin<Project> {
         });
 
         return jdksExtension;
+    }
+
+    // keep in sync with com.palantir.gradle.jdks.settings.PatchToolchainJdkPlugin.isGradleJdkSetupEnabled
+    public static boolean isGradleJdkSetupEnabled(Project project) {
+        return !CurrentOs.get().equals(Os.WINDOWS)
+                && Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
+                        .map(prop -> Boolean.parseBoolean((String) prop))
+                        .orElse(false);
     }
 }

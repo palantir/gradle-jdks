@@ -9,7 +9,7 @@ Now `gradle-jdks` manages also the JDK used to run Gradle. This means, when you 
      id 'com.palantir.jdks' version '<latest version>'
   }
   ```
-  
+
   or the old buildscript method:
   
   ```gradle
@@ -25,7 +25,23 @@ Now `gradle-jdks` manages also the JDK used to run Gradle. This means, when you 
   
   apply plugin: 'com.palantir.jdks'
   ```
-2. Next up comes configuring the JDKs plugin. _**Palantirians:** you probably shouldn't use this setup directly - either use [`gradle-jdks-latest`](https://github.com/palantir/gradle-jdks-latest) for OSS or `gradle-jdks-internal` for internal projects which will set everything up for you._
+2. We need to apply the com.palantir.jdks.settings plugin in **settings.gradle** file:
+```gradle
+  buildscript {
+      repositories {
+          mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+          gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+          mavenLocal()
+      }
+  
+      dependencies {
+          classpath 'com.palantir.gradle.jdks:gradle-jdks-settings:<latest-version>'
+      }
+  }
+  
+  apply plugin: 'com.palantir.jdks.settings'
+```
+3. Next up comes configuring the JDKs plugin. _**Palantirians:** you probably shouldn't use this setup directly - either use [`gradle-jdks-latest`](https://github.com/palantir/gradle-jdks-latest) for OSS or `gradle-jdks-internal` for internal projects which will set everything up for you._
 ```gradle
 jdks {
    // Required: For each Java major version you use, you need to specify
@@ -78,31 +94,27 @@ jdks {
    jdkStorageLocation = System.getProperty("user.home") + '/custom/location'
 }
 ```
-3. Next, set the gradle daemon major Jdk version in the **root project** build.gradle
+4. Next, set the gradle daemon major Jdk version in the **root project** build.gradle
 ```
 jdks {
     daemonTarget = <version eg. 11/17/21>
 }
 ```
-4. Enable the jdk setup by adding the following to `gradle.properties`:
+5. Enable the jdk setup by adding the following to `gradle.properties`:
 ```
 palantir.jdk.setup.enabled=true
 ```
-5. Run the following to configure the Gradle entry points to use the JDK setup:
+6. Run the following to configure the Gradle entry points to use the JDK setup:
 ```bash
 ./gradlew setupJdks 
 ```
-The commands above will run the tasks: 
+The commands above will trigger the tasks: 
 - `generateGradleJdkConfigs` which generates in the project's `gradle/` a list of files and directories that configure the JDK versions and distributions, the certs and `gradle-daemon-jdk-version`. See more about the generated structure of the directories [here](#gradle-jdk-configuration-directory-structure). These files will need to be committed to the git repo.
 - `wrapperJdkPatcher` which updates the entryPoints (`./gradlew` and `gradle/gradle-wrapper.jar`) to use the JDK setup
+- `setupJdks` is calling the patched `./gradlew(.bat) javaToolchains` script to install and configure the JDKs and check the configured toolchains:
 
-6. Run `./gradlew` to install and configure the JDKs and check the configured toolchains:
-```
-./gradlew javaToolchains
-```
 The output should look like:
 ```
-$ ./gradlew  javaToolchains
 Distribution https://corretto.aws/downloads/resources/11.0.23.9.1/amazon-corretto-11.0.23.9.1-macosx-aarch64.tar.gz already exists in /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4
 Distribution https://corretto.aws/downloads/resources/17.0.11.9.1/amazon-corretto-17.0.11.9.1-macosx-aarch64.tar.gz already exists in /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-17.0.11.9.1-f0e4bf13f7416be0
 Setting daemon Java Home to /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4
@@ -143,13 +155,7 @@ Distribution 'https://corretto.....' already exists in '/.gradle/gradle-jdks/ama
 JDK installation '/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4' does not exist, installing 'https://corretto.....' in progress ...
 ```
 
-7. Check the gradle version
-```
-./gradlew --version
-```
-
-The JVM should correspond to the java major version configured in step 3.
-
+7. [Intellij] Install the Intellij plugin `gradle-jdks` from the [Intellij plugin repository](https://plugins.jetbrains.com/plugin) and restart Intellij. The plugin will automatically configure the Gradle JVM to use the JDK setup by the `gradle-jdks` plugin.
 
 ## Gradle JDK Configuration directory structure
 
@@ -192,19 +198,9 @@ Running the patched `./gradlew` script will add extra configurations required fo
 project-root/
 ├── .gradle/
 │   ├── config.properties
-├── .idea/
-│   ├── runConfigurations/
-│   │   ├── IntelijGradleJdkSetup.xml
-│   ├── startup.xml
 ```
 
 - `.gradle/config.properties` - sets up `java.home` to the gradle JDK daemon path.
-- `.idea/runConfigurations/IntelijGradleJdkSetup.xml` - sets up the Intelij Gradle JDK setup. Patches `.idea/gradle.xml` file (if it exists).
-- `.idea/startup.xml` tells Intelij to run the Configuration `IntelijGradleJdkSetup`
-
-Other file changes:
-- `gradle.properties` is patched to disable `Auto-detection` and `Auto-download` and sets the `org.gradle.java.installations.paths` to the JDKs installed by the `./gradlew` script.
-- `.idea/gradle.xml` if the file exists (it is not a new Intelij plugin), then the `gradleJvm` option is set to `#GRADLE_LOCAL_JAVA_HOME` which is read from `.gradle/config.properties`. If the file doesn't yet exists, it prompts the user to set the configuration manually in `Settings | Build, Execution, Deployment | Build Tools | Gradle | Gradle JVM
 
 ## How it works ?
 There are 2 main entry points for running Gradle. Both of these would need to support installing/using the specified JDK. 

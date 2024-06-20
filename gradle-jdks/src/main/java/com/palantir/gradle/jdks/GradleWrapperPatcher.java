@@ -50,17 +50,11 @@ public abstract class GradleWrapperPatcher {
         @InputFile
         RegularFileProperty getOriginalGradlewScript();
 
-        @InputFile
-        RegularFileProperty getOriginalBatchScript();
-
         @Input
         Property<Boolean> getGenerate();
 
         @OutputFile
         RegularFileProperty getPatchedGradlewScript();
-
-        @OutputFile
-        RegularFileProperty getPatchedBatchScript();
 
         @Internal
         RegularFileProperty getBuildDir();
@@ -77,10 +71,8 @@ public abstract class GradleWrapperPatcher {
         if (params.getGenerate().get()) {
             log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
             patchGradlewContent(params.getOriginalGradlewScript().getAsFile().get(), params.getPatchedGradlewScript());
-            patchBatchContent(params.getPatchedBatchScript().getAsFile().get(), params.getPatchedBatchScript());
         } else {
             checkContainsPatch(params.getOriginalGradlewScript().get().getAsFile(), "gradlew-patch.sh");
-            checkContainsPatch(params.getOriginalBatchScript().get().getAsFile(), "batch-patch.bat");
         }
     }
 
@@ -92,16 +84,6 @@ public abstract class GradleWrapperPatcher {
                     "Gradle Wrapper script is out of date, please run `./gradlew(.bat) wrapperJdkPatcher`",
                     "./gradlew wrapperJdkPatcher");
         }
-    }
-
-    private static void patchBatchContent(File originalGradlewScript, RegularFileProperty patchedGradlewScript) {
-        List<String> initialLines = readAllLines(originalGradlewScript.toPath());
-        List<String> linesNoPatch = GradleJdkPatchHelper.getLinesWithoutPatch(initialLines);
-        int insertIndex = getBatchInsertLineIndex(initialLines);
-        List<String> patchLines = getPatchLines("batch-patch.bat");
-        write(
-                patchedGradlewScript.getAsFile().get().toPath(),
-                GradleJdkPatchHelper.getContentWithPatch(linesNoPatch, patchLines, insertIndex));
     }
 
     private static void patchGradlewContent(File originalGradlewScript, RegularFileProperty patchedGradlewScript) {
@@ -128,18 +110,6 @@ public abstract class GradleWrapperPatcher {
                 .map(integerIntegerPair ->
                         initialLines.subList(integerIntegerPair.getStartIndex(), integerIntegerPair.getEndIndex() + 1))
                 .orElseGet(List::of);
-    }
-
-    private static int getBatchInsertLineIndex(List<String> lines) {
-        List<Integer> explanationBlock = IntStream.range(0, lines.size())
-                .filter(i -> lines.get(i).startsWith(":execute"))
-                .limit(1)
-                .boxed()
-                .collect(Collectors.toList());
-        if (explanationBlock.isEmpty()) {
-            throw new RuntimeException("Unable to find where to patch the gradlew.bat file, aborting...");
-        }
-        return explanationBlock.get(0);
     }
 
     /**

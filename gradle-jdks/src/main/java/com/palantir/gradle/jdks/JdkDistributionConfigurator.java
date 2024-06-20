@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -30,13 +31,16 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public final class JdkDistributionConfigurator {
 
+    private static final JavaLanguageVersion MINIMUM_SUPPORTED_JAVA_VERSION = JavaLanguageVersion.of(11);
+
     private static Logger logger = Logging.getLogger(JdkDistributionConfigurator.class);
 
     public static Map<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros(
-            Project project,
-            JdkDistributions jdkDistributions,
-            Set<JavaLanguageVersion> javaVersions,
-            JdksExtension jdksExtension) {
+            Project project, JdkDistributions jdkDistributions, JdksExtension jdksExtension) {
+        Set<JavaLanguageVersion> javaVersions = Arrays.stream(JavaVersion.values())
+                .map(javaVersion -> JavaLanguageVersion.of(javaVersion.getMajorVersion()))
+                .filter(javaLanguageVersion -> javaLanguageVersion.canCompileOrRun(MINIMUM_SUPPORTED_JAVA_VERSION))
+                .collect(Collectors.toSet());
         return javaVersions.stream()
                 .collect(Collectors.toMap(
                         javaVersion -> javaVersion,
@@ -65,17 +69,17 @@ public final class JdkDistributionConfigurator {
             JdksExtension jdksExtension) {
         Optional<JdkExtension> jdkExtension = jdksExtension.jdkFor(javaVersion, project);
         if (jdkExtension.isEmpty()) {
-            throw new RuntimeException(String.format(
-                    "Could not find a JDK with major version %s in project '%s'. "
-                            + "Please ensure that you have configured JDKs properly for "
-                            + "gradle-jdks as per the readme: "
-                            + "https://github.com/palantir/gradle-jdks#usage",
-                    javaVersion.toString(), project.getPath()));
+            logger.debug("Skipping JDK distribution for javaVersion={} as it is not configured", javaVersion);
+            return Stream.empty();
         }
         Optional<String> jdkVersion = Optional.ofNullable(
                 jdkExtension.get().jdkFor(os).jdkFor(arch).getJdkVersion().getOrNull());
         if (jdkVersion.isEmpty()) {
-            logger.debug("No JDK version configured for javaVersion={} os={} arch={}.", javaVersion, os, arch);
+            logger.debug(
+                    "Skipping JDK distribution for os={} arch={} javaVersion={} as it is not configured",
+                    os,
+                    arch,
+                    javaVersion);
             return Stream.empty();
         }
         JdkDistributionName jdkDistributionName =

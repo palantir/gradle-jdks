@@ -17,8 +17,10 @@
 package com.palantir.gradle.jdks;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.Directory;
 import org.gradle.api.provider.MapProperty;
@@ -62,6 +64,7 @@ public abstract class GradleJdkConfigs extends DefaultTask {
 
     @TaskAction
     public final void action() {
+        AtomicBoolean jdksDirectoryConfigured = new AtomicBoolean(false);
         getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
             jdkDistros.forEach(jdkDistribution -> {
                 Path outputDir = gradleDirectory()
@@ -74,9 +77,34 @@ public abstract class GradleJdkConfigs extends DefaultTask {
                 Path downloadUrlPath = outputDir.resolve("download-url");
                 Path localPath = outputDir.resolve("local-path");
                 applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution);
+                jdksDirectoryConfigured.set(true);
             });
         });
+        if (!jdksDirectoryConfigured.get()) {
+            throw new RuntimeException(
+                    "No JDKs were configured for the gradle setup. Please run `./gradlew setupJdks` to generate the"
+                            + " JDKs and ensure that you have configured JDKs properly for gradle-jdks as per"
+                            + " the readme: https://github.com/palantir/gradle-jdks#usage");
+        }
 
+        String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();
+        String os = CurrentOs.get().toString();
+        String arch = CurrentArch.get().toString();
+        Path expectedJdkDir = gradleDirectory()
+                .dir("jdks")
+                .getAsFile()
+                .toPath()
+                .resolve(gradleJdkDaemonVersion)
+                .resolve(os)
+                .resolve(arch);
+        if (!Files.exists(expectedJdkDir)) {
+            throw new RuntimeException(String.format(
+                    "Gradle daemon JDK version is `%s` but no JDK configured for that version. Please ensure that you"
+                            + " have configured JDKs properly for gradle-jdks as per the readme:"
+                            + " https://github.com/palantir/gradle-jdks#usage and the gradle daemon version specified "
+                            + "in the jdks#daemonTarget extension is correctly set",
+                    gradleJdkDaemonVersion));
+        }
         applyGradleJdkDaemonVersionAction(gradleDirectory().getAsFile().toPath().resolve("gradle-daemon-jdk-version"));
 
         applyGradleJdkJarAction(gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile(), GRADLE_JDKS_SETUP_JAR);

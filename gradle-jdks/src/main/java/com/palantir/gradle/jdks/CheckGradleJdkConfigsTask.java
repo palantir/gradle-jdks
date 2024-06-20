@@ -95,10 +95,9 @@ public abstract class CheckGradleJdkConfigsTask extends GradleJdkConfigs {
         if (!result) {
             throw new ExceptionWithSuggestion(
                     String.format(
-                            "Gradle JDK configuration file `%s` is out of date, please run `./gradlew"
-                                    + " generateGradleJdkConfigs`",
+                            "Gradle JDK configuration file `%s` is out of date, please run `./gradlew" + " setupJdks`",
                             getRelativeToGradleFile(outOfDateFile)),
-                    "./gradlew generateGradleJdkConfigs");
+                    "./gradlew setupJdks");
         }
     }
 

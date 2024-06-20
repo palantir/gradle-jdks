@@ -25,7 +25,7 @@
 #   (3) Calls the java class `GradleJdkInstallationSetup` that will move each distribution to
 #   `$GRADLE_USER_HOME/${local_path}` based on the local_path=`gradle/jdks/${majorVersion}/${os}/${arch}/local_path`
 #   and it will set up the certificates based on `gradle/certs` entries for the locally installed distribution
-#   (4) Calls `GradleJdkPropertiesSetup` to set the Intelij & gradle properties and sets `org.gradle.java.home` used by `./gradlew` to the Gradle daemon JDK major version=`gradle/gradle-daemon-jdk-version`
+#   (4) Sets `org.gradle.java.home` to the JDK distribution that is used by the Gradle Daemon
 #
 #
 #   Important for running:
@@ -117,8 +117,6 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
-all_jdk_symlinks=""
-
 for dir in "$APP_GRADLE_DIR"/jdks/*/; do
   major_version_dir=${dir%*/}
   certs_directory="$APP_GRADLE_DIR"/certs
@@ -166,24 +164,16 @@ for dir in "$APP_GRADLE_DIR"/jdks/*/; do
     # Finding the java_home
     java_bin=$(find "$in_progress_dir" -type f -name "java" -path "*/bin/java" ! -type l)
     java_home="${java_bin%/*/*}"
-    "$java_home"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup "$jdk_installation_directory" "$certs_directory" || die "Failed to set up JDK $jdk_installation_directory"
+    "$java_home"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" "$certs_directory" || die "Failed to set up JDK $jdk_installation_directory"
     echo "Successfully installed JDK distribution in $jdk_installation_directory"
   fi
-  # Updating the current symlink to the $jdk_installation_directory
-  major_jdk_version="${major_version_dir##*/}"
-  jdk_local_symlink="$APP_HOME"/jdk-"$major_jdk_version"
-  all_jdk_symlinks="$all_jdk_symlinks","$jdk_local_symlink"
-  ln -vfsn "$jdk_installation_directory" "$jdk_local_symlink"
 done
 
-rm -rf "$tmp_work_dir"
-
 gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
-gradle_daemon_jdk_local_symlink="$APP_HOME"/jdk-"$gradle_daemon_jdk_version"
 gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)
+"$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup daemonSetup "$APP_HOME" "$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path"
 
-# [Both ./gradlew & Intelij setup] Writing the JDK setup properties
-"$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkPropertiesSetup "$APP_HOME" "$gradle_daemon_jdk_local_symlink" "$all_jdk_symlinks"
+rm -rf "$tmp_work_dir"
 
 # [Used by ./gradlew only] Setting the Gradle Daemon Java Home to the JDK distribution
 set -- "-Dorg.gradle.java.home=$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path" "$@"

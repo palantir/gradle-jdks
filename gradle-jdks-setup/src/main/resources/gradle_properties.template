@@ -1,6 +1,0 @@
-# >>> Gradle JDK setup >>>
-# Setting up the Gradle JDKs configuration because `palantir.jdk.setup.enabled` is enabled.
-# The patch will be automatically removed if running on Windows. The change to remove the setup shouldn't be committed
-# to the repository, unless the project is only run on non-supported OSs.
-_GRADLE_JDK_PROPERTIES_
-# <<< Gradle JDK setup <<<

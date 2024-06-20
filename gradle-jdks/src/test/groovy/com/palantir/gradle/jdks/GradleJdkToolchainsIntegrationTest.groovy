@@ -39,7 +39,6 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         setupJdksHardcodedVersions()
         applyApplicationPlugin()
 
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
         file('src/main/java/Main.java') << getMainJavaCode()
 
         // language=Groovy
@@ -58,16 +57,17 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         """.stripIndent(true)
         runTasksSuccessfully("wrapper")
 
-        when: 'running javaToolchains task'
-        String output = runGradlewTasksSuccessfully("javaToolchains")
+        when:
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        def result = runTasksSuccessfully("setupJdks")
 
         then: 'the only discovered jdk versions are coming from gradle.properties'
-        output.contains("Auto-detection:     Disabled")
-        output.contains("Auto-download:      Disabled")
-        output.contains("JDK ${SIMPLIFIED_JDK_11_VERSION}")
-        output.contains("JDK ${SIMPLIFIED_JDK_17_VERSION}")
-        output.contains("JDK ${SIMPLIFIED_JDK_21_VERSION}")
-        Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(output)
+        result.standardOutput.contains("Auto-detection:     Disabled")
+        result.standardOutput.contains("Auto-download:      Disabled")
+        result.standardOutput.contains("JDK ${SIMPLIFIED_JDK_11_VERSION}")
+        result.standardOutput.contains("JDK ${SIMPLIFIED_JDK_17_VERSION}")
+        result.standardOutput.contains("JDK ${SIMPLIFIED_JDK_21_VERSION}")
+        Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(result.standardOutput)
         while (matcher.find()) {
             String detectedByPattern = matcher.group(1)
             detectedByPattern.contains('org.gradle.java.installations.paths')
@@ -76,26 +76,30 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         when: 'running printGradleHome task'
         String gradleHomeOutput = runGradlewTasksSuccessfully("printGradleHome")
 
-        then:
-        Path daemonJvm = new File(projectDir, "jdk-11").toPath().toRealPath()
+        then: 'java home is set to out jdk 11 configured version'
+        String os = CurrentOs.get().uiName()
+        String arch = CurrentArch.get().uiName()
+        String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${DAEMON_MAJOR_VERSION_11}/${os}/${arch}/local-path").text.trim()
+        Path daemonJvm = workingDir().resolve("gradle-jdks").resolve(daemonJdkFileName).toAbsolutePath()
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 
         when: 'running compileJava task'
         runGradlewTasksSuccessfully("compileJava")
 
-        then:
+        then: 'the project is compiled with the configured toolchain (17)'
         File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
         readBytecodeVersion(compiledClass) == Pair.of(0, JAVA_17_BYTECODE)
 
-        when:
+        when: 'running run task'
         String runOutput = runGradlewTasksSuccessfully("run")
 
-        then:
-        Path compileJvm = new File(projectDir, "jdk-17").toPath().toRealPath()
+        then: 'the application is run with the configured toolchain (17)'
+        String compileJdkFileName = projectDir.toPath().resolve("gradle/jdks/17/${os}/${arch}/local-path").text.trim()
+        Path compileJvm = workingDir().resolve("gradle-jdks").resolve(compileJdkFileName).toAbsolutePath()
         runOutput.contains("Java home: ${compileJvm}")
 
         where:
-        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
+        gradleVersionNumber << [GRADLE_7_6_VERSION, GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION, GRADLE_8_8_VERSION]
     }
 
 
@@ -144,8 +148,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         when: 'running printGradleHome task'
         String gradleHomeOutput = runGradlewTasksSuccessfully("printGradleHome")
 
-        then:
-        Path daemonJvm = new File(projectDir, "jdk-11").toPath().toRealPath()
+        then: 'java home is set to out jdk 11 configured version'
+        String os = CurrentOs.get().uiName()
+        String arch = CurrentArch.get().uiName()
+        String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${DAEMON_MAJOR_VERSION_11}/${os}/${arch}/local-path").text.trim()
+        Path daemonJvm = workingDir().resolve("gradle-jdks").resolve(daemonJdkFileName).toAbsolutePath()
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 
         when: 'compiling projects'
@@ -164,7 +171,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         readBytecodeVersion(subproject21Class) == Pair.of(0, JAVA_21_BYTECODE)
 
         where:
-        gradleVersionNumber << [GRADLE_7VERSION, GRADLE_8VERSION]
+        gradleVersionNumber << [GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
     }
 
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
@@ -190,9 +197,9 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         expectedErrorLines.forEach { expectedErrorLine -> result.contains(expectedErrorLine) }
 
         where:
-        gradleVersionNumber | expectedErrorLines
-        GRADLE_7VERSION     | ["No compatible toolchains found for request specification: {languageVersion=15, vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false)."]
-        GRADLE_8VERSION     | ["No matching toolchains found for requested specification: {languageVersion=15, vendor=any, implementation=vendor-specific}", "No locally installed toolchains match and toolchain auto-provisioning is not enabled."]
+        gradleVersionNumber  | expectedErrorLines
+        GRADLE_7_6_4_VERSION | ["No compatible toolchains found for request specification: {languageVersion=15, vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false)."]
+        GRADLE_8_5_VERSION   | ["No matching toolchains found for requested specification: {languageVersion=15, vendor=any, implementation=vendor-specific}", "No locally installed toolchains match and toolchain auto-provisioning is not enabled."]
     }
 
     def java17PreviewCode = '''

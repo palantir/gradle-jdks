@@ -23,9 +23,11 @@ import org.apache.commons.lang3.tuple.Pair
 import java.nio.file.Path
 
 abstract class GradleJdkIntegrationTest extends IntegrationSpec {
-
-    static String GRADLE_7VERSION = "7.6.4"
-    static String GRADLE_8VERSION = "8.5"
+    
+    static String GRADLE_7_6_VERSION = "7.6"
+    static String GRADLE_7_6_4_VERSION = "7.6.4"
+    static String GRADLE_8_5_VERSION = "8.5"
+    static String GRADLE_8_8_VERSION = "8.8"
 
     static String JDK_11_VERSION = "11.54.25-11.0.14.1"
     static String SIMPLIFIED_JDK_11_VERSION = "11.0.14"
@@ -34,6 +36,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     static String JDK_21_VERSION = "21.0.2.13.1"
     static String SIMPLIFIED_JDK_21_VERSION = "21.0.2"
 
+    static String DAEMON_MAJOR_VERSION_11 = "11"
     static Pair<String, String> JDK_11 = Pair.of("azul-zulu", JDK_11_VERSION)
     static Pair<String, String> JDK_17 = Pair.of("amazon-corretto", JDK_17_VERSION)
     static Pair<String, String> JDK_21 = Pair.of("amazon-corretto", JDK_21_VERSION)
@@ -57,7 +60,24 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
         """.stripIndent(true)
     }
 
-    def setupJdksHardcodedVersions() {
+    def applyJdksPlugins() {
+        // language=groovy
+        settingsFile << """
+            buildscript {
+                repositories {
+                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+                }
+                // we need to inject the classpath of the plugin under test manually. The tests call the `./gradlew` 
+                // command directly in the tests (so not using the nebula-test workflow).
+                dependencies {
+                    classpath files(FILES)
+                }
+            }
+            
+            apply plugin: 'com.palantir.jdks.settings'
+        """.replace("FILES", getSettingsPluginClasspathInjector().join(",")).stripIndent(true)
+
         // language=groovy
         buildFile << """
             buildscript {
@@ -75,7 +95,16 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
             apply plugin: 'java'
             apply plugin: 'com.palantir.jdks'
             apply plugin: 'com.palantir.jdks.palantir-ca'
-            
+        """.replace("FILES", getBuildPluginClasspathInjector().join(","))
+                .stripIndent(true)
+    }
+
+    def setupJdksHardcodedVersions(String daemonJdkVersion = DAEMON_MAJOR_VERSION_11) {
+
+        applyJdksPlugins()
+
+        // language=groovy
+        buildFile << """
             jdks {
                jdk(11) {
                   distribution = JDK_11_DISTRO
@@ -92,43 +121,17 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                   jdkVersion = JDK_21_VERSION
                }
                
-               daemonTarget = '11'
+               daemonTarget = DAEMON_MAJOR_VERSION_11
             }
-        """.replace("FILES", getPluginClasspathInjector().join(","))
+        """.replace("FILES", getBuildPluginClasspathInjector().join(","))
                 .replace("JDK_11_DISTRO", quoted(JDK_11.getLeft()))
                 .replace("JDK_11_VERSION", quoted(JDK_11.getRight()))
                 .replace("JDK_17_DISTRO", quoted(JDK_17.getLeft()))
                 .replace("JDK_17_VERSION", quoted(JDK_17.getRight()))
                 .replace("JDK_21_DISTRO", quoted(JDK_21.getLeft()))
                 .replace("JDK_21_VERSION", quoted(JDK_21.getRight()))
+                .replace("DAEMON_MAJOR_VERSION_11", quoted(daemonJdkVersion))
                 .stripIndent(true)
-    }
-
-    def setupJdksLatest() {
-        // language=groovy
-        buildFile << """
-            buildscript {
-                repositories {
-                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                }
-                // we need to inject the classpath of the plugin under test manually. The tests call the `./gradlew` 
-                // command directly in the tests (so not using the nebula-test workflow).
-                dependencies {
-                    classpath files(FILES)
-                    classpath 'com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.14.0'
-                }
-            }
-            
-            apply plugin: 'java'
-            apply plugin: 'com.palantir.jdks'
-            apply plugin: 'com.palantir.jdks.latest'
-            apply plugin: 'com.palantir.jdks.palantir-ca'
-            
-            jdks {
-               daemonTarget = '11'
-            }
-        """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
     }
 
     def quoted(String value) {
@@ -164,9 +167,17 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
         return processBuilder
     }
 
+    Iterable<File> getBuildPluginClasspathInjector() {
+        return getPluginClasspathInjector(Path.of("build/pluginUnderTestMetadata/plugin-under-test-metadata.properties"))
+    }
 
-    Iterable<File> getPluginClasspathInjector() {
-        File propertiesFile = new File("build/pluginUnderTestMetadata/plugin-under-test-metadata.properties")
+    Iterable<File> getSettingsPluginClasspathInjector() {
+        return getPluginClasspathInjector(Path.of("../gradle-jdks-settings/build/pluginUnderTestMetadata/plugin-under-test-metadata.properties"))
+    }
+
+
+    Iterable<File> getPluginClasspathInjector(Path path) {
+        File propertiesFile = path.toFile()
         Properties properties = new Properties()
         propertiesFile.withInputStream { inputStream ->
             properties.load(inputStream)

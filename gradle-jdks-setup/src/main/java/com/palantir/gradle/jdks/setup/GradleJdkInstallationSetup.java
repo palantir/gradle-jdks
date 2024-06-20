@@ -16,32 +16,101 @@
 
 package com.palantir.gradle.jdks.setup;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Class responsible for installing the current JDK into {@code destinationJdkInstallationDir} and importing the
- * certificates specified by their serialNumbers and alias name from {@code certsDir} into the JDK's truststore.
- * A certificate will be imported iff the serial number already exists in the truststore.
+ * Class responsible for 2 workflows:
+ * 1. installing the current JDK into {@code destinationJdkInstallationDir} and importing the
+ *  certificates specified by their serialNumbers and alias name from {@code certsDir} into the JDK's truststore. A
+ *  certificate will be imported iff the serial number already exists in the truststore.
+ * 2. setting the java.home value in .gradle/config.properties to {@code gradleDaemonJavaHome} in the project directory.
  * The class will be called by the Gradle setup script in
  * <a href="file:../resources/gradle-jdks-setup.sh">resources/gradle-jdks-setup.sh</a>.
  */
 public final class GradleJdkInstallationSetup {
 
-    public static void main(String[] args) throws IOException {
+    public enum Command {
+        JDK_SETUP("jdkSetup"),
+        DAEMON_SETUP("daemonSetup");
+
+        private final String label;
+
+        Command(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+
+        public static Command fromLabel(String label) {
+            for (Command e : values()) {
+                if (e.label.equals(label)) {
+                    return e;
+                }
+            }
+            throw new RuntimeException(String.format("Cannot convert %s to a Command", label));
+        }
+    }
+
+    public static void main(String[] args) {
         StdLogger logger = new StdLogger();
         CaResources caResources = new CaResources(logger);
-        if (args.length != 2) {
-            throw new IllegalArgumentException("Expected two arguments: destinationJdkInstallationDir and certsDir");
+        if (args.length < 1) {
+            throw new IllegalArgumentException("Expected at least an argument: jdkSetup or daemonSetup");
         }
-        Path destinationJdkInstallationDir = Path.of(args[0]);
-        Path certsDir = Path.of(args[1]);
+        Command command = Command.fromLabel(args[0]);
+        switch (command) {
+            case JDK_SETUP:
+                setupJdk(logger, caResources, args);
+                break;
+            case DAEMON_SETUP:
+                setupDaemon(args);
+                break;
+        }
+    }
+
+    private static void setupDaemon(String[] args) {
+        // [Intelij specific] Set the gradle java.home in .gradle/config.properties. This is the value for the Intelij
+        // env variable GRADLE_LOCAL_JAVA_HOME
+        if (args.length != 3) {
+            throw new IllegalArgumentException("Expected 2 arguments: daemonSetup <projectDir> <gradleDaemonJavaHome>");
+        }
+        Path projectDir = Path.of(args[1]);
+        Path gradleDaemonJavaHome = Path.of(args[2]);
+        try {
+            Files.createDirectories(projectDir.resolve(".gradle"));
+            Path gradleConfigFile = projectDir.resolve(".gradle/config.properties");
+            if (!Files.exists(gradleConfigFile)) {
+                Files.createFile(gradleConfigFile);
+            }
+            Properties gradleProperties = new Properties();
+            gradleProperties.load(new FileInputStream(gradleConfigFile.toFile()));
+            gradleProperties.setProperty("java.home", gradleDaemonJavaHome.toString());
+            gradleProperties.store(Files.newBufferedWriter(gradleConfigFile, StandardCharsets.UTF_8), null);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to set the java.home value in .gradle/config.properties.", e);
+        }
+    }
+
+    private static void setupJdk(StdLogger logger, CaResources caResources, String[] args) {
+        if (args.length != 3) {
+            throw new IllegalArgumentException(
+                    "Expected 3 arguments: jdkSetup <destinationJdkInstallationDir> <certsDir>");
+        }
+        Path destinationJdkInstallationDir = Path.of(args[1]);
+        Path certsDir = Path.of(args[2]);
         copy(logger, destinationJdkInstallationDir);
         Map<String, String> certSerialNumbersToNames = extractCertsSerialNumbers(logger, certsDir);
         caResources.maybeImportCertsInJdk(destinationJdkInstallationDir, certSerialNumbersToNames);
@@ -52,7 +121,8 @@ public final class GradleJdkInstallationSetup {
         Path jdksInstallationDirectory = destinationJdkInstallationDirectory.getParent();
         FileUtils.createDirectories(jdksInstallationDirectory);
         Path lockFile = jdksInstallationDirectory.resolve(destinationJdkInstallationDirectory.getFileName() + ".lock");
-        try (FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+        try (FileChannel channel = FileChannel.open(
+                lockFile, StandardOpenOption.READ, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             channel.lock();
             // double-check, now that we hold the lock
             if (Files.exists(destinationJdkInstallationDirectory)) {
@@ -68,8 +138,7 @@ public final class GradleJdkInstallationSetup {
     }
 
     @SuppressWarnings("StringSplitter")
-    private static Map<String, String> extractCertsSerialNumbers(ILogger logger, Path certsDirectory)
-            throws IOException {
+    private static Map<String, String> extractCertsSerialNumbers(ILogger logger, Path certsDirectory) {
         if (!Files.exists(certsDirectory)) {
             logger.log("No `certs` directory found, no certificates will be imported");
             return Map.of();
@@ -78,6 +147,8 @@ public final class GradleJdkInstallationSetup {
             return stream.collect(Collectors.toMap(
                     GradleJdkInstallationSetup::readSerialNumber,
                     certFile -> certFile.getFileName().toString().split("\\.")[0]));
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to list the certificates in the certs directory", e);
         }
     }
 
