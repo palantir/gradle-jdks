@@ -16,7 +16,13 @@
 
 package com.palantir.gradle.jdks;
 
+import com.intellij.execution.ExecutionException;
+import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.filters.TextConsoleBuilderFactory;
+import com.intellij.execution.process.OSProcessHandler;
+import com.intellij.execution.process.ProcessEvent;
+import com.intellij.execution.process.ProcessListener;
+import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.application.ApplicationManager;
@@ -27,92 +33,87 @@ import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Properties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
 
 public class InitialConfigurationStartupActivity implements StartupActivity.DumbAware {
 
+    private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
+
     @Override
     public void runActivity(@NotNull Project project) {
+        ConsoleView consoleView =
+                TextConsoleBuilderFactory.getInstance().createBuilder(project).getConsole();
+        switch (CurrentOs.get()) {
+            case WINDOWS:
+                consoleView.print(
+                        "Windows is not supported yet for Gradle Jdk setup", ConsoleViewContentType.LOG_INFO_OUTPUT);
+                return;
+            case LINUX_MUSL:
+            case LINUX_GLIBC:
+            case MACOS:
+                setupGradleJdks(project, consoleView);
+                break;
+        }
         ApplicationManager.getApplication().invokeLater(() -> {
-            ConsoleView consoleView = TextConsoleBuilderFactory.getInstance()
-                    .createBuilder(project)
-                    .getConsole();
-            // Get the ToolWindowManager and get your ToolWindow
             ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
-            ToolWindow toolWindow = toolWindowManager.getToolWindow("MyToolWindow");
-
-            // If ToolWindow is not available, then you need to register it first
+            ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
             if (toolWindow == null) {
-                toolWindow = toolWindowManager.registerToolWindow("MyToolWindow", true, ToolWindowAnchor.BOTTOM);
+                toolWindow = toolWindowManager.registerToolWindow(TOOL_WINDOW_NAME, true, ToolWindowAnchor.BOTTOM);
             }
-
-            // Create content for ToolWindow
             ContentFactory contentFactory = ContentFactory.getInstance();
             Content content = contentFactory.createContent(consoleView.getComponent(), "", false);
             toolWindow.getContentManager().addContent(content);
             toolWindow.activate(null);
-            consoleView.print("Started running IntelliJGradleJdkSetup\n", ConsoleViewContentType.NORMAL_OUTPUT);
-            String projectBasePath = project.getBasePath();
-            String jarFilePath = projectBasePath + "/gradle/gradle-jdks-setup.jar";
-            PrintStream oldOut = System.out;
-            PrintStream oldErr = System.err;
-            try (URLClassLoader classLoader =
-                    new URLClassLoader(new URL[] {new File(jarFilePath).toURI().toURL()})) {
-                Class<?> loadedClass = classLoader.loadClass("com.palantir.gradle.jdks.setup.IntelijGradleJdkSetup");
-                Method mainMethod = loadedClass.getMethod("main", String[].class);
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ByteArrayOutputStream baerr = new ByteArrayOutputStream();
-                PrintStream newOut = new PrintStream(baos);
-                PrintStream newErr = new PrintStream(baerr);
-
-                // Redirect System.out to newOut
-                System.setOut(newOut);
-                System.setErr(newErr);
-
-                mainMethod.invoke(null, (Object) new String[] {projectBasePath});
-
-                newOut.flush();
-                newErr.flush();
-
-                // The output collected from the main method
-                String output = baos.toString(StandardCharsets.UTF_8);
-                String err = baerr.toString(StandardCharsets.UTF_8);
-                consoleView.print(output + err, ConsoleViewContentType.NORMAL_OUTPUT);
-
-            } catch (IOException
-                    | ClassNotFoundException
-                    | InvocationTargetException
-                    | IllegalAccessException
-                    | NoSuchMethodException e) {
-                throw new RuntimeException("Failed to run IntelliJGradleJdkSetup", e);
-            } finally {
-                System.setOut(oldOut);
-                System.setErr(oldErr);
-            }
-            consoleView.print("Finished running IntelliJGradleJdkSetup\n", ConsoleViewContentType.NORMAL_OUTPUT);
         });
+    }
 
-        GradleSettings gradleSettings = GradleSettings.getInstance(project);
+    private static void setupGradleJdks(Project project, ConsoleView consoleView) {
+        try {
+            GeneralCommandLine cli =
+                    new GeneralCommandLine("./gradlew", "setupJdks").withWorkDirectory(project.getBasePath());
+            OSProcessHandler handler = new OSProcessHandler(cli);
+            handler.startNotify();
+            handler.addProcessListener(new ProcessListener() {
 
-        // Iterate through all linked projects
-        for (GradleProjectSettings projectSettings : gradleSettings.getLinkedProjectsSettings()) {
-            Path maybeGradleConfigs = Path.of(projectSettings.getExternalProjectPath(), ".gradle/config.properties");
-            if (maybeGradleConfigs.toFile().exists()) {
-                projectSettings.setGradleJvm("#GRADLE_LOCAL_JAVA_HOME");
-            }
+                @Override
+                public void processTerminated(@NotNull ProcessEvent _event) {
+                    GradleSettings gradleSettings = GradleSettings.getInstance(project);
+                    for (GradleProjectSettings projectSettings : gradleSettings.getLinkedProjectsSettings()) {
+                        File gradleConfigFile = Path.of(
+                                        projectSettings.getExternalProjectPath(), ".gradle/config.properties")
+                                .toFile();
+                        if (!gradleConfigFile.exists()) {
+                            consoleView.print(
+                                    "Skipping gradleJvm Configuration because no value was configured in `.gradle/config.properties`",
+                                    ConsoleViewContentType.LOG_INFO_OUTPUT);
+                            continue;
+                        }
+
+                        try {
+                            Properties properties = new Properties();
+                            properties.load(new FileInputStream(gradleConfigFile));
+                            if (Optional.ofNullable(properties.getProperty("java.home"))
+                                    .isPresent()) {
+                                projectSettings.setGradleJvm("#GRADLE_LOCAL_JAVA_HOME");
+                            }
+                        } catch (IOException e) {
+                            throw new RuntimeException("Could not read gradle.properties file", e);
+                        }
+                    }
+                }
+            });
+            consoleView.attachToProcess(handler);
+            ProcessTerminatedListener.attach(handler, project);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
         }
     }
 }

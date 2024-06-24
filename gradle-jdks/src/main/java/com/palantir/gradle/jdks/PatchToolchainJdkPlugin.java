@@ -16,32 +16,122 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.Map;
-import org.gradle.StartParameter;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
-import org.gradle.api.internal.StartParameterInternal;
+import org.gradle.api.internal.properties.GradleProperties;
+import org.gradle.api.internal.provider.DefaultProviderFactory;
+import org.gradle.api.internal.provider.DefaultValueSourceProviderFactory;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.initialization.DefaultGradlePropertiesController;
-import org.gradle.initialization.DefaultGradlePropertiesLoader;
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.initialization.DefaultSettings;
-import org.gradle.initialization.GradlePropertiesController;
-import org.gradle.initialization.IGradlePropertiesLoader;
 
 public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
 
     private static final Logger logger = Logging.getLogger(PatchToolchainJdkPlugin.class);
 
+    private static class GradlePropertiesInvocationHandler implements InvocationHandler {
+
+        private final GradleProperties originalGradleProperties;
+        private final Path gradleJdksLocalDirectory;
+
+        public GradlePropertiesInvocationHandler(
+                Path gradleJdksLocalDirectory, GradleProperties originalGradleProperties) {
+            this.gradleJdksLocalDirectory = gradleJdksLocalDirectory;
+            this.originalGradleProperties = originalGradleProperties;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            List<Path> localToolchains = getInstalledToolchains(gradleJdksLocalDirectory);
+            if (localToolchains.isEmpty()) {
+                throw new RuntimeException(
+                        "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but no toolchains could be configured");
+            }
+            if (method.getName().equals("find")) {
+                if (args.length == 1 && args[0].equals("org.gradle.java.installations.auto-detect")) {
+                    return "false";
+                }
+                if (args.length == 1 && args[0].equals("org.gradle.java.installations.auto-download")) {
+                    return "false";
+                }
+                if (args.length == 1 && args[0].equals("org.gradle.java.installations.paths")) {
+                    return localToolchains.stream()
+                            .map(Path::toAbsolutePath)
+                            .map(Path::toString)
+                            .collect(Collectors.joining(","));
+                }
+            }
+            try {
+                return GradleProperties.class
+                        .getDeclaredMethod(method.getName(), method.getParameterTypes())
+                        .invoke(originalGradleProperties, args);
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
+            }
+        }
+
+        private static List<Path> getInstalledToolchains(Path gradleJdksLocalDirectory) {
+            Path installationDirectory = getToolchainInstallationDir();
+            Os os = CurrentOs.get();
+            Arch arch = CurrentArch.get();
+            try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
+                return stream.map(path -> path.resolve(String.format("%s/%s/local-path", os, arch)))
+                        .map(path -> getToolchain(path, installationDirectory))
+                        .flatMap(Optional::stream)
+                        .collect(Collectors.toList());
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to list the local installation paths", e);
+            }
+        }
+
+        private static Optional<Path> getToolchain(Path gradleJdkConfigurationPath, Path installationDirectory) {
+            try {
+                String localFilename =
+                        Files.readString(gradleJdkConfigurationPath).trim();
+                Path installationPath = installationDirectory.resolve(localFilename);
+                if (!Files.exists(installationPath)) {
+                    logger.warn("Could not find toolchain at {}", installationPath);
+                    return Optional.empty();
+                }
+                return Optional.of(installationPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     @Override
     public void apply(Settings settings) {
-        // version 1
-        /*ProviderFactory providerFactory =
+        if (!JdksPlugin.isGradleJdkSetupEnabled(settings.getRootDir().toPath())) {
+            logger.debug("Skipping Gradle JDK gradle properties patching");
+            return;
+        }
+
+        Path gradleJdksLocalDirectory = settings.getRootDir().toPath().resolve("gradle/jdks");
+        if (!Files.exists(gradleJdksLocalDirectory)) {
+            logger.warn(
+                    "Not setting the Gradle JDK properties because gradle/jdks directory doesn't exist. Please run ./gradlew setupJdks to set up the JDKs.");
+            return;
+        }
+        ProviderFactory providerFactory =
                 ((DefaultSettings) settings).getServices().get(ProviderFactory.class);
         if (!(providerFactory instanceof DefaultProviderFactory)) {
             throw new RuntimeException(String.format(
-                    "Expected osMemoryInfo to be of type '%s' but was '%s'.",
+                    "Expected providerFactory to be of type '%s' but was '%s'.",
                     ProviderFactory.class.getCanonicalName(),
                     providerFactory.getClass().getCanonicalName()));
         }
@@ -53,104 +143,23 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
 
             DefaultValueSourceProviderFactory defaultValueSourceProviderFactory =
                     (DefaultValueSourceProviderFactory) valueSourceProviderFactory.get(defaultProviderFactory);
-            Field gradleProperties = DefaultValueSourceProviderFactory.class.getDeclaredField("gradleProperties");
-            gradleProperties.setAccessible(true);
-
-            // not working because it is SharedProperties which is private to the class so I can't see it
-            DefaultGradleProperties defaultGradleProperties =
-                    (DefaultGradleProperties) gradleProperties.get(defaultValueSourceProviderFactory);
-            Field defaultProperties = DefaultGradleProperties.class.getDeclaredField("defaultProperties");
-            defaultProperties.setAccessible(true);
-            defaultProperties.set(
-                    defaultGradleProperties, Map.of("org.gradle.java.installations.auto-detect", "false"));
+            Field field = DefaultValueSourceProviderFactory.class.getDeclaredField("gradleProperties");
+            field.setAccessible(true);
+            GradleProperties originalGradleProperties = (GradleProperties) field.get(defaultValueSourceProviderFactory);
+            GradleProperties ourGradleProperties = (GradleProperties) Proxy.newProxyInstance(
+                    GradleProperties.class.getClassLoader(),
+                    new Class[] {GradleProperties.class},
+                    new GradlePropertiesInvocationHandler(gradleJdksLocalDirectory, originalGradleProperties));
+            field.set(defaultValueSourceProviderFactory, ourGradleProperties);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
-        }*/
-
-        // version 2
-        // not working because it is a ProviderBackedToolchainConfiguration which delegates back to providerFactory
-        /*ToolchainConfiguration toolchainConfiguration =
-                ((DefaultSettings) settings).getServices().get(ToolchainConfiguration.class);
-        if (!(toolchainConfiguration instanceof DefaultToolchainConfiguration)) {
-            throw new RuntimeException(String.format(
-                    "Expected osMemoryInfo to be of type '%s' but was '%s'.",
-                    ToolchainConfiguration.class.getCanonicalName(),
-                    toolchainConfiguration.getClass().getCanonicalName()));
         }
+    }
 
-        try {
-            DefaultToolchainConfiguration defaultToolchainConfiguration =
-                    (DefaultToolchainConfiguration) toolchainConfiguration;
-            Field autoDetectEnabled = DefaultToolchainConfiguration.class.getDeclaredField("autoDetectEnabled");
-            autoDetectEnabled.setAccessible(true);
-            autoDetectEnabled.set(defaultToolchainConfiguration, false);
-            Field downloadEnabled = DefaultToolchainConfiguration.class.getDeclaredField("downloadEnabled");
-            downloadEnabled.setAccessible(true);
-            downloadEnabled.set(defaultToolchainConfiguration, false);
-            Field installationsFromPaths =
-                    DefaultToolchainConfiguration.class.getDeclaredField("installationsFromPaths");
-            installationsFromPaths.setAccessible(true);
-            installationsFromPaths.set(
-                    defaultToolchainConfiguration,
-                    List.of(
-                            "/Users/crogoz/.gradle/gradle-jdks/amazon-corretto-21.0.3.9.1-e25ec9ba8c6e8686",
-                            "/Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4",
-                            "/Users/crogoz/.gradle/gradle-jdks/amazon-corretto-17.0.11.9.1-f0e4bf13f7416be0"));
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }*/
-
-        // version 3
-        GradlePropertiesController projectPropertiesLoader =
-                ((DefaultSettings) settings).getServices().get(GradlePropertiesController.class);
-        if (!(projectPropertiesLoader instanceof DefaultGradlePropertiesController)) {
-            throw new RuntimeException(String.format(
-                    "Expected osMemoryInfo to be of type '%s' but was '%s'.",
-                    GradlePropertiesController.class.getCanonicalName(),
-                    projectPropertiesLoader.getClass().getCanonicalName()));
-        }
-        DefaultGradlePropertiesController defaultProjectPropertiesLoader =
-                (DefaultGradlePropertiesController) projectPropertiesLoader;
-
-        try {
-            Field propertiesLoader = DefaultGradlePropertiesController.class.getDeclaredField("propertiesLoader");
-            propertiesLoader.setAccessible(true);
-            IGradlePropertiesLoader iGradlePropertiesLoader =
-                    (IGradlePropertiesLoader) propertiesLoader.get(defaultProjectPropertiesLoader);
-
-            if (!(iGradlePropertiesLoader instanceof DefaultGradlePropertiesLoader)) {
-                throw new RuntimeException(String.format(
-                        "Expected osMemoryInfo to be of type '%s' but was '%s'.",
-                        DefaultGradlePropertiesLoader.class.getCanonicalName(),
-                        iGradlePropertiesLoader.getClass().getCanonicalName()));
-            }
-            DefaultGradlePropertiesLoader defaultGradlePropertiesLoader =
-                    (DefaultGradlePropertiesLoader) iGradlePropertiesLoader;
-            Field startParameterInternal = DefaultGradlePropertiesLoader.class.getDeclaredField("startParameter");
-            startParameterInternal.setAccessible(true);
-
-            // change the value
-            StartParameterInternal startParameterInternalInstance =
-                    (StartParameterInternal) startParameterInternal.get(defaultGradlePropertiesLoader);
-            /*Field dryRun = StartParameter.class.getDeclaredField("dryRun");
-            dryRun.setAccessible(true);
-            dryRun.set(startParameterInternalInstance, true);*/
-
-            Field systemPropertiesArgs = StartParameter.class.getDeclaredField("systemPropertiesArgs");
-            systemPropertiesArgs.setAccessible(true);
-            systemPropertiesArgs.set(
-                    startParameterInternalInstance,
-                    Map.of(
-                            "org.gradle.java.home",
-                            "/Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1-94154e38f97edb8",
-                            "org.gradle.java.installations.auto-download",
-                            "false",
-                            "org.gradle.java.installations.auto-detect",
-                            "false"));
-
-            // propertiesLoader.set(defaultProjectPropertiesLoader, defaultGradlePropertiesLoader);
-        } catch (ReflectiveOperationException e) {
-            logger.error("Failed to load project properties", e);
-        }
+    @VisibleForTesting
+    static Path getToolchainInstallationDir() {
+        return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
+                        .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
+                .resolve("gradle-jdks");
     }
 }

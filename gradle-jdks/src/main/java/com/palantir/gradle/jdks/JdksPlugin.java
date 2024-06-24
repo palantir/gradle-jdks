@@ -17,8 +17,12 @@
 package com.palantir.gradle.jdks;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Properties;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.slf4j.Logger;
@@ -35,18 +39,31 @@ public final class JdksPlugin implements Plugin<Project> {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
 
-        if (getEnableGradleJdkProperty(rootProject)) {
+        if (isGradleJdkSetupEnabled(rootProject.getProjectDir().toPath())) {
             rootProject.getPluginManager().apply(ToolchainsPlugin.class);
         } else {
             rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);
         }
     }
 
-    public static boolean getEnableGradleJdkProperty(Project project) {
-        return !CurrentOs.get().equals(Os.WINDOWS)
-                && Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
-                        .map(prop -> Boolean.parseBoolean(((String) prop)))
-                        .orElse(false);
+    public static boolean isGradleJdkSetupEnabled(Path projectDir) {
+        return !CurrentOs.get().equals(Os.WINDOWS) && getEnableGradleJdkProperty(projectDir);
+    }
+
+    private static boolean getEnableGradleJdkProperty(Path projectDir) {
+        File gradlePropsFile = projectDir.resolve("gradle.properties").toFile();
+        if (!gradlePropsFile.exists()) {
+            return false;
+        }
+        try {
+            Properties properties = new Properties();
+            properties.load(new FileInputStream(gradlePropsFile));
+            return Optional.ofNullable(properties.getProperty(ENABLE_GRADLE_JDK_SETUP))
+                    .map(Boolean::parseBoolean)
+                    .orElse(false);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {

@@ -24,8 +24,9 @@ import java.nio.file.Path
 
 abstract class GradleJdkIntegrationTest extends IntegrationSpec {
 
-    static String GRADLE_7VERSION = "7.6.4"
-    static String GRADLE_8VERSION = "8.5"
+    static String GRADLE_7_6_4_VERSION = "7.6.4"
+    static String GRADLE_8_5_VERSION = "8.5"
+    static String GRADLE_8_8_VERSION = "8.5"
 
     static String JDK_11_VERSION = "11.54.25-11.0.14.1"
     static String SIMPLIFIED_JDK_11_VERSION = "11.0.14"
@@ -34,6 +35,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     static String JDK_21_VERSION = "21.0.2.13.1"
     static String SIMPLIFIED_JDK_21_VERSION = "21.0.2"
 
+    static String DAEMON_MAJOR_VERSION = "11"
     static Pair<String, String> JDK_11 = Pair.of("azul-zulu", JDK_11_VERSION)
     static Pair<String, String> JDK_17 = Pair.of("amazon-corretto", JDK_17_VERSION)
     static Pair<String, String> JDK_21 = Pair.of("amazon-corretto", JDK_21_VERSION)
@@ -108,7 +110,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                   jdkVersion = JDK_21_VERSION
                }
                
-               daemonTarget = '11'
+               daemonTarget = DAEMON_MAJOR_VERSION
             }
         """.replace("FILES", getPluginClasspathInjector().join(","))
                 .replace("JDK_11_DISTRO", quoted(JDK_11.getLeft()))
@@ -117,6 +119,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                 .replace("JDK_17_VERSION", quoted(JDK_17.getRight()))
                 .replace("JDK_21_DISTRO", quoted(JDK_21.getLeft()))
                 .replace("JDK_21_VERSION", quoted(JDK_21.getRight()))
+                .replace("DAEMON_MAJOR_VERSION", quoted(DAEMON_MAJOR_VERSION))
                 .stripIndent(true)
     }
 
@@ -142,9 +145,11 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
             apply plugin: 'com.palantir.jdks.palantir-ca'
             
             jdks {
-               daemonTarget = '11'
+               daemonTarget = DAEMON_MAJOR_VERSION
             }
-        """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
+        """.replace("FILES", getPluginClasspathInjector().join(","))
+                .replace("DAEMON_MAJOR_VERSION", quoted(DAEMON_MAJOR_VERSION))
+                .stripIndent(true)
     }
 
     def quoted(String value) {

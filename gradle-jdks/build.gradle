@@ -24,6 +24,7 @@ dependencies {
     implementation 'commons-io:commons-io'
     implementation 'org.apache.commons:commons-compress'
     implementation 'org.ow2.asm:asm'
+    implementation 'one.util:streamex'
 
     compileOnly 'com.palantir.gradle.auto-parallelizable:auto-parallelizable-annotations'
     compileOnly 'org.immutables:value::annotations'

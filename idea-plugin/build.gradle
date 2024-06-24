@@ -29,6 +29,8 @@ tasks.named("publish") {
 }
 
 dependencies {
+    implementation project(':gradle-jdks-setup-common')
+
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
@@ -60,6 +62,10 @@ versionsLock {
 // Javadoc fails if there are no public classes to javadoc, so make it stop complaining.
 tasks.named("javadoc", Javadoc) {
     failOnError = false
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone.disable 'PreferSafeLoggableExceptions'
 }
 
 javaVersion {

@@ -8,10 +8,7 @@ testSets {
 
 dependencies {
     // Avoid adding large compile dependencies here, as they will also be added in the gradle-jdks-setup-all*.jar using the fatJar task
-    implementation gradleApi()
     implementation project(':gradle-jdks-setup-common')
-    implementation 'net.bytebuddy:byte-buddy'
-    implementation 'net.bytebuddy:byte-buddy-agent'
 
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
@@ -28,11 +25,10 @@ dependencies {
 tasks.register('fatJar', Jar) {
     dependsOn tasks.jar, ':gradle-jdks-setup-common:jar'
     manifest {
-        attributes 'Main-Class': 'com.palantir.gradle.jdks.setup.IntelijGradleJdkSetup'
-        attributes 'Premain-Class': 'com.palantir.gradle.jdks.setup.GradleAgent'
+        attributes 'Main-Class': 'com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup'
     }
     archiveBaseName = 'gradle-jdks-setup-all'
-    duplicatesStrategy = DuplicatesStrategy.WARN
+    duplicatesStrategy = DuplicatesStrategy.FAIL
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
