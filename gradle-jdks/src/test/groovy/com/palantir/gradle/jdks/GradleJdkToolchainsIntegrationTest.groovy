@@ -80,7 +80,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         String os = CurrentOs.get().uiName()
         String arch = CurrentArch.get().uiName()
         String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${DAEMON_MAJOR_VERSION}/${os}/${arch}/local-path").text.trim()
-        Path daemonJvm = PatchToolchainJdkPlugin.getToolchainInstallationDir().resolve(daemonJdkFileName).toAbsolutePath()
+        Path daemonJvm = workingDir().resolve("gradle-jdks").resolve(daemonJdkFileName).toAbsolutePath()
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 
         when: 'running compileJava task'
@@ -95,7 +95,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
 
         then: 'the application is run with the configured toolchain (17)'
         String compileJdkFileName = projectDir.toPath().resolve("gradle/jdks/17/${os}/${arch}/local-path").text.trim()
-        Path compileJvm = PatchToolchainJdkPlugin.getToolchainInstallationDir().resolve(compileJdkFileName).toAbsolutePath()
+        Path compileJvm = workingDir().resolve("gradle-jdks").resolve(compileJdkFileName).toAbsolutePath()
         runOutput.contains("Java home: ${compileJvm}")
 
         where:
@@ -152,7 +152,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         String os = CurrentOs.get().uiName()
         String arch = CurrentArch.get().uiName()
         String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${DAEMON_MAJOR_VERSION}/${os}/${arch}/local-path").text.trim()
-        Path daemonJvm = PatchToolchainJdkPlugin.getToolchainInstallationDir().resolve(daemonJdkFileName).toAbsolutePath()
+        Path daemonJvm = workingDir().resolve("gradle-jdks").resolve(daemonJdkFileName).toAbsolutePath()
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 
         when: 'compiling projects'

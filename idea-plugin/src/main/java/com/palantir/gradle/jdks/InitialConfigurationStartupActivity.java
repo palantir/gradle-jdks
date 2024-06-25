@@ -27,7 +27,7 @@ import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.startup.StartupActivity;
+import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowManager;
@@ -39,23 +39,25 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
 
-public class InitialConfigurationStartupActivity implements StartupActivity.DumbAware {
+public class InitialConfigurationStartupActivity implements ProjectActivity {
 
     private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
 
     @Override
-    public void runActivity(@NotNull Project project) {
+    public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> _continuation) {
         ConsoleView consoleView =
                 TextConsoleBuilderFactory.getInstance().createBuilder(project).getConsole();
         switch (CurrentOs.get()) {
             case WINDOWS:
                 consoleView.print(
                         "Windows is not supported yet for Gradle Jdk setup", ConsoleViewContentType.LOG_INFO_OUTPUT);
-                return;
+                return null;
             case LINUX_MUSL:
             case LINUX_GLIBC:
             case MACOS:
@@ -73,6 +75,7 @@ public class InitialConfigurationStartupActivity implements StartupActivity.Dumb
             toolWindow.getContentManager().addContent(content);
             toolWindow.activate(null);
         });
+        return null;
     }
 
     private static void setupGradleJdks(Project project, ConsoleView consoleView) {
@@ -92,7 +95,8 @@ public class InitialConfigurationStartupActivity implements StartupActivity.Dumb
                                 .toFile();
                         if (!gradleConfigFile.exists()) {
                             consoleView.print(
-                                    "Skipping gradleJvm Configuration because no value was configured in `.gradle/config.properties`",
+                                    "Skipping gradleJvm Configuration because no value was configured in"
+                                            + " `.gradle/config.properties`",
                                     ConsoleViewContentType.LOG_INFO_OUTPUT);
                             continue;
                         }

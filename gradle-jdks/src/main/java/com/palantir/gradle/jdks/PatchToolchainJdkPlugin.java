@@ -59,7 +59,8 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
             List<Path> localToolchains = getInstalledToolchains(gradleJdksLocalDirectory);
             if (localToolchains.isEmpty()) {
                 throw new RuntimeException(
-                        "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but no toolchains could be configured");
+                        "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but no toolchains could be"
+                                + " configured");
             }
             if (method.getName().equals("find")) {
                 if (args.length == 1 && args[0].equals("org.gradle.java.installations.auto-detect")) {
@@ -123,8 +124,8 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
 
         Path gradleJdksLocalDirectory = settings.getRootDir().toPath().resolve("gradle/jdks");
         if (!Files.exists(gradleJdksLocalDirectory)) {
-            logger.warn(
-                    "Not setting the Gradle JDK properties because gradle/jdks directory doesn't exist. Please run ./gradlew setupJdks to set up the JDKs.");
+            logger.warn("Not setting the Gradle JDK properties because gradle/jdks directory doesn't exist. Please run"
+                    + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }
         ProviderFactory providerFactory =

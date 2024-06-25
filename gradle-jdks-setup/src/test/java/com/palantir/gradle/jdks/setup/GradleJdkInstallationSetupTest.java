@@ -19,6 +19,7 @@ package com.palantir.gradle.jdks.setup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.gradle.jdks.CommandRunner;
+import com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup.Command;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -43,6 +44,7 @@ public final class GradleJdkInstallationSetupTest {
                 Path.of(System.getProperty("java.home")).getFileName().toString();
         Path certsDir = Files.createDirectories(tempDir.resolve("certs"));
         GradleJdkInstallationSetup.main(new String[] {
+            Command.JDK_SETUP.toString(),
             tempDir.resolve(distribution).toAbsolutePath().toString(),
             certsDir.toAbsolutePath().toString()
         });
@@ -60,6 +62,7 @@ public final class GradleJdkInstallationSetupTest {
         Path amazonRootCa = Files.createFile(certsDir.resolve(String.format("%s.serial-number", AMAZON_CERT_ALIAS)));
         Files.write(amazonRootCa, AMAZON_ROOT_CA_1_SERIAL.toString().getBytes(StandardCharsets.UTF_8));
         GradleJdkInstallationSetup.main(new String[] {
+            Command.JDK_SETUP.toString(),
             tempDir.resolve(distribution).toAbsolutePath().toString(),
             certsDir.toAbsolutePath().toString()
         });

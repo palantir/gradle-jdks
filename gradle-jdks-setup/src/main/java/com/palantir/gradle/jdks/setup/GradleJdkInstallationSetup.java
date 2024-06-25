@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  */
 public final class GradleJdkInstallationSetup {
 
-    enum Command {
+    public enum Command {
         JDK_SETUP("jdkSetup"),
         DAEMON_SETUP("daemonSetup");
 

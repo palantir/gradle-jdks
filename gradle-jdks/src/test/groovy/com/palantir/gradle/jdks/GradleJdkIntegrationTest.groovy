@@ -123,35 +123,6 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                 .stripIndent(true)
     }
 
-    def setupJdksLatest() {
-        // language=groovy
-        buildFile << """
-            buildscript {
-                repositories {
-                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                }
-                // we need to inject the classpath of the plugin under test manually. The tests call the `./gradlew` 
-                // command directly in the tests (so not using the nebula-test workflow).
-                dependencies {
-                    classpath files(FILES)
-                    classpath 'com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.14.0'
-                }
-            }
-            
-            apply plugin: 'java'
-            apply plugin: 'com.palantir.jdks'
-            apply plugin: 'com.palantir.jdks.latest'
-            apply plugin: 'com.palantir.jdks.palantir-ca'
-            
-            jdks {
-               daemonTarget = DAEMON_MAJOR_VERSION
-            }
-        """.replace("FILES", getPluginClasspathInjector().join(","))
-                .replace("DAEMON_MAJOR_VERSION", quoted(DAEMON_MAJOR_VERSION))
-                .stripIndent(true)
-    }
-
     def quoted(String value) {
         return "'" + value + "'"
     }
