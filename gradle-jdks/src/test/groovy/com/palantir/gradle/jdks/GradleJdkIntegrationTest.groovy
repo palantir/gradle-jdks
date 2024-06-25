@@ -74,8 +74,8 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                 }
             }
             
-            apply plugin: 'com.palantir.jdks-properties'
-        """.replace("FILES", getPluginClasspathInjector().join(",")).stripIndent(true)
+            apply plugin: 'com.palantir.jdks.settings'
+        """.replace("FILES", getSettingsPluginClasspathInjector().join(",")).stripIndent(true)
         // language=groovy
         buildFile << """
             buildscript {
@@ -112,7 +112,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                
                daemonTarget = DAEMON_MAJOR_VERSION
             }
-        """.replace("FILES", getPluginClasspathInjector().join(","))
+        """.replace("FILES", getBuildPluginClasspathInjector().join(","))
                 .replace("JDK_11_DISTRO", quoted(JDK_11.getLeft()))
                 .replace("JDK_11_VERSION", quoted(JDK_11.getRight()))
                 .replace("JDK_17_DISTRO", quoted(JDK_17.getLeft()))
@@ -156,9 +156,17 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
         return processBuilder
     }
 
+    Iterable<File> getBuildPluginClasspathInjector() {
+        return getPluginClasspathInjector(Path.of("build/pluginUnderTestMetadata/plugin-under-test-metadata.properties"))
+    }
 
-    Iterable<File> getPluginClasspathInjector() {
-        File propertiesFile = new File("build/pluginUnderTestMetadata/plugin-under-test-metadata.properties")
+    Iterable<File> getSettingsPluginClasspathInjector() {
+        return getPluginClasspathInjector(Path.of("../gradle-jdks-settings/build/pluginUnderTestMetadata/plugin-under-test-metadata.properties"))
+    }
+
+
+    Iterable<File> getPluginClasspathInjector(Path path) {
+        File propertiesFile = path.toFile()
         Properties properties = new Properties()
         propertiesFile.withInputStream { inputStream ->
             properties.load(inputStream)

@@ -16,8 +16,6 @@
 
 package com.palantir.gradle.jdks.settings;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 public enum Arch {
     X86,
     X86_64,
@@ -25,11 +23,6 @@ public enum Arch {
 
     @Override
     public String toString() {
-        return uiName();
-    }
-
-    @JsonValue
-    public final String uiName() {
         return UiNames.uiName(this);
     }
 }

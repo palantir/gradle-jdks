@@ -65,7 +65,7 @@ public final class JdksPlugin implements Plugin<Project> {
 
     public static boolean isGradleJdkSetupEnabled(Project project) {
         return !CurrentOs.get().equals(Os.WINDOWS)
-                && Optional.ofNullable(project.property(ENABLE_GRADLE_JDK_SETUP))
+                && Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
                         .map(prop -> Boolean.parseBoolean((String) prop))
                         .orElse(false);
     }

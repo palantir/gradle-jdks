@@ -16,8 +16,6 @@
 
 package com.palantir.gradle.jdks.settings;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 public enum Os {
     MACOS,
     LINUX_GLIBC,
@@ -26,11 +24,6 @@ public enum Os {
 
     @Override
     public String toString() {
-        return uiName();
-    }
-
-    @JsonValue
-    public final String uiName() {
         return UiNames.uiName(this);
     }
 }

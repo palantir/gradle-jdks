@@ -41,6 +41,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             throw new RuntimeException("Cannot apply ToolchainsJdksPlugin without enabling palantir.jdk.setup.enabled");
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
+        // rootProject.getPluginManager().apply("com.palantir.gradle.javadist.RootSlsDockerPlugin");
         rootProject
                 .getLogger()
                 .info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects "
@@ -125,5 +126,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             setupJdksTask.getGradlewScript().set(wrapperPatcherTask.get().getPatchedGradlewScript());
             setupJdksTask.dependsOn(generateGradleJdkConfigs, wrapperPatcherTask);
         });
+
+        // TODO(crogoz): update externalDependencies.xml
     }
 }

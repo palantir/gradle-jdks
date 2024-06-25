@@ -35,7 +35,7 @@ Now `gradle-jdks` manages also the JDK used to run Gradle. This means, when you 
       }
   
       dependencies {
-          classpath 'com.palantir.gradle.jdks:gradle-jdks:<latest-version>'
+          classpath 'com.palantir.gradle.jdks:gradle-jdks-settings:<latest-version>'
       }
   }
   

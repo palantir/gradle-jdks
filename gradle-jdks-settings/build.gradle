@@ -4,8 +4,7 @@ apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.external-publish-gradle-plugin'
 
 dependencies {
-    implementation 'com.fasterxml.jackson.core:jackson-annotations'
-
+    // DO NOT ADD ANY DEPENDENCIES HERE. We need to avoid overlapping dependencies between the settings classLoader and the build classLoaders.
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }

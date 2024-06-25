@@ -32,6 +32,7 @@ dependencies {
     annotationProcessor 'org.immutables:value'
 
     testImplementation gradleTestKit()
+    testImplementation project(':gradle-jdks-settings')
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
@@ -68,6 +69,7 @@ tasks.withType(JavaCompile).configureEach {
 tasks.test {
     environment("PROJECT_VERSION", project.version)
     systemProperty 'ignoreDeprecations', 'true'
+    dependsOn project(':gradle-jdks-settings').tasks.named('build')
 }
 
 tasks.withType(ProcessResources.class).configureEach {
