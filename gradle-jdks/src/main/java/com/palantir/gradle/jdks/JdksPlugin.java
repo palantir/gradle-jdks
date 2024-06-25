@@ -17,12 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Optional;
-import java.util.Properties;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.slf4j.Logger;
@@ -30,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 public final class JdksPlugin implements Plugin<Project> {
 
-    private static final String ENABLE_GRADLE_JDK_SETUP = "palantir.jdk.setup.enabled";
     private static final Logger log = LoggerFactory.getLogger(JdksPlugin.class);
 
     @Override
@@ -39,30 +33,11 @@ public final class JdksPlugin implements Plugin<Project> {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
 
-        if (isGradleJdkSetupEnabled(rootProject.getProjectDir().toPath())) {
+        if (GradleJdkToolchainHelper.isGradleJdkSetupEnabled(
+                rootProject.getProjectDir().toPath())) {
             rootProject.getPluginManager().apply(ToolchainsPlugin.class);
         } else {
             rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);
-        }
-    }
-
-    public static boolean isGradleJdkSetupEnabled(Path projectDir) {
-        return !CurrentOs.get().equals(Os.WINDOWS) && getEnableGradleJdkProperty(projectDir);
-    }
-
-    private static boolean getEnableGradleJdkProperty(Path projectDir) {
-        File gradlePropsFile = projectDir.resolve("gradle.properties").toFile();
-        if (!gradlePropsFile.exists()) {
-            return false;
-        }
-        try {
-            Properties properties = new Properties();
-            properties.load(new FileInputStream(gradlePropsFile));
-            return Optional.ofNullable(properties.getProperty(ENABLE_GRADLE_JDK_SETUP))
-                    .map(Boolean::parseBoolean)
-                    .orElse(false);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 

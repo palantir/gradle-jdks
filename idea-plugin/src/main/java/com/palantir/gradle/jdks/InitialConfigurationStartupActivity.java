@@ -45,7 +45,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
 
-public class InitialConfigurationStartupActivity implements ProjectActivity {
+public final class InitialConfigurationStartupActivity implements ProjectActivity {
 
     private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
 

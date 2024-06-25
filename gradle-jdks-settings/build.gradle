@@ -1,0 +1,26 @@
+apply plugin: 'java-gradle-plugin'
+apply plugin: 'groovy'
+apply plugin: 'com.palantir.external-publish-jar'
+apply plugin: 'com.palantir.external-publish-gradle-plugin'
+
+dependencies {
+    implementation project(':gradle-jdks-setup-common')
+
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+gradlePlugin {
+    plugins {
+        patchJdks {
+            id = 'com.palantir.jdks.settings'
+            displayName = 'Palantir JDK Properties Plugin'
+            description = 'Sets the Gradle properties for the Gradle JDK setup'
+            implementationClass = 'com.palantir.gradle.jdks.PatchToolchainJdkPlugin'
+        }
+    }
+    website = 'https://github.com/palantir/gradle-jdks'
+    vcsUrl = 'https://github.com/palantir/gradle-jdks'
+    description = 'Gradle JDK settings plugins'
+    //tags = ['java', 'jdks']
+}

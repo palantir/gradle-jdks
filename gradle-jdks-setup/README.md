@@ -25,7 +25,7 @@ Now `gradle-jdks` manages also the JDK used to run Gradle. This means, when you 
   
   apply plugin: 'com.palantir.jdks'
   ```
-2. We need to apply the jdks-properties plugin in **settings.gradle** file:
+2. We need to apply the com.palantir.jdks.settings plugin in **settings.gradle** file:
 ```gradle
   buildscript {
       repositories {
@@ -39,7 +39,7 @@ Now `gradle-jdks` manages also the JDK used to run Gradle. This means, when you 
       }
   }
   
-  apply plugin: 'com.palantir.jdks-properties'
+  apply plugin: 'com.palantir.jdks.settings'
 ```
 3. Next up comes configuring the JDKs plugin. _**Palantirians:** you probably shouldn't use this setup directly - either use [`gradle-jdks-latest`](https://github.com/palantir/gradle-jdks-latest) for OSS or `gradle-jdks-internal` for internal projects which will set everything up for you._
 ```gradle

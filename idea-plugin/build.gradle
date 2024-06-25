@@ -6,17 +6,24 @@ apply plugin: 'com.palantir.external-publish-jar'
 intellij {
     pluginName = "gradle-jdks"
     updateSinceUntilBuild = true
-    version = "2024.1"
+    version = "2023.2"
     plugins = ['java', 'org.jetbrains.plugins.gradle']
 }
 
 def buildPlugin = tasks.named("buildPlugin")
 
 patchPluginXml {
-    pluginDescription = "Configures gradle JDK setup."
+    pluginDescription = "Configures the Gradle JDKs for the Toolchains used for a project and for the Gradle Daemon."
     version = project.version
-    //sinceBuild = '213' // TODO: test against this version of IntelliJ to ensure no regressions
+    sinceBuild = '232' // TODO: test against this version of IntelliJ to ensure no regressions
     untilBuild = ''
+}
+
+tasks.named("runIde") {
+    // Allow debugging
+    jvmArgs '--add-exports=java.base/jdk.internal.vm=ALL-UNNAMED'
+
+    dependsOn(buildPlugin)
 }
 
 def publishPlugin = tasks.named("publishPlugin") {
@@ -72,4 +79,3 @@ javaVersion {
     target = 17
     runtime = 17
 }
-

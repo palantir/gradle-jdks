@@ -16,7 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
-import com.google.common.annotations.VisibleForTesting;
+// CHECKSTYLE.OFF: IllegalImport
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -48,14 +49,13 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
         private final GradleProperties originalGradleProperties;
         private final Path gradleJdksLocalDirectory;
 
-        public GradlePropertiesInvocationHandler(
-                Path gradleJdksLocalDirectory, GradleProperties originalGradleProperties) {
+        GradlePropertiesInvocationHandler(Path gradleJdksLocalDirectory, GradleProperties originalGradleProperties) {
             this.gradleJdksLocalDirectory = gradleJdksLocalDirectory;
             this.originalGradleProperties = originalGradleProperties;
         }
 
         @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        public Object invoke(Object _proxy, Method method, Object[] args) throws Throwable {
             List<Path> localToolchains = getInstalledToolchains(gradleJdksLocalDirectory);
             if (localToolchains.isEmpty()) {
                 throw new RuntimeException(
@@ -117,7 +117,8 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
 
     @Override
     public void apply(Settings settings) {
-        if (!JdksPlugin.isGradleJdkSetupEnabled(settings.getRootDir().toPath())) {
+        if (!GradleJdkToolchainHelper.isGradleJdkSetupEnabled(
+                settings.getRootDir().toPath())) {
             logger.debug("Skipping Gradle JDK gradle properties patching");
             return;
         }
@@ -157,7 +158,6 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
         }
     }
 
-    @VisibleForTesting
     static Path getToolchainInstallationDir() {
         return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
                         .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))

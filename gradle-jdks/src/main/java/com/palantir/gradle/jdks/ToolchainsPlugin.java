@@ -31,14 +31,17 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
 public final class ToolchainsPlugin implements Plugin<Project> {
 
     private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
+
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
     private static final JavaLanguageVersion MINIMUM_SUPPORTED_JAVA_VERSION = JavaLanguageVersion.of(11);
 
     @Override
     public void apply(Project rootProject) {
-        if (!JdksPlugin.isGradleJdkSetupEnabled(rootProject.getProjectDir().toPath())) {
+        if (!GradleJdkToolchainHelper.isGradleJdkSetupEnabled(
+                rootProject.getProjectDir().toPath())) {
             throw new RuntimeException("Cannot apply ToolchainsJdksPlugin without enabling palantir.jdk.setup.enabled");
         }
+        rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
         rootProject
                 .getLogger()
                 .info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects "

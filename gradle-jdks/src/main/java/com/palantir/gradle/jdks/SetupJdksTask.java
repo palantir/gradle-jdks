@@ -35,7 +35,7 @@ public abstract class SetupJdksTask extends Exec {
 
     @Override
     @TaskAction
-    protected void exec() {
+    protected final void exec() {
         switch (CurrentOs.get()) {
             case WINDOWS:
                 setCommandLine(getGradlewBatScript().get().getAsFile().toPath(), "javaToolchains");
