@@ -4,8 +4,8 @@ apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.external-publish-gradle-plugin'
 
 dependencies {
-    implementation project(':gradle-jdks-setup-common')
-
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+    
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }

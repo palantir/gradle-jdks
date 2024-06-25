@@ -37,8 +37,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project rootProject) {
-        if (!GradleJdkToolchainHelper.isGradleJdkSetupEnabled(
-                rootProject.getProjectDir().toPath())) {
+        if (!JdksPlugin.isGradleJdkSetupEnabled(rootProject)) {
             throw new RuntimeException("Cannot apply ToolchainsJdksPlugin without enabling palantir.jdk.setup.enabled");
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);

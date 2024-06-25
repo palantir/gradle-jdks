@@ -18,12 +18,15 @@ package com.palantir.gradle.jdks;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Optional;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class JdksPlugin implements Plugin<Project> {
+
+    private static final String ENABLE_GRADLE_JDK_SETUP = "palantir.jdk.setup.enabled";
 
     private static final Logger log = LoggerFactory.getLogger(JdksPlugin.class);
 
@@ -33,8 +36,7 @@ public final class JdksPlugin implements Plugin<Project> {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
 
-        if (GradleJdkToolchainHelper.isGradleJdkSetupEnabled(
-                rootProject.getProjectDir().toPath())) {
+        if (isGradleJdkSetupEnabled(rootProject)) {
             rootProject.getPluginManager().apply(ToolchainsPlugin.class);
         } else {
             rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);
@@ -59,5 +61,12 @@ public final class JdksPlugin implements Plugin<Project> {
         });
 
         return jdksExtension;
+    }
+
+    public static boolean isGradleJdkSetupEnabled(Project project) {
+        return !CurrentOs.get().equals(Os.WINDOWS)
+                && Optional.ofNullable(project.property(ENABLE_GRADLE_JDK_SETUP))
+                        .map(prop -> Boolean.parseBoolean((String) prop))
+                        .orElse(false);
     }
 }

@@ -18,6 +18,8 @@ package com.palantir.gradle.jdks;
 
 // CHECKSTYLE.OFF: IllegalImport
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -28,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.gradle.api.Plugin;
@@ -41,6 +44,8 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.initialization.DefaultSettings;
 
 public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
+
+    private static final String ENABLE_GRADLE_JDK_SETUP = "palantir.jdk.setup.enabled";
 
     private static final Logger logger = Logging.getLogger(PatchToolchainJdkPlugin.class);
 
@@ -117,8 +122,7 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
 
     @Override
     public void apply(Settings settings) {
-        if (!GradleJdkToolchainHelper.isGradleJdkSetupEnabled(
-                settings.getRootDir().toPath())) {
+        if (!isGradleJdkSetupEnabled(settings.getRootDir().toPath())) {
             logger.debug("Skipping Gradle JDK gradle properties patching");
             return;
         }
@@ -163,4 +167,25 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
                         .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
                 .resolve("gradle-jdks");
     }
+
+    public static boolean isGradleJdkSetupEnabled(Path projectDir) {
+        return !CurrentOs.get().equals(Os.WINDOWS) && getEnableGradleJdkProperty(projectDir);
+    }
+
+    private static boolean getEnableGradleJdkProperty(Path projectDir) {
+        File gradlePropsFile = projectDir.resolve("gradle.properties").toFile();
+        if (!gradlePropsFile.exists()) {
+            return false;
+        }
+        try {
+            Properties properties = new Properties();
+            properties.load(new FileInputStream(gradlePropsFile));
+            return Optional.ofNullable(properties.getProperty(ENABLE_GRADLE_JDK_SETUP))
+                    .map(Boolean::parseBoolean)
+                    .orElse(false);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
