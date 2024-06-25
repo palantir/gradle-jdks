@@ -5,7 +5,7 @@ apply plugin: 'com.palantir.external-publish-gradle-plugin'
 
 dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
-    
+
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
@@ -16,7 +16,7 @@ gradlePlugin {
             id = 'com.palantir.jdks.settings'
             displayName = 'Palantir JDK Properties Plugin'
             description = 'Sets the Gradle properties for the Gradle JDK setup'
-            implementationClass = 'com.palantir.gradle.jdks.PatchToolchainJdkPlugin'
+            implementationClass = 'com.palantir.gradle.jdks.settings.PatchToolchainJdkPlugin'
         }
     }
     website = 'https://github.com/palantir/gradle-jdks'

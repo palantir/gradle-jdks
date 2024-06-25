@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.settings;
 
 // CHECKSTYLE.OFF: IllegalImport
 
@@ -187,5 +187,4 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
             throw new RuntimeException(e);
         }
     }
-
 }

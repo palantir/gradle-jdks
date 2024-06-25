@@ -80,8 +80,9 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
 
     private static void setupGradleJdks(Project project, ConsoleView consoleView) {
         try {
+            // TODO(crogoz): if jdks.setup==true, make sure the gradle/ files are present, otherwise throw an exception
             GeneralCommandLine cli =
-                    new GeneralCommandLine("./gradlew", "setupJdks").withWorkDirectory(project.getBasePath());
+                    new GeneralCommandLine("./gradlew", "javaToolchains").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
             handler.startNotify();
             handler.addProcessListener(new ProcessListener() {
