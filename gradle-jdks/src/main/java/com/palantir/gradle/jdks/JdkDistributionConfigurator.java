@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -30,13 +31,16 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public final class JdkDistributionConfigurator {
 
+    private static final JavaLanguageVersion MINIMUM_SUPPORTED_JAVA_VERSION = JavaLanguageVersion.of(11);
+
     private static Logger logger = Logging.getLogger(JdkDistributionConfigurator.class);
 
     public static Map<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros(
-            Project project,
-            JdkDistributions jdkDistributions,
-            Set<JavaLanguageVersion> javaVersions,
-            JdksExtension jdksExtension) {
+            Project project, JdkDistributions jdkDistributions, JdksExtension jdksExtension) {
+        Set<JavaLanguageVersion> javaVersions = Arrays.stream(JavaVersion.values())
+                .map(javaVersion -> JavaLanguageVersion.of(javaVersion.getMajorVersion()))
+                .filter(javaLanguageVersion -> javaLanguageVersion.canCompileOrRun(MINIMUM_SUPPORTED_JAVA_VERSION))
+                .collect(Collectors.toSet());
         return javaVersions.stream()
                 .collect(Collectors.toMap(
                         javaVersion -> javaVersion,
@@ -75,7 +79,6 @@ public final class JdkDistributionConfigurator {
         Optional<String> jdkVersion = Optional.ofNullable(
                 jdkExtension.get().jdkFor(os).jdkFor(arch).getJdkVersion().getOrNull());
         if (jdkVersion.isEmpty()) {
-            logger.debug("No JDK version configured for javaVersion={} os={} arch={}.", javaVersion, os, arch);
             return Stream.empty();
         }
         JdkDistributionName jdkDistributionName =

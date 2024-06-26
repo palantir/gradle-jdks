@@ -18,14 +18,12 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
-import java.util.stream.Collectors;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
-import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
 public final class ToolchainsPlugin implements Plugin<Project> {
@@ -33,7 +31,6 @@ public final class ToolchainsPlugin implements Plugin<Project> {
     private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
 
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
-    private static final JavaLanguageVersion MINIMUM_SUPPORTED_JAVA_VERSION = JavaLanguageVersion.of(11);
 
     @Override
     public void apply(Project rootProject) {
@@ -41,7 +38,6 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             throw new RuntimeException("Cannot apply ToolchainsJdksPlugin without enabling palantir.jdk.setup.enabled");
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
-        // rootProject.getPluginManager().apply("com.palantir.gradle.javadist.RootSlsDockerPlugin");
         rootProject
                 .getLogger()
                 .info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects "
@@ -77,17 +73,12 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     task.getDummyOutputFile()
                             .set(rootProject.getLayout().getBuildDirectory().file("checkGradleJdkConfigs"));
                 });
+
         rootProject.getTasks().withType(GradleJdkConfigs.class).configureEach(task -> {
             task.getDaemonJavaVersion().set(jdksExtension.getDaemonTarget());
             task.getJavaVersionToJdkDistros()
                     .putAll(rootProject.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
-                            rootProject,
-                            jdkDistributions,
-                            jdksExtension.getConfiguredJavaVersions().get().stream()
-                                    .filter(javaLanguageVersion ->
-                                            javaLanguageVersion.canCompileOrRun(MINIMUM_SUPPORTED_JAVA_VERSION))
-                                    .collect(Collectors.toSet()),
-                            jdksExtension)));
+                            rootProject, jdkDistributions, jdksExtension)));
             task.getCaCerts().putAll(jdksExtension.getCaCerts());
         });
         TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject

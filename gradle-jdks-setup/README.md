@@ -155,6 +155,7 @@ Distribution 'https://corretto.....' already exists in '/.gradle/gradle-jdks/ama
 JDK installation '/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4' does not exist, installing 'https://corretto.....' in progress ...
 ```
 
+7. [Intellij] Install the Intellij plugin `gradle-jdks` from the [Intellij plugin repository](https://plugins.jetbrains.com/plugin) and restart Intellij. The plugin will automatically configure the Gradle JVM to use the JDK setup by the `gradle-jdks` plugin.
 
 ## Gradle JDK Configuration directory structure
 
