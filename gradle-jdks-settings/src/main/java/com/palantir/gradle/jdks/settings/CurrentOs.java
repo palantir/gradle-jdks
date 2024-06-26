@@ -29,6 +29,10 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Simplified version:
+ * <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/CurrentOs.java>CurrentOs.java</a>.
+ */
 public final class CurrentOs {
     public static Os get() {
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);

@@ -25,6 +25,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -71,6 +72,30 @@ public final class GradleJdkInstallationSetupTest {
         assertThat(destDistribution).exists();
         assertThat(destJavaHome).exists();
         checkCaIsImported(destDistribution);
+    }
+
+    @Test
+    public void can_write_gradle_config_file() throws IOException {
+        Path gradleConfig = tempDir.resolve(".gradle/config.properties");
+        GradleJdkInstallationSetup.main(
+                new String[] {Command.DAEMON_SETUP.toString(), tempDir.toString(), "my_directory"});
+        assertThat(Files.readString(gradleConfig)).contains("java.home=my_directory");
+    }
+
+    @Test
+    public void can_update_gradle_config_file() throws IOException {
+        Files.createDirectories(tempDir.resolve(".gradle"));
+        Path gradleConfig = tempDir.resolve(".gradle/config.properties");
+        Files.write(
+                gradleConfig,
+                "# comment\njava.home=initial_value\nkey1=value1".getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.CREATE);
+        GradleJdkInstallationSetup.main(
+                new String[] {Command.DAEMON_SETUP.toString(), tempDir.toString(), "my_directory"});
+        assertThat(Files.readString(gradleConfig))
+                .contains("java.home=my_directory")
+                .contains("key1=value1")
+                .doesNotContain("java.home=initial_value");
     }
 
     private static void checkCaIsImported(Path jdkPath) {

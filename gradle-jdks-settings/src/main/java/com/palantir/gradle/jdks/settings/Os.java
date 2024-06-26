@@ -16,6 +16,10 @@
 
 package com.palantir.gradle.jdks.settings;
 
+/**
+ * Simplified version of:
+ * <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/Os.java>Os.java</a>.
+ */
 public enum Os {
     MACOS,
     LINUX_GLIBC,

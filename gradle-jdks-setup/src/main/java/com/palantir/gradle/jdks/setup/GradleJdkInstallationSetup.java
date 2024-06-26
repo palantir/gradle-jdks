@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks.setup;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -23,13 +24,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Class responsible for installing the current JDK into {@code destinationJdkInstallationDir} and importing the
- * certificates specified by their serialNumbers and alias name from {@code certsDir} into the JDK's truststore.
- * A certificate will be imported iff the serial number already exists in the truststore.
+ * Class responsible for 2 workflows:
+ * 1. installing the current JDK into {@code destinationJdkInstallationDir} and importing the
+ *  certificates specified by their serialNumbers and alias name from {@code certsDir} into the JDK's truststore. A
+ *  certificate will be imported iff the serial number already exists in the truststore.
+ * 2. setting the java.home value in .gradle/config.properties to {@code gradleDaemonJavaHome} in the project directory.
  * The class will be called by the Gradle setup script in
  * <a href="file:../resources/gradle-jdks-setup.sh">resources/gradle-jdks-setup.sh</a>.
  */
@@ -60,7 +64,7 @@ public final class GradleJdkInstallationSetup {
         }
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         StdLogger logger = new StdLogger();
         CaResources caResources = new CaResources(logger);
         if (args.length < 1) {
@@ -87,9 +91,14 @@ public final class GradleJdkInstallationSetup {
         Path gradleDaemonJavaHome = Path.of(args[2]);
         try {
             Files.createDirectories(projectDir.resolve(".gradle"));
-            Files.write(
-                    projectDir.resolve(".gradle/config.properties"),
-                    String.format("java.home=%s", gradleDaemonJavaHome).getBytes(StandardCharsets.UTF_8));
+            Path gradleConfigFile = projectDir.resolve(".gradle/config.properties");
+            if (!Files.exists(gradleConfigFile)) {
+                Files.createFile(gradleConfigFile);
+            }
+            Properties gradleProperties = new Properties();
+            gradleProperties.load(new FileInputStream(gradleConfigFile.toFile()));
+            gradleProperties.setProperty("java.home", gradleDaemonJavaHome.toString());
+            gradleProperties.store(Files.newBufferedWriter(gradleConfigFile, StandardCharsets.UTF_8), null);
         } catch (IOException e) {
             throw new RuntimeException("Unable to set the java.home value in .gradle/config.properties.", e);
         }

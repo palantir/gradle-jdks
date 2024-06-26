@@ -30,14 +30,11 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
     @TempDir
     Path workingDir
 
-    def setup() {
-        setupJdksHardcodedVersions()
-    }
-
     def '#gradleVersionNumber: successfully generates Gradle JDK setup files'() {
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        setupJdksHardcodedVersions()
         gradleVersion = gradleVersionNumber
         runTasksSuccessfully("wrapper")
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
 
         when: 'running setupJdks'
         def result = runTasksSuccessfully("setupJdks")
@@ -72,11 +69,85 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         and: '.gradle/config.properties configures java.home'
         file(".gradle/config.properties").text.contains("java.home")
 
+        when: 'running check'
+        def checkResult = runTasksSuccessfully("check")
+
+        then:
+        checkResult.wasExecuted("checkGradleJdkConfigs")
+        !checkResult.wasUpToDate("checkGradleJdkConfigs")
+
+        when: 'running the second check'
+        def secondCheckResult = runTasksSuccessfully("check")
+
+        then:
+        secondCheckResult.wasUpToDate("checkGradleJdkConfigs")
+
+        where:
+        gradleVersionNumber << [GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
+    }
+
+    def '#gradleVersionNumber: fails if Gradle JDK configuration is wrong'() {
+        setupJdksHardcodedVersions('15')
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        gradleVersion = gradleVersionNumber
+
+        when: 'running setupJdks'
+        def result = runTasksWithFailure("setupJdks")
+
+        then: 'generateGradleJdkConfigs fails'
+        result.wasExecuted('generateGradleJdkConfigs')
+        !result.wasExecuted('wrapperJdkPatcher')
+        result.standardError.contains("Gradle daemon JDK version is `15` but no JDK configured for that version.")
+
+        where:
+        gradleVersionNumber << [GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
+    }
+
+    def '#gradleVersionNumber: fails if no JDKs were configured'() {
+        applyJdksPlugins()
+        gradleVersion = gradleVersionNumber
+        // language=groovy
+        buildFile << """
+            jdks {
+               daemonTarget = 11
+            }
+        """.stripIndent(true)
+        runTasksSuccessfully("wrapper")
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+
+
+        when: 'running setupJdks'
+        def result = runTasksWithFailure("setupJdks")
+
+        then: 'generateGradleJdkConfigs fails'
+        result.wasExecuted('generateGradleJdkConfigs')
+        !result.wasExecuted('wrapperJdkPatcher')
+        result.standardError.contains("No JDKs were configured for the gradle setup");
+
+        where:
+        gradleVersionNumber << [GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
+    }
+
+    def '#gradleVersionNumber: checkGradleJdkConfigs fails if run before setupJdks'() {
+        setupJdksHardcodedVersions()
+        gradleVersion = gradleVersionNumber
+        runTasksSuccessfully("wrapper")
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+
+        when: 'running check'
+        def checkResult = runTasksWithFailure("check")
+
+        then:
+        checkResult.wasExecuted("checkGradleJdkConfigs")
+        checkResult.standardError.contains("is out of date, please run `./gradlew generateGradleJdkConfigs`")
+
         where:
         gradleVersionNumber << [GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
     }
 
     def 'no gradleWrapper patch if palantir.jdk.setup.enabled == false'() {
+        setupJdksHardcodedVersions()
+
         when:
         def output = runTasksSuccessfully('wrapper')
 

@@ -16,6 +16,10 @@
 
 package com.palantir.gradle.jdks.settings;
 
+/**
+ * Simplified version of:
+ * <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/Arch.java>Arch.java</a>.
+ */
 public enum Arch {
     X86,
     X86_64,

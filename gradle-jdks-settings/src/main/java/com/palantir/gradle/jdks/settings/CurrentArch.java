@@ -19,6 +19,10 @@ package com.palantir.gradle.jdks.settings;
 import java.util.Locale;
 import java.util.Set;
 
+/**
+ * Simplified version of:
+ * <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/CurrentArch.java>CurrentArch.java</a>.
+ */
 public final class CurrentArch {
     public static Arch get() {
         String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);

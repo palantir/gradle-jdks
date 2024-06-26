@@ -18,6 +18,10 @@ package com.palantir.gradle.jdks.settings;
 
 import java.util.Locale;
 
+/**
+ * Simplified version of:
+ * <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/UiNames.java>UiNames.java</a>.
+ */
 final class UiNames {
     static String uiName(Enum<?> enumValue) {
         return enumValue.name().toLowerCase(Locale.ROOT).replace('_', '-');

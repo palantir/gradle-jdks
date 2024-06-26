@@ -35,13 +35,13 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     static String JDK_21_VERSION = "21.0.2.13.1"
     static String SIMPLIFIED_JDK_21_VERSION = "21.0.2"
 
-    static String DAEMON_MAJOR_VERSION = "11"
+    static String DAEMON_MAJOR_VERSION_11 = "11"
     static Pair<String, String> JDK_11 = Pair.of("azul-zulu", JDK_11_VERSION)
     static Pair<String, String> JDK_17 = Pair.of("amazon-corretto", JDK_17_VERSION)
     static Pair<String, String> JDK_21 = Pair.of("amazon-corretto", JDK_21_VERSION)
 
     abstract Path workingDir();
-
+    
     def applyApplicationPlugin() {
         buildFile << """
             apply plugin: 'application'
@@ -59,7 +59,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
         """.stripIndent(true)
     }
 
-    def setupJdksHardcodedVersions() {
+    def applyJdksPlugins() {
         // language=groovy
         settingsFile << """
             buildscript {
@@ -76,6 +76,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
             
             apply plugin: 'com.palantir.jdks.settings'
         """.replace("FILES", getSettingsPluginClasspathInjector().join(",")).stripIndent(true)
+
         // language=groovy
         buildFile << """
             buildscript {
@@ -93,7 +94,16 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
             apply plugin: 'java'
             apply plugin: 'com.palantir.jdks'
             apply plugin: 'com.palantir.jdks.palantir-ca'
-            
+        """.replace("FILES", getBuildPluginClasspathInjector().join(","))
+                .stripIndent(true)
+    }
+
+    def setupJdksHardcodedVersions(String daemonJdkVersion = DAEMON_MAJOR_VERSION_11) {
+
+        applyJdksPlugins()
+
+        // language=groovy
+        buildFile << """
             jdks {
                jdk(11) {
                   distribution = JDK_11_DISTRO
@@ -110,7 +120,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                   jdkVersion = JDK_21_VERSION
                }
                
-               daemonTarget = DAEMON_MAJOR_VERSION
+               daemonTarget = DAEMON_MAJOR_VERSION_11
             }
         """.replace("FILES", getBuildPluginClasspathInjector().join(","))
                 .replace("JDK_11_DISTRO", quoted(JDK_11.getLeft()))
@@ -119,7 +129,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                 .replace("JDK_17_VERSION", quoted(JDK_17.getRight()))
                 .replace("JDK_21_DISTRO", quoted(JDK_21.getLeft()))
                 .replace("JDK_21_VERSION", quoted(JDK_21.getRight()))
-                .replace("DAEMON_MAJOR_VERSION", quoted(DAEMON_MAJOR_VERSION))
+                .replace("DAEMON_MAJOR_VERSION_11", quoted(daemonJdkVersion))
                 .stripIndent(true)
     }
 
