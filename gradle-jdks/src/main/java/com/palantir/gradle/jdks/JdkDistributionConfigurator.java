@@ -69,16 +69,17 @@ public final class JdkDistributionConfigurator {
             JdksExtension jdksExtension) {
         Optional<JdkExtension> jdkExtension = jdksExtension.jdkFor(javaVersion, project);
         if (jdkExtension.isEmpty()) {
-            throw new RuntimeException(String.format(
-                    "Could not find a JDK with major version %s in project '%s'. "
-                            + "Please ensure that you have configured JDKs properly for "
-                            + "gradle-jdks as per the readme: "
-                            + "https://github.com/palantir/gradle-jdks#usage",
-                    javaVersion.toString(), project.getPath()));
+            logger.debug("Skipping JDK distribution for javaVersion={} as it is not configured", javaVersion);
+            return Stream.empty();
         }
         Optional<String> jdkVersion = Optional.ofNullable(
                 jdkExtension.get().jdkFor(os).jdkFor(arch).getJdkVersion().getOrNull());
         if (jdkVersion.isEmpty()) {
+            logger.debug(
+                    "Skipping JDK distribution for os={} arch={} javaVersion={} as it is not configured",
+                    os,
+                    arch,
+                    javaVersion);
             return Stream.empty();
         }
         JdkDistributionName jdkDistributionName =
