@@ -20,8 +20,9 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Simplified version of:
- * <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/CurrentArch.java>CurrentArch.java</a>.
+ * Simplified version of CurrentArch.
+ * @see <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/CurrentArch.java>CurrentArch.java</a>
+ * We cannot depend directly on `gradle-jdks-setup-common` as it might lead to Gradle classLoader issues.
  */
 public final class CurrentArch {
     public static Arch get() {

@@ -43,6 +43,11 @@ import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.initialization.DefaultSettings;
 
+/**
+ * A plugin that changes the Gradle JDK properties (via reflection) to point to the local toolchains configured via the
+ * Gradle JDK Setup.
+ * @see <a href=/Volumes/git/gradle-jdks/gradle-jdks-setup/README.md>Gradle JDK Readme</a>
+ */
 public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
 
     private static final String ENABLE_GRADLE_JDK_SETUP = "palantir.jdk.setup.enabled";
@@ -129,7 +134,7 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
 
         Path gradleJdksLocalDirectory = settings.getRootDir().toPath().resolve("gradle/jdks");
         if (!Files.exists(gradleJdksLocalDirectory)) {
-            logger.warn("Not setting the Gradle JDK properties because gradle/jdks directory doesn't exist. Please run"
+            logger.debug("Not setting the Gradle JDK properties because gradle/jdks directory doesn't exist. Please run"
                     + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }

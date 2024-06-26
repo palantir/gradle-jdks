@@ -19,8 +19,9 @@ package com.palantir.gradle.jdks.settings;
 import java.util.Locale;
 
 /**
- * Simplified version of:
- * <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/UiNames.java>UiNames.java</a>.
+ * Simplified version of UiNames.
+ * @see <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/UiNames.java>UiNames.java</a>
+ * We cannot depend directly on `gradle-jdks-setup-common` as it might lead to Gradle classLoader issues.
  */
 final class UiNames {
     static String uiName(Enum<?> enumValue) {

@@ -99,7 +99,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
         runOutput.contains("Java home: ${compileJvm}")
 
         where:
-        gradleVersionNumber << [GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION, GRADLE_8_8_VERSION]
+        gradleVersionNumber << [GRADLE_7_6_VERSION, GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION, GRADLE_8_8_VERSION]
     }
 
 

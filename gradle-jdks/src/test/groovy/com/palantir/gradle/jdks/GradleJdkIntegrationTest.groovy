@@ -24,9 +24,10 @@ import java.nio.file.Path
 
 abstract class GradleJdkIntegrationTest extends IntegrationSpec {
 
+    static String GRADLE_7_6_VERSION = "7.6"
     static String GRADLE_7_6_4_VERSION = "7.6.4"
     static String GRADLE_8_5_VERSION = "8.5"
-    static String GRADLE_8_8_VERSION = "8.5"
+    static String GRADLE_8_8_VERSION = "8.8"
 
     static String JDK_11_VERSION = "11.54.25-11.0.14.1"
     static String SIMPLIFIED_JDK_11_VERSION = "11.0.14"
@@ -41,7 +42,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     static Pair<String, String> JDK_21 = Pair.of("amazon-corretto", JDK_21_VERSION)
 
     abstract Path workingDir();
-    
+
     def applyApplicationPlugin() {
         buildFile << """
             apply plugin: 'application'

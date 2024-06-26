@@ -30,8 +30,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Simplified version:
- * <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/CurrentOs.java>CurrentOs.java</a>.
+ * Simplified version of CurrentOs.java.
+ * @see <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/CurrentOs.java>CurrentOs.java</a>
+ * We cannot depend directly on `gradle-jdks-setup-common` as it might lead to Gradle classLoader issues.
  */
 public final class CurrentOs {
     public static Os get() {
