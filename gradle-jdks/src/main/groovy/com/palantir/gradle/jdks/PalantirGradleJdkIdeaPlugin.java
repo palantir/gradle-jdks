@@ -26,7 +26,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import javax.xml.parsers.ParserConfigurationException;
 import org.gradle.api.Plugin;
@@ -41,7 +41,7 @@ public class PalantirGradleJdkIdeaPlugin implements Plugin<Project> {
     private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
 
     @Override
-    public void apply(Project rootProject) {
+    public final void apply(Project rootProject) {
         Preconditions.checkState(
                 rootProject == rootProject.getRootProject(),
                 "May only apply PalantirGradleJdkProviderPlugin to the root project");
@@ -105,7 +105,7 @@ public class PalantirGradleJdkIdeaPlugin implements Plugin<Project> {
 
         configure.accept(rootNode);
 
-        try (BufferedWriter writer = Files.newWriter(configurationFile, Charset.defaultCharset());
+        try (BufferedWriter writer = Files.newWriter(configurationFile, StandardCharsets.UTF_8);
                 PrintWriter printWriter = new PrintWriter(writer)) {
             XmlNodePrinter nodePrinter = new XmlNodePrinter(printWriter);
             nodePrinter.setPreserveWhitespace(true);

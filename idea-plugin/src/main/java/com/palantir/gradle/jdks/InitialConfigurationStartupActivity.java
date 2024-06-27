@@ -39,15 +39,20 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
+import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.ProjectConnection;
+import org.gradle.tooling.model.GradleProject;
+import org.gradle.tooling.model.GradleTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
 
 public final class InitialConfigurationStartupActivity implements ProjectActivity {
 
-    // private static final Logger log = Logger.getInstance(InitialConfigurationStartupActivity.class);
     private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
 
     @Override
@@ -88,8 +93,15 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
             return;
         }
         try {
+            if (!getConfiguredTasks(project).contains("ideSetup")) {
+                consoleView.print(
+                        "No `ideSetup` task was configured in the project, skipping Gradle JDK setup",
+                        ConsoleViewContentType.LOG_INFO_OUTPUT);
+                return;
+            }
+
             GeneralCommandLine cli =
-                    new GeneralCommandLine("./gradlew", "javaToolchains").withWorkDirectory(project.getBasePath());
+                    new GeneralCommandLine("./gradlew", "ideSetup").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
             handler.startNotify();
             handler.addProcessListener(new ProcessListener() {
@@ -125,6 +137,17 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
             ProcessTerminatedListener.attach(handler, project);
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static Set<String> getConfiguredTasks(Project project) {
+        try (ProjectConnection connection = GradleConnector.newConnector()
+                .forProjectDirectory(new File(project.getBasePath()))
+                .connect()) {
+
+            return connection.model(GradleProject.class).get().getTasks().stream()
+                    .map(GradleTask::getName)
+                    .collect(Collectors.toSet());
         }
     }
 }

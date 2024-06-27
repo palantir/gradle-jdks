@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.util.GradleVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,11 @@ public final class JdksPlugin implements Plugin<Project> {
 
     // keep in sync with com.palantir.gradle.jdks.settings.PatchToolchainJdkPlugin.isGradleJdkSetupEnabled
     public static boolean isGradleJdkSetupEnabled(Project project) {
+        if (GradleVersion.current().compareTo(GradleVersion.version("7.6")) < 0) {
+            throw new RuntimeException("Failed to apply `com.palantir.jdks`. Gradle JDK setup is enabled"
+                    + " (palantir.jdk.setup.enabled=true) but the version of Gradle is less than 7.6. Please"
+                    + " upgrade to Gradle 7.6 or higher to use this functionality.");
+        }
         return !CurrentOs.get().equals(Os.WINDOWS)
                 && Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
                         .map(prop -> Boolean.parseBoolean((String) prop))

@@ -1,6 +1,6 @@
 # Gradle Jdk Automanagement
 
-Now `gradle-jdks` manages also the JDK used to run Gradle. This means, when you run `./gradlew <task>` or open a Gradle project in IntelliJ, the correct JDKs will be downloaded and used even if you have no JDK preinstalled. The exact same version of the JDK would run in all environments, minimising differences between them. The correct root certs (if configured, see [below](#gradle-jdk-configuration-directory-structure)) would also be inserted into the JDKs, so it works OOTB with open source projects/public internet.
+`gradle-jdks` manages now also the JDK used to run Gradle. This means, when you run `./gradlew <task>` or open a Gradle project in IntelliJ (using the `palantir-gradle-jdk` Intellij plugin), the correct JDKs will be downloaded and used even if you have no JDK preinstalled. The exact same version of the JDK would run in all environments. The correct root certs (if configured, see [below](#gradle-jdk-configuration-directory-structure)) would also be inserted into the JDKs' truststore.
 
 ## Usage
 1. First, you must apply the plugin. In the **root project**, Either use the new plugin syntax:
@@ -155,7 +155,7 @@ Distribution 'https://corretto.....' already exists in '/.gradle/gradle-jdks/ama
 JDK installation '/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4' does not exist, installing 'https://corretto.....' in progress ...
 ```
 
-7. [Intellij] Install the Intellij plugin `gradle-jdks` from the [Intellij plugin repository](https://plugins.jetbrains.com/plugin) and restart Intellij. The plugin will automatically configure the Gradle JVM to use the JDK setup by the `gradle-jdks` plugin.
+7. [Intellij] Install the Intellij plugin `palantir-gradle-jdks` from the [Intellij plugin repository](https://plugins.jetbrains.com/plugin) and restart Intellij. The plugin will automatically configure the Gradle JVM to use the JDK setup by the `com.palantir.jdks` plugin.
 
 ## Gradle JDK Configuration directory structure
 
@@ -221,7 +221,9 @@ The patch script does the following:
 
 ### Running a Gradle build from inside `Intellij`
 `Intelij` doesn't use the `./gradlew` script, instead it uses the [Gradle Tooling API](https://docs.gradle.org/current/userguide/third_party_integration.html#sec:embedding_introduction).
-In order to do the Gradle JDK setup in Intelij as well, we are introducing a [Startup Task](https://www.jetbrains.com/help/idea/settings-tools-startup-tasks.html) that will run [IntelijGradleJdkSetup](src/main/java/com/palantir/gradle/jdks/setup/IntelijGradleJdkSetup.java) which will install the JDKs & configure the Intelij Gradle JVM.
+In the Intellij plugin `palantir-gradle-jdks` a postStartupActivity will run that will do the following:
+* runs `./gradlew javaToolchains` which triggers the installation of the JDKs and the certs (see above) and it will also call the `checkGradleJdkConfigs` task to make sure the Gradle JDK setup was correctly set-up.
+* sets the Gradle JVM version to the Gradle local java home (`GRADLE_LOCAL_JAVA_HOME` which is resolved from the `gradle/gradle-daemon-jdk-version` file).
 
 ## ToolchainsPlugin tasks
 
@@ -233,10 +235,11 @@ The plugin registers the following tasks:
 - `checkWrapperPatcher` - checks that the `./gradlew` script contains the expected JDKs setup patch
 - `generateGradleJdkConfigs` - generates the [`gradle/` configurations](#gradle-jdk-configuration-directory-structure) required for running the JDKs setup
 - `checkGradleJdkConfigs` - checks that all the `gradle/` configurations are up-to-date. E.g. if the `jdks-latest` plugin is updated, we need to make sure the `gradle/jdks` files reflect the jdk versions.
-- `setupJdks` - lifecycle task that runs both the `wrapperPatcherTask` and `generateGradleJdkConfigs`
+- `setupJdks` - task that triggers `wrapperPatcherTask` and `generateGradleJdkConfigs` and runs the patched `./gradlew` script.
 
 
 ## Unsupported
 
 - This workflow is disabled on `Windows` at the moment.
 - We only support Java language Versions specifications >= 11 (see `gradle-jdks-setup/build.gradle` `javaVersion` specifications).
+- We only support Gradle versions >= 7.6

@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class OsTest {
-
     @Test
     void modern_glibc_system_is_identified() {
         assertThat(CurrentOs.linuxLibcFromLdd(execInDocker("ubuntu:20.04"))).isEqualTo(Os.LINUX_GLIBC);

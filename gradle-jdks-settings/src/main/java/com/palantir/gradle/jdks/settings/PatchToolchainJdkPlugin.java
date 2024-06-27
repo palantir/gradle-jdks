@@ -42,6 +42,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.initialization.DefaultSettings;
+import org.gradle.util.GradleVersion;
 
 /**
  * A plugin that changes the Gradle JDK properties (via reflection) to point to the local toolchains configured via the
@@ -129,13 +130,6 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
             return;
         }
 
-        if (settings.getGradle().getGradleVersion().compareTo("7.6") < 0) {
-            throw new RuntimeException(
-                    "Failed to apply com.palantir.jdks.settings plugin. Gradle JDK setup is enabled but"
-                            + " the version of Gradle is less than 7.6. Please upgrade to Gradle 7.6 or higher to use"
-                            + " this functionality.");
-        }
-
         Path gradleJdksLocalDirectory = settings.getRootDir().toPath().resolve("gradle/jdks");
         if (!Files.exists(gradleJdksLocalDirectory)) {
             logger.debug("Not setting the Gradle JDK properties because gradle/jdks directory doesn't exist. Please run"
@@ -179,6 +173,11 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
 
     // keep in sync with com.palantir.gradle.jdks.JdksPlugin#isGradleJdkSetupEnabled(org.gradle.api.Project)
     public static boolean isGradleJdkSetupEnabled(Path projectDir) {
+        if (GradleVersion.current().compareTo(GradleVersion.version("7.6")) < 0) {
+            throw new RuntimeException("Failed to apply com.palantir.jdks.settings plugin. Gradle JDK setup is enabled"
+                    + " (palantir.jdk.setup.enabled=true) but the version of Gradle is less than 7.6. Please"
+                    + " upgrade to Gradle 7.6 or higher to use this functionality.");
+        }
         return !CurrentOs.get().equals(Os.WINDOWS) && getEnableGradleJdkProperty(projectDir);
     }
 

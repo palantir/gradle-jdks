@@ -112,7 +112,11 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         });
 
         rootProject.getTasks().named("javaToolchains").configure(task -> {
-            task.dependsOn("checkGradleJdkConfigs");
+            task.mustRunAfter("checkGradleJdkConfigs");
+        });
+
+        rootProject.getTasks().register("ideSetup").configure(task -> {
+            task.dependsOn("checkGradleJdkConfigs", "javaToolchains");
         });
     }
 }
