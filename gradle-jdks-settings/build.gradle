@@ -19,5 +19,4 @@ gradlePlugin {
     website = 'https://github.com/palantir/gradle-jdks'
     vcsUrl = 'https://github.com/palantir/gradle-jdks'
     description = 'Gradle JDK settings plugins'
-    //tags = ['java', 'jdks']
 }

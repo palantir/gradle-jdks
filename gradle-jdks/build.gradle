@@ -58,7 +58,6 @@ gradlePlugin {
     website = 'https://github.com/palantir/gradle-jdks'
     vcsUrl = 'https://github.com/palantir/gradle-jdks'
     description = 'Download specific JDKs versions automatically'
-    //tags = ['java', 'jdks']
 }
 
 tasks.withType(JavaCompile).configureEach {
