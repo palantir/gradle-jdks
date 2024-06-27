@@ -118,6 +118,10 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             setupJdksTask.dependsOn(generateGradleJdkConfigs, wrapperPatcherTask);
         });
 
+        rootProject.getTasks().named("javaToolchains").configure(task -> {
+            task.dependsOn("checkGradleJdkConfigs");
+        });
+
         // TODO(crogoz): update externalDependencies.xml
     }
 }

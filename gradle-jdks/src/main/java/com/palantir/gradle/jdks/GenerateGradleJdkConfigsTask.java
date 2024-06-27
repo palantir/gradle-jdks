@@ -61,7 +61,6 @@ public abstract class GenerateGradleJdkConfigsTask extends GradleJdkConfigs {
     @Override
     public final void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
         try {
-            // we need to check that the daemon JDK version is configured correctly
             writeConfigurationFile(
                     gradleJdkDaemonVersion, getDaemonJavaVersion().get().toString());
         } catch (IOException e) {

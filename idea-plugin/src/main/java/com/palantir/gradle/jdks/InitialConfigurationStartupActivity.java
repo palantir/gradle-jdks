@@ -47,6 +47,7 @@ import org.jetbrains.plugins.gradle.settings.GradleSettings;
 
 public final class InitialConfigurationStartupActivity implements ProjectActivity {
 
+    // private static final Logger log = Logger.getInstance(InitialConfigurationStartupActivity.class);
     private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
 
     @Override
@@ -57,7 +58,7 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
             case WINDOWS:
                 consoleView.print(
                         "Windows is not supported yet for Gradle Jdk setup", ConsoleViewContentType.LOG_INFO_OUTPUT);
-                return null;
+                return project;
             case LINUX_MUSL:
             case LINUX_GLIBC:
             case MACOS:
@@ -75,12 +76,18 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
             toolWindow.getContentManager().addContent(content);
             toolWindow.activate(null);
         });
-        return null;
+        return project;
     }
 
     private static void setupGradleJdks(Project project, ConsoleView consoleView) {
+        GradleSettings gradleSettings = GradleSettings.getInstance(project);
+        if (gradleSettings.getLinkedProjectsSettings().isEmpty()) {
+            // noop, this is not a gradle project
+            consoleView.print(
+                    "Not a gradle project, skipping Gradle JDK setup", ConsoleViewContentType.LOG_INFO_OUTPUT);
+            return;
+        }
         try {
-            // TODO(crogoz): if jdks.setup==true, make sure the gradle/ files are present, otherwise throw an exception
             GeneralCommandLine cli =
                     new GeneralCommandLine("./gradlew", "javaToolchains").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
@@ -89,7 +96,6 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
 
                 @Override
                 public void processTerminated(@NotNull ProcessEvent _event) {
-                    GradleSettings gradleSettings = GradleSettings.getInstance(project);
                     for (GradleProjectSettings projectSettings : gradleSettings.getLinkedProjectsSettings()) {
                         File gradleConfigFile = Path.of(
                                         projectSettings.getExternalProjectPath(), ".gradle/config.properties")
