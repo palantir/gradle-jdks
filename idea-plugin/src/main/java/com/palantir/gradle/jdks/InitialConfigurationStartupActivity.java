@@ -27,6 +27,11 @@ import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.externalSystem.importing.ImportSpecBuilder;
+import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId;
+import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationEvent;
+import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationListener;
+import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskType;
+import com.intellij.openapi.externalSystem.service.notification.ExternalSystemProgressNotificationManager;
 import com.intellij.openapi.externalSystem.util.ExternalSystemUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
@@ -63,6 +68,7 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
 
     @Override
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> _continuation) {
+
         GradleSettings gradleSettings = GradleSettings.getInstance(project);
         if (gradleSettings.getLinkedProjectsSettings().isEmpty()) {
             // noop, this is not a gradle project
@@ -79,7 +85,48 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
         }
         ConsoleView consoleView =
                 TextConsoleBuilderFactory.getInstance().createBuilder(project).getConsole();
-        setupGradleJdks(project, gradleSettings, consoleView);
+
+        ExternalSystemProgressNotificationManager.getInstance()
+                .addNotificationListener(new ExternalSystemTaskNotificationListener() {
+                    @Override
+                    public void onStart(@NotNull ExternalSystemTaskId id, String _workingDir) {
+                        log.warn("Gradle JDK setup task started {} {}", id.getProjectSystemId(), id.getType());
+                        if (id.getProjectSystemId().equals(GradleConstants.SYSTEM_ID)
+                                && id.getType() == ExternalSystemTaskType.RESOLVE_PROJECT) {
+                            setupGradleJdks(project, gradleSettings, consoleView);
+                            try {
+                                log.warn("Sleeping for 10 seconds to allow the JDK setup to complete");
+                                Thread.sleep(30_000);
+                                log.warn("Finished sleeping");
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onStatusChange(@NotNull ExternalSystemTaskNotificationEvent _event) {}
+
+                    @Override
+                    public void onTaskOutput(
+                            @NotNull ExternalSystemTaskId _id, @NotNull String _text, boolean _stdOut) {}
+
+                    @Override
+                    public void onEnd(@NotNull ExternalSystemTaskId _id) {}
+
+                    @Override
+                    public void onSuccess(@NotNull ExternalSystemTaskId _id) {}
+
+                    @Override
+                    public void onFailure(@NotNull ExternalSystemTaskId _id, @NotNull Exception _exception) {}
+
+                    @Override
+                    public void beforeCancel(@NotNull ExternalSystemTaskId _id) {}
+
+                    @Override
+                    public void onCancel(@NotNull ExternalSystemTaskId _id) {}
+                });
+
         ApplicationManager.getApplication().invokeLater(() -> {
             ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
             ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
