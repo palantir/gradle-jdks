@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -64,10 +63,10 @@ public abstract class SetupJdksTask extends DefaultTask {
         if (execResult.getExitValue() != 0) {
             String output = inMemoryOutput.toString(StandardCharsets.UTF_8);
             if (output.contains("UnsupportedClassVersionError")) {
-                throw new ExceptionWithSuggestion(
-                        "The Gradle JDK setup has failed. The Gradle Daemon major version might be incorrectly set.",
-                        "Update the Gradle JDK major version using `jdks.daemonTargetVersion` in your `build.gradle`"
-                                + " and the `gradle/gradle-daemon-jdk-version` entry");
+                throw new RuntimeException(
+                        "The Gradle JDK setup has failed. The Gradle Daemon major version might be incorrectly set."
+                                + " Update the Gradle JDK major version using `jdks.daemonTargetVersion` in your"
+                                + " `build.gradle` and the `gradle/gradle-daemon-jdk-version` entry");
             }
             throw new RuntimeException("The Gradle JDK setup has failed. Check the logs for more information.");
         }
