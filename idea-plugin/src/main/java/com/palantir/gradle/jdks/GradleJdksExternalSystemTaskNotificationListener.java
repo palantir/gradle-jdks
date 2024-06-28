@@ -21,41 +21,14 @@ import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotifica
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationListener;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskType;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.plugins.gradle.settings.GradleSettings;
 import org.jetbrains.plugins.gradle.util.GradleConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public final class MyExternalSystemTaskNotificationListener implements ExternalSystemTaskNotificationListener {
-    private static final Logger log = LoggerFactory.getLogger(MyExternalSystemTaskNotificationListener.class);
-
+public final class GradleJdksExternalSystemTaskNotificationListener implements ExternalSystemTaskNotificationListener {
     @Override
     public void onStart(@NotNull ExternalSystemTaskId id, String _workingDir) {
-        log.warn(
-                "Gradle JDK setup task started {} {}, project exists: {}",
-                id.getProjectSystemId(),
-                id.getType(),
-                id.findProject() == null);
         if (id.getProjectSystemId().equals(GradleConstants.SYSTEM_ID)
                 && id.getType() == ExternalSystemTaskType.RESOLVE_PROJECT) {
-            //            InitialConfigurationStartupActivity.setupGradleJdks(
-            //                    project,
-            //                    GradleSettings.getInstance(project),
-            //                    TextConsoleBuilderFactory.getInstance()
-            //                            .createBuilder(project)
-            //                            .getConsole());
-            GradleSettings gradleSettings = GradleSettings.getInstance(id.findProject());
-            gradleSettings.getLinkedProjectsSettings().forEach(projectSettings -> {
-                log.warn("Gradle JVM: {}", projectSettings.getGradleJvm());
-                projectSettings.setGradleJvm("17");
-            });
-            /*log.warn("Sleeping for 10 seconds to allow the JDK setup to complete");
-            try {
-                Thread.sleep(30_000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            log.warn("Finished sleeping");*/
+            id.findProject().getService(GradleJdksProjectService.class).setupGradleJdks();
         }
     }
 
