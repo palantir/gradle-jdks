@@ -70,15 +70,15 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         then:
         checkResult.wasExecuted("checkGradleJdkConfigs")
         !checkResult.wasUpToDate("checkGradleJdkConfigs")
-        checkResult.wasExecuted("checkWrapperJdk")
-        !checkResult.wasUpToDate("checkWrapperJdk")
+        checkResult.wasExecuted("checkWrapperJdkPatcher")
+        !checkResult.wasUpToDate("checkWrapperJdkPatcher")
 
         when: 'running the second check'
         def secondCheckResult = runTasksSuccessfully("check")
 
         then:
         secondCheckResult.wasUpToDate("checkGradleJdkConfigs")
-        secondCheckResult.wasUpToDate("checkWrapperJdk")
+        secondCheckResult.wasUpToDate("checkWrapperJdkPatcher")
 
         where:
         gradleVersionNumber << [GRADLE_7_6_VERSION, GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
