@@ -24,7 +24,6 @@ import com.intellij.execution.process.ProcessEvent;
 import com.intellij.execution.process.ProcessListener;
 import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.ui.ConsoleView;
-import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.externalSystem.importing.ImportSpecBuilder;
 import com.intellij.openapi.externalSystem.util.ExternalSystemUtil;
@@ -109,10 +108,11 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
                                         projectSettings.getExternalProjectPath(), ".gradle/config.properties")
                                 .toFile();
                         if (!gradleConfigFile.exists()) {
-                            consoleView.print(
-                                    "Skipping gradleJvm Configuration because no value was configured in"
-                                            + " `.gradle/config.properties`",
-                                    ConsoleViewContentType.LOG_INFO_OUTPUT);
+                            //                            consoleView.print(
+                            //                                    "Skipping gradleJvm Configuration because no value was
+                            // configured in"
+                            //                                            + " `.gradle/config.properties`",
+                            //                                    ConsoleViewContentType.LOG_INFO_OUTPUT);
                             continue;
                         }
 
