@@ -29,11 +29,11 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
+// TODO(crogoz): javaDocs
 public final class JdkDistributionConfigurator {
 
-    private static final JavaLanguageVersion MINIMUM_SUPPORTED_JAVA_VERSION = JavaLanguageVersion.of(11);
-
     private static Logger logger = Logging.getLogger(JdkDistributionConfigurator.class);
+    private static final JavaLanguageVersion MINIMUM_SUPPORTED_JAVA_VERSION = JavaLanguageVersion.of(11);
 
     public static Map<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros(
             Project project, JdkDistributions jdkDistributions, JdksExtension jdksExtension) {

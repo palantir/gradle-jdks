@@ -50,26 +50,33 @@ import org.gradle.tooling.model.GradleTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class InitialConfigurationStartupActivity implements ProjectActivity {
 
     private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
+    private static final Logger log = LoggerFactory.getLogger(InitialConfigurationStartupActivity.class);
 
     @Override
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> _continuation) {
+        GradleSettings gradleSettings = GradleSettings.getInstance(project);
+        if (gradleSettings.getLinkedProjectsSettings().isEmpty()) {
+            // noop, this is not a gradle project
+            log.warn("No linked projects found, skipping Gradle JDK setup");
+            return project;
+        }
+        if (Optional.ofNullable(project.getBasePath()).isEmpty()) {
+            log.warn("Project base path is null, skipping Gradle JDK setup");
+            return project;
+        }
+        if (!getConfiguredTasks(project).contains("ideSetup")) {
+            log.warn("No `ideSetup` task was configured in the project, skipping Gradle JDK setup");
+            return project;
+        }
         ConsoleView consoleView =
                 TextConsoleBuilderFactory.getInstance().createBuilder(project).getConsole();
-        switch (CurrentOs.get()) {
-            case WINDOWS:
-                consoleView.print(
-                        "Windows is not supported yet for Gradle Jdk setup", ConsoleViewContentType.LOG_INFO_OUTPUT);
-                return project;
-            case LINUX_MUSL:
-            case LINUX_GLIBC:
-            case MACOS:
-                setupGradleJdks(project, consoleView);
-                break;
-        }
+        setupGradleJdks(project, gradleSettings, consoleView);
         ApplicationManager.getApplication().invokeLater(() -> {
             ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
             ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
@@ -84,28 +91,13 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
         return project;
     }
 
-    private static void setupGradleJdks(Project project, ConsoleView consoleView) {
-        GradleSettings gradleSettings = GradleSettings.getInstance(project);
-        if (gradleSettings.getLinkedProjectsSettings().isEmpty()) {
-            // noop, this is not a gradle project
-            consoleView.print(
-                    "Not a gradle project, skipping Gradle JDK setup", ConsoleViewContentType.LOG_INFO_OUTPUT);
-            return;
-        }
+    private static void setupGradleJdks(Project project, GradleSettings gradleSettings, ConsoleView consoleView) {
         try {
-            if (!getConfiguredTasks(project).contains("ideSetup")) {
-                consoleView.print(
-                        "No `ideSetup` task was configured in the project, skipping Gradle JDK setup",
-                        ConsoleViewContentType.LOG_INFO_OUTPUT);
-                return;
-            }
-
             GeneralCommandLine cli =
-                    new GeneralCommandLine("./gradlew", "ideSetup").withWorkDirectory(project.getBasePath());
+                    new GeneralCommandLine(getGradlewCommand(), "ideSetup").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
             handler.startNotify();
             handler.addProcessListener(new ProcessListener() {
-
                 @Override
                 public void processTerminated(@NotNull ProcessEvent _event) {
                     for (GradleProjectSettings projectSettings : gradleSettings.getLinkedProjectsSettings()) {
@@ -128,7 +120,7 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
                                 projectSettings.setGradleJvm("#GRADLE_LOCAL_JAVA_HOME");
                             }
                         } catch (IOException e) {
-                            throw new RuntimeException("Could not read gradle.properties file", e);
+                            throw new RuntimeException("Failed to set gradleJvm to #GRADLE_LOCAL_JAVA_HOME", e);
                         }
                     }
                 }
@@ -136,7 +128,7 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
             consoleView.attachToProcess(handler);
             ProcessTerminatedListener.attach(handler, project);
         } catch (ExecutionException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to setup Gradle JDKs for Intellij", e);
         }
     }
 
@@ -149,5 +141,19 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
                     .map(GradleTask::getName)
                     .collect(Collectors.toSet());
         }
+    }
+
+    private static String getGradlewCommand() {
+        switch (CurrentOs.get()) {
+            case WINDOWS: {
+                return "gradlew.bat";
+            }
+            case LINUX_MUSL:
+            case LINUX_GLIBC:
+            case MACOS: {
+                return "./gradlew";
+            }
+        }
+        throw new IllegalStateException("Unreachable code; all Os enum values should be handled");
     }
 }

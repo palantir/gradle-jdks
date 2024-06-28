@@ -110,15 +110,13 @@ palantir.jdk.setup.enabled=true
 ```
 The commands above will trigger the tasks: 
 - `generateGradleJdkConfigs` which generates in the project's `gradle/` a list of files and directories that configure the JDK versions and distributions, the certs and `gradle-daemon-jdk-version`. See more about the generated structure of the directories [here](#gradle-jdk-configuration-directory-structure). These files will need to be committed to the git repo.
-- `wrapperJdkPatcher` which updates the entryPoints (`./gradlew` and `gradle/gradle-wrapper.jar`) to use the JDK setup
+- `checkWrapperJdkPatcher` which updates the entryPoints (`./gradlew` and `gradle/gradle-wrapper.jar`) to use the JDK setup
 - `setupJdks` is calling the patched `./gradlew(.bat) javaToolchains` script to install and configure the JDKs and check the configured toolchains:
 
 The output should look like:
 ```
 Distribution https://corretto.aws/downloads/resources/11.0.23.9.1/amazon-corretto-11.0.23.9.1-macosx-aarch64.tar.gz already exists in /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4
 Distribution https://corretto.aws/downloads/resources/17.0.11.9.1/amazon-corretto-17.0.11.9.1-macosx-aarch64.tar.gz already exists in /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-17.0.11.9.1-f0e4bf13f7416be0
-Setting daemon Java Home to /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4
-Setting custom toolchains locations to [/Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4, /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-17.0.11.9.1-f0e4bf13f7416be0]
 Starting a Gradle Daemon (subsequent builds will be faster)
 
 > Task :javaToolchains
@@ -150,12 +148,18 @@ Note that now, when running any `./gradlew` command the first log lines would sa
 ```
 Distribution 'https://corretto.....' already exists in '/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4'
 ```
-* or that a toolchain needs to be installed:
+* or that a toolchain needs to be installed and the script will install it:
 ```
 JDK installation '/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4' does not exist, installing 'https://corretto.....' in progress ...
 ```
 
 7. [Intellij] Install the Intellij plugin `palantir-gradle-jdks` from the [Intellij plugin repository](https://plugins.jetbrains.com/plugin) and restart Intellij. The plugin will automatically configure the Gradle JVM to use the JDK setup by the `com.palantir.jdks` plugin.
+
+![Intellij Gradle JDK setup](Intellij%20Gradle%20JDK.png)
+
+* Gradle JVM is set to `#GRADLE_LOCAL_JAVA_HOME` which is resolved by Intellij to the `java.home` set in `.gradle/config.properties`.
+* The `java.home` is set to the Gradle JDK Daemon resolved path which is resolved from the `gradle/gradle-daemon-jdk-version` file.
+* When opening a Project in Intellij with the Gradle JDK setup enabled, a tab will appear at the bottom `Gradle JDK Setup` which will call `./gradlew ideSetup`.
 
 ## Gradle JDK Configuration directory structure
 
@@ -231,12 +235,15 @@ The new workflow is set up by [ToolchainsPlugin](../gradle-jdks/src/main/java/co
 The plugin won't apply anymore the `baseline-java-versions` plugin, allowing for the configuration of the Java Toolchains as described in the [Gradle docs ](https://docs.gradle.org/current/userguide/toolchains.html)
 
 The plugin registers the following tasks:
-- `wrapperPatcherTask` - finalizes the `wrapper` task, such that everytime the `gradle-wrapper.jar` and/or `./gradlew` files are updated, we will also patch them
-- `checkWrapperPatcher` - checks that the `./gradlew` script contains the expected JDKs setup patch
+- `wrapperJdkPatcher` - finalizes the `wrapper` task, such that everytime the `gradle-wrapper.jar` and/or `./gradlew` files are updated, we will also patch them
+- `checkWrapperJdkPatcher` - checks that the `./gradlew` script contains the expected JDKs setup patch
 - `generateGradleJdkConfigs` - generates the [`gradle/` configurations](#gradle-jdk-configuration-directory-structure) required for running the JDKs setup
 - `checkGradleJdkConfigs` - checks that all the `gradle/` configurations are up-to-date. E.g. if the `jdks-latest` plugin is updated, we need to make sure the `gradle/jdks` files reflect the jdk versions.
-- `setupJdks` - task that triggers `wrapperPatcherTask` and `generateGradleJdkConfigs` and runs the patched `./gradlew` script.
-
+- `setupJdks` - task that triggers `wrapperJdkPatcher` and `generateGradleJdkConfigs` and runs the patched `./gradlew` script.
+- `ideaSetup` - task that runs: 
+  - the `./gradlew` script to install & configure the required JDKs
+  - the tasks `checkWrapperJdkPatcher` & `checkGradleJdkConfigs` to ensure the Gradle JDK setup is correctly set-up
+  - the task `javaToolchains` to show the configured toolchains.
 
 ## Unsupported
 

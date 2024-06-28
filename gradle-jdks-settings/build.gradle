@@ -12,9 +12,10 @@ gradlePlugin {
     plugins {
         patchJdks {
             id = 'com.palantir.jdks.settings'
-            displayName = 'Palantir JDK Properties Plugin'
+            displayName = 'Palantir Gradle JDK Settings Plugin'
             description = 'Sets the Gradle properties for the Gradle JDK setup'
             implementationClass = 'com.palantir.gradle.jdks.settings.PatchToolchainJdkPlugin'
+            tags.addAll("java", "jdks")
         }
     }
     website = 'https://github.com/palantir/gradle-jdks'

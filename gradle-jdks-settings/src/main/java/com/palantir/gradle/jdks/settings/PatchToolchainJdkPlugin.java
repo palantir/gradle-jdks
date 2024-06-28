@@ -50,7 +50,7 @@ import org.gradle.util.GradleVersion;
  * @see <a href=/Volumes/git/gradle-jdks/gradle-jdks-setup/README.md>Gradle JDK Readme</a>
  */
 public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
-    private static final String ENABLE_GRADLE_JDK_SETUP = "palantir.jdk.setup.enabled";
+
     private static final Logger logger = Logging.getLogger(PatchToolchainJdkPlugin.class);
 
     private static class GradlePropertiesInvocationHandler implements InvocationHandler {
@@ -70,6 +70,8 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
                         "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but no toolchains could be"
                                 + " configured");
             }
+            // see: https://github.com/gradle/gradle/blob/4bd1b3d3fc3f31db5a26eecb416a165b8cc36082/subprojects/core-api/
+            // src/main/java/org/gradle/api/internal/properties/GradleProperties.java#L28
             if (method.getName().equals("find")) {
                 if (args.length == 1 && args[0].equals("org.gradle.java.installations.auto-detect")) {
                     return "false";
@@ -118,7 +120,9 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
                 }
                 return Optional.of(installationPath);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException(
+                        String.format("Failed to get the toolchain configured at path=%s", gradleJdkConfigurationPath),
+                        e);
             }
         }
     }
@@ -161,7 +165,7 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
                     new GradlePropertiesInvocationHandler(gradleJdksLocalDirectory, originalGradleProperties));
             field.set(defaultValueSourceProviderFactory, ourGradleProperties);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to update the Gradle JDK properties using reflection", e);
         }
     }
 
@@ -189,11 +193,11 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
         try {
             Properties properties = new Properties();
             properties.load(new FileInputStream(gradlePropsFile));
-            return Optional.ofNullable(properties.getProperty(ENABLE_GRADLE_JDK_SETUP))
+            return Optional.ofNullable(properties.getProperty("palantir.jdk.setup.enabled"))
                     .map(Boolean::parseBoolean)
                     .orElse(false);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to read gradle.properties file", e);
         }
     }
 }

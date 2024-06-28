@@ -16,37 +16,60 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import javax.inject.Inject;
+import org.apache.tools.ant.util.TeeOutputStream;
+import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.api.tasks.Exec;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.ExecOperations;
+import org.gradle.process.ExecResult;
 
-public abstract class SetupJdksTask extends Exec {
+/**
+ * Actually triggering the patched `./gradlew` script (that configures and installs the JDKs) and runs `javaToolchains`
+ * to output the JDKs that Gradle will use.
+ */
+public abstract class SetupJdksTask extends DefaultTask {
 
     private static final Logger logger = Logging.getLogger(SetupJdksTask.class);
 
     @InputFile
     public abstract RegularFileProperty getGradlewScript();
 
-    @Internal
-    public abstract RegularFileProperty getProjectDir();
+    @Inject
+    protected abstract ExecOperations getExecOperations();
 
-    @Override
     @TaskAction
-    protected final void exec() {
-        switch (CurrentOs.get()) {
-            case WINDOWS:
-                logger.debug("Windows gradleJdk setup is not yet supported.");
-                break;
-            case LINUX_GLIBC:
-            case LINUX_MUSL:
-            case MACOS:
-                setCommandLine(getGradlewScript().getAsFile().get().toPath(), "javaToolchains");
-                break;
+    public final void exec() {
+        if (CurrentOs.get().equals(Os.WINDOWS)) {
+            logger.debug("Windows gradleJdk setup is not yet supported.");
+            return;
         }
-        super.exec();
+        ByteArrayOutputStream inMemoryOutput = new ByteArrayOutputStream();
+        OutputStream logOutput = new TeeOutputStream(System.out, inMemoryOutput);
+
+        ExecResult execResult = getExecOperations().exec(execSpec -> {
+            execSpec.setIgnoreExitValue(true);
+            execSpec.setStandardOutput(logOutput);
+            execSpec.setErrorOutput(logOutput);
+            execSpec.commandLine(getGradlewScript().get().getAsFile().toPath(), "-q", "javaToolchains");
+        });
+
+        if (execResult.getExitValue() != 0) {
+            String output = inMemoryOutput.toString(StandardCharsets.UTF_8);
+            if (output.contains("UnsupportedClassVersionError")) {
+                throw new ExceptionWithSuggestion(
+                        "The Gradle JDK setup has failed. The Gradle Daemon major version might be incorrectly set.",
+                        "Update the Gradle JDK major version using `jdks.daemonTargetVersion` in your `build.gradle`"
+                                + " and the `gradle/gradle-daemon-jdk-version` entry");
+            }
+            throw new RuntimeException("The Gradle JDK setup has failed. Check the logs for more information.");
+        }
     }
 }

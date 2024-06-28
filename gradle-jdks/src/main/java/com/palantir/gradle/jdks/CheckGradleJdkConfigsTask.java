@@ -95,7 +95,7 @@ public abstract class CheckGradleJdkConfigsTask extends GradleJdkConfigs {
         if (!result) {
             throw new ExceptionWithSuggestion(
                     String.format(
-                            "Gradle JDK configuration file `%s` is out of date, please run `./gradlew" + " setupJdks`",
+                            "Gradle JDK configuration file `%s` is out of date, please run `./gradlew setupJdks`",
                             getRelativeToGradleFile(outOfDateFile)),
                     "./gradlew setupJdks");
         }
@@ -117,7 +117,7 @@ public abstract class CheckGradleJdkConfigsTask extends GradleJdkConfigs {
             }
             return inputStream.readAllBytes();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(String.format("Failed to retrieve resource %s", resource), e);
         }
     }
 }

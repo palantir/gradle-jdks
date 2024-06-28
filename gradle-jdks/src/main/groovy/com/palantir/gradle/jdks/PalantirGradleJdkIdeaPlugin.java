@@ -65,7 +65,6 @@ public class PalantirGradleJdkIdeaPlugin implements Plugin<Project> {
         // you've added them. For that reason, we accept that we have to resolve this configuration at
         // configuration-time, but only do it when part of an IDEA import.
         if (!Boolean.getBoolean("idea.active")) {
-
             return;
         }
         project.getGradle().projectsEvaluated(gradle -> {

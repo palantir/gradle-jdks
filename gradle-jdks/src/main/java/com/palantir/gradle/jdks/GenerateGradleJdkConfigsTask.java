@@ -102,7 +102,6 @@ public abstract class GenerateGradleJdkConfigsTask extends GradleJdkConfigs {
             if (inputStream == null) {
                 throw new RuntimeException(String.format("Resource not found: %s:", resource));
             }
-
             try (OutputStream outputStream = new FileOutputStream(outputFile)) {
                 inputStream.transferTo(outputStream);
             }

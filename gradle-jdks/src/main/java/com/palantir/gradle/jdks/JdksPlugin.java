@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 public final class JdksPlugin implements Plugin<Project> {
 
     private static final Logger log = LoggerFactory.getLogger(JdksPlugin.class);
-    private static final String ENABLE_GRADLE_JDK_SETUP = "palantir.jdk.setup.enabled";
 
     @Override
     public void apply(Project rootProject) {
@@ -71,7 +70,7 @@ public final class JdksPlugin implements Plugin<Project> {
                     + " upgrade to Gradle 7.6 or higher to use this functionality.");
         }
         return !CurrentOs.get().equals(Os.WINDOWS)
-                && Optional.ofNullable(project.findProperty(ENABLE_GRADLE_JDK_SETUP))
+                && Optional.ofNullable(project.findProperty("palantir.jdk.setup.enabled"))
                         .map(prop -> Boolean.parseBoolean((String) prop))
                         .orElse(false);
     }

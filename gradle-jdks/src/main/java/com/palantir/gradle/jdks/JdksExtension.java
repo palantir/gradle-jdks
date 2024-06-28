@@ -40,7 +40,7 @@ public abstract class JdksExtension {
     @Inject
     protected abstract ObjectFactory getObjectFactory();
 
-    public JdksExtension(Project project) {
+    public JdksExtension() {
         this.jdkDistributions =
                 new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkDistributionExtension.class));
         this.jdks = new LazilyConfiguredMapping<>(() -> getObjectFactory().newInstance(JdkExtension.class));
@@ -57,7 +57,6 @@ public abstract class JdksExtension {
         this.jdkStorageLocation = SynchronizedInterface.synchronizeAllInterfaceMethods(
                 DirectoryProperty.class, getObjectFactory().directoryProperty());
         this.daemonTarget = getObjectFactory().property(JavaLanguageVersion.class);
-
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
         this.getDaemonTarget().finalizeValueOnRead();

@@ -20,6 +20,7 @@ import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.TaskProvider;
@@ -81,42 +82,56 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                             rootProject, jdkDistributions, jdksExtension)));
             task.getCaCerts().putAll(jdksExtension.getCaCerts());
         });
+
         TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
                 .getTasks()
                 .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
-                    task.getOriginalGradlewScript()
-                            .fileProvider(
-                                    rootProject.provider(() -> wrapperTask.get().getScriptFile()));
-                    task.getBuildDir().set(task.getTemporaryDir());
-                    task.getPatchedGradlewScript()
-                            .set(rootProject.file(
-                                    rootProject.getRootDir().toPath().resolve("gradlew")));
                     task.getGenerate().set(true);
                     task.dependsOn(generateGradleJdkConfigs);
                 });
+        TaskProvider<GradleWrapperPatcherTask> checkWrapperPatcherTask = rootProject
+                .getTasks()
+                .register("checkWrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
+                    task.getGenerate().set(false);
+                });
+
+        rootProject.getTasks().withType(GradleWrapperPatcherTask.class).configureEach(task -> {
+            task.getOriginalGradlewScript()
+                    .fileProvider(rootProject.provider(() -> wrapperTask.get().getScriptFile()));
+            task.getBuildDir().set(task.getTemporaryDir());
+            task.getPatchedGradlewScript()
+                    .set(rootProject.file(rootProject.getRootDir().toPath().resolve("gradlew")));
+        });
         wrapperTask.configure(task -> {
             task.finalizedBy(wrapperPatcherTask);
+        });
+
+        TaskProvider<Task> checkJdksLifecycle = rootProject.getTasks().register("checkJdks", Task.class, task -> {
+            task.setDescription("Lifecycle task that checks the Gradle JDK configurations.");
+            task.setGroup(GRADLE_JDK_GROUP);
+            task.dependsOn(checkGradleJdkConfigs, checkWrapperPatcherTask);
         });
 
         rootProject
                 .getTasks()
                 .named(LifecycleBasePlugin.CHECK_TASK_NAME)
-                .configure(check -> check.dependsOn(checkGradleJdkConfigs));
+                .configure(check -> check.dependsOn(checkJdksLifecycle));
 
         rootProject.getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");
             setupJdksTask.setGroup(GRADLE_JDK_GROUP);
-            setupJdksTask.getProjectDir().set(rootProject.file(rootProject.getPath()));
             setupJdksTask.getGradlewScript().set(wrapperPatcherTask.get().getPatchedGradlewScript());
             setupJdksTask.dependsOn(generateGradleJdkConfigs, wrapperPatcherTask);
         });
 
         rootProject.getTasks().named("javaToolchains").configure(task -> {
-            task.mustRunAfter("checkGradleJdkConfigs");
+            task.mustRunAfter(checkJdksLifecycle);
         });
 
         rootProject.getTasks().register("ideSetup").configure(task -> {
-            task.dependsOn("checkGradleJdkConfigs", "javaToolchains");
+            task.setDescription("Configures the gradle JDK setup for IDE.");
+            task.setGroup(GRADLE_JDK_GROUP);
+            task.dependsOn(checkJdksLifecycle, "javaToolchains");
         });
     }
 }

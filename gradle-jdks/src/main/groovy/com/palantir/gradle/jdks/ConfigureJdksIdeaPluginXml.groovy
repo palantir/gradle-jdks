@@ -31,7 +31,6 @@ class ConfigureJdksIdeaPluginXml {
 
     private static Optional<Node> matchChild(Node base, String name, Map attributes = [:]) {
         def child = base[name].find { it.attributes().entrySet().containsAll(attributes.entrySet()) }
-
         return Optional.ofNullable(child)
     }
 }

@@ -47,7 +47,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
         file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_HEADER).size() == 1
         file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_FOOTER).size() == 1
-        
+
         and: 'the `gradle/` configuration files are generated'
         checkJdksVersions(projectDir, Set.of("11", "17", "21"))
         Files.readString(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version")).trim() == "11"
@@ -70,12 +70,15 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         then:
         checkResult.wasExecuted("checkGradleJdkConfigs")
         !checkResult.wasUpToDate("checkGradleJdkConfigs")
+        checkResult.wasExecuted("checkWrapperJdk")
+        !checkResult.wasUpToDate("checkWrapperJdk")
 
         when: 'running the second check'
         def secondCheckResult = runTasksSuccessfully("check")
 
         then:
         secondCheckResult.wasUpToDate("checkGradleJdkConfigs")
+        secondCheckResult.wasUpToDate("checkWrapperJdk")
 
         where:
         gradleVersionNumber << [GRADLE_7_6_VERSION, GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
