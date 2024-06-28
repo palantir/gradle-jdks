@@ -26,6 +26,8 @@ import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.externalSystem.importing.ImportSpecBuilder;
+import com.intellij.openapi.externalSystem.util.ExternalSystemUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.openapi.wm.ToolWindow;
@@ -50,6 +52,7 @@ import org.gradle.tooling.model.GradleTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
+import org.jetbrains.plugins.gradle.util.GradleConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,6 +121,8 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
                             if (Optional.ofNullable(properties.getProperty("java.home"))
                                     .isPresent()) {
                                 projectSettings.setGradleJvm("#GRADLE_LOCAL_JAVA_HOME");
+                                ExternalSystemUtil.refreshProjects(
+                                        new ImportSpecBuilder(project, GradleConstants.SYSTEM_ID));
                             }
                         } catch (IOException e) {
                             throw new RuntimeException("Failed to set gradleJvm to #GRADLE_LOCAL_JAVA_HOME", e);
