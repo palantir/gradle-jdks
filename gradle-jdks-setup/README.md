@@ -115,8 +115,6 @@ The commands above will trigger the tasks:
 
 The output should look like:
 ```
-Distribution https://corretto.aws/downloads/resources/11.0.23.9.1/amazon-corretto-11.0.23.9.1-macosx-aarch64.tar.gz already exists in /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4
-Distribution https://corretto.aws/downloads/resources/17.0.11.9.1/amazon-corretto-17.0.11.9.1-macosx-aarch64.tar.gz already exists in /Users/crogoz/.gradle/gradle-jdks/amazon-corretto-17.0.11.9.1-f0e4bf13f7416be0
 Starting a Gradle Daemon (subsequent builds will be faster)
 
 > Task :javaToolchains
@@ -143,12 +141,7 @@ Starting a Gradle Daemon (subsequent builds will be faster)
 
 ```
 Note that `Auto-detection` and `Auto-download` options should be both disabled and the list of toolchains should only be retrieved from the `Gradle property 'org.gradle.java.installations.paths'`.
-Note that now, when running any `./gradlew` command the first log lines would say that:
-* a toolchain is installed already:
-```
-Distribution 'https://corretto.....' already exists in '/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4'
-```
-* or that a toolchain needs to be installed and the script will install it:
+Note that now, when running any `./gradlew` the following line would show up if a specific JDK isn't installed on the host:
 ```
 JDK installation '/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4' does not exist, installing 'https://corretto.....' in progress ...
 ```
