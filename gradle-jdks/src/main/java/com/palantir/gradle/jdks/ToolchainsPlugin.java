@@ -127,11 +127,5 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         rootProject.getTasks().named("javaToolchains").configure(task -> {
             task.mustRunAfter(checkJdksLifecycle);
         });
-
-        rootProject.getTasks().register("ideSetup").configure(task -> {
-            task.setDescription("Configures the gradle JDK setup for IDE.");
-            task.setGroup(GRADLE_JDK_GROUP);
-            task.dependsOn(checkJdksLifecycle, "javaToolchains");
-        });
     }
 }

@@ -26,8 +26,8 @@ import com.intellij.execution.process.ProcessListener;
 import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
@@ -37,9 +37,11 @@ import com.intellij.ui.content.ContentFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
@@ -47,10 +49,13 @@ import org.jetbrains.plugins.gradle.settings.GradleSettings;
 
 @Service(Service.Level.PROJECT)
 public final class GradleJdksProjectService {
+
+    private final Logger logger = Logger.getInstance(GradleJdksProjectService.class);
     private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
 
     private final Project project;
-    private Supplier<ConsoleView> consoleView = Suppliers.memoize(this::initConsoleView);
+    private final Supplier<ConsoleView> consoleView = Suppliers.memoize(this::initConsoleView);
+    private final AtomicBoolean hasRunSetup = new AtomicBoolean(false);
 
     public GradleJdksProjectService(Project project) {
         this.project = project;
@@ -60,8 +65,8 @@ public final class GradleJdksProjectService {
         ConsoleView newConsoleView =
                 TextConsoleBuilderFactory.getInstance().createBuilder(project).getConsole();
 
-        ApplicationManager.getApplication().invokeLater(() -> {
-            ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
+        ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
+        toolWindowManager.invokeLater(() -> {
             ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
             if (toolWindow == null) {
                 toolWindow = toolWindowManager.registerToolWindow(TOOL_WINDOW_NAME, true, ToolWindowAnchor.BOTTOM);
@@ -69,50 +74,51 @@ public final class GradleJdksProjectService {
             ContentFactory contentFactory = ContentFactory.getInstance();
             Content content = contentFactory.createContent(newConsoleView.getComponent(), "", false);
             toolWindow.getContentManager().addContent(content);
-            // TODO: Focus only when error or takes a long time?
+            // TODO(crogoz): Focus only when error or takes a long time?
             toolWindow.activate(null);
         });
 
         return newConsoleView;
     }
 
-    public void setupGradleJdks() {
+    public void maybeSetupGradleJdks() {
+        if (!hasRunSetup.compareAndSet(false, true)) {
+            logger.info("Skipping setupGradleJdks because it has already been run");
+            return;
+        }
+        if (project.getBasePath() == null) {
+            logger.warn("Skipping setupGradleJdks because project path is null");
+            return;
+        }
+        Path gradleSetupScript = Path.of(project.getBasePath(), "gradle/gradle-jdks-setup.sh");
+        if (!Files.exists(gradleSetupScript)) {
+            logger.info(String.format(
+                    "Skipping setupGradleJdks because gradle JDK setup is not found %s", gradleSetupScript));
+            return;
+        }
+
+        ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
+        toolWindowManager.invokeLater(() -> {
+            ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
+            logger.warn("Toolwirnodw: " + toolWindow);
+            if (toolWindow != null && !toolWindow.isActive()) {
+                toolWindow.activate(null);
+            }
+        });
+
+        setupGradleJdks();
+    }
+
+    private void setupGradleJdks() {
         try {
-            // TODO: Avoid calling Gradle and just call script to save time?
-            // TODO: Only run if we detect a certain file (eg setup script/jar or gradle-daemon-jdk-version)?
             GeneralCommandLine cli =
-                    new GeneralCommandLine(getGradlewCommand(), "ideSetup").withWorkDirectory(project.getBasePath());
+                    new GeneralCommandLine("./gradle/gradle-jdks-setup.sh").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
             handler.startNotify();
             handler.addProcessListener(new ProcessListener() {
                 @Override
                 public void processTerminated(@NotNull ProcessEvent _event) {
-                    for (GradleProjectSettings projectSettings :
-                            GradleSettings.getInstance(project).getLinkedProjectsSettings()) {
-                        File gradleConfigFile = Path.of(
-                                        projectSettings.getExternalProjectPath(), ".gradle/config.properties")
-                                .toFile();
-                        if (!gradleConfigFile.exists()) {
-                            consoleView
-                                    .get()
-                                    .print(
-                                            "Skipping gradleJvm Configuration because no value was configured in"
-                                                    + " `.gradle/config.properties`",
-                                            ConsoleViewContentType.LOG_INFO_OUTPUT);
-                            continue;
-                        }
-
-                        try {
-                            Properties properties = new Properties();
-                            properties.load(new FileInputStream(gradleConfigFile));
-                            if (Optional.ofNullable(properties.getProperty("java.home"))
-                                    .isPresent()) {
-                                projectSettings.setGradleJvm("#GRADLE_LOCAL_JAVA_HOME");
-                            }
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to set gradleJvm to #GRADLE_LOCAL_JAVA_HOME", e);
-                        }
-                    }
+                    updateGradleJvm();
                 }
             });
             consoleView.get().attachToProcess(handler);
@@ -123,17 +129,30 @@ public final class GradleJdksProjectService {
         }
     }
 
-    private static String getGradlewCommand() {
-        switch (CurrentOs.get()) {
-            case WINDOWS: {
-                return "gradlew.bat";
+    private void updateGradleJvm() {
+        for (GradleProjectSettings projectSettings :
+                GradleSettings.getInstance(project).getLinkedProjectsSettings()) {
+            File gradleConfigFile = Path.of(projectSettings.getExternalProjectPath(), ".gradle/config.properties")
+                    .toFile();
+            if (!gradleConfigFile.exists()) {
+                consoleView
+                        .get()
+                        .print(
+                                "Skipping gradleJvm Configuration because no value was configured in"
+                                        + " `.gradle/config.properties`",
+                                ConsoleViewContentType.LOG_INFO_OUTPUT);
+                continue;
             }
-            case LINUX_MUSL:
-            case LINUX_GLIBC:
-            case MACOS: {
-                return "./gradlew";
+
+            try {
+                Properties properties = new Properties();
+                properties.load(new FileInputStream(gradleConfigFile));
+                if (Optional.ofNullable(properties.getProperty("java.home")).isPresent()) {
+                    projectSettings.setGradleJvm("#GRADLE_LOCAL_JAVA_HOME");
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to set gradleJvm to #GRADLE_LOCAL_JAVA_HOME", e);
             }
         }
-        throw new IllegalStateException("Unreachable code; all Os enum values should be handled");
     }
 }

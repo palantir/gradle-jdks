@@ -24,11 +24,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.util.GradleConstants;
 
 public final class GradleJdksExternalSystemTaskNotificationListener implements ExternalSystemTaskNotificationListener {
+
     @Override
     public void onStart(@NotNull ExternalSystemTaskId id, String _workingDir) {
         if (id.getProjectSystemId().equals(GradleConstants.SYSTEM_ID)
-                && id.getType() == ExternalSystemTaskType.RESOLVE_PROJECT) {
-            id.findProject().getService(GradleJdksProjectService.class).setupGradleJdks();
+                && (id.getType() == ExternalSystemTaskType.RESOLVE_PROJECT
+                        || id.getType() == ExternalSystemTaskType.EXECUTE_TASK)) {
+            id.findProject().getService(GradleJdksProjectService.class).maybeSetupGradleJdks();
         }
     }
 
