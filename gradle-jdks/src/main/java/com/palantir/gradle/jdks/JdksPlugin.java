@@ -16,6 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.common.CurrentOs;
+import com.palantir.gradle.jdks.setup.common.Os;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Optional;

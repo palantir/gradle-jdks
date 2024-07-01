@@ -18,6 +18,8 @@ package com.palantir.gradle.jdks;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.palantir.gradle.jdks.JdkPath.Extension;
+import com.palantir.gradle.jdks.setup.common.Arch;
+import com.palantir.gradle.jdks.setup.common.Os;
 import org.immutables.value.Value;
 
 final class GraalVmCeDistribution implements JdkDistribution {

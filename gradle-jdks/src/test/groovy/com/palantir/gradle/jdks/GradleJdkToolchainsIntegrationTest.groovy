@@ -16,7 +16,8 @@
 
 package com.palantir.gradle.jdks
 
-
+import com.palantir.gradle.jdks.setup.common.CurrentArch
+import com.palantir.gradle.jdks.setup.common.CurrentOs
 import org.apache.commons.lang3.tuple.Pair
 import spock.lang.TempDir
 

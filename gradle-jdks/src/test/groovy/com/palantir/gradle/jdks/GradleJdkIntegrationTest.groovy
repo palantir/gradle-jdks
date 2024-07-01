@@ -16,14 +16,14 @@
 
 package com.palantir.gradle.jdks
 
-
+import com.palantir.gradle.jdks.setup.common.CommandRunner
 import nebula.test.IntegrationSpec
 import org.apache.commons.lang3.tuple.Pair
 
 import java.nio.file.Path
 
 abstract class GradleJdkIntegrationTest extends IntegrationSpec {
-    
+
     static String GRADLE_7_6_VERSION = "7.6"
     static String GRADLE_7_6_4_VERSION = "7.6.4"
     static String GRADLE_8_5_VERSION = "8.5"

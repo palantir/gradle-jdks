@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.gradle.jdks.GraalVmCeDistribution.GraalVersionSplit;
 import com.palantir.gradle.jdks.JdkPath.Extension;
+import com.palantir.gradle.jdks.setup.common.Arch;
+import com.palantir.gradle.jdks.setup.common.Os;
 import org.junit.jupiter.api.Test;
 
 class GraalVmCeDistributionTest {

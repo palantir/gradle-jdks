@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.setup.common;
 
 import java.io.IOException;
 import java.util.List;
@@ -47,7 +47,7 @@ public final class CurrentOs {
     }
 
     // Visible for testing
-    static Os linuxLibcFromLdd(UnaryOperator<List<String>> argTransformer) {
+    public static Os linuxLibcFromLdd(UnaryOperator<List<String>> argTransformer) {
         try {
             Process process = new ProcessBuilder()
                     .command(argTransformer.apply(List.of("ldd", "--version")))

@@ -14,19 +14,29 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.settings;
+package com.palantir.gradle.jdks.setup.common;
 
 import java.util.Locale;
+import java.util.Set;
 
-/**
- * Simplified version of UiNames.
- * @see <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/UiNames.java>UiNames.java</a>
- * We cannot depend directly on `gradle-jdks-setup-common` as it might lead to Gradle classLoader issues.
- */
-final class UiNames {
-    static String uiName(Enum<?> enumValue) {
-        return enumValue.name().toLowerCase(Locale.ROOT).replace('_', '-');
+public final class CurrentArch {
+    public static Arch get() {
+        String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
+
+        if (Set.of("x86_64", "x64", "amd64").contains(osArch)) {
+            return Arch.X86_64;
+        }
+
+        if (Set.of("arm", "arm64", "aarch64").contains(osArch)) {
+            return Arch.AARCH64;
+        }
+
+        if (Set.of("x86", "i686").contains(osArch)) {
+            return Arch.X86;
+        }
+
+        throw new UnsupportedOperationException("Cannot get architecture for " + osArch);
     }
 
-    private UiNames() {}
+    private CurrentArch() {}
 }

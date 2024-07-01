@@ -19,6 +19,7 @@ package com.palantir.gradle.jdks;
 import com.google.common.base.Preconditions;
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
+import com.palantir.gradle.jdks.setup.common.GradleJdkPatchHelper;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

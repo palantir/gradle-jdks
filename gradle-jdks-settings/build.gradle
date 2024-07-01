@@ -2,10 +2,12 @@ apply plugin: 'java-gradle-plugin'
 apply plugin: 'groovy'
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.external-publish-gradle-plugin'
+apply plugin: 'com.palantir.shadow-jar'
 
 dependencies {
     // DO NOT ADD directly implementation/api dependencies here. We need to avoid overlapping dependencies between the
     // settings classLoader and the build classLoaders.
+    shadeTransitively project(':gradle-jdks-setup-common')
 }
 
 gradlePlugin {

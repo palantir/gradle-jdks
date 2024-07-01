@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.setup.common;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

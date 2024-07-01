@@ -18,6 +18,10 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersions;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
+import com.palantir.gradle.jdks.setup.common.Arch;
+import com.palantir.gradle.jdks.setup.common.CurrentArch;
+import com.palantir.gradle.jdks.setup.common.CurrentOs;
+import com.palantir.gradle.jdks.setup.common.Os;
 import java.util.Optional;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;

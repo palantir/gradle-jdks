@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks;
+package com.palantir.gradle.jdks.setup.common;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Arrays;
@@ -22,12 +22,12 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-final class UiNames {
-    static String uiName(Enum<?> enumValue) {
+public final class UiNames {
+    public static String uiName(Enum<?> enumValue) {
         return enumValue.name().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 
-    static <T extends Enum<?>> Optional<T> fromString(T[] enumValues, String uiName) {
+    public static <T extends Enum<?>> Optional<T> fromString(T[] enumValues, String uiName) {
         return Arrays.stream(enumValues)
                 .filter(jdkDistributionName -> uiName(jdkDistributionName).equals(uiName))
                 .findFirst();

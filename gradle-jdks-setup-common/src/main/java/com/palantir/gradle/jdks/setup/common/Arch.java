@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.settings;
+package com.palantir.gradle.jdks.setup.common;
 
-/**
- * Simplified version of Arch.java.
- * @see <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/Arch.java>Arch.java</a>
- * We cannot depend directly on `gradle-jdks-setup-common` as it might lead to Gradle classLoader issues.
- */
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Optional;
+
 public enum Arch {
     X86,
     X86_64,
@@ -28,6 +27,20 @@ public enum Arch {
 
     @Override
     public String toString() {
+        return uiName();
+    }
+
+    @JsonValue
+    public final String uiName() {
         return UiNames.uiName(this);
+    }
+
+    public static Optional<Arch> fromString(String archUiName) {
+        return UiNames.fromString(values(), archUiName);
+    }
+
+    @JsonCreator
+    public static Arch fromStringThrowing(String archUiName) {
+        return UiNames.fromStringThrowing(Arch.class, values(), archUiName);
     }
 }

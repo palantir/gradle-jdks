@@ -84,7 +84,7 @@ read_value() {
   echo "$value"
 }
 
-# OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.CurrentOs.java
+# OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentOs.java
 case "$( uname )" in                          #(
   Linux* )          os_name="linux"  ;;       #(
   Darwin* )         os_name="macos"  ;;       #(
@@ -104,7 +104,7 @@ if [ "$os_name" = "linux" ]; then
     fi
 fi
 
-# Arch specific support, see: gradle-jdks:com.palantir.gradle.jdks.CurrentArch.java
+# Arch specific support, see: gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentArch.java
 case "$(uname -m)" in                         #(
   x86_64* )       arch_name="x86-64"  ;;      #(
   x64* )          arch_name="x86-64"  ;;      #(

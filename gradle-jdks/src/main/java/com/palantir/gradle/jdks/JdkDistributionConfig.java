@@ -16,6 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.common.Arch;
+import com.palantir.gradle.jdks.setup.common.Os;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 

@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.settings;
+package com.palantir.gradle.jdks.setup.common;
 
-/**
- * Simplified version of Os.
- * @see <a href="file:../gradle-jdks-setup-common/src/main/java/com/palantir/gradle/jdks/Os.java>Os.java</a>
- * We cannot depend directly on `gradle-jdks-setup-common` as it might lead to Gradle classLoader issues.
- */
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Optional;
+
 public enum Os {
     MACOS,
     LINUX_GLIBC,
@@ -29,6 +28,20 @@ public enum Os {
 
     @Override
     public String toString() {
+        return uiName();
+    }
+
+    @JsonValue
+    public final String uiName() {
         return UiNames.uiName(this);
+    }
+
+    public static Optional<Os> fromString(String osUiName) {
+        return UiNames.fromString(values(), osUiName);
+    }
+
+    @JsonCreator
+    public static Os fromStringThrowing(String osUiName) {
+        return UiNames.fromStringThrowing(Os.class, values(), osUiName);
     }
 }

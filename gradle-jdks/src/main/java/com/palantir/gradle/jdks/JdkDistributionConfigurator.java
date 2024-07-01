@@ -16,6 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.common.Arch;
+import com.palantir.gradle.jdks.setup.common.Os;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +69,7 @@ public final class JdkDistributionConfigurator {
             Arch arch,
             JavaLanguageVersion javaVersion,
             JdksExtension jdksExtension) {
+        logger.lifecycle("JDKDistributionConfigurator: os={}, arch={}, javaVersion={}", os, arch, javaVersion);
         Optional<JdkExtension> jdkExtension = jdksExtension.jdkFor(javaVersion, project);
         if (jdkExtension.isEmpty()) {
             logger.debug("Skipping JDK distribution for javaVersion={} as it is not configured", javaVersion);
