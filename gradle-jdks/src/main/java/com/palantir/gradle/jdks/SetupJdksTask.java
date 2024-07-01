@@ -57,7 +57,7 @@ public abstract class SetupJdksTask extends DefaultTask {
             execSpec.setIgnoreExitValue(true);
             execSpec.setStandardOutput(logOutput);
             execSpec.setErrorOutput(logOutput);
-            execSpec.commandLine(getGradlewScript().get().getAsFile().toPath(), "-q", "javaToolchains");
+            execSpec.commandLine(getGradlewScript().get().getAsFile().toPath(), "-q", "javaToolchains", "--stacktrace");
         });
 
         if (execResult.getExitValue() != 0) {
@@ -68,7 +68,7 @@ public abstract class SetupJdksTask extends DefaultTask {
                                 + " Update the Gradle JDK major version using `jdks.daemonTargetVersion` in your"
                                 + " `build.gradle` and the `gradle/gradle-daemon-jdk-version` entry");
             }
-            throw new RuntimeException("The Gradle JDK setup has failed. Check the logs for more information.");
+            throw new RuntimeException(String.format("The Gradle JDK setup has failed. Error: %s", output));
         }
     }
 }

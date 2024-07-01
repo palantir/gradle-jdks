@@ -32,10 +32,10 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 /**
  * Abstracts the actions that need to be applied on the generated `gradle/` files.
- * The two tasks {@link CheckGradleJdkConfigsTask} and {@link GenerateGradleJdkConfigsTask} need to either check the
+ * The two tasks {@link CheckGradleJdksConfigsTask} and {@link GenerateGradleJdksConfigsTask} need to either check the
  * validity of the already generated gradle files or generate the gradle files.
  */
-public abstract class GradleJdkConfigs extends DefaultTask {
+public abstract class GradleJdksConfigs extends DefaultTask {
 
     public static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";

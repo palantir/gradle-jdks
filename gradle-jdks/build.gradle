@@ -14,6 +14,7 @@ dependencies {
     api project(':gradle-jdks-distributions')
     api project(':gradle-jdks-json')
     api project(':gradle-jdks-setup')
+    api project(':gradle-jdks-groovy')
 
     implementation('com.palantir.baseline:gradle-baseline-java') {
         exclude group: 'com.diffplug.spotless', module: 'spotless-plugin-gradle'
@@ -49,10 +50,10 @@ gradlePlugin {
             tags.addAll("java", "jdks")
         }
         jdksIdea {
-            id = 'com.palantir.jdks-idea'
+            id = 'com.palantir.jdks.idea'
             displayName = 'Palantir Gradle JDK Configuring IDEA'
             description = 'Plugin for configuring the IDEA Gradle JDK setup'
-            implementationClass = 'com.palantir.gradle.jdks.PalantirGradleJdkIdeaPlugin'
+            implementationClass = 'com.palantir.gradle.jdks.PalantirGradleJdksIdeaPlugin'
             tags.addAll("java", "jdks", "idea")
         }
         palantirCa {

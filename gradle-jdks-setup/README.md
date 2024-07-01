@@ -110,7 +110,7 @@ palantir.jdk.setup.enabled=true
 ```
 The commands above will trigger the tasks: 
 - `generateGradleJdkConfigs` which generates in the project's `gradle/` a list of files and directories that configure the JDK versions and distributions, the certs and `gradle-daemon-jdk-version`. See more about the generated structure of the directories [here](#gradle-jdk-configuration-directory-structure). These files will need to be committed to the git repo.
-- `checkWrapperJdkPatcher` which updates the entryPoints (`./gradlew` and `gradle/gradle-wrapper.jar`) to use the JDK setup
+- `wrapperJdkPatcher` which patches the `./gradlew` script to run `./gradle/gradle-jdks-setup.sh`
 - `setupJdks` is calling the patched `./gradlew(.bat) javaToolchains` script to install and configure the JDKs and check the configured toolchains:
 
 The output should look like:
@@ -220,22 +220,22 @@ The patching is done by the [`wrapperJdkPatcher` task.](../gradle-jdks/src/main/
 The patch script does the following: 
 * downloads all the JDKs that are configured in the `gradle/jdks` directory [see above the dirctory structure](#gradle-jdk-configuration-directory-structure) 
 * delegates to `gradle-jdks-setup.jar` ([setup class](src/main/java/com/palantir/gradle/jdks/setup/GradleJdkInstallationSetup.java)) the installation of the JDKS and the certs (configured in `gradle/certs`)
-* sets the env var `JAVA_HOME` to the installation path of the JDK configured in `gradle/gradle-daemon-jdk-version`. Hence, `./gradlew` will retrieve this java installation and it will run the wrapper using this java installation.
+* sets the gradle property `org.gradle.java.home` to the installation path of the JDK configured in `gradle/gradle-daemon-jdk-version`. Hence, `./gradlew` will retrieve this java installation and it will run the wrapper using this java installation.
 
 
 ### Running a Gradle build from inside `Intellij`
 `Intelij` doesn't use the `./gradlew` script, instead it uses the [Gradle Tooling API](https://docs.gradle.org/current/userguide/third_party_integration.html#sec:embedding_introduction).
-In the Intellij plugin `palantir-gradle-jdks` a postStartupActivity will run that will do the following:
-* runs `./gradlew javaToolchains` which triggers the installation of the JDKs and the certs (see above) and it will also call the `checkGradleJdkConfigs` task to make sure the Gradle JDK setup was correctly set-up.
-* sets the Gradle JVM version to the Gradle local java home (`GRADLE_LOCAL_JAVA_HOME` which is resolved from the `gradle/gradle-daemon-jdk-version` file).
+In the Intellij plugin `palantir-gradle-jdks` an ExternalSystemTaskNotificationListener will be registered that for every `Gradle` task of type `RESOLVE_PROJECT` or `EXECUTE_TASK` will:
+* run the gradle jdks setup script: `./gradle/gradle-jdks-setup.sh` which triggers the installation of the JDKs and the certs (see above).
+* set the Gradle JVM version to the Gradle local java home (`GRADLE_LOCAL_JAVA_HOME` which is resolved from the `gradle/gradle-daemon-jdk-version` file).
 
 ## ToolchainsPlugin tasks
 
 The new workflow is set up by [ToolchainsPlugin](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/ToolchainsPlugin.java) which gets applied if `palantir.jdk.setup.enabled=true`.
-The plugin won't apply anymore the `baseline-java-versions` plugin, allowing for the configuration of the Java Toolchains as described in the [Gradle docs ](https://docs.gradle.org/current/userguide/toolchains.html)
+The plugin won't apply the `baseline-java-versions` plugin anymore, allowing for the configuration of the Java Toolchains as described in the [Gradle docs ](https://docs.gradle.org/current/userguide/toolchains.html)
 
 The plugin registers the following tasks:
-- `wrapperJdkPatcher` - finalizes the `wrapper` task, such that everytime the `gradle-wrapper.jar` and/or `./gradlew` files are updated, we will also patch them
+- `wrapperJdkPatcher` - finalizes the `wrapper` task, such that everytime `./gradlew` file is updated, we will also patch them
 - `checkWrapperJdkPatcher` - checks that the `./gradlew` script contains the expected JDKs setup patch
 - `generateGradleJdkConfigs` - generates the [`gradle/` configurations](#gradle-jdk-configuration-directory-structure) required for running the JDKs setup
 - `checkGradleJdkConfigs` - checks that all the `gradle/` configurations are up-to-date. E.g. if the `jdks-latest` plugin is updated, we need to make sure the `gradle/jdks` files reflect the jdk versions.

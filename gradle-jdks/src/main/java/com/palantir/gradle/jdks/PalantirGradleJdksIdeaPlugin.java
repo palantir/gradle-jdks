@@ -36,7 +36,7 @@ import org.gradle.api.logging.Logging;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.xml.sax.SAXException;
 
-public class PalantirGradleJdkIdeaPlugin implements Plugin<Project> {
+public class PalantirGradleJdksIdeaPlugin implements Plugin<Project> {
 
     private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
 
@@ -70,12 +70,12 @@ public class PalantirGradleJdkIdeaPlugin implements Plugin<Project> {
         project.getGradle().projectsEvaluated(gradle -> {
             createOrUpdateIdeaXmlFile(
                     project.file(".idea/externalDependencies.xml"),
-                    node -> ConfigureJdksIdeaPluginXml.configureExternalDependencies(node));
+                    ConfigureJdksIdeaPluginXml::configureExternalDependencies);
 
             // Still configure legacy idea if using intellij import
             updateIdeaXmlFileIfExists(
                     project.file(project.getName() + ".ipr"),
-                    node -> ConfigureJdksIdeaPluginXml.configureExternalDependencies(node));
+                    ConfigureJdksIdeaPluginXml::configureExternalDependencies);
         });
     }
 

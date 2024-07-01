@@ -31,7 +31,7 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.OutputFile;
 
-public abstract class CheckGradleJdkConfigsTask extends GradleJdkConfigs {
+public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
 
     @InputDirectory
     public abstract DirectoryProperty getInputGradleDirectory();
@@ -111,7 +111,7 @@ public abstract class CheckGradleJdkConfigsTask extends GradleJdkConfigs {
 
     public static byte[] getResourceContent(String resource) {
         try (InputStream inputStream =
-                GenerateGradleJdkConfigsTask.class.getClassLoader().getResourceAsStream(resource)) {
+                GenerateGradleJdksConfigsTask.class.getClassLoader().getResourceAsStream(resource)) {
             if (inputStream == null) {
                 throw new RuntimeException(String.format("Resource not found: %s:", resource));
             }

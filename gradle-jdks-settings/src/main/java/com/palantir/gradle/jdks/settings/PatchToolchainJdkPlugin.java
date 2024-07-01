@@ -53,80 +53,6 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
 
     private static final Logger logger = Logging.getLogger(PatchToolchainJdkPlugin.class);
 
-    private static class GradlePropertiesInvocationHandler implements InvocationHandler {
-        private final GradleProperties originalGradleProperties;
-        private final Path gradleJdksLocalDirectory;
-
-        GradlePropertiesInvocationHandler(Path gradleJdksLocalDirectory, GradleProperties originalGradleProperties) {
-            this.gradleJdksLocalDirectory = gradleJdksLocalDirectory;
-            this.originalGradleProperties = originalGradleProperties;
-        }
-
-        @Override
-        public Object invoke(Object _proxy, Method method, Object[] args) throws Throwable {
-            List<Path> localToolchains = getInstalledToolchains(gradleJdksLocalDirectory);
-            if (localToolchains.isEmpty()) {
-                throw new RuntimeException(
-                        "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but no toolchains could be"
-                                + " configured");
-            }
-            // see: https://github.com/gradle/gradle/blob/4bd1b3d3fc3f31db5a26eecb416a165b8cc36082/subprojects/core-api/
-            // src/main/java/org/gradle/api/internal/properties/GradleProperties.java#L28
-            if (method.getName().equals("find")) {
-                if (args.length == 1 && args[0].equals("org.gradle.java.installations.auto-detect")) {
-                    return "false";
-                }
-                if (args.length == 1 && args[0].equals("org.gradle.java.installations.auto-download")) {
-                    return "false";
-                }
-                if (args.length == 1 && args[0].equals("org.gradle.java.installations.paths")) {
-                    return localToolchains.stream()
-                            .map(Path::toAbsolutePath)
-                            .map(Path::toString)
-                            .collect(Collectors.joining(","));
-                }
-            }
-            try {
-                return GradleProperties.class
-                        .getDeclaredMethod(method.getName(), method.getParameterTypes())
-                        .invoke(originalGradleProperties, args);
-            } catch (InvocationTargetException e) {
-                throw e.getCause();
-            }
-        }
-
-        private static List<Path> getInstalledToolchains(Path gradleJdksLocalDirectory) {
-            Path installationDirectory = getToolchainInstallationDir();
-            Os os = CurrentOs.get();
-            Arch arch = CurrentArch.get();
-            try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
-                return stream.map(path -> path.resolve(String.format("%s/%s/local-path", os, arch)))
-                        .map(path -> getToolchain(path, installationDirectory))
-                        .flatMap(Optional::stream)
-                        .collect(Collectors.toList());
-            } catch (IOException e) {
-                throw new RuntimeException("Unable to list the local installation paths", e);
-            }
-        }
-
-        private static Optional<Path> getToolchain(Path gradleJdkConfigurationPath, Path installationDirectory) {
-            try {
-                String localFilename =
-                        Files.readString(gradleJdkConfigurationPath).trim();
-                Path installationPath = installationDirectory.resolve(localFilename);
-                if (!Files.exists(installationPath)) {
-                    logger.warn("Could not find toolchain at {}", installationPath);
-                    return Optional.empty();
-                }
-                return Optional.of(installationPath);
-            } catch (IOException e) {
-                throw new RuntimeException(
-                        String.format("Failed to get the toolchain configured at path=%s", gradleJdkConfigurationPath),
-                        e);
-            }
-        }
-    }
-
     @Override
     public void apply(Settings settings) {
         if (!isGradleJdkSetupEnabled(settings.getRootDir().toPath())) {
@@ -166,6 +92,80 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
             field.set(defaultValueSourceProviderFactory, ourGradleProperties);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Failed to update the Gradle JDK properties using reflection", e);
+        }
+    }
+
+    private static class GradlePropertiesInvocationHandler implements InvocationHandler {
+        private final GradleProperties originalGradleProperties;
+        private final Path gradleJdksLocalDirectory;
+
+        GradlePropertiesInvocationHandler(Path gradleJdksLocalDirectory, GradleProperties originalGradleProperties) {
+            this.gradleJdksLocalDirectory = gradleJdksLocalDirectory;
+            this.originalGradleProperties = originalGradleProperties;
+        }
+
+        @Override
+        public Object invoke(Object _proxy, Method method, Object[] args) throws Throwable {
+            List<Path> localToolchains = getInstalledToolchains(gradleJdksLocalDirectory);
+            if (localToolchains.isEmpty()) {
+                throw new RuntimeException(
+                        "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but no toolchains could be"
+                                + " configured");
+            }
+            // see: https://github.com/gradle/gradle/blob/4bd1b3d3fc3f31db5a26eecb416a165b8cc36082/subprojects/core-api/
+            // src/main/java/org/gradle/api/internal/properties/GradleProperties.java#L28
+            if (method.getName().equals("find") && args.length == 1) {
+                String onlyArg = (String) args[0];
+                if (onlyArg.equals("org.gradle.java.installations.auto-detect")
+                        || onlyArg.equals("org.gradle.java.installations.auto-download")) {
+                    return "false";
+                }
+                if (onlyArg.equals("org.gradle.java.installations.paths")) {
+                    return localToolchains.stream()
+                            .map(Path::toAbsolutePath)
+                            .map(Path::toString)
+                            .collect(Collectors.joining(","));
+                }
+            }
+            try {
+                return GradleProperties.class
+                        .getDeclaredMethod(method.getName(), method.getParameterTypes())
+                        .invoke(originalGradleProperties, args);
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
+            }
+        }
+
+        private static List<Path> getInstalledToolchains(Path gradleJdksLocalDirectory) {
+            Path installationDirectory = getToolchainInstallationDir();
+            Os os = CurrentOs.get();
+            Arch arch = CurrentArch.get();
+            try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
+                return stream.map(path -> path.resolve(os.toString())
+                                .resolve(arch.toString())
+                                .resolve("local-path"))
+                        .map(path -> getToolchain(path, installationDirectory))
+                        .collect(Collectors.toList());
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to list the local installation paths", e);
+            }
+        }
+
+        private static Path getToolchain(Path gradleJdkConfigurationPath, Path installationDirectory) {
+            try {
+                String localFilename =
+                        Files.readString(gradleJdkConfigurationPath).trim();
+                Path installationPath = installationDirectory.resolve(localFilename);
+                if (!Files.exists(installationPath)) {
+                    throw new RuntimeException(
+                            String.format("Failed to find the toolchain at path=%s", installationPath));
+                }
+                return installationPath;
+            } catch (IOException e) {
+                throw new RuntimeException(
+                        String.format("Failed to get the toolchain configured at path=%s", gradleJdkConfigurationPath),
+                        e);
+            }
         }
     }
 

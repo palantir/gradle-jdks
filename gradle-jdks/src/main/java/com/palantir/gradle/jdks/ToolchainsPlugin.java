@@ -38,7 +38,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             throw new RuntimeException("Cannot apply ToolchainsJdksPlugin without enabling palantir.jdk.setup.enabled");
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
-        rootProject.getPluginManager().apply("com.palantir.jdks-idea");
+        rootProject.getPluginManager().apply("com.palantir.jdks.idea");
         rootProject
                 .getLogger()
                 .info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects "
@@ -56,15 +56,15 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         });
         TaskProvider<Wrapper> wrapperTask = rootProject.getTasks().named("wrapper", Wrapper.class);
 
-        TaskProvider<GenerateGradleJdkConfigsTask> generateGradleJdkConfigs = rootProject
+        TaskProvider<GenerateGradleJdksConfigsTask> generateGradleJdkConfigs = rootProject
                 .getTasks()
-                .register("generateGradleJdkConfigs", GenerateGradleJdkConfigsTask.class, task -> {
+                .register("generateGradleJdkConfigs", GenerateGradleJdksConfigsTask.class, task -> {
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().getProjectDirectory().dir("gradle"));
                 });
-        TaskProvider<CheckGradleJdkConfigsTask> checkGradleJdkConfigs = rootProject
+        TaskProvider<CheckGradleJdksConfigsTask> checkGradleJdkConfigs = rootProject
                 .getTasks()
-                .register("checkGradleJdkConfigs", CheckGradleJdkConfigsTask.class, task -> {
+                .register("checkGradleJdkConfigs", CheckGradleJdksConfigsTask.class, task -> {
                     task.getInputGradleDirectory()
                             .set(generateGradleJdkConfigs
                                     .get()
@@ -75,7 +75,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                             .set(rootProject.getLayout().getBuildDirectory().file("checkGradleJdkConfigs"));
                 });
 
-        rootProject.getTasks().withType(GradleJdkConfigs.class).configureEach(task -> {
+        rootProject.getTasks().withType(GradleJdksConfigs.class).configureEach(task -> {
             task.getDaemonJavaVersion().set(jdksExtension.getDaemonTarget());
             task.getJavaVersionToJdkDistros()
                     .putAll(rootProject.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
