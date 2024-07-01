@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.base.Suppliers;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.filters.TextConsoleBuilderFactory;
@@ -26,8 +27,8 @@ import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowManager;
@@ -39,44 +40,26 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
-import kotlin.Unit;
-import kotlin.coroutines.Continuation;
-import org.gradle.tooling.GradleConnector;
-import org.gradle.tooling.ProjectConnection;
-import org.gradle.tooling.model.GradleProject;
-import org.gradle.tooling.model.GradleTask;
+import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public final class InitialConfigurationStartupActivity implements ProjectActivity {
-
+@Service(Service.Level.PROJECT)
+public final class GradleJdksProjectService {
     private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
-    private static final Logger log = LoggerFactory.getLogger(InitialConfigurationStartupActivity.class);
 
-    @Override
-    public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> _continuation) {
-        GradleSettings gradleSettings = GradleSettings.getInstance(project);
-        if (gradleSettings.getLinkedProjectsSettings().isEmpty()) {
-            // noop, this is not a gradle project
-            log.warn("No linked projects found, skipping Gradle JDK setup");
-            return project;
-        }
-        if (Optional.ofNullable(project.getBasePath()).isEmpty()) {
-            log.warn("Project base path is null, skipping Gradle JDK setup");
-            return project;
-        }
-        if (!getConfiguredTasks(project).contains("ideSetup")) {
-            log.warn("No `ideSetup` task was configured in the project, skipping Gradle JDK setup");
-            return project;
-        }
-        ConsoleView consoleView =
+    private final Project project;
+    private Supplier<ConsoleView> consoleView = Suppliers.memoize(this::initConsoleView);
+
+    public GradleJdksProjectService(Project project) {
+        this.project = project;
+    }
+
+    private ConsoleView initConsoleView() {
+        ConsoleView newConsoleView =
                 TextConsoleBuilderFactory.getInstance().createBuilder(project).getConsole();
-        setupGradleJdks(project, gradleSettings, consoleView);
+
         ApplicationManager.getApplication().invokeLater(() -> {
             ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
             ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
@@ -84,15 +67,19 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
                 toolWindow = toolWindowManager.registerToolWindow(TOOL_WINDOW_NAME, true, ToolWindowAnchor.BOTTOM);
             }
             ContentFactory contentFactory = ContentFactory.getInstance();
-            Content content = contentFactory.createContent(consoleView.getComponent(), "", false);
+            Content content = contentFactory.createContent(newConsoleView.getComponent(), "", false);
             toolWindow.getContentManager().addContent(content);
+            // TODO: Focus only when error or takes a long time?
             toolWindow.activate(null);
         });
-        return project;
+
+        return newConsoleView;
     }
 
-    private static void setupGradleJdks(Project project, GradleSettings gradleSettings, ConsoleView consoleView) {
+    public void setupGradleJdks() {
         try {
+            // TODO: Avoid calling Gradle and just call script to save time?
+            // TODO: Only run if we detect a certain file (eg setup script/jar or gradle-daemon-jdk-version)?
             GeneralCommandLine cli =
                     new GeneralCommandLine(getGradlewCommand(), "ideSetup").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
@@ -100,15 +87,18 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
             handler.addProcessListener(new ProcessListener() {
                 @Override
                 public void processTerminated(@NotNull ProcessEvent _event) {
-                    for (GradleProjectSettings projectSettings : gradleSettings.getLinkedProjectsSettings()) {
+                    for (GradleProjectSettings projectSettings :
+                            GradleSettings.getInstance(project).getLinkedProjectsSettings()) {
                         File gradleConfigFile = Path.of(
                                         projectSettings.getExternalProjectPath(), ".gradle/config.properties")
                                 .toFile();
                         if (!gradleConfigFile.exists()) {
-                            consoleView.print(
-                                    "Skipping gradleJvm Configuration because no value was configured in"
-                                            + " `.gradle/config.properties`",
-                                    ConsoleViewContentType.LOG_INFO_OUTPUT);
+                            consoleView
+                                    .get()
+                                    .print(
+                                            "Skipping gradleJvm Configuration because no value was configured in"
+                                                    + " `.gradle/config.properties`",
+                                            ConsoleViewContentType.LOG_INFO_OUTPUT);
                             continue;
                         }
 
@@ -125,21 +115,11 @@ public final class InitialConfigurationStartupActivity implements ProjectActivit
                     }
                 }
             });
-            consoleView.attachToProcess(handler);
+            consoleView.get().attachToProcess(handler);
             ProcessTerminatedListener.attach(handler, project);
+            handler.waitFor();
         } catch (ExecutionException e) {
             throw new RuntimeException("Failed to setup Gradle JDKs for Intellij", e);
-        }
-    }
-
-    public static Set<String> getConfiguredTasks(Project project) {
-        try (ProjectConnection connection = GradleConnector.newConnector()
-                .forProjectDirectory(new File(project.getBasePath()))
-                .connect()) {
-
-            return connection.model(GradleProject.class).get().getTasks().stream()
-                    .map(GradleTask::getName)
-                    .collect(Collectors.toSet());
         }
     }
 

@@ -11,6 +11,7 @@
   <depends>org.jetbrains.plugins.gradle</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-    <postStartupActivity implementation="com.palantir.gradle.jdks.InitialConfigurationStartupActivity"/>
+    <externalSystemTaskNotificationListener implementation="com.palantir.gradle.jdks.GradleJdksExternalSystemTaskNotificationListener"/>
+    <postStartupActivity implementation="com.palantir.gradle.jdks.GradleJdksStartupActivity"/>
   </extensions>
 </idea-plugin>

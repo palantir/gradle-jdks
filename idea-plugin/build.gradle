@@ -6,7 +6,7 @@ apply plugin: 'com.palantir.external-publish-jar'
 intellij {
     pluginName = "gradle-jdks"
     updateSinceUntilBuild = true
-    version = "2023.2"
+    version = "2024.1"
     plugins = ['java', 'org.jetbrains.plugins.gradle']
 }
 
