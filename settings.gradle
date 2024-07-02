@@ -8,4 +8,5 @@ include 'gradle-jdks-setup-common'
 include 'idea-plugin'
 include 'gradle-jdks-settings'
 include 'gradle-jdks-groovy'
+include 'gradle-jdks-enablement'
 

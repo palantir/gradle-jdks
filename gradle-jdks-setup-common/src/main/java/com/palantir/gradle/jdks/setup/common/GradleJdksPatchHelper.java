@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public final class GradleJdkPatchHelper {
+public final class GradleJdksPatchHelper {
 
     // DO NOT CHANGE the header and the footer, they are used to identify the patch block
     public static final String PATCH_HEADER = "# >>> Gradle JDK setup >>>";
@@ -132,5 +132,5 @@ public final class GradleJdkPatchHelper {
         }
     }
 
-    private GradleJdkPatchHelper() {}
+    private GradleJdksPatchHelper() {}
 }

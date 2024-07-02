@@ -21,7 +21,7 @@ import com.palantir.gradle.jdks.setup.CaResources
 import com.palantir.gradle.jdks.setup.StdLogger
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.gradle.jdks.setup.common.CurrentOs
-import com.palantir.gradle.jdks.setup.common.GradleJdkPatchHelper
+import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper
 import spock.lang.TempDir
 
 import java.nio.file.Files
@@ -48,8 +48,8 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
 
         and: './gradlew file is patched'
         file("gradlew").text.contains("gradle/gradle-jdks-setup.sh")
-        file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_HEADER).size() == 1
-        file("gradlew").text.findAll(GradleJdkPatchHelper.PATCH_FOOTER).size() == 1
+        file("gradlew").text.findAll(GradleJdksPatchHelper.PATCH_HEADER).size() == 1
+        file("gradlew").text.findAll(GradleJdksPatchHelper.PATCH_FOOTER).size() == 1
 
         and: 'the `gradle/` configuration files are generated'
         checkJdksVersions(projectDir, Set.of("11", "17", "21"))

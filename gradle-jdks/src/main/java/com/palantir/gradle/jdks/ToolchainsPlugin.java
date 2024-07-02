@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
+import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -34,7 +35,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project rootProject) {
-        if (!JdksPlugin.isGradleJdkSetupEnabled(rootProject)) {
+        if (!GradleJdksEnablement.isGradleJdkSetupEnabled(rootProject)) {
             throw new RuntimeException("Cannot apply ToolchainsJdksPlugin without enabling palantir.jdk.setup.enabled");
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);

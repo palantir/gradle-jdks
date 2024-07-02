@@ -35,9 +35,9 @@ class GradleJdkPatchHelperTest {
         Path originalFileWithPatch = Path.of("src/test/resources/file_with_patch.txt");
         Path originalFileNoPatch = Path.of("src/test/resources/file_no_patch.txt");
         Path processedFile = Files.copy(originalFileWithPatch, tmpDir.resolve("file_with_patch.txt"));
-        GradleJdkPatchHelper.maybeRemovePatch(processedFile);
+        GradleJdksPatchHelper.maybeRemovePatch(processedFile);
         assertEqualFiles(processedFile, originalFileNoPatch);
-        GradleJdkPatchHelper.maybeRemovePatch(processedFile);
+        GradleJdksPatchHelper.maybeRemovePatch(processedFile);
         assertEqualFiles(processedFile, originalFileNoPatch);
     }
 

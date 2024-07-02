@@ -8,6 +8,7 @@ dependencies {
     // DO NOT ADD directly implementation/api dependencies here. We need to avoid overlapping dependencies between the
     // settings classLoader and the build classLoaders.
     shadeTransitively project(':gradle-jdks-setup-common')
+    shadeTransitively project(':gradle-jdks-enablement')
 }
 
 gradlePlugin {
@@ -16,7 +17,7 @@ gradlePlugin {
             id = 'com.palantir.jdks.settings'
             displayName = 'Palantir Gradle JDK Settings Plugin'
             description = 'Sets the Gradle properties for the Gradle JDK setup'
-            implementationClass = 'com.palantir.gradle.jdks.settings.PatchToolchainJdkPlugin'
+            implementationClass = 'com.palantir.gradle.jdks.settings.ToolchainJdksSettingsPlugin'
             tags.addAll("java", "jdks")
         }
     }

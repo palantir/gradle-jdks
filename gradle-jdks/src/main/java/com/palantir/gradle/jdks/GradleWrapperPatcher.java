@@ -19,7 +19,7 @@ package com.palantir.gradle.jdks;
 import com.google.common.base.Preconditions;
 import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
-import com.palantir.gradle.jdks.setup.common.GradleJdkPatchHelper;
+import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,12 +89,12 @@ public abstract class GradleWrapperPatcher {
 
     private static void patchGradlewContent(File originalGradlewScript, RegularFileProperty patchedGradlewScript) {
         List<String> initialLines = readAllLines(originalGradlewScript.toPath());
-        List<String> linesNoPatch = GradleJdkPatchHelper.getLinesWithoutPatch(initialLines);
+        List<String> linesNoPatch = GradleJdksPatchHelper.getLinesWithoutPatch(initialLines);
         List<String> patchLines = getPatchLines("gradlew-patch.sh");
         int insertIndex = getGradlewInsertLineIndex(initialLines);
         write(
                 patchedGradlewScript.getAsFile().get().toPath(),
-                GradleJdkPatchHelper.getContentWithPatch(linesNoPatch, patchLines, insertIndex));
+                GradleJdksPatchHelper.getContentWithPatch(linesNoPatch, patchLines, insertIndex));
     }
 
     private static void write(Path destPath, byte[] content) {
@@ -107,7 +107,7 @@ public abstract class GradleWrapperPatcher {
 
     private static List<String> getPatchedLines(File gradlewFile) {
         List<String> initialLines = readAllLines(gradlewFile.toPath());
-        return GradleJdkPatchHelper.getPatchLineNumbers(initialLines)
+        return GradleJdksPatchHelper.getPatchLineNumbers(initialLines)
                 .map(integerIntegerPair ->
                         initialLines.subList(integerIntegerPair.getStartIndex(), integerIntegerPair.getEndIndex() + 1))
                 .orElseGet(List::of);

@@ -18,12 +18,11 @@ package com.palantir.gradle.jdks.settings;
 
 // CHECKSTYLE.OFF: IllegalImport
 
+import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import com.palantir.gradle.jdks.setup.common.Os;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -34,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.gradle.api.Plugin;
@@ -46,20 +44,19 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.initialization.DefaultSettings;
-import org.gradle.util.GradleVersion;
 
 /**
  * A plugin that changes the Gradle JDK properties (via reflection) to point to the local toolchains configured via the
  * Gradle JDK Setup.
  * @see <a href=/Volumes/git/gradle-jdks/gradle-jdks-setup/README.md>Gradle JDK Readme</a>
  */
-public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
+public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
 
-    private static final Logger logger = Logging.getLogger(PatchToolchainJdkPlugin.class);
+    private static final Logger logger = Logging.getLogger(ToolchainJdksSettingsPlugin.class);
 
     @Override
     public void apply(Settings settings) {
-        if (!isGradleJdkSetupEnabled(settings.getRootDir().toPath())) {
+        if (!GradleJdksEnablement.isGradleJdkSetupEnabled(settings.getRootDir().toPath())) {
             logger.debug("Skipping Gradle JDK gradle properties patching");
             return;
         }
@@ -177,31 +174,5 @@ public final class PatchToolchainJdkPlugin implements Plugin<Settings> {
         return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
                         .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
                 .resolve("gradle-jdks");
-    }
-
-    // keep in sync with com.palantir.gradle.jdks.JdksPlugin#isGradleJdkSetupEnabled(org.gradle.api.Project)
-    public static boolean isGradleJdkSetupEnabled(Path projectDir) {
-        if (GradleVersion.current().compareTo(GradleVersion.version("7.6")) < 0) {
-            throw new RuntimeException("Failed to apply com.palantir.jdks.settings plugin. Gradle JDK setup is enabled"
-                    + " (palantir.jdk.setup.enabled=true) but the version of Gradle is less than 7.6. Please"
-                    + " upgrade to Gradle 7.6 or higher to use this functionality.");
-        }
-        return !CurrentOs.get().equals(Os.WINDOWS) && getEnableGradleJdkProperty(projectDir);
-    }
-
-    private static boolean getEnableGradleJdkProperty(Path projectDir) {
-        File gradlePropsFile = projectDir.resolve("gradle.properties").toFile();
-        if (!gradlePropsFile.exists()) {
-            return false;
-        }
-        try {
-            Properties properties = new Properties();
-            properties.load(new FileInputStream(gradlePropsFile));
-            return Optional.ofNullable(properties.getProperty("palantir.jdk.setup.enabled"))
-                    .map(Boolean::parseBoolean)
-                    .orElse(false);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read gradle.properties file", e);
-        }
     }
 }
