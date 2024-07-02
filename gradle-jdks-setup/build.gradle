@@ -50,5 +50,3 @@ javaVersion {
     target = 11
     runtime = 11
 }
-
-

@@ -34,8 +34,7 @@ public final class JdksPlugin implements Plugin<Project> {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
 
-        if (GradleJdksEnablement.isGradleJdkSetupEnabled(
-                rootProject.getProjectDir().toPath())) {
+        if (GradleJdksEnablement.isGradleJdkSetupEnabled(rootProject)) {
             rootProject.getPluginManager().apply(ToolchainsPlugin.class);
         } else {
             rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);

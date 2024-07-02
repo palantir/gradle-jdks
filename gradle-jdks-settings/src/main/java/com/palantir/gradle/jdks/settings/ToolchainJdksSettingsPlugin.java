@@ -60,8 +60,15 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
             logger.debug("Skipping Gradle JDK gradle properties patching");
             return;
         }
+        if (!GradleJdksEnablement.isGradleVersionSupported()) {
+            throw new RuntimeException(
+                    "Cannot apply `com.palantir.jdks.settings` with Gradle version < 7.6. Please upgrade to a higher "
+                            + "Gradle version in order to use the JDK setup.");
+        }
 
         Path gradleJdksLocalDirectory = settings.getRootDir().toPath().resolve("gradle/jdks");
+        // Not failing here because the plugin might be applied before the `./gradlew setupJdks` is run, hence not
+        // having the expected directory structure.
         if (!Files.exists(gradleJdksLocalDirectory)) {
             logger.debug("Not setting the Gradle JDK properties because gradle/jdks directory doesn't exist. Please run"
                     + " ./gradlew setupJdks to set up the JDKs.");

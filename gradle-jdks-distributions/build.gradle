@@ -1,6 +1,5 @@
 apply plugin: 'java'
 apply plugin: 'com.palantir.external-publish-jar'
-apply plugin: 'com.palantir.shadow-jar'
 
 dependencies {
     api project(':gradle-jdks-setup-common')

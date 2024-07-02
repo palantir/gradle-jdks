@@ -36,7 +36,13 @@ public final class ToolchainsPlugin implements Plugin<Project> {
     @Override
     public void apply(Project rootProject) {
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(rootProject)) {
-            throw new RuntimeException("Cannot apply ToolchainsJdksPlugin without enabling palantir.jdk.setup.enabled");
+            throw new RuntimeException(
+                    "Cannot apply `com.palantir.jdks.settings` without enabling palantir.jdk.setup.enabled");
+        }
+        if (!GradleJdksEnablement.isGradleVersionSupported()) {
+            throw new RuntimeException(
+                    "Cannot apply `com.palantir.jdks` with Gradle version < 7.6. Please upgrade to a higher "
+                            + "Gradle version in order to use the JDK setup.");
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
         rootProject.getPluginManager().apply("com.palantir.jdks.idea");
