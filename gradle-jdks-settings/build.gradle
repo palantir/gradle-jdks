@@ -30,20 +30,7 @@ gradlePlugin {
 // This is broken and it will lead to classpath configuration failures when the settings plugin is applied. As a
 // workaround, we are removing the artifact from the pom file.
 publishing.publications {
-    maven(MavenPublication) {
-        pom.withXml {
-            var projectDependencyNodes = []
-            asNode().depthFirst { node ->
-                if (node.name().localPart == 'dependency' && node.get("groupId").text() == "com.palantir.gradle.jdks" && node.get("artifactId").text() == "gradle-jdks-root") {
-                    projectDependencyNodes << node
-                }
-            }
-            projectDependencyNodes.each { node ->
-                node.parent().remove(node)
-            }
-        }
-    }
-    pluginMaven(MavenPublication) {
+    withType(MavenPublication) {
         pom.withXml {
             var projectDependencyNodes = []
             asNode().depthFirst { node ->

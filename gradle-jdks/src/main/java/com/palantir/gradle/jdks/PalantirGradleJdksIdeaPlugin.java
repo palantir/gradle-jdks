@@ -33,7 +33,6 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.xml.sax.SAXException;
 
 public class PalantirGradleJdksIdeaPlugin implements Plugin<Project> {
@@ -46,16 +45,7 @@ public class PalantirGradleJdksIdeaPlugin implements Plugin<Project> {
                 rootProject == rootProject.getRootProject(),
                 "May only apply PalantirGradleJdkProviderPlugin to the root project");
         rootProject.getPluginManager().withPlugin("idea", ideaPlugin -> {
-            configureLegacyIdea(rootProject);
             configureIntelliJImport(rootProject);
-        });
-    }
-
-    private static void configureLegacyIdea(Project project) {
-        IdeaModel ideaModel = project.getExtensions().getByType(IdeaModel.class);
-        ideaModel.getProject().getIpr().withXml(xmlProvider -> {
-            // this block is lazy
-            ConfigureJdksIdeaPluginXml.configureExternalDependencies(xmlProvider.asNode());
         });
     }
 

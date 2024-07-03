@@ -190,7 +190,7 @@ project-root/
     - `local-path` the local name of the file. Rendered based on the distribution-name, version and the [hash](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdkSpec.java) 
   - it generates all the JDK versions configured in [JdksExtension](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdksExtension.java)
 
-Running the patched `./gradlew` script will add extra configurations required for Intelij:
+Running the patched `./gradlew` script will add extra configurations required for IntelliJ:
 ```
 project-root/
 ├── .gradle/
@@ -217,9 +217,9 @@ The patch script does the following:
 
 
 ### Running a Gradle build from inside `Intellij`
-`Intelij` doesn't use the `./gradlew` script, instead it uses the [Gradle Tooling API](https://docs.gradle.org/current/userguide/third_party_integration.html#sec:embedding_introduction).
-In the Intellij plugin `palantir-gradle-jdks` an ExternalSystemTaskNotificationListener will be registered that for every `Gradle` task of type `RESOLVE_PROJECT` or `EXECUTE_TASK` will:
-* run the gradle jdks setup script: `./gradle/gradle-jdks-setup.sh` which triggers the installation of the JDKs and the certs (see above).
+`IntelliJ` doesn't use the `./gradlew` script, instead it uses the [Gradle Tooling API](https://docs.gradle.org/current/userguide/third_party_integration.html#sec:embedding_introduction).
+The Intellij plugin `palantir-gradle-jdks` will:
+* run the gradle jdks setup script: `./gradle/gradle-jdks-setup.sh` *before* any Gradle Task and *before* the idea project is configured.
 * set the Gradle JVM version to the Gradle local java home (`GRADLE_LOCAL_JAVA_HOME` which is resolved from the `gradle/gradle-daemon-jdk-version` file).
 
 ## ToolchainsPlugin tasks
@@ -233,10 +233,6 @@ The plugin registers the following tasks:
 - `generateGradleJdkConfigs` - generates the [`gradle/` configurations](#gradle-jdk-configuration-directory-structure) required for running the JDKs setup
 - `checkGradleJdkConfigs` - checks that all the `gradle/` configurations are up-to-date. E.g. if the `jdks-latest` plugin is updated, we need to make sure the `gradle/jdks` files reflect the jdk versions.
 - `setupJdks` - task that triggers `wrapperJdkPatcher` and `generateGradleJdkConfigs` and runs the patched `./gradlew` script.
-- `ideaSetup` - task that runs: 
-  - the `./gradlew` script to install & configure the required JDKs
-  - the tasks `checkWrapperJdkPatcher` & `checkGradleJdkConfigs` to ensure the Gradle JDK setup is correctly set-up
-  - the task `javaToolchains` to show the configured toolchains.
 
 ## Unsupported
 

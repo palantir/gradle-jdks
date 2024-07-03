@@ -48,7 +48,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION));
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
-        rootProject.getPluginManager().apply("com.palantir.jdks.idea");
+        rootProject.getPluginManager().apply(PalantirGradleJdksIdeaPlugin.class);
         rootProject
                 .getLogger()
                 .info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects "
