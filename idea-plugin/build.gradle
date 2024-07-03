@@ -15,7 +15,7 @@ def buildPlugin = tasks.named("buildPlugin")
 patchPluginXml {
     pluginDescription = "Configures the Gradle JDKs for the Toolchains used for a project and for the Gradle Daemon."
     version = project.version
-    sinceBuild = '232' // TODO: test against this version of IntelliJ to ensure no regressions
+    sinceBuild = '241' // TODO: test against this version of IntelliJ to ensure no regressions
     untilBuild = ''
 }
 

@@ -35,12 +35,6 @@ public final class GradleJdksExternalSystemTaskNotificationListener implements E
     }
 
     @Override
-    public void onStart(@NotNull ExternalSystemTaskId _id) {}
-
-    @Override
-    public void onEnvironmentPrepared(@NotNull ExternalSystemTaskId _id) {}
-
-    @Override
     public void onStatusChange(@NotNull ExternalSystemTaskNotificationEvent _event) {}
 
     @Override
