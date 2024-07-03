@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.json.JdkInfoJson;
+import com.palantir.gradle.jdks.setup.common.Os;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;

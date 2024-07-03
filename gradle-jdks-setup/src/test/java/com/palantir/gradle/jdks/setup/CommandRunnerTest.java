@@ -19,7 +19,7 @@ package com.palantir.gradle.jdks.setup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.palantir.gradle.jdks.CommandRunner;
+import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

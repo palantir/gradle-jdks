@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.palantir.gradle.jdks.setup.common.UiNames;
 import java.util.Optional;
 
 public enum JdkDistributionName {

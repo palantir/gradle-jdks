@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: '[Gradle Jdk Automanagement] Generate Gradle Jdks Configuration & Intellij
+    setup'
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/360

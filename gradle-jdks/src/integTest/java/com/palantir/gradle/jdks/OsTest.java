@@ -16,8 +16,10 @@
 
 package com.palantir.gradle.jdks;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import com.palantir.gradle.jdks.setup.common.CurrentOs;
+import com.palantir.gradle.jdks.setup.common.Os;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;

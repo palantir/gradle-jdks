@@ -1,0 +1,13 @@
+a
+b
+c
+d
+# >>> Gradle JDK setup >>>
+# one comment
+entry
+entry
+entry
+# <<< Gradle JDK setup <<<
+e
+f
+g

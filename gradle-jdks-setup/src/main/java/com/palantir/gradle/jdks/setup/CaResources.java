@@ -16,12 +16,13 @@
 
 package com.palantir.gradle.jdks.setup;
 
-import com.palantir.gradle.jdks.CommandRunner;
-import com.palantir.gradle.jdks.CurrentOs;
-import com.palantir.gradle.jdks.Os;
+import com.palantir.gradle.jdks.setup.common.CommandRunner;
+import com.palantir.gradle.jdks.setup.common.CurrentOs;
+import com.palantir.gradle.jdks.setup.common.Os;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -269,6 +270,17 @@ public final class CaResources {
                     "-----END CERTIFICATE-----");
         } catch (CertificateEncodingException e) {
             throw new RuntimeException("Could not convert Palantir cert back to regular", e);
+        }
+    }
+
+    public static String getSerialNumber(String certContent) {
+        try {
+            InputStream in = new ByteArrayInputStream(certContent.getBytes(StandardCharsets.UTF_8));
+            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
+            return cert.getSerialNumber().toString();
+        } catch (CertificateException e) {
+            throw new RuntimeException(String.format("Could not get serial number for certificate %s", certContent), e);
         }
     }
 }

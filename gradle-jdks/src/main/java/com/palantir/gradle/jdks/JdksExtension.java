@@ -27,6 +27,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class JdksExtension {
@@ -34,6 +35,7 @@ public abstract class JdksExtension {
     private final LazilyConfiguredMapping<JavaLanguageVersion, JdkExtension, Project> jdks;
     private final MapProperty<String, String> caCerts;
     private final DirectoryProperty jdkStorageLocation;
+    private final Property<JavaLanguageVersion> daemonTarget;
 
     @Inject
     protected abstract ObjectFactory getObjectFactory();
@@ -54,8 +56,22 @@ public abstract class JdksExtension {
                 MapProperty.class, getObjectFactory().mapProperty(String.class, String.class));
         this.jdkStorageLocation = SynchronizedInterface.synchronizeAllInterfaceMethods(
                 DirectoryProperty.class, getObjectFactory().directoryProperty());
+        this.daemonTarget = getObjectFactory().property(JavaLanguageVersion.class);
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
+        this.getDaemonTarget().finalizeValueOnRead();
+    }
+
+    public final Property<JavaLanguageVersion> getDaemonTarget() {
+        return daemonTarget;
+    }
+
+    public final void setDaemonTarget(String value) {
+        getDaemonTarget().set(JavaLanguageVersion.of(value));
+    }
+
+    public final void setDaemonTarget(int value) {
+        getDaemonTarget().set(JavaLanguageVersion.of(value));
     }
 
     public final MapProperty<String, String> getCaCerts() {

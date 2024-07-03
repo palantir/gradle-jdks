@@ -31,6 +31,8 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
     def 'correctly handles multi level version overrides'() {
         // language=Gradle
         buildFile << '''
+            import com.palantir.gradle.jdks.setup.common.Arch
+            import com.palantir.gradle.jdks.setup.common.Os
             jdks {
                 jdk(11) {
                     distribution = 'amazon-corretto'
