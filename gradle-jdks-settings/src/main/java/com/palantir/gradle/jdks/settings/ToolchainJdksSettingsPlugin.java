@@ -44,6 +44,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.initialization.DefaultSettings;
+import org.gradle.util.GradleVersion;
 
 /**
  * A plugin that changes the Gradle JDK properties (via reflection) to point to the local toolchains configured via the
@@ -60,12 +61,12 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
             logger.debug("Skipping Gradle JDK gradle properties patching");
             return;
         }
-        if (!GradleJdksEnablement.isGradleVersionSupported()) {
-            throw new RuntimeException(
-                    "Cannot apply `com.palantir.jdks.settings` with Gradle version < 7.6. Please upgrade to a higher "
-                            + "Gradle version in order to use the JDK setup.");
+        if (!isGradleVersionSupported()) {
+            throw new RuntimeException(String.format(
+                    "Cannot apply `com.palantir.jdks` with Gradle JDK setup enabled for Gradle version < %s."
+                            + " Please upgrade to a higher Gradle version in order to use the JDK setup.",
+                    GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION));
         }
-
         Path gradleJdksLocalDirectory = settings.getRootDir().toPath().resolve("gradle/jdks");
         // Not failing here because the plugin might be applied before the `./gradlew setupJdks` is run, hence not
         // having the expected directory structure.
@@ -177,9 +178,15 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         }
     }
 
-    static Path getToolchainInstallationDir() {
+    private static Path getToolchainInstallationDir() {
         return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
                         .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
                 .resolve("gradle-jdks");
+    }
+
+    private static boolean isGradleVersionSupported() {
+        return GradleVersion.current()
+                        .compareTo(GradleVersion.version(GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION))
+                >= 0;
     }
 }

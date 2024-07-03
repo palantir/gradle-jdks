@@ -45,19 +45,19 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    public final void applyGradleJdkFileAction(
+    protected final void applyGradleJdkFileAction(
             Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistribution) {
         assertFileContent(downloadUrlPath, jdkDistribution.getDownloadUrl().get());
         assertFileContent(localUrlPath, jdkDistribution.getLocalPath().get());
     }
 
     @Override
-    public final void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
+    protected final void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
         assertFileContent(gradleJdkDaemonVersion, getDaemonJavaVersion().get().toString());
     }
 
     @Override
-    public final void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
+    protected final void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
         try {
             byte[] expectedBytes = getResourceContent(resourceName);
             byte[] actualBytes = Files.readAllBytes(gradleJdkJarFile.toPath());
@@ -68,13 +68,13 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    public final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
+    protected final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
         assertFileContent(
                 gradleJdkScriptFile.toPath(), new String(getResourceContent(resourceName), StandardCharsets.UTF_8));
     }
 
     @Override
-    public final void applyCertAction(File certFile, String alias, String content) {
+    protected final void applyCertAction(File certFile, String alias, String content) {
         assertFileContent(certFile.toPath(), CaResources.getSerialNumber(content));
     }
 

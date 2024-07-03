@@ -46,7 +46,7 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    public final void applyGradleJdkFileAction(
+    protected final void applyGradleJdkFileAction(
             Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistribution) {
         try {
             Files.createDirectories(downloadUrlPath.getParent());
@@ -59,7 +59,7 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    public final void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
+    protected final void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
         try {
             writeConfigurationFile(
                     gradleJdkDaemonVersion, getDaemonJavaVersion().get().toString());
@@ -69,12 +69,12 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    public final void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
+    protected final void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
         writeResourceStreamToFile(resourceName, gradleJdkJarFile);
     }
 
     @Override
-    public final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
+    protected final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
         try {
             writeResourceStreamToFile(resourceName, gradleJdkScriptFile);
             Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(gradleJdkScriptFile.toPath());
@@ -86,7 +86,7 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    public final void applyCertAction(File certFile, String alias, String content) {
+    protected final void applyCertAction(File certFile, String alias, String content) {
         try {
             Files.createDirectories(certFile.getParentFile().toPath());
             writeConfigurationFile(certFile.toPath(), CaResources.getSerialNumber(content));

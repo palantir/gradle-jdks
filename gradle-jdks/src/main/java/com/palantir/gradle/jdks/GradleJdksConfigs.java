@@ -53,16 +53,16 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     abstract Directory gradleDirectory();
 
-    public abstract void applyGradleJdkFileAction(
+    protected abstract void applyGradleJdkFileAction(
             Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistributionConfig);
 
-    public abstract void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion);
+    protected abstract void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion);
 
-    public abstract void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName);
+    protected abstract void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName);
 
-    public abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
+    protected abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
 
-    public abstract void applyCertAction(File certFile, String alias, String content);
+    protected abstract void applyCertAction(File certFile, String alias, String content);
 
     @TaskAction
     public final void action() {

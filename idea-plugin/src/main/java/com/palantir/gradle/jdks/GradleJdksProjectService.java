@@ -41,7 +41,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
@@ -55,7 +54,6 @@ public final class GradleJdksProjectService {
 
     private final Project project;
     private final Supplier<ConsoleView> consoleView = Suppliers.memoize(this::initConsoleView);
-    private final AtomicBoolean hasRunSetup = new AtomicBoolean(false);
 
     public GradleJdksProjectService(Project project) {
         this.project = project;
@@ -82,10 +80,6 @@ public final class GradleJdksProjectService {
     }
 
     public void maybeSetupGradleJdks() {
-        if (!hasRunSetup.compareAndSet(false, true)) {
-            logger.info("Skipping setupGradleJdks because it has already been run");
-            return;
-        }
         if (project.getBasePath() == null) {
             logger.warn("Skipping setupGradleJdks because project path is null");
             return;
@@ -96,16 +90,6 @@ public final class GradleJdksProjectService {
                     "Skipping setupGradleJdks because gradle JDK setup is not found %s", gradleSetupScript));
             return;
         }
-
-        ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
-        toolWindowManager.invokeLater(() -> {
-            ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
-            logger.warn("Toolwirnodw: " + toolWindow);
-            if (toolWindow != null && !toolWindow.isActive()) {
-                toolWindow.activate(null);
-            }
-        });
-
         setupGradleJdks();
     }
 

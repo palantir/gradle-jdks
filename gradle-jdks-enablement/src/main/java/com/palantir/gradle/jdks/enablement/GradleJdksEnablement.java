@@ -24,25 +24,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
-import org.gradle.api.Project;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.logging.Logging;
-import org.gradle.util.GradleVersion;
 
 public class GradleJdksEnablement {
 
-    private static Logger logger = Logging.getLogger(GradleJdksEnablement.class);
-
-    public static boolean isGradleJdkSetupEnabled(Project project) {
-        return isGradleJdkSetupEnabled(project.getProjectDir().toPath());
-    }
+    public static final String MINIMUM_SUPPORTED_GRADLE_VERSION = "7.6";
 
     public static boolean isGradleJdkSetupEnabled(Path projectDir) {
         return !CurrentOs.get().equals(Os.WINDOWS) && isGradleJdkPropertyEnabled(projectDir);
-    }
-
-    public static boolean isGradleVersionSupported() {
-        return GradleVersion.current().compareTo(GradleVersion.version("7.6")) >= 0;
     }
 
     private static boolean isGradleJdkPropertyEnabled(Path projectDir) {

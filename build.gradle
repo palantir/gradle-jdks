@@ -55,4 +55,6 @@ allprojects {
     apply plugin: 'com.palantir.jakarta-package-alignment'
 }
 
+// workaround for:
+// `Error during resolution of the dependency graph of configuration configuration ':gradle-jdks-settings:unshadedCopy'`
 checkUnusedConstraints.enabled = false

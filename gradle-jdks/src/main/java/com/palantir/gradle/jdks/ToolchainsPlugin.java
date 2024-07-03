@@ -27,6 +27,7 @@ import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
+import org.gradle.util.GradleVersion;
 
 public final class ToolchainsPlugin implements Plugin<Project> {
 
@@ -35,14 +36,16 @@ public final class ToolchainsPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project rootProject) {
-        if (!GradleJdksEnablement.isGradleJdkSetupEnabled(rootProject)) {
+        if (!GradleJdksEnablement.isGradleJdkSetupEnabled(
+                rootProject.getProjectDir().toPath())) {
             throw new RuntimeException(
                     "Cannot apply `com.palantir.jdks.settings` without enabling palantir.jdk.setup.enabled");
         }
-        if (!GradleJdksEnablement.isGradleVersionSupported()) {
-            throw new RuntimeException(
-                    "Cannot apply `com.palantir.jdks` with Gradle version < 7.6. Please upgrade to a higher "
-                            + "Gradle version in order to use the JDK setup.");
+        if (!isGradleVersionSupported()) {
+            throw new RuntimeException(String.format(
+                    "Cannot apply `com.palantir.jdks.settings` with Gradle version < %s. Please upgrade to a higher "
+                            + "Gradle version in order to use the JDK setup.",
+                    GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION));
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
         rootProject.getPluginManager().apply("com.palantir.jdks.idea");
@@ -134,5 +137,11 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         rootProject.getTasks().named("javaToolchains").configure(task -> {
             task.mustRunAfter(checkJdksLifecycle);
         });
+    }
+
+    private static boolean isGradleVersionSupported() {
+        return GradleVersion.current()
+                        .compareTo(GradleVersion.version(GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION))
+                >= 0;
     }
 }

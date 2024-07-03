@@ -35,7 +35,8 @@ public final class BaselineJavaJdksPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project rootProject) {
-        if (GradleJdksEnablement.isGradleJdkSetupEnabled(rootProject)) {
+        if (GradleJdksEnablement.isGradleJdkSetupEnabled(
+                rootProject.getProjectDir().toPath())) {
             throw new RuntimeException("Cannot apply BaselineJavaJdksPlugin with palantir.jdk.setup.enabled");
         }
         rootProject.getPluginManager().apply(BaselineJavaVersions.class);
