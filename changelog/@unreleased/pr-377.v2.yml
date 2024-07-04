@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Gradle JDK setup Readme update
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/377
