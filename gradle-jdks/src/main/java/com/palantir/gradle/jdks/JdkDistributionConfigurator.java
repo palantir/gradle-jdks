@@ -31,7 +31,6 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
-// TODO(crogoz): javaDocs
 public final class JdkDistributionConfigurator {
 
     private static Logger logger = Logging.getLogger(JdkDistributionConfigurator.class);
