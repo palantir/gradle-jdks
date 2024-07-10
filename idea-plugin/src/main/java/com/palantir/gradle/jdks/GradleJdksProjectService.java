@@ -16,10 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
-import com.google.common.base.Suppliers;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
-import com.intellij.execution.filters.TextConsoleBuilderFactory;
 import com.intellij.execution.process.OSProcessHandler;
 import com.intellij.execution.process.ProcessEvent;
 import com.intellij.execution.process.ProcessListener;
@@ -30,12 +28,7 @@ import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskType;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowId;
-import com.intellij.openapi.wm.ToolWindowManager;
-import com.intellij.ui.content.Content;
-import com.intellij.ui.content.ContentFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -43,7 +36,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
@@ -52,33 +44,10 @@ import org.jetbrains.plugins.gradle.settings.GradleSettings;
 public final class GradleJdksProjectService {
 
     private final Logger logger = Logger.getInstance(GradleJdksProjectService.class);
-    private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
-
     private final Project project;
-    private final Supplier<ConsoleView> consoleView = Suppliers.memoize(this::initConsoleView);
 
     public GradleJdksProjectService(Project project) {
         this.project = project;
-    }
-
-    private ConsoleView initConsoleView() {
-        ConsoleView newConsoleView =
-                TextConsoleBuilderFactory.getInstance().createBuilder(project).getConsole();
-
-        ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
-        toolWindowManager.invokeLater(() -> {
-            ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
-            if (toolWindow == null) {
-                toolWindow = toolWindowManager.registerToolWindow(TOOL_WINDOW_NAME, true, ToolWindowAnchor.BOTTOM);
-            }
-            ContentFactory contentFactory = ContentFactory.getInstance();
-            Content content = contentFactory.createContent(newConsoleView.getComponent(), "", false);
-            toolWindow.getContentManager().addContent(content);
-            toolWindow.setAvailable(true);
-            toolWindow.activate(null, true, false);
-        });
-
-        return newConsoleView;
     }
 
     public void maybeSetupGradleJdks(ExternalSystemTaskType type) {
@@ -97,14 +66,10 @@ public final class GradleJdksProjectService {
 
     private void setupGradleJdks(ExternalSystemTaskType type) {
         try {
-            ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
-            toolWindowManager.invokeLater(() -> {
-                ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
-                if (toolWindow != null) {
-                    toolWindow.activate(null, true, false);
-                }
-            });
-            consoleView.get().clear();
+            GradleJdksToolWindowService toolWindowService = project.getService(GradleJdksToolWindowService.class);
+            toolWindowService.focusOnWindow(GradleJdksToolWindowService.TOOL_WINDOW_NAME);
+            ConsoleView consoleView = toolWindowService.getConsoleView();
+            consoleView.clear();
             GeneralCommandLine cli =
                     new GeneralCommandLine("./gradle/gradle-jdks-setup.sh").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
@@ -113,46 +78,40 @@ public final class GradleJdksProjectService {
 
                 @Override
                 public void processTerminated(@NotNull ProcessEvent _event) {
-                    updateGradleJvm();
+                    updateGradleJvm(consoleView);
                 }
             });
-            consoleView.get().attachToProcess(handler);
+            consoleView.attachToProcess(handler);
             ProcessTerminatedListener.attach(handler, project, "Gradle JDK setup finished with exit code $EXIT_CODE$");
             handler.waitFor();
-            toolWindowManager.invokeLater(() -> {
-                ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
-                if (toolWindow != null) {
-                    if (handler.getProcess().exitValue() != 0) {
-                        toolWindow.activate(null, true, true);
-                    } else {
-                        toolWindow.hide(null);
-                        if (type == ExternalSystemTaskType.EXECUTE_TASK) {
-                            Optional.ofNullable(toolWindowManager.getToolWindow(ToolWindowId.RUN))
-                                    .ifPresent(runWindow -> runWindow.activate(null));
-                        } else if (type == ExternalSystemTaskType.RESOLVE_PROJECT) {
-                            Optional.ofNullable(toolWindowManager.getToolWindow("Build"))
-                                    .ifPresent(runWindow -> runWindow.activate(null));
-                        }
-                    }
-                }
-            });
+            if (handler.getProcess().exitValue() == 0) {
+                toolWindowService.hideWindow(GradleJdksToolWindowService.TOOL_WINDOW_NAME);
+                maybeGetFocusWindowId(type).ifPresent(toolWindowService::focusOnWindow);
+            }
         } catch (ExecutionException e) {
             throw new RuntimeException("Failed to setup Gradle JDKs for Intellij", e);
         }
     }
 
-    private void updateGradleJvm() {
+    private Optional<String> maybeGetFocusWindowId(ExternalSystemTaskType type) {
+        if (type == ExternalSystemTaskType.EXECUTE_TASK) {
+            return Optional.of(ToolWindowId.RUN);
+        } else if (type == ExternalSystemTaskType.RESOLVE_PROJECT) {
+            return Optional.of("Build");
+        }
+        return Optional.empty();
+    }
+
+    private void updateGradleJvm(ConsoleView consoleView) {
         for (GradleProjectSettings projectSettings :
                 GradleSettings.getInstance(project).getLinkedProjectsSettings()) {
             File gradleConfigFile = Path.of(projectSettings.getExternalProjectPath(), ".gradle/config.properties")
                     .toFile();
             if (!gradleConfigFile.exists()) {
-                consoleView
-                        .get()
-                        .print(
-                                "Skipping gradleJvm Configuration because no value was configured in"
-                                        + " `.gradle/config.properties`",
-                                ConsoleViewContentType.LOG_INFO_OUTPUT);
+                consoleView.print(
+                        "Skipping gradleJvm Configuration because no value was configured in"
+                                + " `.gradle/config.properties`",
+                        ConsoleViewContentType.LOG_INFO_OUTPUT);
                 continue;
             }
 
