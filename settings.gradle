@@ -9,5 +9,5 @@ include 'idea-plugin'
 include 'gradle-jdks-settings'
 include 'gradle-jdks-groovy'
 include 'gradle-jdks-enablement'
-include 'gradle-jdks-installation'
+include 'gradle-jdks-excavator-configurations'
 

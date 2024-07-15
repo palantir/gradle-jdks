@@ -39,7 +39,7 @@ public final class GradleJdksConfigurator {
     private static final String INSTALLATION_SCRIPT = "install-jdks.sh";
 
     /**
-     * Writes the jdk configuration file for the given jdk distribution.
+     * Writes the jdk configuration files for a given jdk distribution.
      *
      * @param targetDir the target directory where the configuration files should be written to.
      * @param baseUrl the base url where the jdk distributions are hosted e.g. `https://corretto.aws/downloads/resources`
