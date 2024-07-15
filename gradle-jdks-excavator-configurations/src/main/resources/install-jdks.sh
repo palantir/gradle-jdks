@@ -81,7 +81,7 @@ for dir in "$GRADLE_JDKS_DIR"/*/; do
   java_bin=$(find "$jdk_installation_directory" -type f -name "java" -path "*/bin/java" ! -type l -print -quit)
   java_home="${java_bin%/*/*}"
   # Add Java truststore
-  for cert_path in "$CERTS_DIR"/Palavntir*; do
+  for cert_path in "$CERTS_DIR"/Palantir*; do
     # if the glob is not matched, skip
     [ -e "$cert_path" ] || continue
     cert_name=$(basename "$cert_path")
