@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: '[Gradle JDK Automanagement] Add install-jdks.sh script and gradle
+    jdk configuration generation'
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/381
