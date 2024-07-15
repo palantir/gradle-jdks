@@ -2,7 +2,6 @@
 
 set -eux
 
-
 die () {
     echo
     echo "$*"
@@ -19,9 +18,10 @@ read_value() {
   echo "$value"
 }
 
-CERTS_DIR=$1
+GRADLE_JDKS_DIR=$1
+CERTS_DIR=$2
 
-if [ -z "$CERTS_DIR" ]; then
+if [[ -z "$CERTS_DIR" || -z "$GRADLE_JDKS_DIR" ]]; then
   die "ERROR: Missing argument CERTS_DIR"
 fi
 
@@ -62,7 +62,7 @@ case "$(uname -m)" in                         #(
   * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
 esac
 
-for dir in /jdks/latest-jdks/*/; do
+for dir in /jdks/latest-gradle-jdks/*/; do
   major_version_dir=${dir%*/}
   distribution_local_path=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/local-path)
   distribution_url=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/download-url)
