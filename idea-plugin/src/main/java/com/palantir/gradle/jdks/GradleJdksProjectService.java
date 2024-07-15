@@ -28,11 +28,9 @@ import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
-import com.intellij.openapi.wm.ToolWindowId;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
@@ -74,14 +72,14 @@ public final class GradleJdksProjectService {
             ContentFactory contentFactory = ContentFactory.getInstance();
             Content content = contentFactory.createContent(newConsoleView.getComponent(), "", false);
             toolWindow.getContentManager().addContent(content);
-            toolWindow.setAvailable(true);
-            toolWindow.activate(null, true, false);
+            // TODO(crogoz): Focus only when error or takes a long time?
+            toolWindow.activate(null);
         });
 
         return newConsoleView;
     }
 
-    public void maybeSetupGradleJdks(ExternalSystemTaskType type) {
+    public void maybeSetupGradleJdks() {
         if (project.getBasePath() == null) {
             logger.warn("Skipping setupGradleJdks because project path is null");
             return;
@@ -92,50 +90,24 @@ public final class GradleJdksProjectService {
                     "Skipping setupGradleJdks because gradle JDK setup is not found %s", gradleSetupScript));
             return;
         }
-        setupGradleJdks(type);
+        setupGradleJdks();
     }
 
-    private void setupGradleJdks(ExternalSystemTaskType type) {
+    private void setupGradleJdks() {
         try {
-            ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
-            toolWindowManager.invokeLater(() -> {
-                ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
-                if (toolWindow != null) {
-                    toolWindow.activate(null, true, false);
-                }
-            });
-            consoleView.get().clear();
             GeneralCommandLine cli =
                     new GeneralCommandLine("./gradle/gradle-jdks-setup.sh").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
             handler.startNotify();
             handler.addProcessListener(new ProcessListener() {
-
                 @Override
                 public void processTerminated(@NotNull ProcessEvent _event) {
                     updateGradleJvm();
                 }
             });
             consoleView.get().attachToProcess(handler);
-            ProcessTerminatedListener.attach(handler, project, "Gradle JDK setup finished with exit code $EXIT_CODE$");
+            ProcessTerminatedListener.attach(handler, project);
             handler.waitFor();
-            toolWindowManager.invokeLater(() -> {
-                ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
-                if (toolWindow != null) {
-                    if (handler.getProcess().exitValue() != 0) {
-                        toolWindow.activate(null, true, true);
-                    } else {
-                        toolWindow.hide(null);
-                        if (type == ExternalSystemTaskType.EXECUTE_TASK) {
-                            Optional.ofNullable(toolWindowManager.getToolWindow(ToolWindowId.RUN))
-                                    .ifPresent(runWindow -> runWindow.activate(null));
-                        } else if (type == ExternalSystemTaskType.RESOLVE_PROJECT) {
-                            Optional.ofNullable(toolWindowManager.getToolWindow("Build"))
-                                    .ifPresent(runWindow -> runWindow.activate(null));
-                        }
-                    }
-                }
-            });
         } catch (ExecutionException e) {
             throw new RuntimeException("Failed to setup Gradle JDKs for Intellij", e);
         }

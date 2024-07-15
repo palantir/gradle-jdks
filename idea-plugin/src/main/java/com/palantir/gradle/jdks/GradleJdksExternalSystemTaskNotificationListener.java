@@ -30,7 +30,7 @@ public final class GradleJdksExternalSystemTaskNotificationListener implements E
         if (id.getProjectSystemId().equals(GradleConstants.SYSTEM_ID)
                 && (id.getType() == ExternalSystemTaskType.RESOLVE_PROJECT
                         || id.getType() == ExternalSystemTaskType.EXECUTE_TASK)) {
-            id.findProject().getService(GradleJdksProjectService.class).maybeSetupGradleJdks(id.getType());
+            id.findProject().getService(GradleJdksProjectService.class).maybeSetupGradleJdks();
         }
     }
 
