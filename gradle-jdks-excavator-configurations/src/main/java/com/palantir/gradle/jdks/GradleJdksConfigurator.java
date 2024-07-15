@@ -42,7 +42,7 @@ public final class GradleJdksConfigurator {
      * Writes the jdk configuration files for a given jdk distribution.
      *
      * @param targetDir the target directory where the configuration files should be written to.
-     * @param baseUrl the base url where the jdk distributions are hosted e.g. `https://corretto.aws/downloads/resources`
+     * @param baseUrl the base url where the jdk distributions are hosted e.g. `https://corretto.aws`
      * @param jdkDistributionName the name of the jdk distribution e.g. corretto.
      * @param os the operating system of the jdk distribution e.g. linux.
      * @param arch the architecture of the jdk distribution e.g. x64.
