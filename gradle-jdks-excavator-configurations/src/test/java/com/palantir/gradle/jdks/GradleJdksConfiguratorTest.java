@@ -16,8 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
@@ -26,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -71,11 +70,18 @@ class GradleJdksConfiguratorTest {
         assertThat(process.waitFor()).isEqualTo(0);
         Path installedJdkPath = installationJdkDir.resolve("gradle-jdks").resolve(localPath.trim());
         ProcessBuilder runJavaCommand = new ProcessBuilder()
-                .command(List.of(
-                        installedJdkPath.resolve("Contents/Home/bin/java").toString(), "-version"))
+                .command(findJavaExec(installedJdkPath).toAbsolutePath().toString(), "-version")
                 .redirectErrorStream(true);
         Process runJavaProcess = runJavaCommand.start();
         assertThat(CommandRunner.readAllInput(runJavaProcess.getInputStream()))
                 .contains(String.format("Corretto-%s", JDK_VERSION));
+    }
+
+    private static Path findJavaExec(Path javaHome) throws IOException {
+        try (Stream<Path> stream = Files.walk(javaHome)) {
+            return stream.filter(path -> path.getFileName().toString().equals("java") && Files.isExecutable(path))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Could not find java executable in " + javaHome));
+        }
     }
 }
