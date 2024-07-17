@@ -34,15 +34,6 @@ public final class JdksPlugin implements Plugin<Project> {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
 
-        if (GradleJdksEnablement.isGradleJdkSetupEnabled(
-                rootProject.getProjectDir().toPath())) {
-            rootProject.getPluginManager().apply(ToolchainsPlugin.class);
-        } else {
-            rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);
-        }
-    }
-
-    public static JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
         JdksExtension jdksExtension = rootProject.getExtensions().create("jdks", JdksExtension.class);
         jdksExtension
                 .getJdkStorageLocation()
@@ -51,6 +42,15 @@ public final class JdksPlugin implements Plugin<Project> {
                         .dir(rootProject.provider(
                                 () -> new File(System.getProperty("user.home"), ".gradle/gradle-jdks"))));
 
+        if (GradleJdksEnablement.isGradleJdkSetupEnabled(
+                rootProject.getProjectDir().toPath())) {
+            rootProject.getPluginManager().apply(ToolchainsPlugin.class);
+        } else {
+            rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);
+        }
+    }
+
+    public static void configureJdksExtensionBaseUrl(JdksExtension jdksExtension, JdkDistributions jdkDistributions) {
         Arrays.stream(JdkDistributionName.values()).forEach(jdkDistributionName -> {
             jdksExtension.jdkDistribution(jdkDistributionName, jdkDistributionExtension -> {
                 jdkDistributionExtension
@@ -58,7 +58,5 @@ public final class JdksPlugin implements Plugin<Project> {
                         .set(jdkDistributions.get(jdkDistributionName).defaultBaseUrl());
             });
         });
-
-        return jdksExtension;
     }
 }
