@@ -117,9 +117,14 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         public Object invoke(Object _proxy, Method method, Object[] args) throws Throwable {
             List<Path> localToolchains = getInstalledToolchains(gradleJdksLocalDirectory);
             if (localToolchains.isEmpty()) {
-                throw new RuntimeException(
-                        "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but no toolchains could be"
-                                + " configured");
+                logger.warn(
+                        "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but no jdks could be found."
+                                + " If running from Intellij, please make sure the `palantir-gradle-jdks` Intellij"
+                                + " plugin is installed"
+                                + " https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions.");
+                return GradleProperties.class
+                        .getDeclaredMethod(method.getName(), method.getParameterTypes())
+                        .invoke(originalGradleProperties, args);
             }
             // see: https://github.com/gradle/gradle/blob/4bd1b3d3fc3f31db5a26eecb416a165b8cc36082/subprojects/core-api/
             // src/main/java/org/gradle/api/internal/properties/GradleProperties.java#L28
@@ -153,23 +158,29 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                 return stream.map(path -> path.resolve(os.toString())
                                 .resolve(arch.toString())
                                 .resolve("local-path"))
-                        .map(path -> getToolchain(path, installationDirectory))
+                        .map(path -> maybeGetToolchain(path, installationDirectory))
+                        .flatMap(Optional::stream)
                         .collect(Collectors.toList());
             } catch (IOException e) {
                 throw new RuntimeException("Unable to list the local installation paths", e);
             }
         }
 
-        private static Path getToolchain(Path gradleJdkConfigurationPath, Path installationDirectory) {
+        private static Optional<Path> maybeGetToolchain(Path gradleJdkConfigurationPath, Path installationDirectory) {
             try {
                 String localFilename =
                         Files.readString(gradleJdkConfigurationPath).trim();
                 Path installationPath = installationDirectory.resolve(localFilename);
                 if (!Files.exists(installationPath)) {
-                    throw new RuntimeException(
-                            String.format("Failed to find the toolchain at path=%s", installationPath));
+                    logger.warn(
+                            "Gradle JDKS setup is enabled but the configured jdk {} could not be found. If running"
+                                    + " from Intellij, please make sure the `palantir-gradle-jdks` Intellij plugin is"
+                                    + " installed "
+                                    + "https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions",
+                            installationPath);
+                    return Optional.empty();
                 }
-                return installationPath;
+                return Optional.of(installationPath);
             } catch (IOException e) {
                 throw new RuntimeException(
                         String.format("Failed to get the toolchain configured at path=%s", gradleJdkConfigurationPath),
