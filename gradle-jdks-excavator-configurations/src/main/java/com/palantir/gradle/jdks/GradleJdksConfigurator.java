@@ -98,6 +98,7 @@ public final class GradleJdksConfigurator {
         JdkPath jdkPath = jdkDistributions.get(jdkSpec.distributionName()).path(jdkSpec.release());
         return String.format("%s/%s.%s", baseUrl, jdkPath.filename(), jdkPath.extension());
     }
+
     /**
      * Writes the installation script to the target directory.
      *

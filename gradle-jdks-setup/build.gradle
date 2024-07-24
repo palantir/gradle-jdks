@@ -1,3 +1,5 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 apply plugin: 'java'
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'org.unbroken-dome.test-sets'
@@ -22,8 +24,35 @@ dependencies {
     integrationTestImplementation 'org.assertj:assertj-core'
 }
 
+def gradleJdksFunctions = file('src/main/resources/templates/gradle-jdks-functions.sh')
+
+tasks.register('renderGradleJdksSetupScript', Copy.class) {
+    from 'src/main/resources/templates/gradle-jdks-setup.template.sh'
+    into 'src/main/resources'
+    filter(ReplaceTokens, tokens: [
+        'INSERT_GRADLE_JDKS_FUNCTIONS': gradleJdksFunctions.text,
+    ])
+    rename { 'gradle-jdks-setup.sh' }
+    inputs.file(gradleJdksFunctions)
+}
+
+tasks.register('renderInstallJdksSetupScript', Copy.class) {
+    from '../gradle-jdks-excavator-configurations/src/main/resources/templates/install-jdks.template.sh'
+    into '../gradle-jdks-excavator-configurations/src/main/resources'
+    filter(ReplaceTokens, tokens: [
+            'INSERT_GRADLE_JDKS_FUNCTIONS': gradleJdksFunctions.text,
+    ])
+    rename { 'install-jdks.sh' }
+    inputs.file(gradleJdksFunctions)
+}
+
+tasks.register('renderJdksScripts') {
+    dependsOn tasks.renderGradleJdksSetupScript, tasks.renderInstallJdksSetupScript
+}
+
+
 tasks.register('fatJar', Jar) {
-    dependsOn tasks.jar, ':gradle-jdks-setup-common:jar'
+    dependsOn tasks.renderJdksScripts, tasks.jar, ':gradle-jdks-setup-common:jar'
     manifest {
         attributes 'Main-Class': 'com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup'
     }
@@ -42,7 +71,7 @@ tasks.integrationTest {
     dependsOn tasks.build
 }
 
-tasks.build.dependsOn tasks.fatJar
+tasks.build.dependsOn tasks.renderJdksScripts, tasks.fatJar
 
 // DO NOT UPDATE! This needs to be kept as low as possible, such that it is compatible with all the jdk versions the
 // consumers would want to set up with the JDK auto-management workflow (used by ./gradle-jdks-setup.sh and GradleWrapperMain.java classes)
