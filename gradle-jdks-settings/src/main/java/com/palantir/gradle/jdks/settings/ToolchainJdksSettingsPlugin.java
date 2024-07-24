@@ -175,20 +175,20 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
             return stream.map(path ->
                             path.resolve(os.toString()).resolve(arch.toString()).resolve("local-path"))
-                    .map(path -> resolvePath(path, installationDirectory))
+                    .map(path -> resolveJdkPath(path, installationDirectory))
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            throw new RuntimeException("Unable to list the local installation paths", e);
+            throw new RuntimeException("Unable to list the local JDK installation paths", e);
         }
     }
 
-    private static Path resolvePath(Path gradleJdkConfigurationPath, Path installationDirectory) {
+    private static Path resolveJdkPath(Path gradleJdkConfigurationPath, Path installationDirectory) {
         try {
             String localFilename = Files.readString(gradleJdkConfigurationPath).trim();
             return installationDirectory.resolve(localFilename);
         } catch (IOException e) {
             throw new RuntimeException(
-                    String.format("Failed to get the toolchain configured at path=%s", gradleJdkConfigurationPath), e);
+                    String.format("Failed to read gradle jdk configuration file %s", gradleJdkConfigurationPath), e);
         }
     }
 
