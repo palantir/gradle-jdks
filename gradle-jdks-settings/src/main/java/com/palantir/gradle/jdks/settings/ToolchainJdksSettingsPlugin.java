@@ -58,7 +58,8 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
 
     @Override
     public void apply(Settings settings) {
-        if (!GradleJdksEnablement.isGradleJdkSetupEnabled(settings.getRootDir().toPath())) {
+        Path rootProjectDir = settings.getRootDir().toPath();
+        if (!GradleJdksEnablement.isGradleJdkSetupEnabled(rootProjectDir)) {
             logger.debug("Skipping Gradle JDK gradle properties patching");
             return;
         }
@@ -68,8 +69,7 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                             + " Please upgrade to a higher Gradle version in order to use the JDK setup.",
                     GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION));
         }
-        Path rootProjectDir = settings.getRootDir().toPath();
-        Path gradleJdksLocalDirectory = settings.getRootDir().toPath().resolve("gradle/jdks");
+        Path gradleJdksLocalDirectory = rootProjectDir.resolve("gradle/jdks");
         // Not failing here because the plugin might be applied before the `./gradlew setupJdks` is run, hence not
         // having the expected directory structure.
         if (!Files.exists(gradleJdksLocalDirectory)) {
@@ -77,7 +77,6 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }
-
         ProviderFactory providerFactory =
                 ((DefaultSettings) settings).getServices().get(ProviderFactory.class);
         if (!(providerFactory instanceof DefaultProviderFactory)) {
@@ -122,16 +121,7 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
 
         @Override
         public Object invoke(Object _proxy, Method method, Object[] args) throws Throwable {
-            List<Optional<Path>> localToolchains = getInstalledToolchains(gradleJdksLocalDirectory);
-            if (localToolchains.stream().anyMatch(Optional::isEmpty)) {
-                logger.error("Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but some jdks were not"
-                        + " installed. If running from Intellij, please make sure the `palantir-gradle-jdks`"
-                        + " Intellij plugin is installed"
-                        + " https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions.");
-                runGradleJdkSetup(rootProjectDir);
-            }
-            List<Path> installedLocalToolchains =
-                    localToolchains.stream().flatMap(Optional::stream).collect(Collectors.toList());
+            List<Path> installedLocalToolchains = getInstalledJdkPaths();
             // see: https://github.com/gradle/gradle/blob/4bd1b3d3fc3f31db5a26eecb416a165b8cc36082/subprojects/core-api/
             // src/main/java/org/gradle/api/internal/properties/GradleProperties.java#L28
             if (method.getName().equals("find") && args.length == 1) {
@@ -155,31 +145,47 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                 throw e.getCause();
             }
         }
+
+        private List<Path> getInstalledJdkPaths() {
+            List<Path> jdkPaths = getConfiguredJdkPaths(gradleJdksLocalDirectory);
+            List<Path> nonExistingJdkPaths =
+                    jdkPaths.stream().filter(path -> !Files.exists(path)).collect(Collectors.toList());
+            if (!nonExistingJdkPaths.isEmpty()) {
+                logger.error("Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but some jdks were not"
+                        + " installed. If running from Intellij, please make sure the `palantir-gradle-jdks`"
+                        + " Intellij plugin is installed"
+                        + " https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions.");
+                runGradleJdkSetup(rootProjectDir);
+                if (jdkPaths.stream().anyMatch(path -> !Files.exists(path))) {
+                    throw new RuntimeException(String.format(
+                            "Some JDKs were not installed after running the setup script %s",
+                            jdkPaths.stream()
+                                    .filter(path -> !Files.exists(path))
+                                    .collect(Collectors.toList())));
+                }
+            }
+            return jdkPaths;
+        }
     }
 
-    private static List<Optional<Path>> getInstalledToolchains(Path gradleJdksLocalDirectory) {
+    private static List<Path> getConfiguredJdkPaths(Path gradleJdksLocalDirectory) {
         Path installationDirectory = getToolchainInstallationDir();
         Os os = CurrentOs.get();
         Arch arch = CurrentArch.get();
         try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
             return stream.map(path ->
                             path.resolve(os.toString()).resolve(arch.toString()).resolve("local-path"))
-                    .map(path -> maybeGetToolchain(path, installationDirectory))
+                    .map(path -> resolvePath(path, installationDirectory))
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException("Unable to list the local installation paths", e);
         }
     }
 
-    private static Optional<Path> maybeGetToolchain(Path gradleJdkConfigurationPath, Path installationDirectory) {
+    private static Path resolvePath(Path gradleJdkConfigurationPath, Path installationDirectory) {
         try {
             String localFilename = Files.readString(gradleJdkConfigurationPath).trim();
-            Path installationPath = installationDirectory.resolve(localFilename);
-            if (!Files.exists(installationPath)) {
-                logger.warn("Gradle JDKS setup is enabled but the jdk {} was not installed.", installationPath);
-                return Optional.empty();
-            }
-            return Optional.of(installationPath);
+            return installationDirectory.resolve(localFilename);
         } catch (IOException e) {
             throw new RuntimeException(
                     String.format("Failed to get the toolchain configured at path=%s", gradleJdkConfigurationPath), e);
