@@ -69,7 +69,7 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
                 " but some jdks were not installed")
         executionResult.standardOutput.contains("Auto-detection:     Disabled")
         executionResult.standardOutput.contains("Auto-download:      Disabled")
-        executionResult.standardOutput.contains("JDK ${SIMPLIFIED_JDK_17_VERSION}")
+        executionResult.standardOutput.contains("JDK ${GradleJdkTestUtils.SIMPLIFIED_JDK_17_VERSION}")
         Path expectedJdkPath = Path.of(System.getProperty("user.home")).resolve(".gradle/gradle-jdks")
                 .resolve("amazon-corretto-${gradleVersion}-test1").toAbsolutePath()
         Files.exists(expectedJdkPath)
@@ -95,7 +95,7 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
                 .forEach(Files::delete)
 
         where:
-        gradleVersionNumber << [GradleJdkTestUtils.GRADLE_7_6_VERSION, GradleJdkTestUtils.GRADLE_8_8_VERSION]
+        gradleVersionNumber << [GradleJdkTestUtils.GRADLE_7_6_VERSION, GradleJdkTestUtils.GRADLE_8_5_VERSION, GradleJdkTestUtils.GRADLE_8_8_VERSION]
     }
 
 }
