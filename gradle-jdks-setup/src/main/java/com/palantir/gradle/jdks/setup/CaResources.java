@@ -110,10 +110,25 @@ public final class CaResources {
                     "-noprompt",
                     "-file",
                     palantirCertFile.getAbsolutePath());
-            CommandRunner.runWithInheritIO(importCertificateCommand);
+            CommandRunner.runWithLogger(
+                    new ProcessBuilder(importCertificateCommand), this::writeStdOutput, this::writeStdError);
         } catch (IOException e) {
             throw new RuntimeException("Unable to import the certificate to the jdk", e);
         }
+    }
+
+    private Void writeStdOutput(InputStream inputStream) {
+        return CommandRunner.write(inputStream, line -> {
+            logger.log(line);
+            return null;
+        });
+    }
+
+    private Void writeStdError(InputStream inputStream) {
+        return CommandRunner.write(inputStream, line -> {
+            logger.logError(line);
+            return null;
+        });
     }
 
     private static boolean isCertificateInTruststore(Path jdkInstallationDirectory, String alias) {
@@ -131,7 +146,7 @@ public final class CaResources {
                     alias,
                     "-keystore",
                     jdkInstallationDirectory.resolve("lib/security/cacerts").toString());
-            CommandRunner.run(checkCertificateCommand);
+            CommandRunner.runWithOutputCollection(new ProcessBuilder().command(checkCertificateCommand));
             return true;
         } catch (Exception e) {
             if (e.getMessage().contains(String.format("Alias <%s> does not exist", alias))) {
@@ -171,15 +186,16 @@ public final class CaResources {
     }
 
     private static String macosSystemCertificates(Path keyChainPath) {
-        return CommandRunner.run(List.of(
-                "security",
-                "export",
-                "-t",
-                "certs",
-                "-f",
-                "pemseq",
-                "-k",
-                keyChainPath.toAbsolutePath().toString()));
+        return CommandRunner.runWithOutputCollection(new ProcessBuilder()
+                .command(
+                        "security",
+                        "export",
+                        "-t",
+                        "certs",
+                        "-f",
+                        "pemseq",
+                        "-k",
+                        keyChainPath.toAbsolutePath().toString()));
     }
 
     private Optional<byte[]> linuxSystemCertificates() {

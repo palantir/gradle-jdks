@@ -20,19 +20,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class CommandRunnerTest {
 
     @Test
     public void command_runs_successfully() {
-        assertThat(CommandRunner.run(List.of("echo", "my message"))).contains("my message");
+        assertThat(CommandRunner.runWithOutputCollection(new ProcessBuilder().command("echo", "my message")))
+                .contains("my message");
     }
 
     @Test
     public void command_fails() {
-        assertThatThrownBy(() -> CommandRunner.run(List.of("nonexistingcommand")))
+        assertThatThrownBy(
+                        () -> CommandRunner.runWithOutputCollection(new ProcessBuilder().command("nonexistingcommand")))
                 .hasMessageContaining("Failed to run command 'nonexistingcommand'");
     }
 }
