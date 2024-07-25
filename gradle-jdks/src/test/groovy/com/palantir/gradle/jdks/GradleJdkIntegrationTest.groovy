@@ -123,8 +123,7 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                
                daemonTarget = DAEMON_MAJOR_VERSION_11
             }
-        """.replace("FILES", getBuildPluginClasspathInjector().join(","))
-                .replace("JDK_11_DISTRO", quoted(JDK_11.getLeft()))
+        """.replace("JDK_11_DISTRO", quoted(JDK_11.getLeft()))
                 .replace("JDK_11_VERSION", quoted(JDK_11.getRight()))
                 .replace("JDK_17_DISTRO", quoted(JDK_17.getLeft()))
                 .replace("JDK_17_VERSION", quoted(JDK_17.getRight()))

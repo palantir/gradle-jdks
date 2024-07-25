@@ -58,7 +58,6 @@ do
     esac
 done
 
-APP_BASE_NAME=${0##*/}
 APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
 APP_HOME=${APP_HOME%/gradle}
 APP_GRADLE_DIR="$APP_HOME"/gradle
@@ -94,9 +93,9 @@ esac
 if [ "$os_name" = "linux" ]; then
     ldd_output=$(ldd --version 2>&1 || true)
     if echo "$ldd_output" | grep -qi glibc; then
-       os_name="linux-glibc"
+      os_name="linux-glibc"
     elif echo "$ldd_output" | grep -qi "gnu libc"; then
-           os_name="linux-glibc"
+      os_name="linux-glibc"
     elif echo "$ldd_output" | grep -qi musl; then
       os_name="linux-musl"
     else

@@ -110,7 +110,7 @@ public final class CaResources {
                     "-noprompt",
                     "-file",
                     palantirCertFile.getAbsolutePath());
-            CommandRunner.run(importCertificateCommand);
+            CommandRunner.runWithInheritIO(importCertificateCommand);
         } catch (IOException e) {
             throw new RuntimeException("Unable to import the certificate to the jdk", e);
         }

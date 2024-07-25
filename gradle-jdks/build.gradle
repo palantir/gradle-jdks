@@ -76,7 +76,8 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.test {
-    environment("PROJECT_VERSION", project.version)
+    environment(Map.of("PROJECT_VERSION", project.version, "HOME", "/tmp"))
+    systemProperty 'user.home', '/tmp'
     systemProperty 'ignoreDeprecations', 'true'
     dependsOn project(':gradle-jdks-settings').tasks.named('build')
 }

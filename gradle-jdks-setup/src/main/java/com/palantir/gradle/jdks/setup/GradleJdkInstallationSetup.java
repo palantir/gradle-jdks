@@ -111,12 +111,14 @@ public final class GradleJdkInstallationSetup {
         }
         Path destinationJdkInstallationDir = Path.of(args[1]);
         Path certsDir = Path.of(args[2]);
-        copy(logger, destinationJdkInstallationDir);
-        Map<String, String> certSerialNumbersToNames = extractCertsSerialNumbers(logger, certsDir);
-        caResources.maybeImportCertsInJdk(destinationJdkInstallationDir, certSerialNumbersToNames);
+        boolean wasCopied = copy(logger, destinationJdkInstallationDir);
+        if (wasCopied) {
+            Map<String, String> certSerialNumbersToNames = extractCertsSerialNumbers(logger, certsDir);
+            caResources.maybeImportCertsInJdk(destinationJdkInstallationDir, certSerialNumbersToNames);
+        }
     }
 
-    private static void copy(ILogger logger, Path destinationJdkInstallationDirectory) {
+    private static boolean copy(ILogger logger, Path destinationJdkInstallationDirectory) {
         Path currentJavaHome = Path.of(System.getProperty("java.home"));
         Path jdksInstallationDirectory = destinationJdkInstallationDirectory.getParent();
         FileUtils.createDirectories(jdksInstallationDirectory);
@@ -127,11 +129,12 @@ public final class GradleJdkInstallationSetup {
             // double-check, now that we hold the lock
             if (Files.exists(destinationJdkInstallationDirectory)) {
                 logger.log(String.format("Distribution URL %s already exists", destinationJdkInstallationDirectory));
-                return;
+                return false;
             }
             logger.log(
                     String.format("Copying JDK from %s into %s", currentJavaHome, destinationJdkInstallationDirectory));
             FileUtils.copyDirectory(currentJavaHome, destinationJdkInstallationDirectory);
+            return true;
         } catch (IOException e) {
             throw new RuntimeException("Unable to acquire locks, won't move the JDK installation directory", e);
         }

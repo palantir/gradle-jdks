@@ -25,13 +25,16 @@ import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import com.palantir.gradle.jdks.setup.common.Os;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -73,10 +76,12 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         // Not failing here because the plugin might be applied before the `./gradlew setupJdks` is run, hence not
         // having the expected directory structure.
         if (!Files.exists(gradleJdksLocalDirectory)) {
-            logger.debug("Not setting the Gradle JDK properties because gradle/jdks directory doesn't exist. Please run"
-                    + " ./gradlew setupJdks to set up the JDKs.");
+            logger.lifecycle(
+                    "Not setting the Gradle JDK properties because gradle/jdks directory doesn't exist. Please run"
+                            + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }
+        getInstalledJdkPaths(rootProjectDir, gradleJdksLocalDirectory);
         ProviderFactory providerFactory =
                 ((DefaultSettings) settings).getServices().get(ProviderFactory.class);
         if (!(providerFactory instanceof DefaultProviderFactory)) {
@@ -121,7 +126,7 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
 
         @Override
         public Object invoke(Object _proxy, Method method, Object[] args) throws Throwable {
-            List<Path> installedLocalToolchains = getInstalledJdkPaths();
+            List<Path> installedLocalToolchains = getInstalledJdkPaths(rootProjectDir, gradleJdksLocalDirectory);
             // see: https://github.com/gradle/gradle/blob/4bd1b3d3fc3f31db5a26eecb416a165b8cc36082/subprojects/core-api/
             // src/main/java/org/gradle/api/internal/properties/GradleProperties.java#L28
             if (method.getName().equals("find") && args.length == 1) {
@@ -145,27 +150,22 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                 throw e.getCause();
             }
         }
+    }
 
-        private List<Path> getInstalledJdkPaths() {
-            List<Path> jdkPaths = getConfiguredJdkPaths(gradleJdksLocalDirectory);
-            List<Path> nonExistingJdkPaths =
-                    jdkPaths.stream().filter(path -> !Files.exists(path)).collect(Collectors.toList());
-            if (!nonExistingJdkPaths.isEmpty()) {
-                logger.error("Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but some jdks were not"
-                        + " installed. If running from Intellij, please make sure the `palantir-gradle-jdks`"
-                        + " Intellij plugin is installed"
-                        + " https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions.");
-                runGradleJdkSetup(rootProjectDir);
-                if (jdkPaths.stream().anyMatch(path -> !Files.exists(path))) {
-                    throw new RuntimeException(String.format(
-                            "Some JDKs were not installed after running the setup script %s",
-                            jdkPaths.stream()
-                                    .filter(path -> !Files.exists(path))
-                                    .collect(Collectors.toList())));
-                }
-            }
-            return jdkPaths;
+    private static List<Path> getInstalledJdkPaths(Path rootProjectDir, Path gradleJdksLocalDirectory) {
+        List<Path> jdkPaths = getConfiguredJdkPaths(gradleJdksLocalDirectory);
+        List<Path> nonExistingJdkPaths =
+                jdkPaths.stream().filter(path -> !Files.exists(path)).collect(Collectors.toList());
+        if (!nonExistingJdkPaths.isEmpty()) {
+            logger.error(
+                    "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but some jdks were not"
+                            + " installed: {}. If running from Intellij, please make sure the"
+                            + " `palantir-gradle-jdks` Intellij plugin is installed"
+                            + " https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions.",
+                    nonExistingJdkPaths);
+            runGradleJdkSetup(rootProjectDir, nonExistingJdkPaths);
         }
+        return jdkPaths;
     }
 
     private static List<Path> getConfiguredJdkPaths(Path gradleJdksLocalDirectory) {
@@ -193,9 +193,13 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
     }
 
     private static Path getToolchainInstallationDir() {
-        return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
-                        .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
-                .resolve("gradle-jdks");
+        return Path.of(getGradleUserHome()).resolve("gradle-jdks");
+    }
+
+    private static String getGradleUserHome() {
+        return Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
+                .orElseGet(() -> Optional.ofNullable(System.getenv("_TEST_GRADLE_USER_HOME"))
+                        .orElseGet(() -> System.getProperty("user.home") + "/.gradle"));
     }
 
     private static boolean isGradleVersionSupported() {
@@ -204,7 +208,51 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                 >= 0;
     }
 
-    private static void runGradleJdkSetup(Path rootProjectDir) {
-        CommandRunner.run(List.of("./gradle/gradle-jdks-setup.sh"), Optional.of(rootProjectDir.toFile()));
+    private static void runGradleJdkSetup(Path rootProjectDir, List<Path> nonExistingJdkPaths) {
+        Path buildDirectory = rootProjectDir.resolve("build");
+        createDirectories(buildDirectory);
+        Path lockFile = buildDirectory.resolve("gradle-jdks-setup.lock");
+        try (FileChannel channel = FileChannel.open(
+                lockFile, StandardOpenOption.READ, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            channel.lock();
+            if (getMissingPaths(nonExistingJdkPaths).isEmpty()) {
+                // nothing to do, the gradle-jdks-setup already run
+                return;
+            }
+            logger.lifecycle("Running the gradle/gradle-jdks-setup.sh script to install the missing jdks.");
+            CommandRunner.runWithLogger(
+                    List.of("./gradle/gradle-jdks-setup.sh"),
+                    rootProjectDir.toFile(),
+                    ToolchainJdksSettingsPlugin::writeStdOutput,
+                    ToolchainJdksSettingsPlugin::writeStdErr);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to acquire locks, won't run the gradle jdk setup", e);
+        }
+    }
+
+    private static Void writeStdOutput(InputStream inputStream) {
+        return CommandRunner.write(inputStream, line -> {
+            logger.lifecycle(line);
+            return null;
+        });
+    }
+
+    private static Void writeStdErr(InputStream inputStream) {
+        return CommandRunner.write(inputStream, line -> {
+            logger.error(line);
+            return null;
+        });
+    }
+
+    private static void createDirectories(Path path) {
+        try {
+            Files.createDirectories(path);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create directory", e);
+        }
+    }
+
+    private static List<Path> getMissingPaths(List<Path> paths) {
+        return paths.stream().filter(path -> !Files.exists(path)).collect(Collectors.toList());
     }
 }

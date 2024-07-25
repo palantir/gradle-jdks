@@ -18,12 +18,18 @@ package com.palantir.gradle.jdks
 
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.gradle.jdks.setup.common.CurrentOs
+import nebula.test.functional.ExecutionResult
 import org.apache.commons.lang3.tuple.Pair
 import spock.lang.TempDir
 
+import java.nio.file.FileVisitResult
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import java.util.stream.Stream
 
 class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
 
@@ -34,6 +40,71 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationTest {
 
     @TempDir
     Path workingDir
+
+
+    def '#gradleVersionNumber: non-existing jdks are installed by the settings plugin'() {
+        gradleVersion = gradleVersionNumber
+        applyJdksPlugins()
+
+        // language=groovy
+        buildFile << """
+            jdks {
+               jdk(17) {
+                  distribution = JDK_17_DISTRO
+                  jdkVersion = JDK_17_VERSION
+               }
+               
+                daemonTarget = '17'
+            }
+        """.replace("JDK_17_DISTRO", quoted(JDK_17.getLeft()))
+                .replace("JDK_17_VERSION", quoted(JDK_17.getRight()))
+                .stripIndent(true)
+
+        when:
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        runTasksSuccessfully("generateGradleJdkConfigs")
+
+        then: 'only gradle configuration files are generated, no jdks are installed'
+        String os = CurrentOs.get().uiName()
+        String arch = CurrentArch.get().uiName()
+        Path jdk17LocalPath = projectDir.toPath().resolve("gradle/jdks/17/${os}/${arch}/local-path")
+        String compileJdkFileName = jdk17LocalPath.text.trim()
+        Path installedJdkPath = Path.of(System.getProperty("user.home")).resolve(".gradle/gradle-jdks").resolve(compileJdkFileName).toAbsolutePath()
+        !Files.exists(installedJdkPath)
+
+        when: 'trigger a task'
+        ExecutionResult executionResult = runTasksSuccessfully("javaToolchains")
+
+        then: 'the jdks are installed by the settings plugin'
+        executionResult.standardError.contains("Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true)" +
+                " but some jdks were not installed")
+        executionResult.standardOutput.contains("Auto-detection:     Disabled")
+        executionResult.standardOutput.contains("Auto-download:      Disabled")
+        executionResult.standardOutput.contains("JDK ${SIMPLIFIED_JDK_17_VERSION}")
+        Files.exists(installedJdkPath)
+
+        when: 'if the jdk configured path is changed'
+        jdk17LocalPath.text = "amazon-corretto-another-path\n"
+        ExecutionResult resultAfterJdkChange = runTasksSuccessfully("javaToolchains")
+
+        then:
+        resultAfterJdkChange.standardError.contains("Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true)" +
+                " but some jdks were not installed")
+        Path newInstalledJdkPath = Path.of(System.getProperty("user.home")).resolve(".gradle/gradle-jdks").resolve("amazon-corretto-another-path").toAbsolutePath()
+        Files.exists(newInstalledJdkPath)
+
+        cleanup:
+        Files.walk(installedJdkPath)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::delete)
+
+        Files.walk(newInstalledJdkPath)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::delete)
+
+        where:
+        gradleVersionNumber << [GRADLE_7_6_VERSION]
+    }
 
     def '#gradleVersionNumber: javaToolchains correctly set-up'() {
         gradleVersion = gradleVersionNumber

@@ -28,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,9 +42,7 @@ public final class CommandRunner {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
         try {
             ProcessBuilder processBuilder = new ProcessBuilder().command(commandArguments);
-            if (directory.isPresent()) {
-                processBuilder.directory(directory.get());
-            }
+            directory.ifPresent(processBuilder::directory);
             Process process = processBuilder.start();
             CompletableFuture<String> outputFuture =
                     CompletableFuture.supplyAsync(() -> readAllInput(process.getInputStream()), executorService);
@@ -71,11 +70,39 @@ public final class CommandRunner {
         }
     }
 
-    public static void runWithInheritIO(List<String> commandArguments, File directory) {
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
+    public static void runWithLogger(
+            List<String> commandArguments,
+            File directory,
+            Function<InputStream, Void> stdOutputWriter,
+            Function<InputStream, Void> stdErrWriter) {
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder().command(commandArguments);
-            processBuilder.directory(directory);
+            ProcessBuilder processBuilder =
+                    new ProcessBuilder().command(commandArguments).directory(directory);
+            Process process = processBuilder.start();
+            CompletableFuture<Void> stdOutputFuture =
+                    CompletableFuture.runAsync(() -> stdOutputWriter.apply(process.getInputStream()), executorService);
+            CompletableFuture<Void> stdErrFuture =
+                    CompletableFuture.runAsync(() -> stdErrWriter.apply(process.getErrorStream()), executorService);
+            stdOutputFuture.get();
+            stdErrFuture.get();
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new RuntimeException(String.format(
+                        "Command '%s' failed with exit code %d.", String.join(" ", commandArguments), exitCode));
+            }
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            throw new RuntimeException(
+                    String.format("Failed to run command '%s'. ", String.join(" ", commandArguments)), e);
+        } finally {
+            executorService.shutdown();
+        }
+    }
+
+    public static void runWithInheritIO(List<String> commandArguments) {
+        try {
+            ProcessBuilder processBuilder =
+                    new ProcessBuilder().command(commandArguments).redirectErrorStream(true);
             processBuilder.inheritIO();
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
@@ -87,8 +114,6 @@ public final class CommandRunner {
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(
                     String.format("Failed to run command '%s'. ", String.join(" ", commandArguments)), e);
-        } finally {
-            executorService.shutdown();
         }
     }
 
@@ -97,6 +122,19 @@ public final class CommandRunner {
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()) {
             return lines.collect(Collectors.joining("\n"));
         }
+    }
+
+    public static Void write(InputStream inputStream, Function<String, Void> logFunction) {
+        try (BufferedReader bufferedReader =
+                new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                logFunction.apply(line);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write inputStream", e);
+        }
+        return null;
     }
 
     private CommandRunner() {}
