@@ -92,9 +92,7 @@ public final class GradleJdkInstallationSetup {
         try {
             Files.createDirectories(projectDir.resolve(".gradle"));
             Path gradleConfigFile = projectDir.resolve(".gradle/config.properties");
-            if (!Files.exists(gradleConfigFile)) {
-                Files.createFile(gradleConfigFile);
-            }
+            gradleConfigFile.toFile().createNewFile();
             Properties gradleProperties = new Properties();
             gradleProperties.load(new FileInputStream(gradleConfigFile.toFile()));
             gradleProperties.setProperty("java.home", gradleDaemonJavaHome.toString());
