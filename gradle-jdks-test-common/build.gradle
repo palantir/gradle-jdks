@@ -1,0 +1,9 @@
+apply plugin: 'java'
+apply plugin: 'groovy'
+
+
+dependencies {
+    implementation project(':gradle-jdks-setup-common')
+    implementation gradleTestKit()
+    implementation 'org.apache.commons:commons-compress'
+}

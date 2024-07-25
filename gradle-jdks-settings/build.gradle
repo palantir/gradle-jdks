@@ -9,6 +9,11 @@ dependencies {
     // settings classLoader and the build classLoaders.
     shadeTransitively project(':gradle-jdks-setup-common')
     shadeTransitively project(':gradle-jdks-enablement')
+
+    testImplementation gradleTestKit()
+    testImplementation 'com.netflix.nebula:nebula-test'
+    testImplementation 'org.apache.commons:commons-compress'
+    testImplementation project(':gradle-jdks-test-common')
 }
 
 gradlePlugin {
@@ -44,3 +49,9 @@ publishing.publications {
         }
     }
 }
+
+tasks.test {
+    environment(Map.of("HOME", "/tmp"))
+    systemProperty 'user.home', '/tmp'
+}
+

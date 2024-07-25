@@ -17,12 +17,11 @@
 package com.palantir.gradle.jdks
 
 import com.palantir.gradle.jdks.setup.common.CommandRunner
-import nebula.test.IntegrationSpec
 import org.apache.commons.lang3.tuple.Pair
 
 import java.nio.file.Path
 
-abstract class GradleJdkIntegrationTest extends IntegrationSpec {
+class GradleJdkTestUtils {
 
     static String GRADLE_7_6_VERSION = "7.6"
     static String GRADLE_7_6_4_VERSION = "7.6.4"
@@ -41,9 +40,8 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
     static Pair<String, String> JDK_17 = Pair.of("amazon-corretto", JDK_17_VERSION)
     static Pair<String, String> JDK_21 = Pair.of("amazon-corretto", JDK_21_VERSION)
 
-    abstract Path workingDir();
-
-    def applyApplicationPlugin() {
+    static applyApplicationPlugin(File buildFile) {
+       // language=groovy
         buildFile << """
             apply plugin: 'application'
             
@@ -53,14 +51,14 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
         """.stripIndent(true)
     }
 
-    def applyBaselineJavaVersions() {
+    static applyBaselineJavaVersions(File buildFile) {
         // language=groovy
         buildFile << """
             apply plugin: 'com.palantir.baseline-java-versions'
         """.stripIndent(true)
     }
 
-    def applyJdksPlugins() {
+    static applyJdksPlugins(File settingsFile, File buildFile) {
         // language=groovy
         settingsFile << """
             buildscript {
@@ -99,9 +97,9 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                 .stripIndent(true)
     }
 
-    def setupJdksHardcodedVersions(String daemonJdkVersion = DAEMON_MAJOR_VERSION_11) {
+    static setupJdksHardcodedVersions(File settingsFile, File buildFile, String daemonJdkVersion = DAEMON_MAJOR_VERSION_11) {
 
-        applyJdksPlugins()
+        applyJdksPlugins(settingsFile, buildFile)
 
         // language=groovy
         buildFile << """
@@ -133,49 +131,20 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
                 .stripIndent(true)
     }
 
-    def quoted(String value) {
+    static quoted(String value) {
         return "'" + value + "'"
     }
 
-    String runGradlewTasksSuccessfully(String... tasks) {
-        String output = runGradlewTasks(tasks)
-        assert output.contains("BUILD SUCCESSFUL")
-        return output
+    private static Iterable<File> getBuildPluginClasspathInjector() {
+        return getPluginClasspathInjector(Path.of("../gradle-jdks/build/pluginUnderTestMetadata/plugin-under-test-metadata.properties"))
     }
 
-    String runGradlewTasksWithFailure(String... tasks) {
-        String output = runGradlewTasks(tasks)
-        assert output.contains("BUILD FAILED")
-        return output
-    }
-
-    private String runGradlewTasks(String... tasks) {
-        ProcessBuilder processBuilder = getProcessBuilder(tasks)
-        Process process = processBuilder.start()
-        String output = CommandRunner.readAllInput(process.getInputStream())
-        return output
-    }
-
-    private ProcessBuilder getProcessBuilder(String... tasks) {
-        List<String> arguments = ["./gradlew"]
-        Arrays.asList(tasks).forEach(arguments::add)
-        ProcessBuilder processBuilder = new ProcessBuilder()
-                .command(arguments)
-                .directory(projectDir).redirectErrorStream(true)
-        processBuilder.environment().put("GRADLE_USER_HOME", workingDir().toAbsolutePath().toString())
-        return processBuilder
-    }
-
-    Iterable<File> getBuildPluginClasspathInjector() {
-        return getPluginClasspathInjector(Path.of("build/pluginUnderTestMetadata/plugin-under-test-metadata.properties"))
-    }
-
-    Iterable<File> getSettingsPluginClasspathInjector() {
+    private static Iterable<File> getSettingsPluginClasspathInjector() {
         return getPluginClasspathInjector(Path.of("../gradle-jdks-settings/build/pluginUnderTestMetadata/plugin-under-test-metadata.properties"))
     }
 
 
-    Iterable<File> getPluginClasspathInjector(Path path) {
+    private static Iterable<File> getPluginClasspathInjector(Path path) {
         File propertiesFile = path.toFile()
         Properties properties = new Properties()
         propertiesFile.withInputStream { inputStream ->
@@ -185,19 +154,5 @@ abstract class GradleJdkIntegrationTest extends IntegrationSpec {
         return classpath.split(File.pathSeparator).collect { "'" + it + "'" }
     }
 
-    private static final int BYTECODE_IDENTIFIER = (int) 0xCAFEBABE
-
-    // See http://illegalargumentexception.blogspot.com/2009/07/java-finding-class-versions.html
-    static Pair readBytecodeVersion(File file) {
-        try (InputStream stream = new FileInputStream(file)
-             DataInputStream dis = new DataInputStream(stream)) {
-            int magic = dis.readInt()
-            if (magic != BYTECODE_IDENTIFIER) {
-                throw new IllegalArgumentException("File " + file + " does not appear to be java bytecode")
-            }
-            int minorBytecodeVersion = dis.readUnsignedShort()
-            int majorBytecodeVersion = dis.readUnsignedShort()
-            return Pair.of(minorBytecodeVersion, majorBytecodeVersion)
-        }
-    }
+    private GradleJdkTestUtils() {}
 }

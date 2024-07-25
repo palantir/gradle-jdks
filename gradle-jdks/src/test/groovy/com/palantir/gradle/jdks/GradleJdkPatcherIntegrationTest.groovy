@@ -28,7 +28,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
 
-class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
+class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
 
     @TempDir
     Path workingDir
@@ -84,7 +84,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         secondCheckResult.wasUpToDate("checkWrapperJdkPatcher")
 
         where:
-        gradleVersionNumber << [GRADLE_7_6_VERSION, GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
     def '#gradleVersionNumber: fails if Gradle JDK configuration is wrong'() {
@@ -101,7 +101,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         result.standardError.contains("Gradle daemon JDK version is `15` but no JDK configured for that version.")
 
         where:
-        gradleVersionNumber << [GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
     def '#gradleVersionNumber: fails if no JDKs were configured'() {
@@ -126,7 +126,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         result.standardError.contains("No JDKs were configured for the gradle setup");
 
         where:
-        gradleVersionNumber << [GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
     def '#gradleVersionNumber: checkGradleJdkConfigs fails if run before setupJdks'() {
@@ -143,7 +143,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationTest {
         checkResult.standardError.contains("is out of date, please run `./gradlew setupJdks`")
 
         where:
-        gradleVersionNumber << [GRADLE_7_6_4_VERSION, GRADLE_8_5_VERSION]
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
     def 'no gradleWrapper patch if palantir.jdk.setup.enabled == false'() {
