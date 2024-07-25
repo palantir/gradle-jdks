@@ -32,6 +32,10 @@ abstract class GradleJdkIntegrationSpec extends IntegrationSpec {
         GradleJdkTestUtils.setupJdksHardcodedVersions(settingsFile, buildFile)
     }
 
+    def setupJdksHardcodedVersions(String daemonTarget) {
+        GradleJdkTestUtils.setupJdksHardcodedVersions(settingsFile, buildFile, daemonTarget)
+    }
+
     def applyApplicationPlugin() {
         GradleJdkTestUtils.applyApplicationPlugin(buildFile)
     }

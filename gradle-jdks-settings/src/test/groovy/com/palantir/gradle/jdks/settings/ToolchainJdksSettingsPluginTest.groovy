@@ -33,6 +33,7 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
 
         GradleJdkTestUtils.applyJdksPlugins(settingsFile, buildFile)
 
+
         // language=groovy
         buildFile << """
             jdks {
