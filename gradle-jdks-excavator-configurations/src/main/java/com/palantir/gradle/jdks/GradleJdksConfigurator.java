@@ -37,6 +37,7 @@ public final class GradleJdksConfigurator {
 
     private static final JdkDistributions jdkDistributions = new JdkDistributions();
     private static final String INSTALLATION_SCRIPT = "install-jdks.sh";
+    private static final String INSTALLATION_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
 
     /**
      * Writes the jdk configuration files for a given jdk distribution.
@@ -104,15 +105,31 @@ public final class GradleJdksConfigurator {
      *
      * @param targetDir the target directory where the installation scripts should be written to.
      */
-    public static void writeInstallationScript(Path targetDir) {
+    public static void writeInstallationScripts(Path targetDir) {
         Path scriptsDir = targetDir.resolve("scripts");
+        maybeCreateDirectories(scriptsDir);
+        copyResourceToPath(scriptsDir, INSTALLATION_FUNCTIONS_SCRIPT);
+        copyResourceToPath(scriptsDir, INSTALLATION_SCRIPT);
+    }
+
+    private static void maybeCreateDirectories(Path directory) {
+        if (Files.exists(directory)) {
+            return;
+        }
+        try {
+            Files.createDirectories(directory);
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Failed to create directory %s", directory), e);
+        }
+    }
+
+    private static void copyResourceToPath(Path targetDir, String resourceName) {
         try {
             URL installJdksResource =
-                    GradleJdksConfigurator.class.getClassLoader().getResource(INSTALLATION_SCRIPT);
+                    GradleJdksConfigurator.class.getClassLoader().getResource(resourceName);
             JarURLConnection connection = (JarURLConnection) installJdksResource.openConnection();
-            JarEntry jarEntry = connection.getJarFile().getJarEntry(INSTALLATION_SCRIPT);
-            Files.createDirectories(scriptsDir);
-            Path installationScript = scriptsDir.resolve(INSTALLATION_SCRIPT);
+            JarEntry jarEntry = connection.getJarFile().getJarEntry(resourceName);
+            Path installationScript = targetDir.resolve(resourceName);
             try (InputStream is = connection.getJarFile().getInputStream(jarEntry);
                     OutputStream os = new FileOutputStream(installationScript.toFile())) {
                 is.transferTo(os);
@@ -124,7 +141,7 @@ public final class GradleJdksConfigurator {
                     PosixFilePermission.OTHERS_EXECUTE));
             Files.setPosixFilePermissions(installationScript, perms);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to write the installation script", e);
+            throw new RuntimeException(String.format("Failed to write the %s script", resourceName), e);
         }
     }
 
