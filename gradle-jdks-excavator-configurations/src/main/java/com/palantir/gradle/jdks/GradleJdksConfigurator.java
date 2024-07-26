@@ -81,7 +81,7 @@ public final class GradleJdksConfigurator {
         try {
             Files.createDirectories(pathFile.getParent());
             // The content of the configuration files should always end with a newline character to ensure the file can
-            // be read by {see: resources/install-jdks#read_value }
+            // be read by {see: resources/install-jdks.sh#read_value }
             String contentWithLineEnding = content + "\n";
             Files.write(
                     pathFile, contentWithLineEnding.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE_NEW);
