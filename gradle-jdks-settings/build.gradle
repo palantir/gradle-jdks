@@ -53,7 +53,7 @@ publishing.publications {
 // Changing the location where the gradle jdks are installed such that the settings plugin can run the
 // gradle-jdks-setup.sh configuration script to install the missing jdks.
 tasks.withType(Test) {
-    environment("HOME", "/tmp")
-    systemProperty 'user.home', '/tmp'
+    environment("HOME", "/tmp/gradleJdksSettingsTest")
+    systemProperty 'user.home', '/tmp/gradleJdksSettingsTest'
 }
 

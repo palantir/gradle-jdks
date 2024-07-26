@@ -118,14 +118,14 @@ public final class CaResources {
     }
 
     private Void writeStdOutput(InputStream inputStream) {
-        return CommandRunner.write(inputStream, line -> {
+        return CommandRunner.processStream(inputStream, line -> {
             logger.log(line);
             return null;
         });
     }
 
     private Void writeStdError(InputStream inputStream) {
-        return CommandRunner.write(inputStream, line -> {
+        return CommandRunner.processStream(inputStream, line -> {
             logger.logError(line);
             return null;
         });

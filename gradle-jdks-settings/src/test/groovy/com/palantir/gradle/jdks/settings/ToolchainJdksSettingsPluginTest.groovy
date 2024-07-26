@@ -26,10 +26,12 @@ import java.nio.file.Path
 
 class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
 
+    private final Path USER_HOME_PATH = Path.of(System.getProperty("user.home"))
+
     def '#gradleVersionNumber: non-existing jdks are installed by the settings plugin'() {
         setup:
         gradleVersion = gradleVersionNumber
-
+        Files.createDirectories(USER_HOME_PATH)
         GradleJdkTestUtils.applyJdksPlugins(settingsFile, buildFile)
 
         // language=groovy
@@ -69,7 +71,7 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
         executionResult.standardOutput.contains("Auto-detection:     Disabled")
         executionResult.standardOutput.contains("Auto-download:      Disabled")
         executionResult.standardOutput.contains("JDK ${GradleJdkTestUtils.SIMPLIFIED_JDK_17_VERSION}")
-        Path expectedJdkPath = Path.of(System.getProperty("user.home")).resolve(".gradle/gradle-jdks")
+        Path expectedJdkPath = USER_HOME_PATH.resolve(".gradle/gradle-jdks")
                 .resolve("amazon-corretto-${gradleVersion}-test1").toAbsolutePath()
         Files.exists(expectedJdkPath)
 
@@ -80,7 +82,7 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
         then:
         resultAfterJdkChange.standardError.contains("Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true)" +
                 " but some jdks were not installed")
-        Path newInstalledJdkPath = Path.of(System.getProperty("user.home")).resolve(".gradle/gradle-jdks")
+        Path newInstalledJdkPath = USER_HOME_PATH.resolve(".gradle/gradle-jdks")
                 .resolve("amazon-corretto-${gradleVersion}-test2").toAbsolutePath()
         Files.exists(newInstalledJdkPath)
 

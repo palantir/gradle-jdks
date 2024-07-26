@@ -45,7 +45,7 @@ public class CommandRunnerTest {
     }
 
     private static Void assertOutput(InputStream inputStream) {
-        return CommandRunner.write(inputStream, line -> {
+        return CommandRunner.processStream(inputStream, line -> {
             assertThat(line).contains("my message");
             return null;
         });

@@ -96,7 +96,7 @@ public final class CommandRunner {
         }
     }
 
-    public static Void write(InputStream inputStream, Function<String, Void> logFunction) {
+    public static Void processStream(InputStream inputStream, Function<String, Void> logFunction) {
         try (BufferedReader bufferedReader =
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;

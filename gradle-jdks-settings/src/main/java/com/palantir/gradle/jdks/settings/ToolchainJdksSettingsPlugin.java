@@ -212,14 +212,14 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
     }
 
     private static Void writeStdOutput(InputStream inputStream) {
-        return CommandRunner.write(inputStream, line -> {
+        return CommandRunner.processStream(inputStream, line -> {
             logger.lifecycle(line);
             return null;
         });
     }
 
     private static Void writeStdErr(InputStream inputStream) {
-        return CommandRunner.write(inputStream, line -> {
+        return CommandRunner.processStream(inputStream, line -> {
             logger.error(line);
             return null;
         });
