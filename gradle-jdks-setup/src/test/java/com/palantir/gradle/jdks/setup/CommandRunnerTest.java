@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
+import java.io.InputStream;
 import org.junit.jupiter.api.Test;
 
 public class CommandRunnerTest {
@@ -35,5 +36,18 @@ public class CommandRunnerTest {
         assertThatThrownBy(
                         () -> CommandRunner.runWithOutputCollection(new ProcessBuilder().command("nonexistingcommand")))
                 .hasMessageContaining("Failed to run command 'nonexistingcommand'");
+    }
+
+    @Test
+    public void command_runs_with_logger() {
+        CommandRunner.runWithLogger(
+                new ProcessBuilder().command("echo", "my message"), CommandRunnerTest::assertOutput, _unused -> null);
+    }
+
+    private static Void assertOutput(InputStream inputStream) {
+        return CommandRunner.write(inputStream, line -> {
+            assertThat(line).contains("my message");
+            return null;
+        });
     }
 }

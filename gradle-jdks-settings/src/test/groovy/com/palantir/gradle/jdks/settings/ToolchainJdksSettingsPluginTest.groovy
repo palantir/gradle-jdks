@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.palantir.gradle.jdks.settings
 
 import com.palantir.gradle.jdks.GradleJdkTestUtils
@@ -32,7 +31,6 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
         gradleVersion = gradleVersionNumber
 
         GradleJdkTestUtils.applyJdksPlugins(settingsFile, buildFile)
-
 
         // language=groovy
         buildFile << """

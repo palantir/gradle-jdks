@@ -76,10 +76,10 @@ tasks.withType(JavaCompile).configureEach {
     it.options.errorprone.disable 'StrictUnusedVariable'
 }
 
-tasks.test {
+tasks.withType(Test) {
     environment(Map.of("PROJECT_VERSION", project.version))
     systemProperty 'ignoreDeprecations', 'true'
-    dependsOn project(':gradle-jdks-settings').tasks.named('build')
+    dependsOn project(':gradle-jdks-settings').tasks.withType(PluginUnderTestMetadata.class)
 }
 
 tasks.withType(ProcessResources.class).configureEach {

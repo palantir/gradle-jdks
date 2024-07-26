@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -87,24 +86,6 @@ public final class CommandRunner {
                     String.format("Failed to run command '%s'. ", String.join(" ", processBuilder.command())), e);
         } finally {
             executorService.shutdown();
-        }
-    }
-
-    public static void runWithInheritIO(List<String> commandArguments) {
-        try {
-            ProcessBuilder processBuilder =
-                    new ProcessBuilder().command(commandArguments).redirectErrorStream(true);
-            processBuilder.inheritIO();
-            Process process = processBuilder.start();
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new RuntimeException(String.format(
-                        "Failed to run command '%s'. Failed with exit code %d.",
-                        String.join(" ", commandArguments), exitCode));
-            }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(
-                    String.format("Failed to run command '%s'. ", String.join(" ", commandArguments)), e);
         }
     }
 

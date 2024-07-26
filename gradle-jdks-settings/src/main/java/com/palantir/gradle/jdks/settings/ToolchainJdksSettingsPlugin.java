@@ -128,11 +128,6 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
             // see: https://github.com/gradle/gradle/blob/4bd1b3d3fc3f31db5a26eecb416a165b8cc36082/subprojects/core-api/
             // src/main/java/org/gradle/api/internal/properties/GradleProperties.java#L28
             if (method.getName().equals("find") && args.length == 1) {
-                logger.info(
-                        "Running find method for args {} {} {}",
-                        args,
-                        Thread.currentThread().getName(),
-                        ProcessHandle.current().pid());
                 List<Path> installedLocalToolchains = getOrInstallJdkPaths(rootProjectDir, gradleJdksLocalDirectory);
                 String onlyArg = (String) args[0];
                 if (onlyArg.equals("org.gradle.java.installations.auto-detect")
