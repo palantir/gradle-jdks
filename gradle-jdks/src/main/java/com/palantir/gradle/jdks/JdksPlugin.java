@@ -50,7 +50,14 @@ public final class JdksPlugin implements Plugin<Project> {
         }
     }
 
-    public static void configureJdksExtensionBaseUrl(JdksExtension jdksExtension, JdkDistributions jdkDistributions) {
+    public static JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
+        JdksExtension jdksExtension = rootProject.getExtensions().create("jdks", JdksExtension.class);
+        jdksExtension
+                .getJdkStorageLocation()
+                .set(rootProject
+                        .getLayout()
+                        .dir(rootProject.provider(
+                                () -> new File(System.getProperty("user.home"), ".gradle/gradle-jdks"))));
         Arrays.stream(JdkDistributionName.values()).forEach(jdkDistributionName -> {
             jdksExtension.jdkDistribution(jdkDistributionName, jdkDistributionExtension -> {
                 jdkDistributionExtension
@@ -58,5 +65,7 @@ public final class JdksPlugin implements Plugin<Project> {
                         .set(jdkDistributions.get(jdkDistributionName).defaultBaseUrl());
             });
         });
+
+        return jdksExtension;
     }
 }

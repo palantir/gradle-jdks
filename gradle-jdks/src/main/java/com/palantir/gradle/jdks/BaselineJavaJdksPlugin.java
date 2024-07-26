@@ -43,8 +43,7 @@ public final class BaselineJavaJdksPlugin implements Plugin<Project> {
 
         JdkDistributions jdkDistributions = new JdkDistributions();
 
-        JdksExtension jdksExtension = rootProject.getExtensions().getByType(JdksExtension.class);
-        JdksPlugin.configureJdksExtensionBaseUrl(jdksExtension, jdkDistributions);
+        JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
 
         JdkManager jdkManager = new JdkManager(
                 jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension));

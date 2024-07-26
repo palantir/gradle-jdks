@@ -55,8 +55,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                         + "are managed by the configured custom toolchains.");
         JdkDistributions jdkDistributions = new JdkDistributions();
 
-        JdksExtension jdksExtension = rootProject.getExtensions().getByType(JdksExtension.class);
-        JdksPlugin.configureJdksExtensionBaseUrl(jdksExtension, jdkDistributions);
+        JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
 
         rootProject.getPluginManager().withPlugin("com.palantir.baseline-java-versions", unused -> {
             rootProject
