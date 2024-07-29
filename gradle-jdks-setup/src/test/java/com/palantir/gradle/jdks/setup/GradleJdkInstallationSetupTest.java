@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -99,14 +98,15 @@ public final class GradleJdkInstallationSetupTest {
     }
 
     private static void checkCaIsImported(Path jdkPath) {
-        CommandRunner.run(List.of(
-                jdkPath.resolve("bin/keytool").toString(),
-                "-list",
-                "-storepass",
-                "changeit",
-                "-alias",
-                AMAZON_CERT_ALIAS,
-                "-keystore",
-                jdkPath.resolve("lib/security/cacerts").toString()));
+        CommandRunner.runWithOutputCollection(new ProcessBuilder()
+                .command(
+                        jdkPath.resolve("bin/keytool").toString(),
+                        "-list",
+                        "-storepass",
+                        "changeit",
+                        "-alias",
+                        AMAZON_CERT_ALIAS,
+                        "-keystore",
+                        jdkPath.resolve("lib/security/cacerts").toString()));
     }
 }
