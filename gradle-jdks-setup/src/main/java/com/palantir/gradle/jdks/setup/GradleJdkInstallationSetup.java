@@ -110,6 +110,9 @@ public final class GradleJdkInstallationSetup {
         Path destinationJdkInstallationDir = Path.of(args[1]);
         Path certsDir = Path.of(args[2]);
         boolean wasCopied = copy(logger, destinationJdkInstallationDir);
+        // If the JDK was not copied by the current process - which means that we waited for the lock while another
+        // process set up the JDK - then we shouldn't try to add the certificate because the certificate was already
+        // added.
         if (wasCopied) {
             Map<String, String> certSerialNumbersToNames = extractCertsSerialNumbers(logger, certsDir);
             caResources.maybeImportCertsInJdk(destinationJdkInstallationDir, certSerialNumbersToNames);
