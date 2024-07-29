@@ -117,18 +117,12 @@ public final class CaResources {
         }
     }
 
-    private Void writeStdOutput(InputStream inputStream) {
-        return CommandRunner.processStream(inputStream, line -> {
-            logger.log(line);
-            return null;
-        });
+    private void writeStdOutput(InputStream inputStream) {
+        CommandRunner.processStream(inputStream, logger::log);
     }
 
-    private Void writeStdError(InputStream inputStream) {
-        return CommandRunner.processStream(inputStream, line -> {
-            logger.logError(line);
-            return null;
-        });
+    private void writeStdError(InputStream inputStream) {
+        CommandRunner.processStream(inputStream, logger::logError);
     }
 
     private static boolean isCertificateInTruststore(Path jdkInstallationDirectory, String alias) {

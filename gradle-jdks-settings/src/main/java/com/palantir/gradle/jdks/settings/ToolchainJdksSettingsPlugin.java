@@ -212,18 +212,12 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                 ToolchainJdksSettingsPlugin::writeStdErr);
     }
 
-    private static Void writeStdOutput(InputStream inputStream) {
-        return CommandRunner.processStream(inputStream, line -> {
-            logger.lifecycle(line);
-            return null;
-        });
+    private static void writeStdOutput(InputStream inputStream) {
+        CommandRunner.processStream(inputStream, logger::lifecycle);
     }
 
-    private static Void writeStdErr(InputStream inputStream) {
-        return CommandRunner.processStream(inputStream, line -> {
-            logger.error(line);
-            return null;
-        });
+    private static void writeStdErr(InputStream inputStream) {
+        CommandRunner.processStream(inputStream, logger::error);
     }
 
     private static void createDirectories(Path path) {

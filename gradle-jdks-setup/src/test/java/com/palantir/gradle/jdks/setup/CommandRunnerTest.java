@@ -41,13 +41,12 @@ public class CommandRunnerTest {
     @Test
     public void command_runs_with_logger() {
         CommandRunner.runWithLogger(
-                new ProcessBuilder().command("echo", "my message"), CommandRunnerTest::assertOutput, _unused -> null);
+                new ProcessBuilder().command("echo", "my message"), CommandRunnerTest::assertOutput, _unused -> {});
     }
 
-    private static Void assertOutput(InputStream inputStream) {
-        return CommandRunner.processStream(inputStream, line -> {
+    private static void assertOutput(InputStream inputStream) {
+        CommandRunner.processStream(inputStream, line -> {
             assertThat(line).contains("my message");
-            return null;
         });
     }
 }

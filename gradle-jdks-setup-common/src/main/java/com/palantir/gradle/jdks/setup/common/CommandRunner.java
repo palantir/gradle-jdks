@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -63,16 +63,14 @@ public final class CommandRunner {
     }
 
     public static void runWithLogger(
-            ProcessBuilder processBuilder,
-            Function<InputStream, Void> stdOutputWriter,
-            Function<InputStream, Void> stdErrWriter) {
-        ExecutorService executorService = Executors.newFixedThreadPool(3);
+            ProcessBuilder processBuilder, Consumer<InputStream> stdOutputWriter, Consumer<InputStream> stdErrWriter) {
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
         try {
             Process process = processBuilder.start();
             CompletableFuture<Void> stdOutputFuture =
-                    CompletableFuture.runAsync(() -> stdOutputWriter.apply(process.getInputStream()), executorService);
+                    CompletableFuture.runAsync(() -> stdOutputWriter.accept(process.getInputStream()), executorService);
             CompletableFuture<Void> stdErrFuture =
-                    CompletableFuture.runAsync(() -> stdErrWriter.apply(process.getErrorStream()), executorService);
+                    CompletableFuture.runAsync(() -> stdErrWriter.accept(process.getErrorStream()), executorService);
             stdOutputFuture.get();
             stdErrFuture.get();
             int exitCode = process.waitFor();
@@ -96,12 +94,12 @@ public final class CommandRunner {
         }
     }
 
-    public static Void processStream(InputStream inputStream, Function<String, Void> logFunction) {
+    public static Void processStream(InputStream inputStream, Consumer<String> logFunction) {
         try (BufferedReader bufferedReader =
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
-                logFunction.apply(line);
+                logFunction.accept(line);
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to write inputStream", e);
