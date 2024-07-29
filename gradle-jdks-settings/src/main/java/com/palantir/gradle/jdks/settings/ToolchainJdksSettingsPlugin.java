@@ -159,7 +159,8 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     "Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true) but some jdks were not"
                             + " installed: {}. If running from Intellij, please make sure the"
                             + " `palantir-gradle-jdks` Intellij plugin is installed"
-                            + " https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions.",
+                            + " https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions."
+                            + " To unblock the workflow, the jdks will be manually installed now ...",
                     missingJdkPaths);
             runGradleJdkSetup(rootProjectDir);
         }

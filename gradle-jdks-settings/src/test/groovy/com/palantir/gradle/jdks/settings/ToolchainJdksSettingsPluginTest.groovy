@@ -96,6 +96,7 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
                 .forEach(Files::delete)
 
         where:
+        // testing for the different gradle versions to make sure the reflection in the settings plugin works
         gradleVersionNumber << [GradleJdkTestUtils.GRADLE_7_6_VERSION, GradleJdkTestUtils.GRADLE_8_5_VERSION, GradleJdkTestUtils.GRADLE_8_8_VERSION]
     }
 
