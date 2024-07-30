@@ -138,7 +138,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         // copy gradle-jdks-functions.sh" to the gradle directory
         Files.copy(
                 Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-functions.sh"),
-                gradleDirectory.resolve("gradle - jdks - functions.sh"));
+                gradleDirectory.resolve("gradle-jdks-functions.sh"));
 
         // copy the testing script to the working directory
         Files.copy(Path.of("src/integrationTest/resources/testing-script.sh"), workingDir.resolve("testing-script.sh"));
