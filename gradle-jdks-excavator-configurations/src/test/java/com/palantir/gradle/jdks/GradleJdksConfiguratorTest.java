@@ -24,7 +24,6 @@ import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -62,10 +61,10 @@ class GradleJdksConfiguratorTest {
         Path installJdks = Path.of("src/main/resources/install-jdks.sh");
         Path certsDir = Files.createDirectories(tempDir.resolve("certs"));
         ProcessBuilder processBuilder = new ProcessBuilder()
-                .command(List.of(
+                .command(
                         installJdks.toAbsolutePath().toString(),
                         tempDir.resolve("jdks").toString(),
-                        certsDir.toString()));
+                        certsDir.toString());
         Path installationJdkDir = tempDir.resolve("installed-jdks");
         processBuilder.environment().put("GRADLE_USER_HOME", installationJdkDir.toString());
         Process process = processBuilder.start();

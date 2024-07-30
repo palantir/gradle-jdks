@@ -36,8 +36,7 @@ import java.util.jar.JarEntry;
 public final class GradleJdksConfigurator {
 
     private static final JdkDistributions jdkDistributions = new JdkDistributions();
-    private static final String INSTALLATION_SCRIPT = "install-jdks.sh";
-    private static final String INSTALLATION_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
+    ;
 
     /**
      * Writes the jdk configuration files for a given jdk distribution.
@@ -108,8 +107,11 @@ public final class GradleJdksConfigurator {
     public static void writeInstallationScripts(Path targetDir) {
         Path scriptsDir = targetDir.resolve("scripts");
         maybeCreateDirectories(scriptsDir);
-        copyResourceToPath(scriptsDir, INSTALLATION_FUNCTIONS_SCRIPT);
-        copyResourceToPath(scriptsDir, INSTALLATION_SCRIPT);
+        Path functionsScript = copyResourceToPath(scriptsDir, "gradle-jdks-functions.sh");
+        setExecuteFilePermissions(functionsScript);
+        Path installationScript = copyResourceToPath(scriptsDir, "install-jdks.sh");
+        setExecuteFilePermissions(installationScript);
+        copyResourceToPath(scriptsDir, "gradle-jdks-setup.jar");
     }
 
     private static void maybeCreateDirectories(Path directory) {
@@ -123,7 +125,7 @@ public final class GradleJdksConfigurator {
         }
     }
 
-    private static void copyResourceToPath(Path targetDir, String resourceName) {
+    private static Path copyResourceToPath(Path targetDir, String resourceName) {
         try {
             URL installJdksResource =
                     GradleJdksConfigurator.class.getClassLoader().getResource(resourceName);
@@ -134,14 +136,22 @@ public final class GradleJdksConfigurator {
                     OutputStream os = new FileOutputStream(installationScript.toFile())) {
                 is.transferTo(os);
             }
-            Set<PosixFilePermission> perms = Files.getPosixFilePermissions(installationScript);
+            return installationScript;
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Failed to write the %s script", resourceName), e);
+        }
+    }
+
+    private static void setExecuteFilePermissions(Path path) {
+        try {
+            Set<PosixFilePermission> perms = Files.getPosixFilePermissions(path);
             perms.addAll(Set.of(
                     PosixFilePermission.OWNER_EXECUTE,
                     PosixFilePermission.GROUP_EXECUTE,
                     PosixFilePermission.OTHERS_EXECUTE));
-            Files.setPosixFilePermissions(installationScript, perms);
+            Files.setPosixFilePermissions(path, perms);
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to write the %s script", resourceName), e);
+            throw new RuntimeException(String.format("Failed to set execute permissions to path %s", path), e);
         }
     }
 
