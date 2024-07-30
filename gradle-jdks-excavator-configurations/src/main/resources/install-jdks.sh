@@ -4,13 +4,14 @@ set -eux
 
 GRADLE_DIR=$1
 CERTS_DIR=$2
+JDKS_SYMLINK_DIR=$3
 
 # Loading gradle jdk functions
-DIR="$(dirname "$(readlink -f "$0")")"
-source "$DIR"/gradle-jdks-functions.sh
+scripts_dir="$(dirname "$(readlink -f "$0")")"
+source "$scripts_dir"/gradle-jdks-functions.sh
 
 # Running the installation setup
-install_and_setup_jdks "$GRADLE_DIR" "$CERTS_DIR"
+install_and_setup_jdks "$GRADLE_DIR" "$CERTS_DIR" "$scripts_dir"
 
 os_name=$(get_os)
 arch_name=$(get_arch)
@@ -24,8 +25,7 @@ for dir in "$GRADLE_DIR"/jdks/*/; do
   fi
   distribution_local_path=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/local-path)
   jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
-  echo "check me"
-  echo ln -s "$jdk_installation_directory" "/opt/java${major_version}"
+  ln -s "$jdk_installation_directory" "${JDKS_SYMLINK_DIR}/java${major_version}"
 done
 
 cleanup

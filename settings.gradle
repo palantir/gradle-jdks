@@ -10,4 +10,4 @@ include 'gradle-jdks-settings'
 include 'gradle-jdks-groovy'
 include 'gradle-jdks-enablement'
 include 'gradle-jdks-excavator-configurations'
-
+include 'gradle-jdks-test-common'

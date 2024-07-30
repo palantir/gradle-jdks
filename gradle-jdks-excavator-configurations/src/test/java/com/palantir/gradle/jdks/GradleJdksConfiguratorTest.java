@@ -34,12 +34,15 @@ class GradleJdksConfiguratorTest {
     private static final String JDK_VERSION = "21.0.3.9.1";
 
     @TempDir
-    Path tempDir;
+    Path latestGradleJdksDir;
+
+    @TempDir
+    Path symlinkDir;
 
     @Test
-    void can_install_generated_gradle_jdk_files() throws IOException, InterruptedException {
+    void can_install_generated_gradle_jdk_files() throws IOException {
         GradleJdksConfigurator.writeGradleJdkInstallationConfigs(
-                tempDir,
+                latestGradleJdksDir,
                 "https://corretto.aws",
                 JdkDistributionName.AMAZON_CORRETTO,
                 CurrentOs.get(),
@@ -47,35 +50,39 @@ class GradleJdksConfiguratorTest {
                 "21",
                 JDK_VERSION,
                 Map.of());
-        Files.exists(tempDir.resolve("jdks")
+        GradleJdksConfigurator.writeInstallationScripts(latestGradleJdksDir);
+
+        Files.exists(latestGradleJdksDir
+                .resolve("jdks")
                 .resolve("21")
                 .resolve(CurrentOs.get().uiName())
                 .resolve(CurrentArch.get().uiName())
                 .resolve("download-url"));
-        String localPath = Files.readString(tempDir.resolve("jdks")
+        String localPath = Files.readString(latestGradleJdksDir
+                .resolve("jdks")
                 .resolve("21")
                 .resolve(CurrentOs.get().uiName())
                 .resolve(CurrentArch.get().uiName())
                 .resolve("local-path"));
         assertThat(localPath).containsPattern(String.format("amazon-corretto-%s-([a-zA-Z0-9])+\n", JDK_VERSION));
-        Path installJdks = Path.of("src/main/resources/install-jdks.sh");
-        Path certsDir = Files.createDirectories(tempDir.resolve("certs"));
+        Path installationScript = latestGradleJdksDir.resolve("scripts").resolve("install-jdks.sh");
+        Path certsDir = Files.createDirectories(latestGradleJdksDir.resolve("certs"));
         ProcessBuilder processBuilder = new ProcessBuilder()
                 .command(
-                        installJdks.toAbsolutePath().toString(),
-                        tempDir.resolve("jdks").toString(),
-                        certsDir.toString());
-        Path installationJdkDir = tempDir.resolve("installed-jdks");
+                        installationScript.toAbsolutePath().toString(),
+                        latestGradleJdksDir.toString(),
+                        certsDir.toString(),
+                        symlinkDir.toString());
+        Path installationJdkDir = latestGradleJdksDir.resolve("installed-jdks");
         processBuilder.environment().put("GRADLE_USER_HOME", installationJdkDir.toString());
-        Process process = processBuilder.start();
-        assertThat(process.waitFor()).isEqualTo(0);
+        CommandRunner.runWithOutputCollection(processBuilder);
         Path installedJdkPath = installationJdkDir.resolve("gradle-jdks").resolve(localPath.trim());
         ProcessBuilder runJavaCommand = new ProcessBuilder()
                 .command(findJavaExec(installedJdkPath).toAbsolutePath().toString(), "-version")
                 .redirectErrorStream(true);
-        Process runJavaProcess = runJavaCommand.start();
-        assertThat(CommandRunner.readAllInput(runJavaProcess.getInputStream()))
+        assertThat(CommandRunner.runWithOutputCollection(runJavaCommand))
                 .contains(String.format("Corretto-%s", JDK_VERSION));
+        assertThat(symlinkDir.resolve("java21").toRealPath()).isEqualTo(installedJdkPath.toRealPath());
     }
 
     private static Path findJavaExec(Path javaHome) throws IOException {

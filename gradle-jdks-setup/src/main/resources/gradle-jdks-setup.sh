@@ -67,7 +67,7 @@ CERTS_DIR="$APP_GRADLE_DIR"/certs
 # Loading gradle jdk functions
 . "$APP_GRADLE_DIR"/gradle-jdks-functions.sh
 
-install_and_setup_jdks "$APP_GRADLE_DIR" "$CERTS_DIR"
+install_and_setup_jdks "$APP_GRADLE_DIR" "$CERTS_DIR" "$APP_GRADLE_DIR"
 
 gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
 gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)

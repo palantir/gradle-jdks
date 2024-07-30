@@ -95,6 +95,7 @@ public final class GradleJdksProjectService {
 
     private void setupGradleJdks() {
         try {
+            consoleView.get().clear();
             GeneralCommandLine cli =
                     new GeneralCommandLine("./gradle/gradle-jdks-setup.sh").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
@@ -106,7 +107,7 @@ public final class GradleJdksProjectService {
                 }
             });
             consoleView.get().attachToProcess(handler);
-            ProcessTerminatedListener.attach(handler, project);
+            ProcessTerminatedListener.attach(handler, project, "Gradle JDK setup finished with exit code $EXIT_CODE$");
             handler.waitFor();
         } catch (ExecutionException e) {
             throw new RuntimeException("Failed to setup Gradle JDKs for Intellij", e);

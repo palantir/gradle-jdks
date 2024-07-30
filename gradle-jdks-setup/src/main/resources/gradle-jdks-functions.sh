@@ -21,8 +21,7 @@ die () {
     echo
     echo "$*"
     echo
-    echo "TODO make sure this is right!"
-    echo rm -rf "$TMP_WORK_DIR"
+    rm -rf "$TMP_WORK_DIR"
     exit 1
 } >&2
 
@@ -98,6 +97,7 @@ export GRADLE_JDKS_HOME
 install_and_setup_jdks() {
   gradle_dir=$1
   certs_dir=$2
+  scripts_dir=$3
 
   os_name=$(get_os)
   arch_name=$(get_arch)
@@ -145,13 +145,12 @@ install_and_setup_jdks() {
 
       # Finding the java_home
       java_home=$(get_java_home "$in_progress_dir")
-      "$java_home"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" "$certs_dir" || die "Failed to set up JDK $jdk_installation_directory"
+      "$java_home"/bin/java -cp "$scripts_dir"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" "$certs_dir" || die "Failed to set up JDK $jdk_installation_directory"
       echo "Successfully installed JDK distribution in $jdk_installation_directory"
     fi
   done
 }
 
 cleanup() {
-  echo "make sure this is right!"
-  echo rm -rf "$TMP_WORK_DIR"
+  rm -rf "$TMP_WORK_DIR"
 }

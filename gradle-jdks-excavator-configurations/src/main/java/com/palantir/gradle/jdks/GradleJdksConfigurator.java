@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.JarURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -129,16 +130,35 @@ public final class GradleJdksConfigurator {
         try {
             URL installJdksResource =
                     GradleJdksConfigurator.class.getClassLoader().getResource(resourceName);
-            JarURLConnection connection = (JarURLConnection) installJdksResource.openConnection();
-            JarEntry jarEntry = connection.getJarFile().getJarEntry(resourceName);
             Path installationScript = targetDir.resolve(resourceName);
-            try (InputStream is = connection.getJarFile().getInputStream(jarEntry);
-                    OutputStream os = new FileOutputStream(installationScript.toFile())) {
-                is.transferTo(os);
+            URLConnection urlConnection = installJdksResource.openConnection();
+            if (urlConnection instanceof JarURLConnection) {
+                JarURLConnection connection = (JarURLConnection) installJdksResource.openConnection();
+                JarEntry jarEntry = connection.getJarFile().getJarEntry(resourceName);
+                try (InputStream is = connection.getJarFile().getInputStream(jarEntry);
+                        OutputStream os = new FileOutputStream(installationScript.toFile())) {
+                    is.transferTo(os);
+                }
+            } else {
+                writeResourceStreamToFile(installationScript, resourceName);
             }
             return installationScript;
         } catch (IOException e) {
             throw new RuntimeException(String.format("Failed to write the %s script", resourceName), e);
+        }
+    }
+
+    private static void writeResourceStreamToFile(Path targetPath, String resource) {
+        try (InputStream inputStream =
+                GenerateGradleJdksConfigsTask.class.getClassLoader().getResourceAsStream(resource)) {
+            if (inputStream == null) {
+                throw new RuntimeException(String.format("Resource not found: %s:", resource));
+            }
+            try (OutputStream outputStream = new FileOutputStream(targetPath.toFile())) {
+                inputStream.transferTo(outputStream);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Failed to write %s to %s", resource, targetPath), e);
         }
     }
 
