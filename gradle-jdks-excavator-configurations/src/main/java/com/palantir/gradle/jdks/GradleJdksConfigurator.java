@@ -100,8 +100,7 @@ public final class GradleJdksConfigurator {
     }
 
     /**
-     * Writes the installation script to the target directory.
-     *
+     * Writes the installation scripts & the jars to the target directory.
      * @param targetDir the target directory where the installation scripts should be written to.
      */
     public static void writeInstallationScripts(Path targetDir) {

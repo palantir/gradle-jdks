@@ -115,7 +115,7 @@ public final class GradleJdkInstallationSetup {
         // process set up the JDK - then we shouldn't try to add the certificate because the certificate was already
         // added.
         if (wasCopied) {
-            extractCerts(caResources, logger, certsDir)
+            extractCerts(certsDir, caResources, logger)
                     .forEach(cert -> caResources.importCertInJdk(cert, destinationJdkInstallationDir));
         }
     }
@@ -142,48 +142,63 @@ public final class GradleJdkInstallationSetup {
         }
     }
 
-    private static List<AliasContentCert> extractCerts(CaResources caResources, ILogger logger, Path certsDirectory) {
+    private static List<AliasContentCert> extractCerts(Path certsDirectory, CaResources caResources, ILogger logger) {
         if (!Files.exists(certsDirectory)) {
             logger.log("No `certs` directory found, no certificates will be imported");
             return List.of();
         }
         try (Stream<Path> stream = Files.list(certsDirectory)) {
-            return stream.map(path -> {
-                        String aliasName = GradleJdkInstallationSetup.getAliasName(path);
-                        String content = GradleJdkInstallationSetup.readFile(path);
-                        if (GradleJdkInstallationSetup.isSerialNumberCert(path)) {
-                            return caResources.maybeGetCertificateFromSerialNumber(content, aliasName);
-                        } else if (GradleJdkInstallationSetup.isCert(path)) {
-                            return Optional.of(new AliasContentCert(aliasName, content));
-                        } else {
-                            logger.log(
-                                    "Ignoring file " + path + " because it is not a certificate, nor a serial-number. "
-                                            + "Expected the file extension to be either `.crt` or `.serial-number`");
-                            return Optional.<AliasContentCert>empty();
-                        }
-                    })
+            return stream.map(path -> resolveCertificate(path, caResources, logger))
                     .flatMap(Optional::stream)
                     .collect(Collectors.toList());
+
         } catch (IOException e) {
             throw new RuntimeException("Unable to list the certificates in the certs directory", e);
         }
+    }
+
+    private static Optional<AliasContentCert> resolveCertificate(
+            Path certPath, CaResources caResources, ILogger logger) {
+        Optional<String> extension = getFileExtension(certPath);
+        if (extension.isEmpty()) {
+            logger.log(String.format(
+                    "Ignoring file %s because it does not have the expected file"
+                            + " format expected: <certName>.<extension>. The extension is missing.",
+                    certPath));
+            return Optional.empty();
+        }
+        String aliasName = GradleJdkInstallationSetup.getAliasName(certPath);
+        String content = GradleJdkInstallationSetup.readFile(certPath);
+        if (GradleJdkInstallationSetup.isSerialNumberCert(extension.get())) {
+            return caResources.maybeGetCertificateFromSerialNumber(content, aliasName);
+        } else if (GradleJdkInstallationSetup.isCert(extension.get())) {
+            return Optional.of(new AliasContentCert(aliasName, content));
+        }
+        logger.log(String.format(
+                "Ignoring file %s because it is not a certificate, nor a serial-number. "
+                        + "Expected the file extension to be either `.crt` or `.serial-number`",
+                certPath));
+        return Optional.empty();
     }
 
     private static String getAliasName(Path certFile) {
         return certFile.getFileName().toString().split("\\.")[0];
     }
 
-    private static boolean isSerialNumberCert(Path path) {
-        return getFileExtension(path).equals("serial-number");
+    private static boolean isSerialNumberCert(String extension) {
+        return extension.equals("serial-number");
     }
 
-    private static boolean isCert(Path path) {
-        String extension = getFileExtension(path);
+    private static boolean isCert(String extension) {
         return extension.equals("crt") || extension.equals("pem");
     }
 
-    private static String getFileExtension(Path path) {
-        return path.getFileName().toString().split("\\.")[1];
+    private static Optional<String> getFileExtension(Path path) {
+        String[] separatedByDot = path.getFileName().toString().split("\\.");
+        if (separatedByDot.length != 2) {
+            return Optional.empty();
+        }
+        return Optional.of(separatedByDot[1]);
     }
 
     private static String readFile(Path certFile) {
