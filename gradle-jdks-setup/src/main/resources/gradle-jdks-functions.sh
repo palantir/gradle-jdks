@@ -17,11 +17,9 @@
 TMP_WORK_DIR=$(mktemp -d)
 export TMP_WORK_DIR
 
-
 cleanup() {
   [ -d "$TMP_WORK_DIR" ] && rm -rf "$TMP_WORK_DIR"
 }
-
 
 die() {
     echo
@@ -38,7 +36,6 @@ read_value() {
   read -r value < "$1" || die "ERROR: Unable to read value from $1. Make sure the file ends with a newline."
   echo "$value"
 }
-
 
 get_os() {
   # OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentOs.java
@@ -64,7 +61,6 @@ get_os() {
   echo "$os_name"
 }
 
-
 get_arch() {
   # Arch specific support, see: gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentArch.java
   case "$(uname -m)" in                         #(
@@ -82,19 +78,16 @@ get_arch() {
   echo "$arch_name"
 }
 
-
 get_gradle_jdks_home() {
   gradle_user_home=${GRADLE_USER_HOME:-"$HOME"/.gradle}
   gradle_jdks_home="$gradle_user_home"/gradle-jdks
   echo "$gradle_jdks_home"
 }
 
-
 get_java_home() {
   java_bin=$(find "$1" -type f -name "java" -path "*/bin/java" ! -type l -print -quit)
   echo "${java_bin%/*/*}"
 }
-
 
 GRADLE_JDKS_HOME=$(get_gradle_jdks_home)
 mkdir -p "$GRADLE_JDKS_HOME"
