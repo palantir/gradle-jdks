@@ -104,6 +104,11 @@ install_and_setup_jdks() {
 
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}
+    major_version=${major_version_dir##*/}
+    if [ "$major_version" == "8" ]; then
+      echo "Skipping JDK 8 installation as it is not supported by Gradle JDKs Setup."
+      continue
+    fi
     distribution_local_path=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/local-path)
     distribution_url=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/download-url)
     # Check if distribution exists in $GRADLE_JDKS_HOME

@@ -23,7 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Map;
+import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -114,8 +115,8 @@ public final class GradleJdkInstallationSetup {
         // process set up the JDK - then we shouldn't try to add the certificate because the certificate was already
         // added.
         if (wasCopied) {
-            Map<String, String> certSerialNumbersToNames = extractCertsSerialNumbers(logger, certsDir);
-            caResources.maybeImportCertsInJdk(destinationJdkInstallationDir, certSerialNumbersToNames);
+            extractCerts(caResources, logger, certsDir)
+                    .forEach(cert -> caResources.importCertInJdk(cert, destinationJdkInstallationDir));
         }
     }
 
@@ -141,22 +142,51 @@ public final class GradleJdkInstallationSetup {
         }
     }
 
-    @SuppressWarnings("StringSplitter")
-    private static Map<String, String> extractCertsSerialNumbers(ILogger logger, Path certsDirectory) {
+    private static List<AliasContentCert> extractCerts(CaResources caResources, ILogger logger, Path certsDirectory) {
         if (!Files.exists(certsDirectory)) {
             logger.log("No `certs` directory found, no certificates will be imported");
-            return Map.of();
+            return List.of();
         }
         try (Stream<Path> stream = Files.list(certsDirectory)) {
-            return stream.collect(Collectors.toMap(
-                    GradleJdkInstallationSetup::readSerialNumber,
-                    certFile -> certFile.getFileName().toString().split("\\.")[0]));
+            return stream.map(path -> {
+                        String aliasName = GradleJdkInstallationSetup.getAliasName(path);
+                        String content = GradleJdkInstallationSetup.readFile(path);
+                        if (GradleJdkInstallationSetup.isSerialNumberCert(path)) {
+                            return caResources.maybeGetCertificateFromSerialNumber(content, aliasName);
+                        } else if (GradleJdkInstallationSetup.isCert(path)) {
+                            return Optional.of(new AliasContentCert(aliasName, content));
+                        } else {
+                            logger.log(
+                                    "Ignoring file " + path + " because it is not a certificate, nor a serial-number. "
+                                            + "Expected the file extension to be either `.crt` or `.serial-number`");
+                            return Optional.<AliasContentCert>empty();
+                        }
+                    })
+                    .flatMap(Optional::stream)
+                    .collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException("Unable to list the certificates in the certs directory", e);
         }
     }
 
-    private static String readSerialNumber(Path certFile) {
+    private static String getAliasName(Path certFile) {
+        return certFile.getFileName().toString().split("\\.")[0];
+    }
+
+    private static boolean isSerialNumberCert(Path path) {
+        return getFileExtension(path).equals("serial-number");
+    }
+
+    private static boolean isCert(Path path) {
+        String extension = getFileExtension(path);
+        return extension.equals("crt") || extension.equals("pem");
+    }
+
+    private static String getFileExtension(Path path) {
+        return path.getFileName().toString().split("\\.")[1];
+    }
+
+    private static String readFile(Path certFile) {
         try {
             return Files.readString(certFile).trim();
         } catch (IOException e) {

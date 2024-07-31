@@ -4,7 +4,13 @@ set -eux
 
 GRADLE_DIR=$1
 CERTS_DIR=$2
-JDKS_SYMLINK_DIR=$3
+
+# shellcheck disable=SC2034
+SYMLINK_FOR_JDK_11=$3
+# shellcheck disable=SC2034
+SYMLINK_FOR_JDK_17=$4
+# shellcheck disable=SC2034
+SYMLINK_FOR_JDK_21=$5
 
 # Loading gradle jdk functions
 scripts_dir="$(dirname "$(readlink -f "$0")")"
@@ -25,7 +31,9 @@ for dir in "$GRADLE_DIR"/jdks/*/; do
   fi
   distribution_local_path=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/local-path)
   jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
-  ln -s "$jdk_installation_directory" "${JDKS_SYMLINK_DIR}/java${major_version}"
+  eval "resolved_symlink=\$SYMLINK_FOR_JDK_$major_version"
+  # shellcheck disable=SC2154
+  ln -s "$jdk_installation_directory" "$resolved_symlink"
 done
 
 cleanup
