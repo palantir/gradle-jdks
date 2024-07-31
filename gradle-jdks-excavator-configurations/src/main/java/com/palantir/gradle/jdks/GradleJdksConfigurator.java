@@ -37,7 +37,6 @@ import java.util.jar.JarEntry;
 public final class GradleJdksConfigurator {
 
     private static final JdkDistributions jdkDistributions = new JdkDistributions();
-    ;
 
     /**
      * Writes the jdk configuration files for a given jdk distribution.
