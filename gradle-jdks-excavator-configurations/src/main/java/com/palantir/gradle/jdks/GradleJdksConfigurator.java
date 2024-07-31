@@ -18,21 +18,9 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.PosixFilePermission;
 import java.util.Map;
-import java.util.Set;
-import java.util.jar.JarEntry;
 
 public final class GradleJdksConfigurator {
 
@@ -72,20 +60,15 @@ public final class GradleJdksConfigurator {
 
         Path jdksDir = targetDir.resolve("jdks");
         Path jdkOsArchDir = jdksDir.resolve(javaVersion).resolve(os.uiName()).resolve(arch.uiName());
-        writeConfigurationFile(jdkOsArchDir.resolve("download-url"), resolveDownloadUrl(baseUrl, jdkSpec));
-        writeConfigurationFile(jdkOsArchDir.resolve("local-path"), resolveLocalPath(jdkSpec));
-    }
-
-    private static void writeConfigurationFile(Path pathFile, String content) {
         try {
-            Files.createDirectories(pathFile.getParent());
-            // The content of the configuration files should always end with a newline character to ensure the file can
-            // be read by {see: resources/install-jdks.sh#read_value }
-            String contentWithLineEnding = content + "\n";
-            Files.write(
-                    pathFile, contentWithLineEnding.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE_NEW);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create directories for file: " + pathFile, e);
+            Files.createDirectories(jdkOsArchDir);
+            GradleJdksConfigsUtils.writeConfigurationFile(
+                    jdkOsArchDir.resolve("download-url"), resolveDownloadUrl(baseUrl, jdkSpec));
+            GradleJdksConfigsUtils.writeConfigurationFile(
+                    jdkOsArchDir.resolve("local-path"), resolveLocalPath(jdkSpec));
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    String.format("Failed to crate jdk configuration files in dir %s", jdkOsArchDir), e);
         }
     }
 
@@ -105,72 +88,12 @@ public final class GradleJdksConfigurator {
      */
     public static void writeInstallationScripts(Path targetDir) {
         Path scriptsDir = targetDir.resolve("scripts");
-        maybeCreateDirectories(scriptsDir);
-        Path functionsScript = copyResourceToPath(scriptsDir, "gradle-jdks-functions.sh");
-        setExecuteFilePermissions(functionsScript);
-        Path installationScript = copyResourceToPath(scriptsDir, "install-jdks.sh");
-        setExecuteFilePermissions(installationScript);
-        copyResourceToPath(scriptsDir, "gradle-jdks-setup.jar");
-    }
-
-    private static void maybeCreateDirectories(Path directory) {
-        if (Files.exists(directory)) {
-            return;
-        }
-        try {
-            Files.createDirectories(directory);
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to create directory %s", directory), e);
-        }
-    }
-
-    private static Path copyResourceToPath(Path targetDir, String resourceName) {
-        try {
-            URL installJdksResource =
-                    GradleJdksConfigurator.class.getClassLoader().getResource(resourceName);
-            Path installationScript = targetDir.resolve(resourceName);
-            URLConnection urlConnection = installJdksResource.openConnection();
-            if (urlConnection instanceof JarURLConnection) {
-                JarURLConnection connection = (JarURLConnection) installJdksResource.openConnection();
-                JarEntry jarEntry = connection.getJarFile().getJarEntry(resourceName);
-                try (InputStream is = connection.getJarFile().getInputStream(jarEntry);
-                        OutputStream os = new FileOutputStream(installationScript.toFile())) {
-                    is.transferTo(os);
-                }
-            } else {
-                writeResourceStreamToFile(installationScript, resourceName);
-            }
-            return installationScript;
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to write the %s script", resourceName), e);
-        }
-    }
-
-    private static void writeResourceStreamToFile(Path targetPath, String resource) {
-        try (InputStream inputStream =
-                GenerateGradleJdksConfigsTask.class.getClassLoader().getResourceAsStream(resource)) {
-            if (inputStream == null) {
-                throw new RuntimeException(String.format("Resource not found: %s:", resource));
-            }
-            try (OutputStream outputStream = new FileOutputStream(targetPath.toFile())) {
-                inputStream.transferTo(outputStream);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to write %s to %s", resource, targetPath), e);
-        }
-    }
-
-    private static void setExecuteFilePermissions(Path path) {
-        try {
-            Set<PosixFilePermission> perms = Files.getPosixFilePermissions(path);
-            perms.addAll(Set.of(
-                    PosixFilePermission.OWNER_EXECUTE,
-                    PosixFilePermission.GROUP_EXECUTE,
-                    PosixFilePermission.OTHERS_EXECUTE));
-            Files.setPosixFilePermissions(path, perms);
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to set execute permissions to path %s", path), e);
-        }
+        GradleJdksConfigsUtils.createDirectories(scriptsDir);
+        Path functionsScript = GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "gradle-jdks-functions.sh");
+        GradleJdksConfigsUtils.setExecuteFilePermissions(functionsScript);
+        Path installationScript = GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "install-jdks.sh");
+        GradleJdksConfigsUtils.setExecuteFilePermissions(installationScript);
+        GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "gradle-jdks-setup.jar");
     }
 
     private GradleJdksConfigurator() {}

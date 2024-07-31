@@ -23,7 +23,7 @@ arch_name=$(get_arch)
 for dir in "$GRADLE_DIR"/jdks/*/; do
   major_version_dir=${dir%*/}
   major_version=$(basename "$major_version_dir")
-  if [ "$major_version" != "11" ] && [ "$major_version" != "17" ] && [ "$major_version" != "21" ]; then
+  if [ "$major_version" == "8" ]; then
     continue
   fi
   distribution_local_path=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/local-path)

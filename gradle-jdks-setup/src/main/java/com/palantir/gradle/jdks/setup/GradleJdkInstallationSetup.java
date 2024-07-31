@@ -167,11 +167,11 @@ public final class GradleJdkInstallationSetup {
                     certPath));
             return Optional.empty();
         }
-        String aliasName = GradleJdkInstallationSetup.getAliasName(certPath);
-        String content = GradleJdkInstallationSetup.readFile(certPath);
-        if (GradleJdkInstallationSetup.isSerialNumberCert(extension.get())) {
+        String aliasName = getAliasName(certPath);
+        String content = readConfigFile(certPath);
+        if (isSerialNumberCert(extension.get())) {
             return caResources.maybeGetCertificateFromSerialNumber(content, aliasName);
-        } else if (GradleJdkInstallationSetup.isCert(extension.get())) {
+        } else if (isCert(extension.get())) {
             return Optional.of(new AliasContentCert(aliasName, content));
         }
         logger.log(String.format(
@@ -201,11 +201,11 @@ public final class GradleJdkInstallationSetup {
         return Optional.of(separatedByDot[1]);
     }
 
-    private static String readFile(Path certFile) {
+    private static String readConfigFile(Path path) {
         try {
-            return Files.readString(certFile).trim();
+            return Files.readString(path).trim();
         } catch (IOException e) {
-            throw new RuntimeException("Unable to read serial number from " + certFile, e);
+            throw new RuntimeException("Unable to read file " + path, e);
         }
     }
 
