@@ -2,6 +2,8 @@
 
 set -eux
 
+# NOTE! SYMLINK_PREFIX is a prefix, if it is set to /usr/java the symlinks will be created in the format: /usr/java11
+# If it is set to /usr/java/ the symlinks will be created in the format: /usr/java/11
 GRADLE_DIR=$1
 CERTS_DIR=$2
 SYMLINK_PREFIX=$3
