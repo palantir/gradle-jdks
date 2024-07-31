@@ -2,11 +2,12 @@
 
 set -eux
 
-# NOTE! SYMLINK_PREFIX is a prefix, if it is set to /usr/java the symlinks will be created in the format: /usr/java11
-# If it is set to /usr/java/ the symlinks will be created in the format: /usr/java/11
 GRADLE_DIR=$1
 CERTS_DIR=$2
-SYMLINK_PREFIX=$3
+
+# used by the resolved_symlink below to resolve the path based on the JAVA_VERSION value. e.g. /usr/local/${JAVA_VERSION}
+# shellcheck disable=SC2034
+SYMLINK_PATTERN=$3
 
 # Loading gradle jdk functions
 scripts_dir="$(dirname "$(readlink -f "$0")")"
@@ -27,7 +28,9 @@ for dir in "$GRADLE_DIR"/jdks/*/; do
   fi
   distribution_local_path=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/local-path)
   jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
-  ln -s "$jdk_installation_directory" "$SYMLINK_PREFIX$major_version"
+  JAVA_VERSION=$major_version  && eval "resolved_symlink=$SYMLINK_PATTERN"
+  # shellcheck disable=SC2154
+  ln -s "$jdk_installation_directory" "$resolved_symlink"
 done
 
 cleanup
