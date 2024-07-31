@@ -17,11 +17,17 @@
 TMP_WORK_DIR=$(mktemp -d)
 export TMP_WORK_DIR
 
-die () {
+
+cleanup() {
+  [ -d "$TMP_WORK_DIR" ] && rm -rf "$TMP_WORK_DIR"
+}
+
+
+die() {
     echo
     echo "$*"
     echo
-    rm -rf "$TMP_WORK_DIR"
+    cleanup
     exit 1
 } >&2
 
@@ -154,8 +160,4 @@ install_and_setup_jdks() {
       echo "Successfully installed JDK distribution in $jdk_installation_directory"
     fi
   done
-}
-
-cleanup() {
-  rm -rf "$TMP_WORK_DIR"
 }
