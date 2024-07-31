@@ -115,7 +115,7 @@ public final class GradleJdkInstallationSetup {
         // process set up the JDK - then we shouldn't try to add the certificate because the certificate was already
         // added.
         if (wasCopied) {
-            extractCerts(certsDir, caResources, logger)
+            extractCertificates(certsDir, caResources, logger)
                     .forEach(cert -> caResources.importCertInJdk(cert, destinationJdkInstallationDir));
         }
     }
@@ -142,13 +142,14 @@ public final class GradleJdkInstallationSetup {
         }
     }
 
-    private static List<AliasContentCert> extractCerts(Path certsDirectory, CaResources caResources, ILogger logger) {
+    private static List<AliasContentCert> extractCertificates(
+            Path certsDirectory, CaResources caResources, ILogger logger) {
         if (!Files.exists(certsDirectory)) {
             logger.log("No `certs` directory found, no certificates will be imported");
             return List.of();
         }
         try (Stream<Path> stream = Files.list(certsDirectory)) {
-            return stream.map(path -> resolveCertificate(path, caResources, logger))
+            return stream.map(path -> maybeResolveCertificate(path, caResources, logger))
                     .flatMap(Optional::stream)
                     .collect(Collectors.toList());
 
@@ -157,7 +158,7 @@ public final class GradleJdkInstallationSetup {
         }
     }
 
-    private static Optional<AliasContentCert> resolveCertificate(
+    private static Optional<AliasContentCert> maybeResolveCertificate(
             Path certPath, CaResources caResources, ILogger logger) {
         Optional<String> extension = getFileExtension(certPath);
         if (extension.isEmpty()) {
