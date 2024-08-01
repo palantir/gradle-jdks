@@ -1,3 +1,11 @@
+#!/bin/sh
+
+set -e
+# Set pipefail if it works in a subshell, disregard if unsupported
+# shellcheck disable=SC3040
+if (set -o  pipefail 2>/dev/null); then
+    set -o pipefail
+fi
 #
 # (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
 #
@@ -33,13 +41,11 @@ read_value() {
   if [ ! -f "$1" ]; then
     die "ERROR: $1 not found, aborting Gradle JDK setup"
   fi
-  local value
   read -r value < "$1" || die "ERROR: Unable to read value from $1. Make sure the file ends with a newline."
   echo "$value"
 }
 
 get_os() {
-  local os_name
   # OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentOs.java
   case "$( uname )" in                          #(
     Linux* )          os_name="linux"  ;;       #(
@@ -64,7 +70,6 @@ get_os() {
 }
 
 get_arch() {
-  local arch_name
   # Arch specific support, see: gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentArch.java
   case "$(uname -m)" in                         #(
     x86_64* )       arch_name="x86-64"  ;;      #(
@@ -82,14 +87,12 @@ get_arch() {
 }
 
 get_gradle_jdks_home() {
-  local gradle_user_home
   gradle_user_home=${GRADLE_USER_HOME:-"$HOME"/.gradle}
-  gradle_jdks_home="$gradle_user_home"/gradle-jdks
-  echo "$gradle_jdks_home"
+  gradle_user_home="$gradle_user_home"/gradle-jdks
+  echo "$gradle_user_home"
 }
 
 get_java_home() {
-  local java_bin
   java_bin=$(find "$1" -type f -name "java" -path "*/bin/java" ! -type l -print -quit)
   echo "${java_bin%/*/*}"
 }
@@ -98,26 +101,26 @@ GRADLE_JDKS_HOME=$(get_gradle_jdks_home)
 mkdir -p "$GRADLE_JDKS_HOME"
 export GRADLE_JDKS_HOME
 
+OS=$(get_os)
+export OS
+
+ARCH=$(get_arch)
+export ARCH
+
 install_and_setup_jdks() {
-  local gradle_dir certs_dir scripts_dir
   gradle_dir=$1
   certs_dir=$2
   scripts_dir=$3
 
-  local os_name arch_name
-  os_name=$(get_os)
-  arch_name=$(get_arch)
-
-  local dir major_version major_version_dir distribution_local_path distribution_url jdk_installation_directory in_progress_dir java_home
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}
     major_version=${major_version_dir##*/}
-    if [ "$major_version" == "8" ]; then
+    if [ "$major_version" = "8" ]; then
       echo "Skipping JDK 8 installation as it is not supported by Gradle JDKs Setup."
       continue
     fi
-    distribution_local_path=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/local-path)
-    distribution_url=$(read_value "$major_version_dir"/"$os_name"/"$arch_name"/download-url)
+    distribution_local_path=$(read_value "$major_version_dir"/"$OS"/"$ARCH"/local-path)
+    distribution_url=$(read_value "$major_version_dir"/"$OS"/"$ARCH"/download-url)
     # Check if distribution exists in $GRADLE_JDKS_HOME
     jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
     if [ ! -d "$jdk_installation_directory" ]; then

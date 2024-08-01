@@ -38,6 +38,8 @@
 ##############################################################################
 
 set -e
+# Set pipefail if it works in a subshell, disregard if unsupported
+# shellcheck disable=SC3040
 if (set -o  pipefail 2>/dev/null); then
     set -o pipefail
 fi
@@ -70,7 +72,7 @@ CERTS_DIR="$APP_GRADLE_DIR"/certs
 install_and_setup_jdks "$APP_GRADLE_DIR" "$CERTS_DIR" "$APP_GRADLE_DIR"
 
 gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
-gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$os_name"/"$arch_name"/local-path)
+gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$OS"/"$ARCH"/local-path)
 "$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup daemonSetup "$APP_HOME" "$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path"
 
 # [Used by ./gradlew only] Setting the Gradle Daemon Java Home to the JDK distribution
