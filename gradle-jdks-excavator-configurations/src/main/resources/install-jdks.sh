@@ -10,11 +10,11 @@ CERTS_DIR=$2
 SYMLINK_PATTERN=$3
 
 # Loading gradle jdk functions
-scripts_dir="$(dirname "$(readlink -f "$0")")"
-source "$scripts_dir"/gradle-jdks-functions.sh
+SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$SCRIPTS_DIR"/gradle-jdks-functions.sh
 
 # Running the installation setup
-install_and_setup_jdks "$GRADLE_DIR" "$CERTS_DIR" "$scripts_dir"
+install_and_setup_jdks "$GRADLE_DIR" "$CERTS_DIR" "$SCRIPTS_DIR"
 
 os_name=$(get_os)
 arch_name=$(get_arch)

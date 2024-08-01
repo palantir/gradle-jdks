@@ -16,47 +16,71 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 
 public final class GradleJdksConfigurator {
 
     private static final JdkDistributions jdkDistributions = new JdkDistributions();
+    private static final String PALANTIR_ALIAS_CERT = "Palantir3rdGenRootCa";
 
     /**
      * Writes the jdk configuration files for a given jdk distribution.
-     *
      * @param targetDir the target directory where the configuration files should be written to.
-     * @param baseUrl the base url where the jdk distributions are hosted e.g. `https://corretto.aws`
-     * @param jdkDistributionName the name of the jdk distribution e.g. corretto.
-     * @param os the operating system of the jdk distribution e.g. linux.
-     * @param arch the architecture of the jdk distribution e.g. x64.
-     * @param javaVersion the major java version e.g. 8.
-     * @param jdkVersion the full version of the jdkVersion e.g. 8.282.08.1.
-     * @param caCerts the list of certificates that need to be added to the jdk. This influences the hash and the
-     * local installation directory name.
+     * @param jdksInfoJson the jdk info json object which will be rendered as a directory structure in the target directory.
+     * @param baseUrl the base url fron where the jdk distributions can be downloaded e.g. `https://corretto.aws`
+     * @param palantirCert the content of the palantir certificate.
      */
-    public static void writeGradleJdkInstallationConfigs(
-            Path targetDir,
-            String baseUrl,
+    public static void renderJdkInstallationConfigurations(
+            Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl, Optional<String> palantirCert) {
+        writeGradleJdkConfigurations(targetDir, jdksInfoJson, baseUrl, palantirCert);
+        writeInstallationScripts(targetDir);
+    }
+
+    private static void writeGradleJdkConfigurations(
+            Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl, Optional<String> palantirCert) {
+        jdksInfoJson.jdksPerJavaVersion().forEach((javaVersion, jdkInfoJson) -> {
+            jdkInfoJson.os().forEach((os, jdkOsInfoJson) -> {
+                jdkOsInfoJson.arch().forEach((arch, jdkOsArchInfoJson) -> {
+                    writeJdkInstallationConfiguration(
+                            jdkInfoJson.distribution(),
+                            baseUrl,
+                            javaVersion,
+                            jdkOsArchInfoJson.version(),
+                            os,
+                            arch,
+                            palantirCert,
+                            targetDir);
+                });
+            });
+        });
+    }
+
+    private static void writeJdkInstallationConfiguration(
             JdkDistributionName jdkDistributionName,
-            Os os,
-            Arch arch,
+            String baseUrl,
             String javaVersion,
             String jdkVersion,
-            Map<String, String> caCerts) {
-        JdkSpec jdkSpec = JdkSpec.builder()
+            Os os,
+            Arch arch,
+            Optional<String> palantirCert,
+            Path targetDir) {
+        JdkSpec.Builder jdkSpecBuilder = JdkSpec.builder()
                 .distributionName(jdkDistributionName)
                 .release(JdkRelease.builder()
                         .arch(arch)
                         .os(os)
                         .version(jdkVersion)
-                        .build())
-                .caCerts(CaCerts.from(caCerts))
-                .build();
+                        .build());
+        palantirCert.ifPresentOrElse(
+                cert -> jdkSpecBuilder.caCerts(CaCerts.from(Map.of(PALANTIR_ALIAS_CERT, cert))),
+                () -> jdkSpecBuilder.caCerts(CaCerts.from(Map.of())));
+        JdkSpec jdkSpec = jdkSpecBuilder.build();
 
         Path jdksDir = targetDir.resolve("jdks");
         Path jdkOsArchDir = jdksDir.resolve(javaVersion).resolve(os.uiName()).resolve(arch.uiName());
@@ -72,6 +96,20 @@ public final class GradleJdksConfigurator {
         }
     }
 
+    /**
+     * Writes the installation scripts & the jars to the target directory.
+     * @param targetDir the target directory where the installation scripts should be written to.
+     */
+    private static void writeInstallationScripts(Path targetDir) {
+        Path scriptsDir = targetDir.resolve("scripts");
+        GradleJdksConfigsUtils.createDirectories(scriptsDir);
+        Path functionsScript = GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "gradle-jdks-functions.sh");
+        GradleJdksConfigsUtils.setExecuteFilePermissions(functionsScript);
+        Path installationScript = GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "install-jdks.sh");
+        GradleJdksConfigsUtils.setExecuteFilePermissions(installationScript);
+        GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "gradle-jdks-setup.jar");
+    }
+
     private static String resolveLocalPath(JdkSpec jdkSpec) {
         return String.format(
                 "%s-%s-%s", jdkSpec.distributionName(), jdkSpec.release().version(), jdkSpec.consistentShortHash());
@@ -80,20 +118,6 @@ public final class GradleJdksConfigurator {
     private static String resolveDownloadUrl(String baseUrl, JdkSpec jdkSpec) {
         JdkPath jdkPath = jdkDistributions.get(jdkSpec.distributionName()).path(jdkSpec.release());
         return String.format("%s/%s.%s", baseUrl, jdkPath.filename(), jdkPath.extension());
-    }
-
-    /**
-     * Writes the installation scripts & the jars to the target directory.
-     * @param targetDir the target directory where the installation scripts should be written to.
-     */
-    public static void writeInstallationScripts(Path targetDir) {
-        Path scriptsDir = targetDir.resolve("scripts");
-        GradleJdksConfigsUtils.createDirectories(scriptsDir);
-        Path functionsScript = GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "gradle-jdks-functions.sh");
-        GradleJdksConfigsUtils.setExecuteFilePermissions(functionsScript);
-        Path installationScript = GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "install-jdks.sh");
-        GradleJdksConfigsUtils.setExecuteFilePermissions(installationScript);
-        GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "gradle-jdks-setup.jar");
     }
 
     private GradleJdksConfigurator() {}

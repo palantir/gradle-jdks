@@ -33,11 +33,13 @@ read_value() {
   if [ ! -f "$1" ]; then
     die "ERROR: $1 not found, aborting Gradle JDK setup"
   fi
+  local value
   read -r value < "$1" || die "ERROR: Unable to read value from $1. Make sure the file ends with a newline."
   echo "$value"
 }
 
 get_os() {
+  local os_name
   # OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentOs.java
   case "$( uname )" in                          #(
     Linux* )          os_name="linux"  ;;       #(
@@ -62,6 +64,7 @@ get_os() {
 }
 
 get_arch() {
+  local arch_name
   # Arch specific support, see: gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentArch.java
   case "$(uname -m)" in                         #(
     x86_64* )       arch_name="x86-64"  ;;      #(
@@ -79,12 +82,14 @@ get_arch() {
 }
 
 get_gradle_jdks_home() {
+  local gradle_user_home
   gradle_user_home=${GRADLE_USER_HOME:-"$HOME"/.gradle}
   gradle_jdks_home="$gradle_user_home"/gradle-jdks
   echo "$gradle_jdks_home"
 }
 
 get_java_home() {
+  local java_bin
   java_bin=$(find "$1" -type f -name "java" -path "*/bin/java" ! -type l -print -quit)
   echo "${java_bin%/*/*}"
 }
@@ -94,13 +99,16 @@ mkdir -p "$GRADLE_JDKS_HOME"
 export GRADLE_JDKS_HOME
 
 install_and_setup_jdks() {
+  local gradle_dir certs_dir scripts_dir
   gradle_dir=$1
   certs_dir=$2
   scripts_dir=$3
 
+  local os_name arch_name
   os_name=$(get_os)
   arch_name=$(get_arch)
 
+  local dir major_version major_version_dir distribution_local_path distribution_url jdk_installation_directory in_progress_dir java_home
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}
     major_version=${major_version_dir##*/}

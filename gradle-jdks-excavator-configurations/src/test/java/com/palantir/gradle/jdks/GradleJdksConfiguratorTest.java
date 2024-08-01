@@ -18,6 +18,10 @@ package com.palantir.gradle.jdks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.palantir.gradle.jdks.json.JdkInfoJson;
+import com.palantir.gradle.jdks.json.JdkOsArchInfoJson;
+import com.palantir.gradle.jdks.json.JdkOsInfoJson;
+import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
@@ -25,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -41,16 +46,24 @@ class GradleJdksConfiguratorTest {
 
     @Test
     void can_install_generated_gradle_jdk_files() throws IOException {
-        GradleJdksConfigurator.writeGradleJdkInstallationConfigs(
-                latestGradleJdksDir,
-                "https://corretto.aws",
-                JdkDistributionName.AMAZON_CORRETTO,
-                CurrentOs.get(),
-                CurrentArch.get(),
-                "21",
-                JDK_VERSION,
-                Map.of());
-        GradleJdksConfigurator.writeInstallationScripts(latestGradleJdksDir);
+        JdksInfoJson jdksInfoJson = JdksInfoJson.builder()
+                .jdksPerJavaVersion(Map.of(
+                        "21",
+                        JdkInfoJson.builder()
+                                .distribution(JdkDistributionName.AMAZON_CORRETTO)
+                                .os(Map.of(
+                                        CurrentOs.get(),
+                                        JdkOsInfoJson.builder()
+                                                .arch(Map.of(
+                                                        CurrentArch.get(),
+                                                        JdkOsArchInfoJson.builder()
+                                                                .version(JDK_VERSION)
+                                                                .build()))
+                                                .build()))
+                                .build()))
+                .build();
+        GradleJdksConfigurator.renderJdkInstallationConfigurations(
+                latestGradleJdksDir, jdksInfoJson, "https://corretto.aws", Optional.empty());
 
         Files.exists(latestGradleJdksDir
                 .resolve("jdks")
