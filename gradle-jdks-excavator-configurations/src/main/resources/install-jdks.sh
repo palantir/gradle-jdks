@@ -24,8 +24,7 @@ for dir in "$GRADLE_DIR"/jdks/*/; do
   fi
   distribution_local_path=$(read_value "$major_version_dir"/"$OS"/"$ARCH"/local-path)
   jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
-  JAVA_VERSION=$major_version
-  resolved_symlink="${SYMLINK_PATTERN//\$\{JAVA_VERSION\}/$JAVA_VERSION}"
+  resolved_symlink="${SYMLINK_PATTERN//\$\{JAVA_VERSION\}/$major_version}"
   # shellcheck disable=SC2154
   ln -s "$jdk_installation_directory" "$resolved_symlink"
 done

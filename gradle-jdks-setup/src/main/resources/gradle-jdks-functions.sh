@@ -88,8 +88,8 @@ get_arch() {
 
 get_gradle_jdks_home() {
   gradle_user_home=${GRADLE_USER_HOME:-"$HOME"/.gradle}
-  gradle_user_home="$gradle_user_home"/gradle-jdks
-  echo "$gradle_user_home"
+  gradle_jdks_home="$gradle_user_home"/gradle-jdks
+  echo "$gradle_jdks_home"
 }
 
 get_java_home() {
