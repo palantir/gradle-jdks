@@ -32,7 +32,7 @@ public final class GradleJdksConfigurator {
     /**
      * Writes the jdk configuration files for a given jdk distribution.
      * @param targetDir the target directory where the configuration files should be written to.
-     * @param jdksInfoJson the jdk info json object which will be rendered as a directory structure in the target directory.
+     * @param jdksInfoJson jdk info json object which will be rendered as a directory structure in the target directory.
      * @param baseUrl the base url fron where the jdk distributions can be downloaded e.g. `https://corretto.aws`
      * @param palantirCert the content of the palantir certificate.
      */
