@@ -94,7 +94,7 @@ public final class CommandRunner {
         }
     }
 
-    public static Void processStream(InputStream inputStream, Consumer<String> logFunction) {
+    public static void processStream(InputStream inputStream, Consumer<String> logFunction) {
         try (BufferedReader bufferedReader =
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
@@ -104,7 +104,6 @@ public final class CommandRunner {
         } catch (IOException e) {
             throw new RuntimeException("Failed to write inputStream", e);
         }
-        return null;
     }
 
     private CommandRunner() {}

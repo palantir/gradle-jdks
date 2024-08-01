@@ -57,18 +57,14 @@ public final class CaResources {
         return systemCertificates().flatMap(CaResources::selectPalantirCertificate);
     }
 
-    public void maybeImportCertsInJdk(Path jdkInstallationDirectory, Map<String, String> certSerialNumbersToAliases) {
-        if (certSerialNumbersToAliases.isEmpty()) {
-            logger.log("No certificates were provided to import, skipping...");
-            return;
-        }
-        systemCertificates()
-                .map(certs -> selectCertificates(certs, certSerialNumbersToAliases))
-                .orElseGet(Stream::of)
-                .forEach(cert -> importCertInJdk(cert, jdkInstallationDirectory));
+    public Optional<AliasContentCert> maybeGetCertificateFromSerialNumber(String serialNumber, String alias) {
+        return systemCertificates()
+                .map(certs -> selectCertificates(certs, Map.of(serialNumber, alias)))
+                .orElseGet(Stream::empty)
+                .findFirst();
     }
 
-    private void importCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {
+    public void importCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {
         Os os = CurrentOs.get();
         switch (os) {
             case MACOS:

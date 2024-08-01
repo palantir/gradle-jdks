@@ -1,0 +1,17 @@
+apply plugin: 'java'
+apply plugin: 'com.palantir.external-publish-jar'
+
+
+dependencies {
+    implementation project(':gradle-jdks')
+
+    testImplementation project(':gradle-jdks-setup-common')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+}
+
+tasks.withType(ProcessResources.class).configureEach {
+    from(project(':gradle-jdks-setup').tasks.named('fatJar')) {
+        rename { 'gradle-jdks-setup.jar' }
+    }
+}

@@ -41,6 +41,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     public static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
+    public static final String GRADLE_JDKS_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
 
     @Nested
     public abstract MapProperty<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros();
@@ -110,6 +111,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         applyGradleJdkDaemonVersionAction(gradleDirectory().getAsFile().toPath().resolve("gradle-daemon-jdk-version"));
 
         applyGradleJdkJarAction(gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile(), GRADLE_JDKS_SETUP_JAR);
+        applyGradleJdkScriptAction(
+                gradleDirectory().file(GRADLE_JDKS_FUNCTIONS_SCRIPT).getAsFile(), GRADLE_JDKS_FUNCTIONS_SCRIPT);
         applyGradleJdkScriptAction(
                 gradleDirectory().file(GRADLE_JDKS_SETUP_SCRIPT).getAsFile(), GRADLE_JDKS_SETUP_SCRIPT);
 

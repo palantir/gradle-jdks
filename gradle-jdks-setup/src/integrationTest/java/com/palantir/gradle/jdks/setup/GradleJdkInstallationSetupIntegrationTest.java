@@ -130,10 +130,15 @@ public class GradleJdkInstallationSetupIntegrationTest {
                         System.getenv().get("PROJECT_VERSION"))),
                 gradleDirectory.resolve("gradle-jdks-setup.jar"));
 
-        // copy the gradle-jdks-setup.sh to the gradle directory
+        // copy gradle-jdks-setup.sh to the gradle directory
         Files.copy(
                 Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-setup.sh"),
                 gradleDirectory.resolve("gradle-jdks-setup.sh"));
+
+        // copy gradle-jdks-functions.sh" to the gradle directory
+        Files.copy(
+                Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-functions.sh"),
+                gradleDirectory.resolve("gradle-jdks-functions.sh"));
 
         // copy the testing script to the working directory
         Files.copy(Path.of("src/integrationTest/resources/testing-script.sh"), workingDir.resolve("testing-script.sh"));

@@ -56,6 +56,8 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         Files.readString(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version")).trim() == "11"
         Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
         Files.isExecutable(scriptPath)
+        Path functionsPath = projectDir.toPath().resolve("gradle/gradle-jdks-functions.sh");
+        Files.isExecutable(functionsPath)
         Path certFile = projectDir.toPath().resolve("gradle/certs/Palantir3rdGenRootCa.serial-number")
         Optional<AliasContentCert> maybePalantirCerts = new CaResources(new StdLogger()).readPalantirRootCaFromSystemTruststore()
         if (maybePalantirCerts.isPresent()) {
