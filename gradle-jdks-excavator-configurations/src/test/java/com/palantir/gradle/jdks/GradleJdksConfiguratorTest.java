@@ -85,7 +85,8 @@ class GradleJdksConfiguratorTest {
                         installationScript.toAbsolutePath().toString(),
                         latestGradleJdksDir.toString(),
                         certsDir.toString(),
-                        symlinkDir.toAbsolutePath() + "/java${JAVA_VERSION}");
+                        symlinkDir.toAbsolutePath() + "/java${JAVA_VERSION}",
+                        symlinkDir.toAbsolutePath().resolve("usr/java").toString());
         Path installationJdkDir = latestGradleJdksDir.resolve("installed-jdks");
         processBuilder.environment().put("GRADLE_USER_HOME", installationJdkDir.toString());
         CommandRunner.runWithOutputCollection(processBuilder);
@@ -96,6 +97,7 @@ class GradleJdksConfiguratorTest {
         assertThat(CommandRunner.runWithOutputCollection(runJavaCommand))
                 .contains(String.format("Corretto-%s", JDK_VERSION));
         assertThat(symlinkDir.resolve("java21").toRealPath()).isEqualTo(installedJdkPath.toRealPath());
+        assertThat(symlinkDir.resolve("usr/java/21").toRealPath()).isEqualTo(installedJdkPath.toRealPath());
     }
 
     private static Path findJavaExec(Path javaHome) throws IOException {
@@ -105,4 +107,5 @@ class GradleJdksConfiguratorTest {
                     .orElseThrow(() -> new RuntimeException("Could not find java executable in " + javaHome));
         }
     }
+
 }
