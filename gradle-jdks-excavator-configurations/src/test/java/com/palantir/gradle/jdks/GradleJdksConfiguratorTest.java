@@ -89,7 +89,7 @@ class GradleJdksConfiguratorTest {
                         symlinkDir.toAbsolutePath().resolve("usr/java").toString());
         Path installationJdkDir = latestGradleJdksDir.resolve("installed-jdks");
         processBuilder.environment().put("GRADLE_USER_HOME", installationJdkDir.toString());
-        String output = CommandRunner.runWithOutputCollection(processBuilder);
+        CommandRunner.runWithOutputCollection(processBuilder);
         Path installedJdkPath = installationJdkDir.resolve("gradle-jdks").resolve(localPath.trim());
         ProcessBuilder runJavaCommand = new ProcessBuilder()
                 .command(findJavaExec(installedJdkPath).toAbsolutePath().toString(), "-version")
