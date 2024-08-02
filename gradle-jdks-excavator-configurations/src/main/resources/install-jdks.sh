@@ -10,7 +10,6 @@ CERTS_DIR=$2
 SYMLINK_PATTERN=$3
 JAVA_SYMLINK_DIR=${4:-/usr/java}
 
-
 # Loading gradle jdk functions
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPTS_DIR"/gradle-jdks-functions.sh

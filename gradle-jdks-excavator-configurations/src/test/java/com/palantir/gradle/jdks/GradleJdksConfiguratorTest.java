@@ -107,5 +107,4 @@ class GradleJdksConfiguratorTest {
                     .orElseThrow(() -> new RuntimeException("Could not find java executable in " + javaHome));
         }
     }
-
 }
