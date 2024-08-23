@@ -4,7 +4,6 @@ apply plugin: 'com.palantir.external-publish-jar'
 
 
 dependencies {
-    testImplementation gradleTestKit()
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
 }
