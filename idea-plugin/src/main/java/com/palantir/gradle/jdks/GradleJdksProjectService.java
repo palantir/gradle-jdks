@@ -29,6 +29,8 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindowId;
+import com.intellij.platform.ide.progress.TasksKt;
+import com.intellij.platform.util.progress.StepsKt;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,6 +38,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import kotlin.coroutines.Continuation;
+import kotlin.coroutines.CoroutineContext;
+import kotlin.coroutines.EmptyCoroutineContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
@@ -61,13 +69,34 @@ public final class GradleJdksProjectService {
                     "Skipping setupGradleJdks because gradle JDK setup is not found %s", gradleSetupScript));
             return;
         }
-        setupGradleJdks(type);
+        Continuation<Object> cont = new Continuation<>() {
+            @Override
+            public @NotNull CoroutineContext getContext() {
+                return EmptyCoroutineContext.INSTANCE;
+            }
+
+            @Override
+            public void resumeWith(@NotNull Object _object) {}
+        };
+        TasksKt.withBackgroundProgress(
+                project,
+                "Gradle JDK Setup",
+                (_coroutineScope, continuation) -> {
+                    StepsKt.withProgressText(
+                            "`Gradle JDK Setup` is running. Logs in the `Gradle JDK Setup` window ...",
+                            (_cor, conti) -> {
+                                setupGradleJdks(type);
+                                return conti;
+                            },
+                            continuation);
+                    return continuation;
+                },
+                cont);
     }
 
     private void setupGradleJdks(ExternalSystemTaskType type) {
         try {
             GradleJdksToolWindowService toolWindowService = project.getService(GradleJdksToolWindowService.class);
-            toolWindowService.focusOnWindow(GradleJdksToolWindowService.TOOL_WINDOW_NAME);
             ConsoleView consoleView = toolWindowService.getConsoleView();
             consoleView.clear();
             GeneralCommandLine cli =
@@ -75,19 +104,37 @@ public final class GradleJdksProjectService {
             OSProcessHandler handler = new OSProcessHandler(cli);
             handler.startNotify();
             handler.addProcessListener(new ProcessListener() {
+                private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+                private static boolean hasChangedFocus = false;
+
+                @SuppressWarnings("FutureReturnValueIgnored")
+                @Override
+                public void startNotified(@NotNull ProcessEvent event) {
+                    executorService.schedule(
+                            () -> {
+                                consoleView.print("Is notified", ConsoleViewContentType.NORMAL_OUTPUT);
+                                if (!event.getProcessHandler().isProcessTerminated()) {
+                                    toolWindowService.focusOnWindow(GradleJdksToolWindowService.TOOL_WINDOW_NAME);
+                                }
+                            },
+                            10,
+                            TimeUnit.SECONDS);
+                }
 
                 @Override
                 public void processTerminated(@NotNull ProcessEvent _event) {
+                    consoleView.print("finished", ConsoleViewContentType.NORMAL_OUTPUT);
                     updateGradleJvm(consoleView);
+                    executorService.shutdown();
+                    if (handler.getProcess().exitValue() == 0 && hasChangedFocus) {
+                        toolWindowService.hideWindow(GradleJdksToolWindowService.TOOL_WINDOW_NAME);
+                        maybeGetFocusWindowId(type).ifPresent(toolWindowService::focusOnWindow);
+                    }
                 }
             });
             consoleView.attachToProcess(handler);
             ProcessTerminatedListener.attach(handler, project, "Gradle JDK setup finished with exit code $EXIT_CODE$");
             handler.waitFor();
-            if (handler.getProcess().exitValue() == 0) {
-                toolWindowService.hideWindow(GradleJdksToolWindowService.TOOL_WINDOW_NAME);
-                maybeGetFocusWindowId(type).ifPresent(toolWindowService::focusOnWindow);
-            }
         } catch (ExecutionException e) {
             throw new RuntimeException("Failed to setup Gradle JDKs for Intellij", e);
         }

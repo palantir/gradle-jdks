@@ -53,8 +53,6 @@ public final class GradleJdksToolWindowService {
             ContentFactory contentFactory = ContentFactory.getInstance();
             Content content = contentFactory.createContent(newConsoleView.getComponent(), "", false);
             toolWindow.getContentManager().addContent(content);
-            toolWindow.setAvailable(true);
-            toolWindow.activate(null, true, false);
         });
 
         return newConsoleView;
