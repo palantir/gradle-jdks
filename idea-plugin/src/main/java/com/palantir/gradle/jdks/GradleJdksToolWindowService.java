@@ -68,16 +68,6 @@ public final class GradleJdksToolWindowService {
         });
     }
 
-    public void hideWindow(String toolWindowId) {
-        ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
-        toolWindowManager.invokeLater(() -> {
-            ToolWindow toolWindow = toolWindowManager.getToolWindow(toolWindowId);
-            if (toolWindow != null) {
-                toolWindow.hide(null);
-            }
-        });
-    }
-
     public ConsoleView getConsoleView() {
         return consoleView.get();
     }
