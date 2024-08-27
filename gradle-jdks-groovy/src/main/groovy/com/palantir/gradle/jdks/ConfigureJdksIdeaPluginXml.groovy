@@ -16,21 +16,57 @@
 
 package com.palantir.gradle.jdks
 
+import groovy.xml.XmlNodePrinter
+import groovy.xml.XmlParser
+import org.gradle.internal.impldep.com.google.common.collect.ImmutableMap
+import org.xml.sax.SAXException
+
+import javax.xml.parsers.ParserConfigurationException
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+
 class ConfigureJdksIdeaPluginXml {
 
-    static void configureExternalDependencies(Node rootNode) {
-        def externalDependencies = matchOrCreateChild(rootNode, 'component', [name: 'ExternalDependencies'])
-        matchOrCreateChild(externalDependencies, 'plugin', [id: 'palantir-gradle-jdks'])
-    }
+    static void updateIdeaXmlFile(File configurationFile, String minVersion, boolean createIfAbsent) {
+        Node rootNode;
+        if (configurationFile.isFile()) {
+            try {
+                rootNode = new XmlParser().parse(configurationFile);
+            } catch (IOException | SAXException | ParserConfigurationException e) {
+                throw new RuntimeException("Couldn't parse existing configuration file: " + configurationFile, e);
+            }
+        } else {
+            if (!createIfAbsent) {
+                return;
+            }
+            rootNode = new Node(null, "project", ImmutableMap.of("version", "4"));
+        }
 
-    private static Node matchOrCreateChild(Node base, String name, Map attributes = [:], Map defaults = [:]) {
-        matchChild(base, name, attributes).orElseGet {
-            base.appendNode(name, attributes + defaults)
+        configureExternalDependencies(rootNode, minVersion)
+
+        try (BufferedWriter writer = Files.newBufferedWriter(configurationFile.toPath(), StandardCharsets.UTF_8);
+             PrintWriter printWriter = new PrintWriter(writer)) {
+            XmlNodePrinter nodePrinter = new XmlNodePrinter(printWriter);
+            nodePrinter.setPreserveWhitespace(true);
+            nodePrinter.print(rootNode);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write back to configuration file: " + configurationFile, e);
         }
     }
 
-    private static Optional<Node> matchChild(Node base, String name, Map attributes = [:]) {
-        def child = base[name].find { it.attributes().entrySet().containsAll(attributes.entrySet()) }
-        return Optional.ofNullable(child)
+    static void configureExternalDependencies(Node rootNode, String minVersion) {
+        def externalDependencies = matchOrCreateChild(rootNode, 'component', [name: 'ExternalDependencies'])
+        matchOrCreateChild(externalDependencies, 'plugin', [ 'id': 'palantir-gradle-jdks' ], ['min-version' : minVersion])
+    }
+
+    private static Node matchOrCreateChild(Node base, String name, Map keyAttributes = [:], Map otherAttributes = [:]) {
+        Node node = base[name].find { it.attributes().entrySet().containsAll(keyAttributes.entrySet()) } as Node
+        if (Optional.ofNullable(node).isEmpty()) {
+            return base.appendNode(name, keyAttributes + otherAttributes)
+        } else {
+            node.attributes().clear()
+            node.attributes().putAll(keyAttributes + otherAttributes)
+        }
+        return node
     }
 }
