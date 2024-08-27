@@ -24,8 +24,11 @@ import com.intellij.execution.process.ProcessListener;
 import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
@@ -115,13 +118,19 @@ public final class GradleJdksProjectService {
             ProcessTerminatedListener.attach(handler, project, "Gradle JDK setup finished with exit code $EXIT_CODE$");
             handler.waitFor();
             if (handler.getExitCode() != 0) {
-                NotificationGroupManager.getInstance()
-                        .getNotificationGroup("Gradle JDK Setup")
+                Notification notification = NotificationGroupManager.getInstance()
+                        .getNotificationGroup("Gradle JDK setup Notifications")
                         .createNotification(
                                 "Gradle JDK setup",
-                                "Gradle JDK setup failed. Please check logs in the `Gradle JDK setup` tool window",
-                                NotificationType.ERROR)
-                        .notify(project);
+                                String.format("Gradle JDK setup failed with exit code %s", handler.getExitCode()),
+                                NotificationType.ERROR);
+                notification.notify(project);
+                notification.addAction(new NotificationAction("Show Gradle JDKs setup logs") {
+                    @Override
+                    public void actionPerformed(@NotNull AnActionEvent _event, @NotNull Notification _notification) {
+                        toolWindowService.focusOnWindow();
+                    }
+                });
             }
         } catch (ExecutionException e) {
             throw new RuntimeException("Failed to setup Gradle JDKs for Intellij", e);

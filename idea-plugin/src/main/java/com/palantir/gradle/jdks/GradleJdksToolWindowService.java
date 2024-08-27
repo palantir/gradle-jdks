@@ -58,10 +58,10 @@ public final class GradleJdksToolWindowService {
         return newConsoleView;
     }
 
-    public void focusOnWindow(String toolWindowId) {
+    public void focusOnWindow() {
         ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
         toolWindowManager.invokeLater(() -> {
-            ToolWindow toolWindow = toolWindowManager.getToolWindow(toolWindowId);
+            ToolWindow toolWindow = toolWindowManager.getToolWindow(TOOL_WINDOW_NAME);
             if (toolWindow != null) {
                 toolWindow.activate(null, true, false);
             }
