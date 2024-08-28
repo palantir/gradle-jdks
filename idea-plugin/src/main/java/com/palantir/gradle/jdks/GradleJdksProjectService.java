@@ -41,8 +41,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import kotlin.coroutines.Continuation;
 import kotlin.coroutines.CoroutineContext;
 import kotlin.coroutines.EmptyCoroutineContext;
@@ -71,15 +69,6 @@ public final class GradleJdksProjectService {
                     "Skipping setupGradleJdks because gradle JDK setup is not found %s", gradleSetupScript));
             return;
         }
-        Continuation<Object> cont = new Continuation<>() {
-            @Override
-            public @NotNull CoroutineContext getContext() {
-                return EmptyCoroutineContext.INSTANCE;
-            }
-
-            @Override
-            public void resumeWith(@NotNull Object _object) {}
-        };
         TasksKt.withBackgroundProgress(
                 project,
                 "Gradle JDK Setup",
@@ -93,7 +82,15 @@ public final class GradleJdksProjectService {
                             continuation);
                     return continuation;
                 },
-                cont);
+                new Continuation<>() {
+                    @Override
+                    public @NotNull CoroutineContext getContext() {
+                        return EmptyCoroutineContext.INSTANCE;
+                    }
+
+                    @Override
+                    public void resumeWith(@NotNull Object _object) {}
+                });
     }
 
     private void setupGradleJdks() {
@@ -106,12 +103,10 @@ public final class GradleJdksProjectService {
             OSProcessHandler handler = new OSProcessHandler(cli);
             handler.startNotify();
             handler.addProcessListener(new ProcessListener() {
-                private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
 
                 @Override
                 public void processTerminated(@NotNull ProcessEvent _event) {
                     updateGradleJvm(consoleView);
-                    executorService.shutdown();
                 }
             });
             consoleView.attachToProcess(handler);
