@@ -21,9 +21,12 @@ import com.palantir.gradle.jdks.setup.common.CurrentOs
 import org.apache.commons.lang3.tuple.Pair
 import spock.lang.TempDir
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import java.util.stream.Stream
 
 class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
@@ -35,8 +38,39 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
     @TempDir
     Path workingDir
 
+    def '#gradleVersionNumber: if certs are not configured, the check task is successful'() {
+        gradleVersion = gradleVersionNumber
+        applyJdksPlugins()
+        applyPalantirCaPlugin()
+        setupJdksHardcodedVersions()
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        runTasksSuccessfully("setupJdks")
+        runTasksSuccessfully("checkGradleJdks")
+        String os = CurrentOs.get().uiName()
+        String arch = CurrentArch.get().uiName()
+        String daemonJdkLocalPath = projectDir.toPath().resolve("gradle/jdks/${GradleJdkTestUtils.DAEMON_MAJOR_VERSION_11}/${os}/${arch}/local-path").text.trim()
+
+        when:
+        //buildFile.setText("", StandardCharsets.UTF_8.toString())
+        applyJdksPlugins()
+        setupJdksHardcodedVersions()
+        runTasksSuccessfully("checkGradleJdks")
+        deleteDirectory(projectDir.toPath().resolve("gradle"))
+        runTasksSuccessfully("setupJdks")
+
+        then:
+        String newDaemonJdkLocalPath = projectDir.toPath().resolve("gradle/jdks/${GradleJdkTestUtils.DAEMON_MAJOR_VERSION_11}/${os}/${arch}/local-path").text.trim()
+        newDaemonJdkLocalPath != daemonJdkLocalPath
+        !Files.exists(projectDir.toPath().resolve("gradle/certs/Palantir3rdGenRootCa.serial-number"))
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
+    }
+
     def '#gradleVersionNumber: javaToolchains correctly set-up'() {
         gradleVersion = gradleVersionNumber
+        applyJdksPlugins()
+        applyPalantirCaPlugin()
         setupJdksHardcodedVersions()
         applyApplicationPlugin()
 
@@ -106,6 +140,8 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
     def '#gradleVersionNumber: javaToolchains correctly set-up with baseline-java'() {
         gradleVersion = gradleVersionNumber
+        applyJdksPlugins()
+        applyPalantirCaPlugin()
         setupJdksHardcodedVersions()
         applyBaselineJavaVersions()
         applyApplicationPlugin()
@@ -176,6 +212,8 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
     }
 
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
+        applyJdksPlugins()
+        applyPalantirCaPlugin()
         setupJdksHardcodedVersions()
         applyBaselineJavaVersions()
 
@@ -229,6 +267,17 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
                 }
             }
             '''.stripIndent(true)
+    }
+
+    private static void deleteDirectory(Path dir) {
+        if (!Files.exists(dir)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(dir)) {
+            paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete directory: " + dir, e);
+        }
     }
 
     @Override

@@ -29,11 +29,11 @@ abstract class GradleJdkIntegrationSpec extends IntegrationSpec {
     abstract Path workingDir();
 
     def setupJdksHardcodedVersions() {
-        GradleJdkTestUtils.setupJdksHardcodedVersions(settingsFile, buildFile)
+x        GradleJdkTestUtils.setupJdksHardcodedVersions(buildFile)
     }
 
     def setupJdksHardcodedVersions(String daemonTarget) {
-        GradleJdkTestUtils.setupJdksHardcodedVersions(settingsFile, buildFile, daemonTarget)
+        GradleJdkTestUtils.setupJdksHardcodedVersions(buildFile, daemonTarget)
     }
 
     def applyApplicationPlugin() {
@@ -46,6 +46,10 @@ abstract class GradleJdkIntegrationSpec extends IntegrationSpec {
 
     def applyJdksPlugins() {
         GradleJdkTestUtils.applyJdksPlugins(settingsFile, buildFile)
+    }
+
+    def applyPalantirCaPlugin() {
+        GradleJdkTestUtils.applyPalantirCaPlugin(buildFile)
     }
 
     String runGradlewTasksSuccessfully(String... tasks) {

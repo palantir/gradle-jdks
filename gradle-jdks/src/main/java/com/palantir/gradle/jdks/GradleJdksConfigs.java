@@ -16,13 +16,18 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.CaResources;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.Directory;
 import org.gradle.api.provider.MapProperty;
@@ -55,7 +60,10 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     abstract Directory gradleDirectory();
 
     protected abstract void applyGradleJdkFileAction(
-            Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistributionConfig);
+            Path downloadUrlPath,
+            Path localUrlPath,
+            JdkDistributionConfig jdkDistributionConfig,
+            boolean checkIgnoreHash);
 
     protected abstract void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion);
 
@@ -63,11 +71,16 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     protected abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
 
-    protected abstract void applyCertAction(File certFile, String alias, String content);
+    protected abstract void applyCertAction(File certFile, String alias, String serialNumber);
 
     @TaskAction
     public final void action() {
+        File certsDir = gradleDirectory().file("certs").getAsFile();
+        Map<String, String> caAliasToSerialNumber = getCaCerts().get().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> CaResources.getSerialNumber(entry.getValue())));
+        boolean checkIgnoreLocalPath = checkShouldIgnoreHash(certsDir, new HashSet<>(caAliasToSerialNumber.values()));
         AtomicBoolean jdksDirectoryConfigured = new AtomicBoolean(false);
+        // TODO(crogoz): cleanup all the files we are not using anymore
         getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
             jdkDistros.forEach(jdkDistribution -> {
                 Path outputDir = gradleDirectory()
@@ -79,7 +92,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                         .resolve(jdkDistribution.getArch().get().uiName());
                 Path downloadUrlPath = outputDir.resolve("download-url");
                 Path localPath = outputDir.resolve("local-path");
-                applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution);
+                applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution, checkIgnoreLocalPath);
                 jdksDirectoryConfigured.set(true);
             });
         });
@@ -116,10 +129,31 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         applyGradleJdkScriptAction(
                 gradleDirectory().file(GRADLE_JDKS_SETUP_SCRIPT).getAsFile(), GRADLE_JDKS_SETUP_SCRIPT);
 
-        File certsDir = gradleDirectory().file("certs").getAsFile();
-        getCaCerts().get().forEach((alias, content) -> {
+        caAliasToSerialNumber.forEach((alias, serialNumber) -> {
             File certFile = new File(certsDir, String.format("%s.serial-number", alias));
-            applyCertAction(certFile, alias, content);
+            applyCertAction(certFile, alias, serialNumber);
         });
+    }
+
+    /**
+     * Fixes an edge case for opensource projects & the existence/absence of the Palantir cert.
+     * If the Palantir cert exists in the system trustore, we should add it.
+     * Excavator has the Palantir cert.
+     * However, an external user/opensource Circle doesn't have the certificate in the trustore, hence the
+     * `checkGradleJdkConfigs` task will always fail in these environments.
+     * In order to prevent such failures, wew check if the certificate is needed (based on the existence of the
+     * `gradle/cert/Palantir3rdGenRootCa.serial-number` file) but the `JdksExtension#caCerts` doesn't have it configured.
+     */
+    private static boolean checkShouldIgnoreHash(File certsDir, Set<String> configuredSerialNumbers) {
+        if (!certsDir.exists()) {
+            // noop, we are in the generating phase
+            return false;
+        }
+        File certFile = new File(certsDir, String.format("%s.serial-number", CaResources.PALANTIR_3RD_GEN_CERTIFICATE));
+        boolean palantirCertMissing = configuredSerialNumbers.stream()
+                .filter(serialNumber -> serialNumber.equals(CaResources.PALANTIR_3RD_GEN_SERIAL.toString()))
+                .findFirst()
+                .isEmpty();
+        return certFile.exists() && palantirCertMissing;
     }
 }

@@ -44,8 +44,8 @@ import java.util.stream.Stream;
 
 public final class CaResources {
 
-    private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
-    private static final String PALANTIR_3RD_GEN_CERTIFICATE = "Palantir3rdGenRootCa";
+    public static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
+    public static final String PALANTIR_3RD_GEN_CERTIFICATE = "Palantir3rdGenRootCa";
 
     private final ILogger logger;
 

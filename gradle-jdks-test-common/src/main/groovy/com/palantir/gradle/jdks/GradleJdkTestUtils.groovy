@@ -58,6 +58,13 @@ class GradleJdkTestUtils {
         """.stripIndent(true)
     }
 
+    static applyPalantirCaPlugin(File buildFile) {
+        // language=groovy
+        buildFile << """
+            apply plugin: 'com.palantir.jdks.palantir-ca'
+        """.stripIndent(true)
+    }
+
     static applyJdksPlugins(File settingsFile, File buildFile) {
         // language=groovy
         settingsFile << """
@@ -92,14 +99,11 @@ class GradleJdkTestUtils {
             
             apply plugin: 'java'
             apply plugin: 'com.palantir.jdks'
-            apply plugin: 'com.palantir.jdks.palantir-ca'
         """.replace("FILES", getBuildPluginClasspathInjector().join(","))
                 .stripIndent(true)
     }
 
-    static setupJdksHardcodedVersions(File settingsFile, File buildFile, String daemonJdkVersion = DAEMON_MAJOR_VERSION_11) {
-
-        applyJdksPlugins(settingsFile, buildFile)
+    static setupJdksHardcodedVersions(File buildFile, String daemonJdkVersion = DAEMON_MAJOR_VERSION_11) {
 
         // language=groovy
         buildFile << """

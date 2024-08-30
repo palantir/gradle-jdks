@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
-import com.palantir.gradle.jdks.setup.CaResources;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,9 +45,14 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
 
     @Override
     protected final void applyGradleJdkFileAction(
-            Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistribution) {
+            Path downloadUrlPath,
+            Path localUrlPath,
+            JdkDistributionConfig jdkDistribution,
+            boolean checkIgnoreLocalPath) {
         assertFileContent(downloadUrlPath, jdkDistribution.getDownloadUrl().get());
-        assertFileContent(localUrlPath, jdkDistribution.getLocalPath().get());
+        if (checkIgnoreLocalPath) {
+            assertFileContent(localUrlPath, jdkDistribution.getLocalPath().get());
+        }
     }
 
     @Override
@@ -74,8 +78,8 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    protected final void applyCertAction(File certFile, String alias, String content) {
-        assertFileContent(certFile.toPath(), CaResources.getSerialNumber(content));
+    protected final void applyCertAction(File certFile, String alias, String serialNumber) {
+        assertFileContent(certFile.toPath(), serialNumber);
     }
 
     private static void assertFileContent(Path filePath, String expectedContent) {
