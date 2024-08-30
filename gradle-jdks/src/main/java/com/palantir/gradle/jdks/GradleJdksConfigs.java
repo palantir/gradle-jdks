@@ -73,20 +73,24 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     protected abstract void applyCertAction(File certFile, String alias, String serialNumber);
 
+    protected abstract void preAction(File certsDir, File jdksDir, List<File> otherFiles);
+
     @TaskAction
     public final void action() {
         File certsDir = gradleDirectory().file("certs").getAsFile();
+        File jdksDir = gradleDirectory().file("jdks").getAsFile();
+        File jdkSetupJar = gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile();
+        File jdkSetupSh = gradleDirectory().file(GRADLE_JDKS_SETUP_SCRIPT).getAsFile();
+        File jdkUtilsSh = gradleDirectory().file(GRADLE_JDKS_FUNCTIONS_SCRIPT).getAsFile();
+        preAction(certsDir, jdksDir, List.of());
         Map<String, String> caAliasToSerialNumber = getCaCerts().get().entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> CaResources.getSerialNumber(entry.getValue())));
-        boolean checkIgnoreLocalPath = checkShouldIgnoreHash(certsDir, new HashSet<>(caAliasToSerialNumber.values()));
+        boolean checkIgnoreLocalPath =
+                checkShouldIgnoreLocalPath(certsDir, new HashSet<>(caAliasToSerialNumber.values()));
         AtomicBoolean jdksDirectoryConfigured = new AtomicBoolean(false);
-        // TODO(crogoz): cleanup all the files we are not using anymore
         getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
             jdkDistros.forEach(jdkDistribution -> {
-                Path outputDir = gradleDirectory()
-                        .dir("jdks")
-                        .getAsFile()
-                        .toPath()
+                Path outputDir = jdksDir.toPath()
                         .resolve(javaVersion.toString())
                         .resolve(jdkDistribution.getOs().get().uiName())
                         .resolve(jdkDistribution.getArch().get().uiName());
@@ -106,13 +110,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();
         String os = CurrentOs.get().toString();
         String arch = CurrentArch.get().toString();
-        Path expectedJdkDir = gradleDirectory()
-                .dir("jdks")
-                .getAsFile()
-                .toPath()
-                .resolve(gradleJdkDaemonVersion)
-                .resolve(os)
-                .resolve(arch);
+        Path expectedJdkDir =
+                jdksDir.toPath().resolve(gradleJdkDaemonVersion).resolve(os).resolve(arch);
         if (!Files.exists(expectedJdkDir)) {
             throw new RuntimeException(String.format(
                     "Gradle daemon JDK version is `%s` but no JDK configured for that version. Please ensure that you"
@@ -123,11 +122,9 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         }
         applyGradleJdkDaemonVersionAction(gradleDirectory().getAsFile().toPath().resolve("gradle-daemon-jdk-version"));
 
-        applyGradleJdkJarAction(gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile(), GRADLE_JDKS_SETUP_JAR);
-        applyGradleJdkScriptAction(
-                gradleDirectory().file(GRADLE_JDKS_FUNCTIONS_SCRIPT).getAsFile(), GRADLE_JDKS_FUNCTIONS_SCRIPT);
-        applyGradleJdkScriptAction(
-                gradleDirectory().file(GRADLE_JDKS_SETUP_SCRIPT).getAsFile(), GRADLE_JDKS_SETUP_SCRIPT);
+        applyGradleJdkJarAction(jdkSetupJar, GRADLE_JDKS_SETUP_JAR);
+        applyGradleJdkScriptAction(jdkUtilsSh, GRADLE_JDKS_FUNCTIONS_SCRIPT);
+        applyGradleJdkScriptAction(jdkSetupSh, GRADLE_JDKS_SETUP_SCRIPT);
 
         caAliasToSerialNumber.forEach((alias, serialNumber) -> {
             File certFile = new File(certsDir, String.format("%s.serial-number", alias));
@@ -141,10 +138,10 @@ public abstract class GradleJdksConfigs extends DefaultTask {
      * Excavator has the Palantir cert.
      * However, an external user/opensource Circle doesn't have the certificate in the trustore, hence the
      * `checkGradleJdkConfigs` task will always fail in these environments.
-     * In order to prevent such failures, wew check if the certificate is needed (based on the existence of the
+     * In order to prevent such failures, we check if the certificate is needed (based on the existence of the
      * `gradle/cert/Palantir3rdGenRootCa.serial-number` file) but the `JdksExtension#caCerts` doesn't have it configured.
      */
-    private static boolean checkShouldIgnoreHash(File certsDir, Set<String> configuredSerialNumbers) {
+    private static boolean checkShouldIgnoreLocalPath(File certsDir, Set<String> configuredSerialNumbers) {
         if (!certsDir.exists()) {
             // noop, we are in the generating phase
             return false;

@@ -29,7 +29,7 @@ abstract class GradleJdkIntegrationSpec extends IntegrationSpec {
     abstract Path workingDir();
 
     def setupJdksHardcodedVersions() {
-x        GradleJdkTestUtils.setupJdksHardcodedVersions(buildFile)
+        GradleJdkTestUtils.setupJdksHardcodedVersions(buildFile)
     }
 
     def setupJdksHardcodedVersions(String daemonTarget) {

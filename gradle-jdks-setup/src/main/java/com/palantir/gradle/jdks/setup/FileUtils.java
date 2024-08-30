@@ -16,13 +16,16 @@
 
 package com.palantir.gradle.jdks.setup;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Comparator;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public final class FileUtils {
 
@@ -60,6 +63,17 @@ public final class FileUtils {
             Files.createDirectories(directoryPath);
         } catch (IOException e) {
             throw new RuntimeException(String.format("Could not create directory %s", directoryPath), e);
+        }
+    }
+
+    public static void deleteDirectory(Path dir) {
+        if (!Files.exists(dir)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(dir)) {
+            paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete directory: " + dir, e);
         }
     }
 

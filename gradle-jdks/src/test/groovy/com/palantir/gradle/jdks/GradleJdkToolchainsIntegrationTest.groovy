@@ -44,18 +44,19 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         applyPalantirCaPlugin()
         setupJdksHardcodedVersions()
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
-        runTasksSuccessfully("setupJdks")
-        runTasksSuccessfully("checkGradleJdks")
+        def _output = runTasksSuccessfully("wrapper", "setupJdks")
+        runTasksSuccessfully("checkGradleJdkConfigs")
         String os = CurrentOs.get().uiName()
         String arch = CurrentArch.get().uiName()
         String daemonJdkLocalPath = projectDir.toPath().resolve("gradle/jdks/${GradleJdkTestUtils.DAEMON_MAJOR_VERSION_11}/${os}/${arch}/local-path").text.trim()
 
         when:
-        //buildFile.setText("", StandardCharsets.UTF_8.toString())
-        applyJdksPlugins()
-        setupJdksHardcodedVersions()
-        runTasksSuccessfully("checkGradleJdks")
-        deleteDirectory(projectDir.toPath().resolve("gradle"))
+        buildFile.setText(buildFile.text.replaceAll("apply plugin: 'com.palantir.jdks.palantir-ca'", ""), "UTF-8")
+
+        then:
+        runTasksSuccessfully("checkGradleJdkConfigs")
+
+        when:
         runTasksSuccessfully("setupJdks")
 
         then:
@@ -267,17 +268,6 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
                 }
             }
             '''.stripIndent(true)
-    }
-
-    private static void deleteDirectory(Path dir) {
-        if (!Files.exists(dir)) {
-            return;
-        }
-        try (Stream<Path> paths = Files.walk(dir)) {
-            paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to delete directory: " + dir, e);
-        }
     }
 
     @Override

@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
@@ -43,21 +45,24 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
         return getInputGradleDirectory().get();
     }
 
+    protected final void preAction(File certsDir, File jdksDir, List<File> otherFiles) {}
+
     @Override
     protected final void applyGradleJdkFileAction(
             Path downloadUrlPath,
             Path localUrlPath,
             JdkDistributionConfig jdkDistribution,
             boolean checkIgnoreLocalPath) {
-        assertFileContent(downloadUrlPath, jdkDistribution.getDownloadUrl().get());
+        assertFileContent(downloadUrlPath, jdkDistribution.getDownloadUrl().get(), true);
         if (checkIgnoreLocalPath) {
-            assertFileContent(localUrlPath, jdkDistribution.getLocalPath().get());
+            return;
         }
+        assertFileContent(localUrlPath, jdkDistribution.getLocalPath().get(), true);
     }
 
     @Override
     protected final void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion) {
-        assertFileContent(gradleJdkDaemonVersion, getDaemonJavaVersion().get().toString());
+        assertFileContent(gradleJdkDaemonVersion, getDaemonJavaVersion().get().toString(), true);
     }
 
     @Override
@@ -65,7 +70,7 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
         try {
             byte[] expectedBytes = getResourceContent(resourceName);
             byte[] actualBytes = Files.readAllBytes(gradleJdkJarFile.toPath());
-            checkOrThrow(Arrays.equals(expectedBytes, actualBytes), gradleJdkJarFile.toPath());
+            checkOrThrow(Arrays.equals(expectedBytes, actualBytes), gradleJdkJarFile.toPath(), Optional.empty());
         } catch (IOException e) {
             throw new RuntimeException("An error occurred while checking the gradle jdk setup jar", e);
         }
@@ -74,17 +79,22 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     @Override
     protected final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
         assertFileContent(
-                gradleJdkScriptFile.toPath(), new String(getResourceContent(resourceName), StandardCharsets.UTF_8));
+                gradleJdkScriptFile.toPath(),
+                new String(getResourceContent(resourceName), StandardCharsets.UTF_8),
+                false);
     }
 
     @Override
     protected final void applyCertAction(File certFile, String alias, String serialNumber) {
-        assertFileContent(certFile.toPath(), serialNumber);
+        assertFileContent(certFile.toPath(), serialNumber, false);
     }
 
-    private static void assertFileContent(Path filePath, String expectedContent) {
+    private static void assertFileContent(Path filePath, String expectedContent, boolean shouldPrintOutput) {
+        Optional<String> printedOutput = shouldPrintOutput ? Optional.of(expectedContent) : Optional.empty();
         checkOrThrow(
-                filePath.toFile().exists() && readConfigurationFile(filePath).equals(expectedContent.trim()), filePath);
+                filePath.toFile().exists() && readConfigurationFile(filePath).equals(expectedContent.trim()),
+                filePath,
+                printedOutput);
     }
 
     private static String readConfigurationFile(Path filePath) {
@@ -95,12 +105,15 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
         }
     }
 
-    private static void checkOrThrow(boolean result, Path outOfDateFile) {
+    private static void checkOrThrow(boolean result, Path outOfDateFile, Optional<String> expectedOutput) {
         if (!result) {
+            String expectedOutputBlock = expectedOutput
+                    .map(output -> String.format("\nExpected content was:\n%s\n", output))
+                    .orElse("");
             throw new ExceptionWithSuggestion(
                     String.format(
-                            "Gradle JDK configuration file `%s` is out of date, please run `./gradlew setupJdks`",
-                            getRelativeToGradleFile(outOfDateFile)),
+                            "Gradle JDK configuration file `%s` is out of date, please run `./gradlew setupJdks`.%s",
+                            getRelativeToGradleFile(outOfDateFile), expectedOutputBlock),
                     "./gradlew setupJdks");
         }
     }

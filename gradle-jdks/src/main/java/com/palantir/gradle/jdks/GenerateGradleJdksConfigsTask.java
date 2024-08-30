@@ -16,8 +16,12 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.FileUtils;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
@@ -34,6 +38,18 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     @Override
     protected final Directory gradleDirectory() {
         return getOutputGradleDirectory().get();
+    }
+
+    protected final void preAction(File certsDir, File jdksDir, List<File> otherFiles) {
+        FileUtils.deleteDirectory(certsDir.toPath());
+        FileUtils.deleteDirectory(jdksDir.toPath());
+        for (File file : otherFiles) {
+            try {
+                Files.deleteIfExists(file.toPath());
+            } catch (IOException e) {
+                throw new RuntimeException(String.format("Failed to delete %s", file.toPath()), e);
+            }
+        }
     }
 
     @Override
