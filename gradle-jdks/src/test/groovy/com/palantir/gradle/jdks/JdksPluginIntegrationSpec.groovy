@@ -16,6 +16,11 @@
 
 package com.palantir.gradle.jdks
 
+import com.palantir.gradle.jdks.setup.AliasContentCert
+import com.palantir.gradle.jdks.setup.CaResources
+import com.palantir.gradle.jdks.setup.StdLogger
+import com.palantir.gradle.jdks.setup.common.CurrentArch
+import com.palantir.gradle.jdks.setup.common.CurrentOs
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
 import spock.lang.Unroll
@@ -83,10 +88,14 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
         then:
         stdout.contains 'version: 11.0.14.1, vendor: Azul Systems, Inc.'
+        def jdkPath = stdout.find(/Compiling with toolchain '([^']+)'/) { match, path -> return path }
+        jdkPath.endsWith(getJdkInstallationHash(JdkDistributionName.AZUL_ZULU, '11.54.25-11.0.14.1', Map.of()))
 
         where:
         gradleVersionNumber << GRADLE_VERSIONS
     }
+
+
 
     def '#gradleVersionNumber: can download + run an Amazon Corretto JDK'() {
         gradleVersion = gradleVersionNumber
@@ -203,9 +212,13 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
         when:
 
         def stdout = runTasksSuccessfully('printCaTruststoreAliases').standardOutput
+        def jdkPath = stdout.find(/Compiling with toolchain '([^']+)'/) { match, path -> return path }
+        jdkPath.endsWith(getJdkInstallationHash(JdkDistributionName.AZUL_ZULU, '11.54.25-11.0.14.1',
+                Map.of("Our_Amazon_CA_Cert_1", amazonRootCa1Serial)))
 
         then:
         stdout.contains amazonRootCa1Serial
+
 
         where:
         gradleVersionNumber << GRADLE_VERSIONS
@@ -222,6 +235,20 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
 
         where:
         gradleVersionNumber << GRADLE_VERSIONS
+    }
+
+
+    private static String getJdkInstallationHash(JdkDistributionName jdkDistributionName, String version, Map<String, String> certs) {
+        return JdkSpec.builder()
+                        .distributionName(jdkDistributionName)
+                        .release(
+                                JdkRelease.builder()
+                                        .arch(CurrentArch.get())
+                                        .os(CurrentOs.get())
+                                        .version(version)
+                                        .build())
+                        .caCerts(CaCerts.from(certs))
+                        .build().consistentShortHash()
     }
 
     @Override

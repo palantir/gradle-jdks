@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -63,7 +62,7 @@ class GradleJdksConfiguratorTest {
                                 .build()))
                 .build();
         GradleJdksConfigurator.renderJdkInstallationConfigurations(
-                latestGradleJdksDir, jdksInfoJson, "https://corretto.aws", Optional.empty());
+                latestGradleJdksDir, jdksInfoJson, "https://corretto.aws");
 
         Files.exists(latestGradleJdksDir
                 .resolve("jdks")

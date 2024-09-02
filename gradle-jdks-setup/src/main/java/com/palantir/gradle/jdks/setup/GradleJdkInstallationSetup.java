@@ -172,12 +172,11 @@ public final class GradleJdkInstallationSetup {
         String content = readConfigFile(certPath);
         if (isSerialNumberCert(extension.get())) {
             return caResources.maybeGetCertificateFromSerialNumber(content, aliasName);
-        } else if (isCert(extension.get())) {
-            return Optional.of(new AliasContentCert(aliasName, content));
         }
-        logger.log(String.format(
-                "Ignoring file %s because it is not a certificate, nor a serial-number. "
-                        + "Expected the file extension to be either `.crt` or `.serial-number`",
+        logger.logError(String.format(
+                "Ignoring file %s because it is not a serial-number. "
+                        + "Expected the file extension to be either `.serial-number`. "
+                        + "Please re-generate the files by running `./gradlew setupJdks`.",
                 certPath));
         return Optional.empty();
     }
@@ -188,10 +187,6 @@ public final class GradleJdkInstallationSetup {
 
     private static boolean isSerialNumberCert(String extension) {
         return extension.equals("serial-number");
-    }
-
-    private static boolean isCert(String extension) {
-        return extension.equals("crt") || extension.equals("pem");
     }
 
     private static Optional<String> getFileExtension(Path path) {

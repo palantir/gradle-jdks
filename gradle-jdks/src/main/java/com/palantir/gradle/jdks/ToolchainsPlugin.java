@@ -90,7 +90,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             task.getJavaVersionToJdkDistros()
                     .putAll(rootProject.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
                             rootProject, jdkDistributions, jdksExtension)));
-            task.getCaCerts().putAll(jdksExtension.getCaCerts());
+            task.getCaCerts().putAll(jdksExtension.getCaAliasesToSerialNumbers());
         });
 
         TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject

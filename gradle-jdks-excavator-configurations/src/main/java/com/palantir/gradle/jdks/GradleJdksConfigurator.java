@@ -17,33 +17,29 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.json.JdksInfoJson;
+import com.palantir.gradle.jdks.setup.CaResources;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Optional;
 
 public final class GradleJdksConfigurator {
 
     private static final JdkDistributions jdkDistributions = new JdkDistributions();
-    private static final String PALANTIR_ALIAS_CERT = "Palantir3rdGenRootCa";
 
     /**
      * Writes the jdk configuration files for a given jdk distribution.
      * @param targetDir the target directory where the configuration files should be written to.
      * @param jdksInfoJson jdk info json object which will be rendered as a directory structure in the target directory.
      * @param baseUrl the base url fron where the jdk distributions can be downloaded e.g. `https://corretto.aws`
-     * @param palantirCert the content of the palantir certificate.
      */
-    public static void renderJdkInstallationConfigurations(
-            Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl, Optional<String> palantirCert) {
-        writeGradleJdkConfigurations(targetDir, jdksInfoJson, baseUrl, palantirCert);
+    public static void renderJdkInstallationConfigurations(Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl) {
+        writeGradleJdkConfigurations(targetDir, jdksInfoJson, baseUrl);
         writeInstallationScripts(targetDir);
     }
 
-    private static void writeGradleJdkConfigurations(
-            Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl, Optional<String> palantirCert) {
+    private static void writeGradleJdkConfigurations(Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl) {
         jdksInfoJson.jdksPerJavaVersion().forEach((javaVersion, jdkInfoJson) -> {
             jdkInfoJson.os().forEach((os, jdkOsInfoJson) -> {
                 jdkOsInfoJson.arch().forEach((arch, jdkOsArchInfoJson) -> {
@@ -54,7 +50,6 @@ public final class GradleJdksConfigurator {
                             jdkOsArchInfoJson.version(),
                             os,
                             arch,
-                            palantirCert,
                             targetDir);
                 });
             });
@@ -68,19 +63,16 @@ public final class GradleJdksConfigurator {
             String jdkVersion,
             Os os,
             Arch arch,
-            Optional<String> palantirCert,
             Path targetDir) {
-        JdkSpec.Builder jdkSpecBuilder = JdkSpec.builder()
+        JdkSpec jdkSpec = JdkSpec.builder()
                 .distributionName(jdkDistributionName)
                 .release(JdkRelease.builder()
                         .arch(arch)
                         .os(os)
                         .version(jdkVersion)
-                        .build());
-        palantirCert.ifPresentOrElse(
-                cert -> jdkSpecBuilder.caCerts(CaCerts.from(Map.of(PALANTIR_ALIAS_CERT, cert))),
-                () -> jdkSpecBuilder.caCerts(CaCerts.from(Map.of())));
-        JdkSpec jdkSpec = jdkSpecBuilder.build();
+                        .build())
+                .caCerts(CaCerts.from(Map.of(CaResources.PALANTIR_3RD_GEN_ALIAS, CaResources.PALANTIR_3RD_GEN_SERIAL)))
+                .build();
 
         Path jdksDir = targetDir.resolve("jdks");
         Path jdkOsArchDir = jdksDir.resolve(javaVersion).resolve(os.uiName()).resolve(arch.uiName());

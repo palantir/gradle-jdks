@@ -19,9 +19,11 @@ package com.palantir.gradle.jdks
 import com.palantir.gradle.jdks.setup.AliasContentCert
 import com.palantir.gradle.jdks.setup.CaResources
 import com.palantir.gradle.jdks.setup.StdLogger
+import com.palantir.gradle.jdks.setup.common.Arch
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.gradle.jdks.setup.common.CurrentOs
 import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper
+import com.palantir.gradle.jdks.setup.common.Os
 import spock.lang.TempDir
 
 import java.nio.file.Files
@@ -54,17 +56,14 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         and: 'the `gradle/` configuration files are generated'
         checkJdksVersions(projectDir, Set.of("11", "17", "21"))
         Files.readString(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version")).trim() == "11"
-        Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
+        Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh")
         Files.isExecutable(scriptPath)
-        Path functionsPath = projectDir.toPath().resolve("gradle/gradle-jdks-functions.sh");
+        Path functionsPath = projectDir.toPath().resolve("gradle/gradle-jdks-functions.sh")
         Files.isExecutable(functionsPath)
+        Path jarPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.jar")
+        Files.exists(jarPath)
         Path certFile = projectDir.toPath().resolve("gradle/certs/Palantir3rdGenRootCa.serial-number")
-        Optional<AliasContentCert> maybePalantirCerts = new CaResources(new StdLogger()).readPalantirRootCaFromSystemTruststore()
-        if (maybePalantirCerts.isPresent()) {
-            Files.readString(certFile).trim() == "18126334688741185161"
-        } else {
-            !Files.exists(certFile)
-        }
+        Files.readString(certFile).trim() == "18126334688741185161"
 
         and: '.gradle/config.properties configures java.home'
         file(".gradle/config.properties").text.contains("java.home")
@@ -159,16 +158,34 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         !file("gradlew").text.contains("gradle-jdks-setup.sh")
     }
 
-    private static void checkJdksVersions(File projectDir, Set<String> versions) {
+    private static void checkJdksVersions(File projectDir, Set<String> majorVersions) {
         assert Files.list(projectDir.toPath().resolve("gradle/jdks")).filter(Files::isDirectory)
                 .map(path -> path.getFileName().toString())
-                .collect(Collectors.toSet()) == versions
-        String osName = CurrentOs.get().uiName();
-        String archName = CurrentArch.get().uiName();
-        versions.stream().findFirst().ifPresent(version -> {
-            assert Files.exists(projectDir.toPath().resolve("gradle/jdks/${version}/${osName}/${archName}/download-url"))
-            assert Files.exists(projectDir.toPath().resolve("gradle/jdks/${version}/${osName}/${archName}/local-path"))
+                .collect(Collectors.toSet()) == majorVersions
+        Os osName = CurrentOs.get()
+        Arch archName = CurrentArch.get()
+        majorVersions.stream().findFirst().ifPresent(majorVersion -> {
+            assert Files.exists(projectDir.toPath().resolve("gradle/jdks/${majorVersion}/${osName}/${archName}/download-url"))
+            assert Files.exists(projectDir.toPath().resolve("gradle/jdks/${majorVersion}/${osName}/${archName}/local-path"))
+            assert projectDir.toPath().resolve("gradle/jdks/${majorVersion}/${osName}/${archName}/local-path").text.trim().endsWith(getHash(archName, osName, majorVersion))
         })
+    }
+
+
+    private static String getHash(Arch arch, Os os, String majorVersion) {
+        return JdkSpec.builder()
+                .distributionName(
+                        JdkDistributionName.fromStringThrowing(
+                                GradleJdkTestUtils.JDK_VERSIONS.get(majorVersion).getLeft()))
+                .release(
+                        JdkRelease.builder()
+                                .arch(arch)
+                                .os(os)
+                                .version(GradleJdkTestUtils.JDK_VERSIONS.get(majorVersion).getRight())
+                                .build())
+                .caCerts(CaCerts.from(Map.of(CaResources.PALANTIR_3RD_GEN_ALIAS, CaResources.PALANTIR_3RD_GEN_SERIAL)))
+                .build()
+                .consistentShortHash()
     }
 
     @Override

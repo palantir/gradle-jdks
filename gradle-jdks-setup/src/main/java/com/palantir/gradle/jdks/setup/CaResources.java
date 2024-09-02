@@ -23,7 +23,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,8 +43,8 @@ import java.util.stream.Stream;
 
 public final class CaResources {
 
-    private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
-    private static final String PALANTIR_3RD_GEN_CERTIFICATE = "Palantir3rdGenRootCa";
+    public static final String PALANTIR_3RD_GEN_SERIAL = "18126334688741185161";
+    public static final String PALANTIR_3RD_GEN_ALIAS = "Palantir3rdGenRootCa";
 
     private final ILogger logger;
 
@@ -214,9 +213,7 @@ public final class CaResources {
     }
 
     private static Optional<AliasContentCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {
-        return selectCertificates(
-                        multipleCertificateBytes,
-                        Map.of(PALANTIR_3RD_GEN_SERIAL.toString(), PALANTIR_3RD_GEN_CERTIFICATE))
+        return selectCertificates(multipleCertificateBytes, Map.of(PALANTIR_3RD_GEN_SERIAL, PALANTIR_3RD_GEN_ALIAS))
                 .findFirst();
     }
 
@@ -276,17 +273,6 @@ public final class CaResources {
                     "-----END CERTIFICATE-----");
         } catch (CertificateEncodingException e) {
             throw new RuntimeException("Could not convert Palantir cert back to regular", e);
-        }
-    }
-
-    public static String getSerialNumber(String certContent) {
-        try {
-            InputStream in = new ByteArrayInputStream(certContent.getBytes(StandardCharsets.UTF_8));
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
-            return cert.getSerialNumber().toString();
-        } catch (CertificateException e) {
-            throw new RuntimeException(String.format("Could not get serial number for certificate %s", certContent), e);
         }
     }
 }

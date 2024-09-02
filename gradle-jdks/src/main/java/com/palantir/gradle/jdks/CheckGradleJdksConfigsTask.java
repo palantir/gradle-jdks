@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
-import com.palantir.gradle.jdks.setup.CaResources;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,9 +56,9 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    protected final void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
+    protected final void applyGradleJdkJarAction(File gradleJdkJarFile) {
         try {
-            byte[] expectedBytes = getResourceContent(resourceName);
+            byte[] expectedBytes = getResourceContent(GradleJdksConfigs.GRADLE_JDKS_SETUP_JAR);
             byte[] actualBytes = Files.readAllBytes(gradleJdkJarFile.toPath());
             checkOrThrow(Arrays.equals(expectedBytes, actualBytes), gradleJdkJarFile.toPath());
         } catch (IOException e) {
@@ -74,8 +73,8 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    protected final void applyCertAction(File certFile, String alias, String content) {
-        assertFileContent(certFile.toPath(), CaResources.getSerialNumber(content));
+    protected final void applyCertAction(File certFile, String alias, String serialNumber) {
+        assertFileContent(certFile.toPath(), serialNumber);
     }
 
     private static void assertFileContent(Path filePath, String expectedContent) {

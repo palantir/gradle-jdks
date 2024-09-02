@@ -59,11 +59,11 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     protected abstract void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion);
 
-    protected abstract void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName);
+    protected abstract void applyGradleJdkJarAction(File gradleJdkJarFile);
 
     protected abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
 
-    protected abstract void applyCertAction(File certFile, String alias, String content);
+    protected abstract void applyCertAction(File certFile, String alias, String serialNumber);
 
     @TaskAction
     public final void action() {
@@ -110,16 +110,16 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         }
         applyGradleJdkDaemonVersionAction(gradleDirectory().getAsFile().toPath().resolve("gradle-daemon-jdk-version"));
 
-        applyGradleJdkJarAction(gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile(), GRADLE_JDKS_SETUP_JAR);
+        applyGradleJdkJarAction(gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile());
         applyGradleJdkScriptAction(
                 gradleDirectory().file(GRADLE_JDKS_FUNCTIONS_SCRIPT).getAsFile(), GRADLE_JDKS_FUNCTIONS_SCRIPT);
         applyGradleJdkScriptAction(
                 gradleDirectory().file(GRADLE_JDKS_SETUP_SCRIPT).getAsFile(), GRADLE_JDKS_SETUP_SCRIPT);
 
         File certsDir = gradleDirectory().file("certs").getAsFile();
-        getCaCerts().get().forEach((alias, content) -> {
+        getCaCerts().get().forEach((alias, serialNumber) -> {
             File certFile = new File(certsDir, String.format("%s.serial-number", alias));
-            applyCertAction(certFile, alias, content);
+            applyCertAction(certFile, alias, serialNumber);
         });
     }
 }

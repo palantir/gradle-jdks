@@ -36,6 +36,7 @@ public abstract class JdksExtension {
     private final MapProperty<String, String> caCerts;
     private final DirectoryProperty jdkStorageLocation;
     private final Property<JavaLanguageVersion> daemonTarget;
+    private final MapProperty<String, String> caAliasesToSerialNumbers;
 
     @Inject
     protected abstract ObjectFactory getObjectFactory();
@@ -56,9 +57,12 @@ public abstract class JdksExtension {
                 MapProperty.class, getObjectFactory().mapProperty(String.class, String.class));
         this.jdkStorageLocation = SynchronizedInterface.synchronizeAllInterfaceMethods(
                 DirectoryProperty.class, getObjectFactory().directoryProperty());
+        this.caAliasesToSerialNumbers = SynchronizedInterface.synchronizeAllInterfaceMethods(
+                MapProperty.class, getObjectFactory().mapProperty(String.class, String.class));
         this.daemonTarget = getObjectFactory().property(JavaLanguageVersion.class);
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
+        this.getCaAliasesToSerialNumbers().finalizeValueOnRead();
         this.getDaemonTarget().finalizeValueOnRead();
     }
 
@@ -74,6 +78,16 @@ public abstract class JdksExtension {
         getDaemonTarget().set(JavaLanguageVersion.of(value));
     }
 
+    public final MapProperty<String, String> getCaAliasesToSerialNumbers() {
+        return caAliasesToSerialNumbers;
+    }
+
+    /**
+     * Configures the certificates based on the name and the actual content.
+     * @deprecated by the new Gradle JDK Auto-management workflow {@link ToolchainsPlugin}. Used only by {@link BaselineJavaJdksPlugin}.
+     */
+    @Deprecated
+    // Use getCaCertAliasToSerialNumbers instead
     public final MapProperty<String, String> getCaCerts() {
         return caCerts;
     }

@@ -19,10 +19,13 @@ package com.palantir.gradle.jdks;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersions;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
+import com.palantir.gradle.jdks.setup.CaResources;
+import com.palantir.gradle.jdks.setup.ILogger;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import com.palantir.gradle.jdks.setup.common.Os;
+import java.util.Map;
 import java.util.Optional;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -35,6 +38,9 @@ public final class BaselineJavaJdksPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project rootProject) {
+        if (rootProject.getRootProject() != rootProject) {
+            throw new RuntimeException("BaselineJavaJdksPlugin plugin must be applied to the root project only");
+        }
         if (GradleJdksEnablement.isGradleJdkSetupEnabled(
                 rootProject.getProjectDir().toPath())) {
             throw new RuntimeException("Cannot apply BaselineJavaJdksPlugin with palantir.jdk.setup.enabled");
@@ -44,6 +50,22 @@ public final class BaselineJavaJdksPlugin implements Plugin<Project> {
         JdkDistributions jdkDistributions = new JdkDistributions();
 
         JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
+        rootProject.getPluginManager().withPlugin("com.palantir.jdks.palantir-ca", unused -> {
+            PalantirCaExtension palantirCaExtension =
+                    rootProject.getExtensions().getByType(PalantirCaExtension.class);
+            ILogger logger = new GradleLogger(
+                    rootProject.getLogger(), palantirCaExtension.getLogLevel().get());
+
+            CaResources caResources = new CaResources(logger);
+            jdksExtension.getCaCerts().putAll(rootProject.provider(() -> caResources
+                    .readPalantirRootCaFromSystemTruststore()
+                    .map(cert -> Map.of(cert.getAlias(), cert.getContent()))
+                    .orElseGet(() -> {
+                        logger.logError("Could not find Palantir CA in system truststore");
+                        return Map.of();
+                    })));
+        });
+
         JdkManager jdkManager = new JdkManager(
                 jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension));
 

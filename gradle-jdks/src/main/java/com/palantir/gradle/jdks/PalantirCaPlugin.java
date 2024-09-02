@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.CaResources;
-import com.palantir.gradle.jdks.setup.ILogger;
 import java.util.Map;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -40,20 +39,10 @@ public final class PalantirCaPlugin implements Plugin<Project> {
 
         rootProject.getPluginManager().apply(JdksPlugin.class);
 
-        ILogger logger = new GradleLogger(
-                rootProject.getLogger(), extension.getLogLevel().get());
+        JdksExtension jdksExtension = rootProject.getExtensions().getByType(JdksExtension.class);
 
-        CaResources caResources = new CaResources(logger);
-        rootProject
-                .getExtensions()
-                .getByType(JdksExtension.class)
-                .getCaCerts()
-                .putAll(possibleRootProject.provider(() -> caResources
-                        .readPalantirRootCaFromSystemTruststore()
-                        .map(cert -> Map.of(cert.getAlias(), cert.getContent()))
-                        .orElseGet(() -> {
-                            logger.logError("Could not find Palantir CA in system truststore");
-                            return Map.of();
-                        })));
+        jdksExtension
+                .getCaAliasesToSerialNumbers()
+                .putAll(Map.of(CaResources.PALANTIR_3RD_GEN_ALIAS, CaResources.PALANTIR_3RD_GEN_SERIAL));
     }
 }

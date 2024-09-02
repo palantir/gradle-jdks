@@ -90,7 +90,8 @@ public final class JdkDistributionConfigurator {
         JdkSpec jdkSpec = JdkSpec.builder()
                 .distributionName(jdkDistributionName)
                 .release(jdkRelease)
-                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
+                .caCerts(
+                        CaCerts.from(jdksExtension.getCaAliasesToSerialNumbers().get()))
                 .build();
         JdkDistributionConfig jdkDistribution = project.getObjects().newInstance(JdkDistributionConfig.class);
         jdkDistribution.getConsistentHash().set(jdkSpec.consistentShortHash());

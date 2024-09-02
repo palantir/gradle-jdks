@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks
 
-import com.palantir.gradle.jdks.setup.common.CommandRunner
 import org.apache.commons.lang3.tuple.Pair
 
 import java.nio.file.Path
@@ -39,6 +38,7 @@ class GradleJdkTestUtils {
     static Pair<String, String> JDK_11 = Pair.of("azul-zulu", JDK_11_VERSION)
     static Pair<String, String> JDK_17 = Pair.of("amazon-corretto", JDK_17_VERSION)
     static Pair<String, String> JDK_21 = Pair.of("amazon-corretto", JDK_21_VERSION)
+    static Map<String, Pair<String, String>> JDK_VERSIONS = Map.of("11", JDK_11, "17", JDK_17, "21", JDK_21)
 
     static applyApplicationPlugin(File buildFile) {
        // language=groovy
@@ -130,6 +130,7 @@ class GradleJdkTestUtils {
                 .replace("DAEMON_MAJOR_VERSION_11", quoted(daemonJdkVersion))
                 .stripIndent(true)
     }
+
 
     static quoted(String value) {
         return "'" + value + "'"

@@ -28,6 +28,7 @@ Gradle has a built-in concept of [auto-provisioning Java Toolchains](https://doc
 2. **Use the same JDK version for representative, reproducible builds on dev machines and in CI.**
 3. **Automatically add JDK CA certificates.**
 4. **Point to an internal mirror for JDKs.**
+5. Feature flagged[Gradle JDK Auto-management workflow] **Configuring the JDK used by the Gradle Daemon**
 
 ## Usage
 
@@ -96,6 +97,7 @@ jdks {
       baseUrl = 'https://internal-corporate-mirror/azul-zulu-cdn-mirror'
    }
    
+   // [Deprecated, old workflow]
    // Optional: You can specify CA certs which will be installed into
    //           the extracted JDK to work with TLS interception.
    // Default:  No CA certs are added.
@@ -105,6 +107,13 @@ jdks {
       -----END CERTIFICATE-----
    '''.stripIndent(true)
    
+   // [Gradle JDK Automanagement workflow only]
+   // Optional: You can specify CA certs as a serialNumber which, provided that
+   //           a certificate with that serial number exists in the system trustore,
+   //           it will be installed into the extracted JDK to work with TLS interception.
+   // Default:  No CA certs are added.
+   caAliasesToSerialNumbers.put 'corporate-tls-cert', '18126334688741185161'
+
    // Optional: Where to store the JDKs on disk. You almost certainly
    //           do not need to change this. 
    // Default:  $HOME/.gradle/gradle-jdks
