@@ -19,10 +19,14 @@ package com.palantir.gradle.jdks.setup;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import com.palantir.gradle.jdks.setup.common.Os;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,6 +58,36 @@ public final class CaResources {
 
     public Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore() {
         return systemCertificates().flatMap(CaResources::selectPalantirCertificate);
+    }
+
+    public static String getSerialNumberFromCert(Path certPath) {
+        // openssl x509 -noout -serial -in
+        // /Volumes/git/gradle-jdks/gradle-jdks-excavator-configurations/src/test/resources/certs/Our_Amazon_CA_Cert_1.crt | cut -d'=' -f2
+        List<ProcessBuilder> processBuilders = List.of(
+                new ProcessBuilder(
+                        "openssl",
+                        "x509",
+                        "-noout",
+                        "-serial",
+                        "-in",
+                        certPath.toAbsolutePath().toString()),
+                new ProcessBuilder("cut", "-d", "=", "-f2"));
+        try {
+            List<Process> processes = ProcessBuilder.startPipeline(processBuilders);
+            Process last = processes.get(processes.size() - 1);
+            try (InputStream is = last.getInputStream();
+                    Reader isr = new InputStreamReader(is);
+                    BufferedReader r = new BufferedReader(isr)) {
+                List<String> lines = r.lines().collect(Collectors.toList());
+                if (lines.size() != 1) {
+                    throw new IllegalStateException(String.format("Unexpected serial Number %s", lines));
+                }
+                BigInteger decimalNumber = new BigInteger(lines.get(0).trim(), 16);
+                return decimalNumber.toString();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Unable to load the serial number from the cert %s", certPath), e);
+        }
     }
 
     public Optional<AliasContentCert> maybeGetCertificateFromSerialNumber(String serialNumber, String alias) {
@@ -217,7 +251,7 @@ public final class CaResources {
                 .findFirst();
     }
 
-    private static Stream<AliasContentCert> selectCertificates(
+    public static Stream<AliasContentCert> selectCertificates(
             byte[] multipleCertificateBytes, Map<String, String> certSerialNumbersToAliases) {
         return parseCerts(multipleCertificateBytes).stream()
                 .filter(cert -> certSerialNumbersToAliases.containsKey(

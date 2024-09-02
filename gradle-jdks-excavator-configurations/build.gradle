@@ -4,6 +4,7 @@ apply plugin: 'com.palantir.external-publish-jar'
 
 dependencies {
     implementation project(':gradle-jdks')
+    implementation 'commons-io:commons-io'
 
     testImplementation project(':gradle-jdks-setup-common')
     testImplementation 'org.junit.jupiter:junit-jupiter'

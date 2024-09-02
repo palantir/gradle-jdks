@@ -3,12 +3,11 @@
 set -eux
 
 GRADLE_DIR=$1
-CERTS_DIR=$2
 
 # used by the resolved_symlink below to resolve the path based on the JAVA_VERSION value. e.g. /usr/local/${JAVA_VERSION}
 # shellcheck disable=SC2034
-SYMLINK_PATTERN=$3
-JAVA_SYMLINK_DIR=${4:-/usr/java}
+SYMLINK_PATTERN=$2
+JAVA_SYMLINK_DIR=${3:-/usr/java}
 
 symlink_dir="${SYMLINK_PATTERN%/*}"
 mkdir -p "$symlink_dir"
@@ -19,7 +18,7 @@ SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPTS_DIR"/gradle-jdks-functions.sh
 
 # Running the installation setup
-install_and_setup_jdks "$GRADLE_DIR" "$CERTS_DIR" "$SCRIPTS_DIR"
+install_and_setup_jdks "$GRADLE_DIR" "$SCRIPTS_DIR"
 
 for dir in "$GRADLE_DIR"/jdks/*/; do
   major_version_dir=${dir%*/}

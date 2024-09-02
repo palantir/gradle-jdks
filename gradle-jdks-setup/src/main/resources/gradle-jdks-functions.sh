@@ -107,10 +107,12 @@ export OS
 ARCH=$(get_arch)
 export ARCH
 
+
+# installs and sets up the JDKs in the `$GRADLE_JDKS_HOME` directory
 install_and_setup_jdks() {
   gradle_dir=$1
-  certs_dir=$2
-  scripts_dir=$3
+  certs_dir="$gradle_dir"/certs
+  scripts_dir=${3:-1}
 
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}

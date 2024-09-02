@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class GradleJdksConfiguratorTest {
+class GradleJdksExcavatorConfiguratorTest {
 
     private static final String JDK_VERSION = "21.0.3.9.1";
 
@@ -42,6 +42,9 @@ class GradleJdksConfiguratorTest {
 
     @TempDir
     Path symlinkDir;
+
+    @TempDir
+    Path certsContentDir;
 
     @Test
     void can_install_generated_gradle_jdk_files() throws IOException {
@@ -61,9 +64,13 @@ class GradleJdksConfiguratorTest {
                                                 .build()))
                                 .build()))
                 .build();
-        GradleJdksConfigurator.renderJdkInstallationConfigurations(
-                latestGradleJdksDir, jdksInfoJson, "https://corretto.aws");
 
+        GradleJdksExcavatorConfigurator.renderJdkInstallationConfigurations(
+                latestGradleJdksDir, jdksInfoJson, "https://corretto.aws", Path.of("src/test/resources/certs"));
+
+        assertThat(Files.readString(latestGradleJdksDir.resolve("certs/Our_Amazon_CA_Cert_1.serial-number"))
+                        .trim())
+                .isEqualTo("143266978916655856878034712317230054538369994");
         Files.exists(latestGradleJdksDir
                 .resolve("jdks")
                 .resolve("21")
@@ -78,12 +85,10 @@ class GradleJdksConfiguratorTest {
                 .resolve("local-path"));
         assertThat(localPath).containsPattern(String.format("amazon-corretto-%s-([a-zA-Z0-9])+\n", JDK_VERSION));
         Path installationScript = latestGradleJdksDir.resolve("scripts").resolve("install-jdks.sh");
-        Path certsDir = Files.createDirectories(latestGradleJdksDir.resolve("certs"));
         ProcessBuilder processBuilder = new ProcessBuilder()
                 .command(
                         installationScript.toAbsolutePath().toString(),
                         latestGradleJdksDir.toString(),
-                        certsDir.toString(),
                         symlinkDir.toAbsolutePath() + "/java${JAVA_VERSION}",
                         symlinkDir.toAbsolutePath().resolve("usr/java").toString());
         Path installationJdkDir = latestGradleJdksDir.resolve("installed-jdks");

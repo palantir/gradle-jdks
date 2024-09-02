@@ -20,11 +20,14 @@ import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.jdks.setup.CaResources;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.stream.Stream;
+import org.apache.commons.io.FilenameUtils;
 
-public final class GradleJdksConfigurator {
+public final class GradleJdksExcavatorConfigurator {
 
     private static final JdkDistributions jdkDistributions = new JdkDistributions();
 
@@ -32,11 +35,37 @@ public final class GradleJdksConfigurator {
      * Writes the jdk configuration files for a given jdk distribution.
      * @param targetDir the target directory where the configuration files should be written to.
      * @param jdksInfoJson jdk info json object which will be rendered as a directory structure in the target directory.
-     * @param baseUrl the base url fron where the jdk distributions can be downloaded e.g. `https://corretto.aws`
+     * @param baseUrl the base url from where the jdk distributions can be downloaded e.g. `https://corretto.aws`
+     * @param certsDir a directory that contains all the certs that need to be rendered as serial-numbers to `certs/` dir.
      */
-    public static void renderJdkInstallationConfigurations(Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl) {
+    public static void renderJdkInstallationConfigurations(
+            Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl, Path certsDir) {
         writeGradleJdkConfigurations(targetDir, jdksInfoJson, baseUrl);
         writeInstallationScripts(targetDir);
+        writeCerts(targetDir, certsDir);
+    }
+
+    private static void writeCerts(Path targetDir, Path certsDir) {
+        if (!Files.exists(certsDir)) {
+            return;
+        }
+        try {
+            Path targetCertsDir = targetDir.resolve("certs");
+            Files.createDirectories(targetCertsDir);
+            try (Stream<Path> certs = Files.walk(certsDir).filter(Files::isRegularFile)) {
+                certs.forEach(cert -> GradleJdksConfigsUtils.writeConfigurationFile(
+                        resolveSerialNumberPath(
+                                targetCertsDir, cert.getFileName().toString()),
+                        CaResources.getSerialNumberFromCert(cert)));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write the certs directory", e);
+        }
+    }
+
+    private static Path resolveSerialNumberPath(Path targetCertsDir, String originalFileName) {
+        String fileName = FilenameUtils.getBaseName(originalFileName);
+        return targetCertsDir.resolve(String.format("%s.serial-number", fileName));
     }
 
     private static void writeGradleJdkConfigurations(Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl) {
@@ -71,6 +100,8 @@ public final class GradleJdksConfigurator {
                         .os(os)
                         .version(jdkVersion)
                         .build())
+                // Projects where excavator runs are Palantir owned, hence the caCerts need to include the Palantir cert
+                // the caCerts influence the filename of the jdk directory (through the hash)
                 .caCerts(CaCerts.from(Map.of(CaResources.PALANTIR_3RD_GEN_ALIAS, CaResources.PALANTIR_3RD_GEN_SERIAL)))
                 .build();
 
@@ -112,5 +143,5 @@ public final class GradleJdksConfigurator {
         return String.format("%s/%s.%s", baseUrl, jdkPath.filename(), jdkPath.extension());
     }
 
-    private GradleJdksConfigurator() {}
+    private GradleJdksExcavatorConfigurator() {}
 }
