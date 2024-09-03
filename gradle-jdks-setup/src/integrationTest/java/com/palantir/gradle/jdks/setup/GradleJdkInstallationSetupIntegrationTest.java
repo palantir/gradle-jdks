@@ -28,7 +28,6 @@ import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.Os;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -40,9 +39,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 public class GradleJdkInstallationSetupIntegrationTest {
 
-    private static final BigInteger AMAZON_ROOT_CA_1_SERIAL =
-            new BigInteger("143266978916655856878034712317230054538369994");
-    private static final String AMAZON_CERT_ALIAS = "AmazonRootCA1Test";
     private static final String NON_EXISTING_CERT_ALIAS = "NonExistingCert";
     private static final String SUCCESSFUL_OUTPUT = "Successfully installed JDK distribution in";
     private static final String JDK_VERSION = "11.0.21.9.1";
@@ -89,9 +85,6 @@ public class GradleJdkInstallationSetupIntegrationTest {
          * │   │   │   ├── <os eg. linux>/
          * │   │   │   │   ├── <arch eg. aarch64>/
          * │   │   │   │   │   ├── download-url
-         * │   │   │   │   │   ├── local-path
-         * │   ├── certs/
-         * │   │   ├── Palantir3rdGenRootCa.serial-number
          * │   ├── gradle-daemon-jdk-version
          * │   ├── gradle-jdks-setup.sh
          * │   ├── gradle-jdks-setup.jar
@@ -106,13 +99,6 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 JdkRelease.builder().version(jdkVersion).os(os).arch(ARCH).build());
         Path archDirectory = Files.createDirectories(
                 gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os.uiName(), ARCH.uiName())));
-        Path certsDirectory = Files.createDirectories(gradleDirectory.resolve("certs"));
-        Path palantirCert =
-                Files.createFile(certsDirectory.resolve(String.format("%s.serial-number", AMAZON_CERT_ALIAS)));
-        writeFileContent(palantirCert, AMAZON_ROOT_CA_1_SERIAL.toString());
-        Path nonExistingCert =
-                Files.createFile(certsDirectory.resolve(String.format("%s.serial-number", NON_EXISTING_CERT_ALIAS)));
-        writeFileContent(nonExistingCert, "1111");
         Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
         String correttoDistributionUrl = Optional.ofNullable(System.getenv(CORRETTO_DISTRIBUTION_URL_ENV))
                 .orElseGet(CORRETTO_JDK_DISTRIBUTION::defaultBaseUrl);
@@ -120,8 +106,6 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 downloadUrlPath,
                 String.format(
                         String.format("%s/%s.%s", correttoDistributionUrl, jdkPath.filename(), jdkPath.extension())));
-        Path localPath = Files.createFile(archDirectory.resolve("local-path"));
-        writeFileContent(localPath, String.format("amazon-corretto-%s-%s", jdkVersion, TEST_HASH));
 
         // copy the jar from build/libs to the gradle directory
         Files.copy(
@@ -142,6 +126,9 @@ public class GradleJdkInstallationSetupIntegrationTest {
 
         // copy the testing script to the working directory
         Files.copy(Path.of("src/integrationTest/resources/testing-script.sh"), workingDir.resolve("testing-script.sh"));
+
+        // copy the testing script to the working directory
+        Files.copy(Path.of("src/integrationTest/resources/amazon.crt"), workingDir.resolve("amazon.crt"));
 
         // workaround when running locally to ignore the certificate setup when using curl & wget
         if (Optional.ofNullable(System.getenv("CI")).isEmpty()) {

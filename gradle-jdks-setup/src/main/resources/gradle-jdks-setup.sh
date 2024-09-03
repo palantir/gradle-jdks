@@ -64,15 +64,14 @@ APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
 APP_HOME=${APP_HOME%/gradle}
 APP_GRADLE_DIR="$APP_HOME"/gradle
 
-CERTS_DIR="$APP_GRADLE_DIR"/certs
-
 # Loading gradle jdk functions
 . "$APP_GRADLE_DIR"/gradle-jdks-functions.sh
 
-install_and_setup_jdks "$APP_GRADLE_DIR" "$CERTS_DIR" "$APP_GRADLE_DIR"
+install_and_setup_jdks "$APP_GRADLE_DIR"
 
 gradle_daemon_jdk_version=$(read_value "$APP_GRADLE_DIR"/gradle-daemon-jdk-version)
-gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$OS"/"$ARCH"/local-path)
+gradle_daemon_jdk_distribution_download_url=$(read_value "$APP_GRADLE_DIR"/jdks/"$gradle_daemon_jdk_version"/"$OS"/"$ARCH"/download-url)
+gradle_daemon_jdk_distribution_local_path=$(get_file_name "$gradle_daemon_jdk_distribution_download_url")
 "$GRADLE_JDKS_HOME"/"$gradle_daemon_jdk_distribution_local_path"/bin/java -cp "$APP_GRADLE_DIR"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup daemonSetup "$APP_HOME" "$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path"
 
 # [Used by ./gradlew only] Setting the Gradle Daemon Java Home to the JDK distribution

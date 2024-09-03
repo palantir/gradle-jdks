@@ -39,7 +39,7 @@ tasks.withType(JavaCompile) {
 
 tasks.integrationTest {
     environment("PROJECT_VERSION", project.version)
-    dependsOn tasks.build
+    dependsOn tasks.fatJar
 }
 
 tasks.build.dependsOn tasks.fatJar

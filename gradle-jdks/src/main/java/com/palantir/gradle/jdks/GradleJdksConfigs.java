@@ -54,12 +54,11 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     abstract Directory gradleDirectory();
 
-    protected abstract void applyGradleJdkFileAction(
-            Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistributionConfig);
+    protected abstract void applyGradleJdkFileAction(Path downloadUrlPath, JdkDistributionConfig jdkDistributionConfig);
 
     protected abstract void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion);
 
-    protected abstract void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName);
+    protected abstract void applyGradleJdkJarAction(File gradleJdkJarFile);
 
     protected abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
 
@@ -78,8 +77,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                         .resolve(jdkDistribution.getOs().get().uiName())
                         .resolve(jdkDistribution.getArch().get().uiName());
                 Path downloadUrlPath = outputDir.resolve("download-url");
-                Path localPath = outputDir.resolve("local-path");
-                applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution);
+                applyGradleJdkFileAction(downloadUrlPath, jdkDistribution);
                 jdksDirectoryConfigured.set(true);
             });
         });
@@ -110,7 +108,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         }
         applyGradleJdkDaemonVersionAction(gradleDirectory().getAsFile().toPath().resolve("gradle-daemon-jdk-version"));
 
-        applyGradleJdkJarAction(gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile(), GRADLE_JDKS_SETUP_JAR);
+        applyGradleJdkJarAction(gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile());
         applyGradleJdkScriptAction(
                 gradleDirectory().file(GRADLE_JDKS_FUNCTIONS_SCRIPT).getAsFile(), GRADLE_JDKS_FUNCTIONS_SCRIPT);
         applyGradleJdkScriptAction(

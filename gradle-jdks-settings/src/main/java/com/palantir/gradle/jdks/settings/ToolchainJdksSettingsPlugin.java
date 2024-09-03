@@ -46,6 +46,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.initialization.DefaultSettings;
+import org.gradle.internal.impldep.org.apache.commons.io.FilenameUtils;
 import org.gradle.util.GradleVersion;
 
 /**
@@ -173,7 +174,7 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         Arch arch = CurrentArch.get();
         try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
             return stream.map(path ->
-                            path.resolve(os.toString()).resolve(arch.toString()).resolve("local-path"))
+                            path.resolve(os.toString()).resolve(arch.toString()).resolve("download-url"))
                     .map(path -> resolveJdkPath(path, installationDirectory))
                     .collect(Collectors.toList());
         } catch (IOException e) {
@@ -183,8 +184,9 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
 
     private static Path resolveJdkPath(Path gradleJdkConfigurationPath, Path installationDirectory) {
         try {
-            String localFilename = Files.readString(gradleJdkConfigurationPath).trim();
-            return installationDirectory.resolve(localFilename);
+            String downloadUrl = Files.readString(gradleJdkConfigurationPath).trim();
+            String jdkName = FilenameUtils.getBaseName(downloadUrl);
+            return installationDirectory.resolve(jdkName);
         } catch (IOException e) {
             throw new RuntimeException(
                     String.format("Failed to read gradle jdk configuration file %s", gradleJdkConfigurationPath), e);

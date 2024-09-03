@@ -167,7 +167,6 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         String archName = CurrentArch.get().uiName();
         versions.stream().findFirst().ifPresent(version -> {
             assert Files.exists(projectDir.toPath().resolve("gradle/jdks/${version}/${osName}/${archName}/download-url"))
-            assert Files.exists(projectDir.toPath().resolve("gradle/jdks/${version}/${osName}/${archName}/local-path"))
         })
     }
 

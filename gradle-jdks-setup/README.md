@@ -170,7 +170,6 @@ project-root/
 │   │   │   ├── <os eg. linux>/
 │   │   │   │   ├── <arch eg. aarch64>/
 │   │   │   │   │   ├── download-url
-│   │   │   │   │   ├── local-path
 │   ├── certs/
 │   │   ├── Palantir3rdGenRootCa.serial-number
 │   ├── gradle-daemon-jdk-version
@@ -188,7 +187,6 @@ project-root/
 - `gradle/jdks`
   - contains a list of directories in the format `<jdk_major_version>/<os>/<arch>` that contain 2 files: 
     - `download-url` full url path for the jdk, os and arch. Rendered from `JdksExtension#jdks` configured in step 2
-    - `local-path` the local name of the file. Rendered based on the distribution-name, version and the [hash](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdkSpec.java) 
   - it generates all the JDK versions configured in [JdksExtension](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdksExtension.java)
 
 Running the patched `./gradlew` script will add extra configurations required for IntelliJ:

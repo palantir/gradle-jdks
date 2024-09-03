@@ -97,6 +97,14 @@ get_java_home() {
   echo "${java_bin%/*/*}"
 }
 
+get_file_name() {
+  echo $1
+  full_name=${1##*/}
+  echo full_name
+  value=${full_name%%.*}
+  echo $value
+}
+
 GRADLE_JDKS_HOME=$(get_gradle_jdks_home)
 mkdir -p "$GRADLE_JDKS_HOME"
 export GRADLE_JDKS_HOME
@@ -109,8 +117,7 @@ export ARCH
 
 install_and_setup_jdks() {
   gradle_dir=$1
-  certs_dir=$2
-  scripts_dir=$3
+  scripts_dir=${2:$gradle_dir}
 
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}
@@ -119,8 +126,8 @@ install_and_setup_jdks() {
       echo "Skipping JDK 8 installation as it is not supported by Gradle JDKs Setup."
       continue
     fi
-    distribution_local_path=$(read_value "$major_version_dir"/"$OS"/"$ARCH"/local-path)
     distribution_url=$(read_value "$major_version_dir"/"$OS"/"$ARCH"/download-url)
+    distribution_local_path=$(get_file_name "$distribution_url")
     # Check if distribution exists in $GRADLE_JDKS_HOME
     jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
     if [ ! -d "$jdk_installation_directory" ]; then
@@ -160,7 +167,7 @@ install_and_setup_jdks() {
 
       # Finding the java_home
       java_home=$(get_java_home "$in_progress_dir")
-      "$java_home"/bin/java -cp "$scripts_dir"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" "$certs_dir" || die "Failed to set up JDK $jdk_installation_directory"
+      "$java_home"/bin/java -cp "$scripts_dir"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" || die "Failed to set up JDK $jdk_installation_directory"
       echo "Successfully installed JDK distribution in $jdk_installation_directory"
     fi
   done

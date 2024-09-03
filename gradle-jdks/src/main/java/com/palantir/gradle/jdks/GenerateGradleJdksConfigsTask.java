@@ -38,13 +38,10 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    protected final void applyGradleJdkFileAction(
-            Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistribution) {
+    protected final void applyGradleJdkFileAction(Path downloadUrlPath, JdkDistributionConfig jdkDistribution) {
         GradleJdksConfigsUtils.createDirectories(downloadUrlPath.getParent());
         GradleJdksConfigsUtils.writeConfigurationFile(
                 downloadUrlPath, jdkDistribution.getDownloadUrl().get());
-        GradleJdksConfigsUtils.writeConfigurationFile(
-                localUrlPath, jdkDistribution.getLocalPath().get());
     }
 
     @Override
@@ -54,8 +51,8 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    protected final void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
-        GradleJdksConfigsUtils.writeResourceAsStreamToFile(resourceName, gradleJdkJarFile);
+    protected final void applyGradleJdkJarAction(File gradleJdkJarFile) {
+        GradleJdksConfigsUtils.writeResourceAsStreamToFile(GradleJdksConfigs.GRADLE_JDKS_SETUP_JAR, gradleJdkJarFile);
     }
 
     @Override

@@ -27,14 +27,8 @@ public interface JdkDistributionConfig {
     Property<String> getDownloadUrl();
 
     @Input
-    Property<String> getLocalPath();
-
-    @Input
     Property<Os> getOs();
 
     @Input
     Property<Arch> getArch();
-
-    @Input
-    Property<String> getConsistentHash();
 }

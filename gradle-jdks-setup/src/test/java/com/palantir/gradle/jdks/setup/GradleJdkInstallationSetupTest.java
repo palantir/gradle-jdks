@@ -19,9 +19,7 @@ package com.palantir.gradle.jdks.setup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup.Command;
-import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,46 +29,21 @@ import org.junit.jupiter.api.io.TempDir;
 
 public final class GradleJdkInstallationSetupTest {
 
-    private static final BigInteger AMAZON_ROOT_CA_1_SERIAL =
-            new BigInteger("143266978916655856878034712317230054538369994");
-    private static final String AMAZON_CERT_ALIAS = "AmazonRootCA1Test";
-
     @TempDir
     Path tempDir;
 
     @Test
-    public void can_copy_jdk_installation_with_no_certs() throws IOException {
+    public void can_copy_jdk_installation_with_no_certs() {
         String distribution =
                 Path.of(System.getProperty("java.home")).getFileName().toString();
-        Path certsDir = Files.createDirectories(tempDir.resolve("certs"));
         GradleJdkInstallationSetup.main(new String[] {
             Command.JDK_SETUP.toString(),
             tempDir.resolve(distribution).toAbsolutePath().toString(),
-            certsDir.toAbsolutePath().toString()
         });
         Path destDistribution = tempDir.resolve(distribution);
         Path destJavaHome = destDistribution.resolve("bin/java");
         assertThat(destDistribution).exists();
         assertThat(destJavaHome).exists();
-    }
-
-    @Test
-    public void can_copy_jdk_installation_with_palantir_certs() throws IOException {
-        String distribution =
-                Path.of(System.getProperty("java.home")).getFileName().toString();
-        Path certsDir = Files.createDirectories(tempDir.resolve("certs"));
-        Path amazonRootCa = Files.createFile(certsDir.resolve(String.format("%s.serial-number", AMAZON_CERT_ALIAS)));
-        Files.write(amazonRootCa, AMAZON_ROOT_CA_1_SERIAL.toString().getBytes(StandardCharsets.UTF_8));
-        GradleJdkInstallationSetup.main(new String[] {
-            Command.JDK_SETUP.toString(),
-            tempDir.resolve(distribution).toAbsolutePath().toString(),
-            certsDir.toAbsolutePath().toString()
-        });
-        Path destDistribution = tempDir.resolve(distribution);
-        Path destJavaHome = destDistribution.resolve("bin/java");
-        assertThat(destDistribution).exists();
-        assertThat(destJavaHome).exists();
-        checkCaIsImported(destDistribution);
     }
 
     @Test
@@ -95,18 +68,5 @@ public final class GradleJdkInstallationSetupTest {
                 .contains("java.home=my_directory")
                 .contains("key1=value1")
                 .doesNotContain("java.home=initial_value");
-    }
-
-    private static void checkCaIsImported(Path jdkPath) {
-        CommandRunner.runWithOutputCollection(new ProcessBuilder()
-                .command(
-                        jdkPath.resolve("bin/keytool").toString(),
-                        "-list",
-                        "-storepass",
-                        "changeit",
-                        "-alias",
-                        AMAZON_CERT_ALIAS,
-                        "-keystore",
-                        jdkPath.resolve("lib/security/cacerts").toString()));
     }
 }

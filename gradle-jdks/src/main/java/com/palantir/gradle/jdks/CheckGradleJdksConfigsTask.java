@@ -45,10 +45,8 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    protected final void applyGradleJdkFileAction(
-            Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistribution) {
+    protected final void applyGradleJdkFileAction(Path downloadUrlPath, JdkDistributionConfig jdkDistribution) {
         assertFileContent(downloadUrlPath, jdkDistribution.getDownloadUrl().get());
-        assertFileContent(localUrlPath, jdkDistribution.getLocalPath().get());
     }
 
     @Override
@@ -57,9 +55,9 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     }
 
     @Override
-    protected final void applyGradleJdkJarAction(File gradleJdkJarFile, String resourceName) {
+    protected final void applyGradleJdkJarAction(File gradleJdkJarFile) {
         try {
-            byte[] expectedBytes = getResourceContent(resourceName);
+            byte[] expectedBytes = getResourceContent(GradleJdksConfigs.GRADLE_JDKS_SETUP_JAR);
             byte[] actualBytes = Files.readAllBytes(gradleJdkJarFile.toPath());
             checkOrThrow(Arrays.equals(expectedBytes, actualBytes), gradleJdkJarFile.toPath());
         } catch (IOException e) {
