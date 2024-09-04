@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: '[Gradle JDK] Fix when `palantir-gradle-jdks` is not installed and
+    jdks are missing'
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/382

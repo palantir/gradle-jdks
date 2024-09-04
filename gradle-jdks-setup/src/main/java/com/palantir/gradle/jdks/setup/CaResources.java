@@ -57,18 +57,14 @@ public final class CaResources {
         return systemCertificates().flatMap(CaResources::selectPalantirCertificate);
     }
 
-    public void maybeImportCertsInJdk(Path jdkInstallationDirectory, Map<String, String> certSerialNumbersToAliases) {
-        if (certSerialNumbersToAliases.isEmpty()) {
-            logger.log("No certificates were provided to import, skipping...");
-            return;
-        }
-        systemCertificates()
-                .map(certs -> selectCertificates(certs, certSerialNumbersToAliases))
-                .orElseGet(Stream::of)
-                .forEach(cert -> importCertInJdk(cert, jdkInstallationDirectory));
+    public Optional<AliasContentCert> maybeGetCertificateFromSerialNumber(String serialNumber, String alias) {
+        return systemCertificates()
+                .map(certs -> selectCertificates(certs, Map.of(serialNumber, alias)))
+                .orElseGet(Stream::empty)
+                .findFirst();
     }
 
-    private void importCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {
+    public void importCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {
         Os os = CurrentOs.get();
         switch (os) {
             case MACOS:
@@ -110,10 +106,19 @@ public final class CaResources {
                     "-noprompt",
                     "-file",
                     palantirCertFile.getAbsolutePath());
-            CommandRunner.run(importCertificateCommand);
+            CommandRunner.runWithLogger(
+                    new ProcessBuilder(importCertificateCommand), this::writeStdOutput, this::writeStdError);
         } catch (IOException e) {
             throw new RuntimeException("Unable to import the certificate to the jdk", e);
         }
+    }
+
+    private void writeStdOutput(InputStream inputStream) {
+        CommandRunner.processStream(inputStream, logger::log);
+    }
+
+    private void writeStdError(InputStream inputStream) {
+        CommandRunner.processStream(inputStream, logger::logError);
     }
 
     private static boolean isCertificateInTruststore(Path jdkInstallationDirectory, String alias) {
@@ -131,7 +136,7 @@ public final class CaResources {
                     alias,
                     "-keystore",
                     jdkInstallationDirectory.resolve("lib/security/cacerts").toString());
-            CommandRunner.run(checkCertificateCommand);
+            CommandRunner.runWithOutputCollection(new ProcessBuilder().command(checkCertificateCommand));
             return true;
         } catch (Exception e) {
             if (e.getMessage().contains(String.format("Alias <%s> does not exist", alias))) {
@@ -171,15 +176,16 @@ public final class CaResources {
     }
 
     private static String macosSystemCertificates(Path keyChainPath) {
-        return CommandRunner.run(List.of(
-                "security",
-                "export",
-                "-t",
-                "certs",
-                "-f",
-                "pemseq",
-                "-k",
-                keyChainPath.toAbsolutePath().toString()));
+        return CommandRunner.runWithOutputCollection(new ProcessBuilder()
+                .command(
+                        "security",
+                        "export",
+                        "-t",
+                        "certs",
+                        "-f",
+                        "pemseq",
+                        "-k",
+                        keyChainPath.toAbsolutePath().toString()));
     }
 
     private Optional<byte[]> linuxSystemCertificates() {

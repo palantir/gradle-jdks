@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: Add `/usr/java/$java_version` symlink to `install-jdks.sh` excavator
+    script
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/386

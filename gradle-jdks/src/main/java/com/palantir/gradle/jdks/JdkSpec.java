@@ -23,7 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import org.immutables.value.Value;
 
 @Value.Immutable
-interface JdkSpec {
+public interface JdkSpec {
     JdkDistributionName distributionName();
 
     JdkRelease release();

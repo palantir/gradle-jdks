@@ -23,7 +23,7 @@ import java.util.TreeMap;
 import org.immutables.value.Value;
 
 @Value.Immutable
-interface CaCerts {
+public interface CaCerts {
     NavigableMap<String, String> caCerts();
 
     default String combinedInSortedOrder() {

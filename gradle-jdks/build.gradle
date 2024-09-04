@@ -34,6 +34,7 @@ dependencies {
 
     testImplementation gradleTestKit()
     testImplementation project(':gradle-jdks-settings')
+    testImplementation project(':gradle-jdks-test-common')
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
@@ -75,10 +76,10 @@ tasks.withType(JavaCompile).configureEach {
     it.options.errorprone.disable 'StrictUnusedVariable'
 }
 
-tasks.test {
-    environment("PROJECT_VERSION", project.version)
+tasks.withType(Test) {
+    environment(Map.of("PROJECT_VERSION", project.version))
     systemProperty 'ignoreDeprecations', 'true'
-    dependsOn project(':gradle-jdks-settings').tasks.named('build')
+    dependsOn project(':gradle-jdks-settings').tasks.withType(PluginUnderTestMetadata.class)
 }
 
 tasks.withType(ProcessResources.class).configureEach {
