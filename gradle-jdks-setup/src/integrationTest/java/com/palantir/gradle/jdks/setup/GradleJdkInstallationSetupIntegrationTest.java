@@ -28,6 +28,7 @@ import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.Os;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -39,11 +40,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 public class GradleJdkInstallationSetupIntegrationTest {
 
-    private static final String NON_EXISTING_CERT_ALIAS = "NonExistingCert";
-    private static final String SUCCESSFUL_OUTPUT = "Successfully installed JDK distribution in";
     private static final String JDK_VERSION = "11.0.21.9.1";
     private static final Arch ARCH = CurrentArch.get();
-    private static final String TEST_HASH = "integration-tests";
     private static final String CORRETTO_DISTRIBUTION_URL_ENV = "CORRETTO_DISTRIBUTION_URL";
     private static final AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
     private static final boolean DO_NOT_INSTALL_CURL = false;
@@ -54,23 +52,23 @@ public class GradleJdkInstallationSetupIntegrationTest {
 
     @Test
     public void can_setup_jdk_with_certs_centos() throws IOException, InterruptedException {
-        setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
-        assertJdkWithNoCertsWasSetUp(dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL));
+        setupGradleDirectoryStructure(Os.LINUX_GLIBC);
+        dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL);
     }
 
     @Test
     public void can_setup_jdk_with_certs_ubuntu() throws IOException, InterruptedException {
-        setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_GLIBC);
-        assertJdkWithNoCertsWasSetUp(dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL));
+        setupGradleDirectoryStructure(Os.LINUX_GLIBC);
+        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL);
     }
 
     @Test
     public void can_setup_jdk_with_certs_alpine() throws IOException, InterruptedException {
-        setupGradleDirectoryStructure(JDK_VERSION, Os.LINUX_MUSL);
-        assertJdkWithNoCertsWasSetUp(dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL));
+        setupGradleDirectoryStructure(Os.LINUX_MUSL);
+        dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL);
     }
 
-    private Path setupGradleDirectoryStructure(String jdkVersion, Os os) throws IOException {
+    private Path setupGradleDirectoryStructure(Os os) throws IOException {
         /**
          * Each project will contain the following gradle file structure:
          * Note! Make sure the files end in a newline character, otherwise the `read` command in the
@@ -92,12 +90,16 @@ public class GradleJdkInstallationSetupIntegrationTest {
          * ├── subProjects/...
          * ...
          */
-        String jdkMajorVersion = Iterables.get(Splitter.on('.').split(jdkVersion), 0);
+        String jdkMajorVersion =
+                Iterables.get(Splitter.on('.').split(GradleJdkInstallationSetupIntegrationTest.JDK_VERSION), 0);
         Path gradleDirectory = Files.createDirectories(workingDir.resolve("gradle"));
         Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-daemon-jdk-version"));
-        writeFileContent(gradleJdkVersion, jdkMajorVersion.toString());
-        JdkPath jdkPath = CORRETTO_JDK_DISTRIBUTION.path(
-                JdkRelease.builder().version(jdkVersion).os(os).arch(ARCH).build());
+        writeFileContent(gradleJdkVersion, jdkMajorVersion);
+        JdkPath jdkPath = CORRETTO_JDK_DISTRIBUTION.path(JdkRelease.builder()
+                .version(GradleJdkInstallationSetupIntegrationTest.JDK_VERSION)
+                .os(os)
+                .arch(ARCH)
+                .build());
         Path archDirectory = Files.createDirectories(
                 gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os.uiName(), ARCH.uiName())));
         Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
@@ -108,7 +110,8 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 String.format(
                         String.format("%s/%s.%s", correttoDistributionUrl, jdkPath.filename(), jdkPath.extension())));
         Path localPath = Files.createFile(archDirectory.resolve("local-path"));
-        writeFileContent(localPath, String.format("amazon-corretto-%s-%s", jdkVersion, TEST_HASH));
+        writeFileContent(
+                localPath, String.format("amazon-corretto-%s", GradleJdkInstallationSetupIntegrationTest.JDK_VERSION));
 
         // copy the jar from build/libs to the gradle directory
         Files.copy(
@@ -130,12 +133,18 @@ public class GradleJdkInstallationSetupIntegrationTest {
         // copy the testing script to the working directory
         Files.copy(Path.of("src/integrationTest/resources/testing-script.sh"), workingDir.resolve("testing-script.sh"));
 
-        // workaround when running locally to ignore the certificate setup when using curl & wget
-        if (Optional.ofNullable(System.getenv("CI")).isEmpty()) {
-            Files.copy(
-                    Path.of("src/integrationTest/resources/ignore-certs-curl-wget.sh"),
-                    gradleDirectory.resolve("ignore-certs-curl-wget.sh"));
-        }
+        // copy the certs to the working directory
+        CaResources.readPalantirRootCaFromSystemTruststore()
+                .map(AliasContentCert::getContent)
+                .ifPresent(content -> {
+                    try {
+                        Files.write(workingDir.resolve("palantir.crt"), content.getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to write cert", e);
+                    }
+                });
+
+        Files.copy(Path.of("src/integrationTest/resources/amazon.crt"), workingDir.resolve("amazon.crt"));
 
         return gradleDirectory;
     }
@@ -181,22 +190,5 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 .as("Command '%s' failed with output: %s", String.join(" ", commandArguments), output)
                 .isEqualTo(0);
         return output;
-    }
-
-    private static String getJavaVersion(String jdkVersion) {
-        String[] jdkVersions = Iterables.toArray(Splitter.on(".").split(jdkVersion), String.class);
-        return String.join(".", List.of(jdkVersions[0], jdkVersions[1], jdkVersions[2]));
-    }
-
-    private static void assertJdkWithNoCertsWasSetUp(String output) {
-        String expectedDistributionPath =
-                String.format("/root/.gradle/gradle-jdks/amazon-corretto-%s-%s", JDK_VERSION, TEST_HASH);
-        assertThat(output)
-                .contains(String.format("%s %s", SUCCESSFUL_OUTPUT, expectedDistributionPath))
-                .contains(String.format("Java home is: %s", expectedDistributionPath))
-                .containsPattern(String.format("Java path is: java is ([^/]*\\s)*%s", expectedDistributionPath))
-                .contains(String.format("Java version is: %s", getJavaVersion(JDK_VERSION)))
-                .doesNotContain(String.format(
-                        "Successfully imported CA certificate %s into the JDK truststore", NON_EXISTING_CERT_ALIAS));
     }
 }

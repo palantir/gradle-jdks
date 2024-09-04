@@ -7,6 +7,8 @@ RUN if [ "$INSTALL_CURL" = "true" ] ; then \
         apt-get install -y curl ; \
     fi
 COPY . /
+RUN mkdir -p /etc/ssl/certs && cat /amazon.crt >> /etc/ssl/certs/ca-bundle.crt
+RUN if [ -f /palantir.crt ]; then cat /palantir.crt >> /etc/ssl/certs/ca-bundle.crt; else echo "File does not exist."; fi
 RUN chmod +x /testing-script.sh
 ARG SCRIPT_SHELL
 CMD $SCRIPT_SHELL /testing-script.sh

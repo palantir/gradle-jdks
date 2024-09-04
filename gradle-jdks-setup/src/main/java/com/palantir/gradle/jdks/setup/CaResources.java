@@ -62,7 +62,7 @@ public final class CaResources {
         this.logger = logger;
     }
 
-    public Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore() {
+    public static Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore() {
         return selectPalantirCertificate(systemCertificates());
     }
 
@@ -240,17 +240,6 @@ public final class CaResources {
                     "-----END CERTIFICATE-----");
         } catch (CertificateEncodingException e) {
             throw new RuntimeException("Could not convert Palantir cert back to regular", e);
-        }
-    }
-
-    public static String getSerialNumber(String certContent) {
-        try {
-            InputStream in = new ByteArrayInputStream(certContent.getBytes(StandardCharsets.UTF_8));
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
-            return cert.getSerialNumber().toString();
-        } catch (CertificateException e) {
-            throw new RuntimeException(String.format("Could not get serial number for certificate %s", certContent), e);
         }
     }
 }
