@@ -63,7 +63,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     protected abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
 
-    // method that gets run before the action
     protected abstract void maybePrepareForAction(List<Path> targetPaths);
 
     @TaskAction
