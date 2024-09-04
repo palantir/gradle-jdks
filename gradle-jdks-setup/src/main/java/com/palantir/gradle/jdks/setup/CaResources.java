@@ -93,7 +93,7 @@ public final class CaResources {
         }
     }
 
-    public static String getAlias(X509Certificate certificate) {
+    public String getAlias(X509Certificate certificate) {
         String distinguishedName = certificate.getSubjectX500Principal().getName();
         try {
             LdapName ldapName = new LdapName(distinguishedName);
@@ -102,11 +102,10 @@ public final class CaResources {
                     return String.format("GradleJdks_%s", ((String) rdn.getValue()).replaceAll("\\s", ""));
                 }
             }
-            return String.format("GradleJdks_%s", distinguishedName);
         } catch (InvalidNameException e) {
-            throw new RuntimeException(
-                    String.format("Failed to read the ldapname for the cert %s", distinguishedName), e);
+            logger.logError(String.format("Failed to extract ldapName from %s", distinguishedName));
         }
+        return String.format("GradleJdks_%s", distinguishedName.replaceAll("\\s", ""));
     }
 
     private Optional<KeyStore> loadKeystore(char[] password, Path location) {
