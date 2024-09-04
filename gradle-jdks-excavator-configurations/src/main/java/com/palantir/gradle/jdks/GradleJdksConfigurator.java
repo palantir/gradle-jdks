@@ -21,8 +21,6 @@ import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Optional;
 
 public final class GradleJdksConfigurator {
 
@@ -34,16 +32,13 @@ public final class GradleJdksConfigurator {
      * @param targetDir the target directory where the configuration files should be written to.
      * @param jdksInfoJson jdk info json object which will be rendered as a directory structure in the target directory.
      * @param baseUrl the base url fron where the jdk distributions can be downloaded e.g. `https://corretto.aws`
-     * @param palantirCert the content of the palantir certificate.
      */
-    public static void renderJdkInstallationConfigurations(
-            Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl, Optional<String> palantirCert) {
-        writeGradleJdkConfigurations(targetDir, jdksInfoJson, baseUrl, palantirCert);
+    public static void renderJdkInstallationConfigurations(Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl) {
+        writeGradleJdkConfigurations(targetDir, jdksInfoJson, baseUrl);
         writeInstallationScripts(targetDir);
     }
 
-    private static void writeGradleJdkConfigurations(
-            Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl, Optional<String> palantirCert) {
+    private static void writeGradleJdkConfigurations(Path targetDir, JdksInfoJson jdksInfoJson, String baseUrl) {
         jdksInfoJson.jdksPerJavaVersion().forEach((javaVersion, jdkInfoJson) -> {
             jdkInfoJson.os().forEach((os, jdkOsInfoJson) -> {
                 jdkOsInfoJson.arch().forEach((arch, jdkOsArchInfoJson) -> {
@@ -54,7 +49,6 @@ public final class GradleJdksConfigurator {
                             jdkOsArchInfoJson.version(),
                             os,
                             arch,
-                            palantirCert,
                             targetDir);
                 });
             });
@@ -68,28 +62,18 @@ public final class GradleJdksConfigurator {
             String jdkVersion,
             Os os,
             Arch arch,
-            Optional<String> palantirCert,
             Path targetDir) {
-        JdkSpec.Builder jdkSpecBuilder = JdkSpec.builder()
-                .distributionName(jdkDistributionName)
-                .release(JdkRelease.builder()
-                        .arch(arch)
-                        .os(os)
-                        .version(jdkVersion)
-                        .build());
-        palantirCert.ifPresentOrElse(
-                cert -> jdkSpecBuilder.caCerts(CaCerts.from(Map.of(PALANTIR_ALIAS_CERT, cert))),
-                () -> jdkSpecBuilder.caCerts(CaCerts.from(Map.of())));
-        JdkSpec jdkSpec = jdkSpecBuilder.build();
+        JdkRelease jdkRelease =
+                JdkRelease.builder().arch(arch).os(os).version(jdkVersion).build();
 
         Path jdksDir = targetDir.resolve("jdks");
         Path jdkOsArchDir = jdksDir.resolve(javaVersion).resolve(os.uiName()).resolve(arch.uiName());
         try {
             Files.createDirectories(jdkOsArchDir);
             GradleJdksConfigsUtils.writeConfigurationFile(
-                    jdkOsArchDir.resolve("download-url"), resolveDownloadUrl(baseUrl, jdkSpec));
+                    jdkOsArchDir.resolve("download-url"), resolveDownloadUrl(baseUrl, jdkDistributionName, jdkRelease));
             GradleJdksConfigsUtils.writeConfigurationFile(
-                    jdkOsArchDir.resolve("local-path"), resolveLocalPath(jdkSpec));
+                    jdkOsArchDir.resolve("local-path"), resolveLocalPath(jdkDistributionName, jdkRelease));
         } catch (Exception e) {
             throw new RuntimeException(
                     String.format("Failed to crate jdk configuration files in dir %s", jdkOsArchDir), e);
@@ -110,13 +94,13 @@ public final class GradleJdksConfigurator {
         GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "gradle-jdks-setup.jar");
     }
 
-    private static String resolveLocalPath(JdkSpec jdkSpec) {
-        return String.format(
-                "%s-%s-%s", jdkSpec.distributionName(), jdkSpec.release().version(), jdkSpec.consistentShortHash());
+    private static String resolveLocalPath(JdkDistributionName jdkDistributionName, JdkRelease jdkRelease) {
+        return String.format("%s-%s", jdkDistributionName, jdkRelease.version());
     }
 
-    private static String resolveDownloadUrl(String baseUrl, JdkSpec jdkSpec) {
-        JdkPath jdkPath = jdkDistributions.get(jdkSpec.distributionName()).path(jdkSpec.release());
+    private static String resolveDownloadUrl(
+            String baseUrl, JdkDistributionName jdkDistributionName, JdkRelease jdkRelease) {
+        JdkPath jdkPath = jdkDistributions.get(jdkDistributionName).path(jdkRelease);
         return String.format("%s/%s.%s", baseUrl, jdkPath.filename(), jdkPath.extension());
     }
 
