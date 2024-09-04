@@ -28,6 +28,7 @@ Gradle has a built-in concept of [auto-provisioning Java Toolchains](https://doc
 2. **Use the same JDK version for representative, reproducible builds on dev machines and in CI.**
 3. **Automatically add JDK CA certificates.**
 4. **Point to an internal mirror for JDKs.**
+5. [Gradle JDK Automanagement] **Configures the Gradle Daemon JDK and the Toolchains used**
 
 ## Usage
 
@@ -96,6 +97,7 @@ jdks {
       baseUrl = 'https://internal-corporate-mirror/azul-zulu-cdn-mirror'
    }
    
+   // [Ignored by the Gradle JDK Automanagement workflow]
    // Optional: You can specify CA certs which will be installed into
    //           the extracted JDK to work with TLS interception.
    // Default:  No CA certs are added.
@@ -133,7 +135,7 @@ New JDK distributions are easily added - you just need to:
 4. Write some tests to check the path is being built correctly - [Azul Zulu example](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/test/groovy/com/palantir/gradle/jdks/AzulZuluJdkDistributionTest.java).
 5. Make a PR.
 
-## [Beta Feature] Run the Gradle wrapper/daemon with a certain JDK
+## [Beta Feature][Gradle JDK Automanagement] Run the Gradle wrapper/daemon with a certain JDK
    * More details in [grade-jdks-setup](gradle-jdks-setup/README.md)
    * Disabled by default for now
 
