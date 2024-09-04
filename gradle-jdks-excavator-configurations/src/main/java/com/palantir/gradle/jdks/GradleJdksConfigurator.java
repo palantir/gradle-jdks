@@ -25,7 +25,6 @@ import java.nio.file.Path;
 public final class GradleJdksConfigurator {
 
     private static final JdkDistributions jdkDistributions = new JdkDistributions();
-    private static final String PALANTIR_ALIAS_CERT = "Palantir3rdGenRootCa";
 
     /**
      * Writes the jdk configuration files for a given jdk distribution.
