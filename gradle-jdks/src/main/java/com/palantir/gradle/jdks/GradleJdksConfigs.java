@@ -74,7 +74,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                 gradleDirectory().file(GRADLE_JDKS_FUNCTIONS_SCRIPT).getAsFile().toPath();
         Path gradleJdksSetupScript =
                 gradleDirectory().file(GRADLE_JDKS_SETUP_SCRIPT).getAsFile().toPath();
-        // TODO(crogoz): Remove this once everyone is on the newest gradle.jdks plugin
+        // Older versions of `gradle.jdks` would also populate the `certs/` directory
+        // TODO(crogoz): Remove this once everyone is on the newer `com.palantir.jdks`
         Path certsDir = gradleDirectory().dir("certs").getAsFile().toPath();
         maybePrepareForAction(
                 List.of(gradleJdksDir, gradleJdksSetupJar, gradleJdksFunctionsScript, gradleJdksSetupScript, certsDir));

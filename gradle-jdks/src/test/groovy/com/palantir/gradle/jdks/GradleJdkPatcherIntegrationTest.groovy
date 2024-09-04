@@ -59,6 +59,8 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         Files.isExecutable(scriptPath)
         Path functionsPath = projectDir.toPath().resolve("gradle/gradle-jdks-functions.sh");
         Files.isExecutable(functionsPath)
+
+        and: 'old gradle jdk paths are removed'
         Path oldPath = projectDir.toPath().resolve("gradle/certs");
         !Files.exists(oldPath)
 
