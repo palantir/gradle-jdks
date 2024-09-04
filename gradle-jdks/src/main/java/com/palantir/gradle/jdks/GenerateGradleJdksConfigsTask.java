@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.jdks.setup.CaResources;
 import java.io.File;
 import java.nio.file.Path;
 import org.gradle.api.file.Directory;
@@ -62,11 +61,5 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     protected final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
         GradleJdksConfigsUtils.writeResourceAsStreamToFile(resourceName, gradleJdkScriptFile);
         GradleJdksConfigsUtils.setExecuteFilePermissions(gradleJdkScriptFile.toPath());
-    }
-
-    @Override
-    protected final void applyCertAction(File certFile, String alias, String content) {
-        GradleJdksConfigsUtils.createDirectories(certFile.getParentFile().toPath());
-        GradleJdksConfigsUtils.writeConfigurationFile(certFile.toPath(), CaResources.getSerialNumber(content));
     }
 }

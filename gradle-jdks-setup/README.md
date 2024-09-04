@@ -171,8 +171,6 @@ project-root/
 │   │   │   │   ├── <arch eg. aarch64>/
 │   │   │   │   │   ├── download-url
 │   │   │   │   │   ├── local-path
-│   ├── certs/
-│   │   ├── Palantir3rdGenRootCa.serial-number
 │   ├── gradle-daemon-jdk-version
 │   ├── gradle-jdks-setup.sh
 │   ├── gradle-jdks-functions.sh

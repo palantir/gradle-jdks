@@ -23,17 +23,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Class responsible for 2 workflows:
  * 1. installing the current JDK into {@code destinationJdkInstallationDir} and importing the
- *  certificates specified by their serialNumbers and alias name from {@code certsDir} into the JDK's truststore. A
- *  certificate will be imported iff the serial number already exists in the truststore.
+ *  system certificates into the JDK's truststore.
  * 2. setting the java.home value in .gradle/config.properties to {@code gradleDaemonJavaHome} in the project directory.
  * The class will be called by the Gradle setup script in
  * <a href="file:../resources/gradle-jdks-setup.sh">resources/gradle-jdks-setup.sh</a>.
@@ -104,19 +99,16 @@ public final class GradleJdkInstallationSetup {
     }
 
     private static void setupJdk(StdLogger logger, CaResources caResources, String[] args) {
-        if (args.length != 3) {
-            throw new IllegalArgumentException(
-                    "Expected 3 arguments: jdkSetup <destinationJdkInstallationDir> <certsDir>");
+        if (args.length != 2) {
+            throw new IllegalArgumentException("Expected 2 arguments: jdkSetup <destinationJdkInstallationDir>");
         }
         Path destinationJdkInstallationDir = Path.of(args[1]);
-        Path certsDir = Path.of(args[2]);
         boolean wasCopied = copy(logger, destinationJdkInstallationDir);
         // If the JDK was not copied by the current process - which means that we waited for the lock while another
         // process set up the JDK - then we shouldn't try to add the certificate because the certificate was already
         // added.
         if (wasCopied) {
-            extractCertificates(certsDir, caResources, logger)
-                    .forEach(cert -> caResources.importCertInJdk(cert, destinationJdkInstallationDir));
+            caResources.importAllSystemCerts(destinationJdkInstallationDir);
         }
     }
 
@@ -139,74 +131,6 @@ public final class GradleJdkInstallationSetup {
             return true;
         } catch (IOException e) {
             throw new RuntimeException("Unable to acquire locks, won't move the JDK installation directory", e);
-        }
-    }
-
-    private static List<AliasContentCert> extractCertificates(
-            Path certsDirectory, CaResources caResources, ILogger logger) {
-        if (!Files.exists(certsDirectory)) {
-            logger.log("No `certs` directory found, no certificates will be imported");
-            return List.of();
-        }
-        try (Stream<Path> stream = Files.list(certsDirectory)) {
-            return stream.map(path -> maybeResolveCertificate(path, caResources, logger))
-                    .flatMap(Optional::stream)
-                    .collect(Collectors.toList());
-
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to list the certificates in the certs directory", e);
-        }
-    }
-
-    private static Optional<AliasContentCert> maybeResolveCertificate(
-            Path certPath, CaResources caResources, ILogger logger) {
-        Optional<String> extension = getFileExtension(certPath);
-        if (extension.isEmpty()) {
-            logger.log(String.format(
-                    "Ignoring file %s because it does not have the expected file"
-                            + " format expected: <certName>.<extension>. The extension is missing.",
-                    certPath));
-            return Optional.empty();
-        }
-        String aliasName = getAliasName(certPath);
-        String content = readConfigFile(certPath);
-        if (isSerialNumberCert(extension.get())) {
-            return caResources.maybeGetCertificateFromSerialNumber(content, aliasName);
-        } else if (isCert(extension.get())) {
-            return Optional.of(new AliasContentCert(aliasName, content));
-        }
-        logger.log(String.format(
-                "Ignoring file %s because it is not a certificate, nor a serial-number. "
-                        + "Expected the file extension to be either `.crt` or `.serial-number`",
-                certPath));
-        return Optional.empty();
-    }
-
-    private static String getAliasName(Path certFile) {
-        return certFile.getFileName().toString().split("\\.")[0];
-    }
-
-    private static boolean isSerialNumberCert(String extension) {
-        return extension.equals("serial-number");
-    }
-
-    private static boolean isCert(String extension) {
-        return extension.equals("crt") || extension.equals("pem");
-    }
-
-    private static Optional<String> getFileExtension(Path path) {
-        String[] separatedByDot = path.getFileName().toString().split("\\.");
-        if (separatedByDot.length != 2) {
-            return Optional.empty();
-        }
-        return Optional.of(separatedByDot[1]);
-    }
-
-    private static String readConfigFile(Path path) {
-        try {
-            return Files.readString(path).trim();
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to read file " + path, e);
         }
     }
 

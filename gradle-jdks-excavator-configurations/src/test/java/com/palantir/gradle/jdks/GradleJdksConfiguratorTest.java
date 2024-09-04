@@ -79,12 +79,10 @@ class GradleJdksConfiguratorTest {
                 .resolve("local-path"));
         assertThat(localPath).containsPattern(String.format("amazon-corretto-%s-([a-zA-Z0-9])+\n", JDK_VERSION));
         Path installationScript = latestGradleJdksDir.resolve("scripts").resolve("install-jdks.sh");
-        Path certsDir = Files.createDirectories(latestGradleJdksDir.resolve("certs"));
         ProcessBuilder processBuilder = new ProcessBuilder()
                 .command(
                         installationScript.toAbsolutePath().toString(),
                         latestGradleJdksDir.toString(),
-                        certsDir.toString(),
                         symlinkDir.toAbsolutePath() + "/java${JAVA_VERSION}",
                         symlinkDir.toAbsolutePath().resolve("usr/java").toString());
         Path installationJdkDir = latestGradleJdksDir.resolve("installed-jdks");

@@ -19,8 +19,11 @@ package com.palantir.gradle.jdks.setup;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import com.palantir.gradle.jdks.setup.common.Os;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -28,6 +31,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
@@ -41,6 +47,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 
 public final class CaResources {
 
@@ -54,112 +63,72 @@ public final class CaResources {
     }
 
     public Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore() {
-        return systemCertificates().flatMap(CaResources::selectPalantirCertificate);
+        return selectPalantirCertificate(systemCertificates());
     }
 
-    public Optional<AliasContentCert> maybeGetCertificateFromSerialNumber(String serialNumber, String alias) {
-        return systemCertificates()
-                .map(certs -> selectCertificates(certs, Map.of(serialNumber, alias)))
-                .orElseGet(Stream::empty)
-                .findFirst();
+    public void importAllSystemCerts(Path jdkInstallationDirectory) {
+        importCertificates(jdkInstallationDirectory, parseCerts(systemCertificates()));
     }
 
-    public void importCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {
+    private void importCertificates(Path jdkInstallationDirectory, List<Certificate> certificates) {
+        try {
+            char[] passwd = "changeit".toCharArray();
+            Path jksPath = jdkInstallationDirectory.resolve("lib/security/cacerts");
+            KeyStore jks =
+                    loadKeystore(passwd, jksPath).orElseThrow(() -> new RuntimeException("Could not load keystore"));
+
+            for (Certificate cert : certificates) {
+                String alias = getAlias((X509Certificate) cert);
+                logger.log(String.format("Certificate %s imported successfully into the KeyStore.", alias));
+                jks.setCertificateEntry(alias, cert);
+            }
+
+            jks.store(new BufferedOutputStream(new FileOutputStream(jksPath.toFile())), passwd);
+
+            logger.log("Certificates imported successfully into the KeyStore.");
+        } catch (KeyStoreException | FileNotFoundException e) {
+            throw new RuntimeException("Failed to import certificates", e);
+        } catch (CertificateException | IOException | NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getAlias(X509Certificate certificate) {
+        String distinguishedName = certificate.getSubjectX500Principal().getName();
+        try {
+            LdapName ldapName = new LdapName(distinguishedName);
+            for (Rdn rdn : ldapName.getRdns()) {
+                if ("CN".equalsIgnoreCase(rdn.getType())) {
+                    return String.format("GradleJdks_%s", ((String) rdn.getValue()).replaceAll("\\s", ""));
+                }
+            }
+        } catch (InvalidNameException e) {
+            logger.logError(String.format("Failed to extract ldapName from %s", distinguishedName));
+        }
+        return String.format("GradleJdks_%s", distinguishedName.replaceAll("\\s", ""));
+    }
+
+    private Optional<KeyStore> loadKeystore(char[] password, Path location) {
+        try (InputStream keystoreStream = new BufferedInputStream(Files.newInputStream(location))) {
+            KeyStore keystore = KeyStore.getInstance("JKS");
+            keystore.load(keystoreStream, password);
+            return Optional.of(keystore);
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+            logger.log(String.format("Couldn't load jks, an exception occurred %s", e));
+            return Optional.empty();
+        }
+    }
+
+    private static byte[] systemCertificates() {
         Os os = CurrentOs.get();
         switch (os) {
             case MACOS:
-            case LINUX_GLIBC:
-            case LINUX_MUSL:
-                unixImportCertInJdk(aliasContentCert, jdkInstallationDirectory);
-                logger.log(String.format(
-                        "Successfully imported CA certificate %s into the JDK truststore",
-                        aliasContentCert.getAlias()));
-                break;
-            case WINDOWS:
-                logger.logError(
-                        String.format("Importing certificates for OS type '%s' is not yet supported", os.uiName()));
-                break;
-        }
-    }
-
-    private void unixImportCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {
-        try {
-            if (isCertificateInTruststore(jdkInstallationDirectory, aliasContentCert.getAlias())) {
-                logger.log("Certificate already exists in the truststore, skipping...");
-                return;
-            }
-            File palantirCertFile = File.createTempFile(aliasContentCert.getAlias(), ".pem");
-            Files.write(palantirCertFile.toPath(), aliasContentCert.getContent().getBytes(StandardCharsets.UTF_8));
-            String keytoolPath = jdkInstallationDirectory
-                    .resolve("bin/keytool")
-                    .toAbsolutePath()
-                    .toString();
-            List<String> importCertificateCommand = List.of(
-                    keytoolPath,
-                    "-import",
-                    "-trustcacerts",
-                    "-alias",
-                    aliasContentCert.getAlias(),
-                    "-cacerts",
-                    "-storepass",
-                    "changeit",
-                    "-noprompt",
-                    "-file",
-                    palantirCertFile.getAbsolutePath());
-            CommandRunner.runWithLogger(
-                    new ProcessBuilder(importCertificateCommand), this::writeStdOutput, this::writeStdError);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to import the certificate to the jdk", e);
-        }
-    }
-
-    private void writeStdOutput(InputStream inputStream) {
-        CommandRunner.processStream(inputStream, logger::log);
-    }
-
-    private void writeStdError(InputStream inputStream) {
-        CommandRunner.processStream(inputStream, logger::logError);
-    }
-
-    private static boolean isCertificateInTruststore(Path jdkInstallationDirectory, String alias) {
-        try {
-            String keytoolPath = jdkInstallationDirectory
-                    .resolve("bin/keytool")
-                    .toAbsolutePath()
-                    .toString();
-            List<String> checkCertificateCommand = List.of(
-                    keytoolPath,
-                    "-list",
-                    "-storepass",
-                    "changeit",
-                    "-alias",
-                    alias,
-                    "-keystore",
-                    jdkInstallationDirectory.resolve("lib/security/cacerts").toString());
-            CommandRunner.runWithOutputCollection(new ProcessBuilder().command(checkCertificateCommand));
-            return true;
-        } catch (Exception e) {
-            if (e.getMessage().contains(String.format("Alias <%s> does not exist", alias))) {
-                return false;
-            }
-            throw new RuntimeException("Unable to check if the certificate already exists in the truststore", e);
-        }
-    }
-
-    private Optional<byte[]> systemCertificates() {
-        Os os = CurrentOs.get();
-        switch (os) {
-            case MACOS:
-                return Optional.of(macosSystemCertificates());
+                return macosSystemCertificates();
             case LINUX_MUSL:
             case LINUX_GLIBC:
                 return linuxSystemCertificates();
             case WINDOWS:
-                logger.logError(String.format(
-                        "Not attempting to read Palantir CA from system truststore "
-                                + "as OS type '%s' does not yet support this",
-                        os.uiName()));
-                return Optional.empty();
+                throw new RuntimeException("Windows is not supported");
         }
         throw new IllegalStateException("Unreachable code; all Os enum values should be handled");
     }
@@ -188,7 +157,7 @@ public final class CaResources {
                         keyChainPath.toAbsolutePath().toString()));
     }
 
-    private Optional<byte[]> linuxSystemCertificates() {
+    private static byte[] linuxSystemCertificates() {
         List<Path> possibleCaCertificatePaths = List.of(
                 // Ubuntu/debian
                 Paths.get("/etc/ssl/certs/ca-certificates.crt"),
@@ -197,20 +166,15 @@ public final class CaResources {
 
         return possibleCaCertificatePaths.stream()
                 .filter(Files::exists)
-                .findFirst()
                 .map(caCertificatePath -> {
                     try {
-                        return Files.readAllBytes(caCertificatePath);
+                        return Files.readString(caCertificatePath);
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to read CA certs from " + caCertificatePath, e);
                     }
                 })
-                .or(() -> {
-                    logger.logError(String.format(
-                            "Could not find system truststore at any of %s in order to load CA certs",
-                            possibleCaCertificatePaths));
-                    return Optional.empty();
-                });
+                .collect(Collectors.joining("\n"))
+                .getBytes(StandardCharsets.UTF_8);
     }
 
     private static Optional<AliasContentCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {

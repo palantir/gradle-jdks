@@ -63,8 +63,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     protected abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
 
-    protected abstract void applyCertAction(File certFile, String alias, String content);
-
     @TaskAction
     public final void action() {
         AtomicBoolean jdksDirectoryConfigured = new AtomicBoolean(false);
@@ -115,11 +113,5 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                 gradleDirectory().file(GRADLE_JDKS_FUNCTIONS_SCRIPT).getAsFile(), GRADLE_JDKS_FUNCTIONS_SCRIPT);
         applyGradleJdkScriptAction(
                 gradleDirectory().file(GRADLE_JDKS_SETUP_SCRIPT).getAsFile(), GRADLE_JDKS_SETUP_SCRIPT);
-
-        File certsDir = gradleDirectory().file("certs").getAsFile();
-        getCaCerts().get().forEach((alias, content) -> {
-            File certFile = new File(certsDir, String.format("%s.serial-number", alias));
-            applyCertAction(certFile, alias, content);
-        });
     }
 }
