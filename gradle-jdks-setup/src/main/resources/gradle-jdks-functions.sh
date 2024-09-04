@@ -117,7 +117,7 @@ export ARCH
 
 install_and_setup_jdks() {
   gradle_dir=$1
-  scripts_dir=${2:$gradle_dir}
+  scripts_dir=${2:-$gradle_dir}
 
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}
