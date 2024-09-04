@@ -16,8 +16,11 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.FileUtils;
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
@@ -34,6 +37,20 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     @Override
     protected final Directory gradleDirectory() {
         return getOutputGradleDirectory().get();
+    }
+
+    @Override
+    protected final void maybePrepareForAction(List<Path> targetPaths) {
+        for (Path targetPath : targetPaths) {
+            if (!Files.exists(targetPath)) {
+                continue;
+            }
+            if (Files.isDirectory(targetPath)) {
+                FileUtils.deleteDirectory(targetPath);
+            } else {
+                FileUtils.deleteFile(targetPath);
+            }
+        }
     }
 
     @Override

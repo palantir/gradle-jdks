@@ -63,15 +63,26 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     protected abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
 
+    // method that gets run before the action
+    protected abstract void maybePrepareForAction(List<Path> targetPaths);
+
     @TaskAction
     public final void action() {
+        Path gradleJdksDir = gradleDirectory().dir("jdks").getAsFile().toPath();
+        Path gradleJdksSetupJar =
+                gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile().toPath();
+        Path gradleJdksFunctionsScript =
+                gradleDirectory().file(GRADLE_JDKS_FUNCTIONS_SCRIPT).getAsFile().toPath();
+        Path gradleJdksSetupScript =
+                gradleDirectory().file(GRADLE_JDKS_SETUP_SCRIPT).getAsFile().toPath();
+        // TODO(crogoz): Remove this once everyone is on the newest gradle.jdks plugin
+        Path certsDir = gradleDirectory().dir("certs").getAsFile().toPath();
+        maybePrepareForAction(
+                List.of(gradleJdksDir, gradleJdksSetupJar, gradleJdksFunctionsScript, gradleJdksSetupScript, certsDir));
         AtomicBoolean jdksDirectoryConfigured = new AtomicBoolean(false);
         getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
             jdkDistros.forEach(jdkDistribution -> {
-                Path outputDir = gradleDirectory()
-                        .dir("jdks")
-                        .getAsFile()
-                        .toPath()
+                Path outputDir = gradleJdksDir
                         .resolve(javaVersion.toString())
                         .resolve(jdkDistribution.getOs().get().uiName())
                         .resolve(jdkDistribution.getArch().get().uiName());
@@ -91,13 +102,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();
         String os = CurrentOs.get().toString();
         String arch = CurrentArch.get().toString();
-        Path expectedJdkDir = gradleDirectory()
-                .dir("jdks")
-                .getAsFile()
-                .toPath()
-                .resolve(gradleJdkDaemonVersion)
-                .resolve(os)
-                .resolve(arch);
+        Path expectedJdkDir =
+                gradleJdksDir.resolve(gradleJdkDaemonVersion).resolve(os).resolve(arch);
         if (!Files.exists(expectedJdkDir)) {
             throw new RuntimeException(String.format(
                     "Gradle daemon JDK version is `%s` but no JDK configured for that version. Please ensure that you"
@@ -108,10 +114,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         }
         applyGradleJdkDaemonVersionAction(gradleDirectory().getAsFile().toPath().resolve("gradle-daemon-jdk-version"));
 
-        applyGradleJdkJarAction(gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile(), GRADLE_JDKS_SETUP_JAR);
-        applyGradleJdkScriptAction(
-                gradleDirectory().file(GRADLE_JDKS_FUNCTIONS_SCRIPT).getAsFile(), GRADLE_JDKS_FUNCTIONS_SCRIPT);
-        applyGradleJdkScriptAction(
-                gradleDirectory().file(GRADLE_JDKS_SETUP_SCRIPT).getAsFile(), GRADLE_JDKS_SETUP_SCRIPT);
+        applyGradleJdkJarAction(gradleJdksSetupJar.toFile(), GRADLE_JDKS_SETUP_JAR);
+        applyGradleJdkScriptAction(gradleJdksFunctionsScript.toFile(), GRADLE_JDKS_FUNCTIONS_SCRIPT);
+        applyGradleJdkScriptAction(gradleJdksSetupScript.toFile(), GRADLE_JDKS_SETUP_SCRIPT);
     }
 }

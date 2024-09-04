@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
@@ -42,6 +43,9 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     protected final Directory gradleDirectory() {
         return getInputGradleDirectory().get();
     }
+
+    @Override
+    protected void maybePrepareForAction(List<Path> targetPaths) {}
 
     @Override
     protected final void applyGradleJdkFileAction(

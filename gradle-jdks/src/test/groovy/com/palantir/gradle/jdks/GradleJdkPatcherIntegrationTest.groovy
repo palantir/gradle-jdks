@@ -40,6 +40,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
 
         when: 'running setupJdks'
+        file("gradle/certs/cert.pem") << "dummy cert"
         def result = runTasksSuccessfully("setupJdks")
 
         then: 'it triggers the execution of Gradle JDK setup tasks'
@@ -58,6 +59,8 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         Files.isExecutable(scriptPath)
         Path functionsPath = projectDir.toPath().resolve("gradle/gradle-jdks-functions.sh");
         Files.isExecutable(functionsPath)
+        Path oldPath = projectDir.toPath().resolve("gradle/certs");
+        !Files.exists(oldPath)
 
         and: '.gradle/config.properties configures java.home'
         file(".gradle/config.properties").text.contains("java.home")
