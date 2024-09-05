@@ -22,7 +22,6 @@ import com.palantir.gradle.jdks.setup.common.Os;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,9 +73,7 @@ public final class CaResources {
         try {
             char[] passwd = "changeit".toCharArray();
             Path jksPath = jdkInstallationDirectory.resolve("lib/security/cacerts");
-            KeyStore jks =
-                    loadKeystore(passwd, jksPath).orElseThrow(() -> new RuntimeException("Could not load keystore"));
-
+            KeyStore jks = loadKeystore(passwd, jksPath);
             for (Certificate cert : certificates) {
                 String alias = getAlias((X509Certificate) cert);
                 logger.log(String.format("Certificate %s imported successfully into the KeyStore.", alias));
@@ -86,10 +83,8 @@ public final class CaResources {
             jks.store(new BufferedOutputStream(new FileOutputStream(jksPath.toFile())), passwd);
 
             logger.log("Certificates imported successfully into the KeyStore.");
-        } catch (KeyStoreException | FileNotFoundException e) {
+        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to import certificates", e);
-        } catch (CertificateException | IOException | NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -108,14 +103,14 @@ public final class CaResources {
         return String.format("GradleJdks_%s", distinguishedName.replaceAll("\\s", ""));
     }
 
-    private Optional<KeyStore> loadKeystore(char[] password, Path location) {
+    private KeyStore loadKeystore(char[] password, Path location) {
         try (InputStream keystoreStream = new BufferedInputStream(Files.newInputStream(location))) {
             KeyStore keystore = KeyStore.getInstance("JKS");
             keystore.load(keystoreStream, password);
-            return Optional.of(keystore);
+            return keystore;
         } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
             logger.log(String.format("Couldn't load jks, an exception occurred %s", e));
-            return Optional.empty();
+            throw new RuntimeException(String.format("Couldn't load keystore %s", location), e);
         }
     }
 

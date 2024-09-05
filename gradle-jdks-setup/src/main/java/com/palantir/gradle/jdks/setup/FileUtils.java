@@ -28,7 +28,18 @@ import java.util.stream.Stream;
 
 public final class FileUtils {
 
-    public static void deleteDirectory(Path dir) {
+    public static void delete(Path path) {
+        if (!Files.exists(path)) {
+            return;
+        }
+        if (Files.isDirectory(path)) {
+            deleteDirectory(path);
+        } else {
+            deleteFile(path);
+        }
+    }
+
+    private static void deleteDirectory(Path dir) {
         try (Stream<Path> paths = Files.walk(dir)) {
             paths.sorted(Comparator.reverseOrder()).forEach(FileUtils::deleteFile);
         } catch (IOException e) {
@@ -36,7 +47,7 @@ public final class FileUtils {
         }
     }
 
-    public static void deleteFile(Path targetPath) {
+    private static void deleteFile(Path targetPath) {
         try {
             Files.delete(targetPath);
         } catch (IOException e) {
