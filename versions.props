@@ -2,7 +2,7 @@ com.github.ben-manes.caffeine:caffeine = 3.1.8
 org.immutables:* = 2.10.1
 com.fasterxml.jackson.core:jackson-databind = 2.15.3
 com.fasterxml.jackson.core:* = 2.15.3
-com.netflix.nebula:nebula-test = 10.1.0
+com.netflix.nebula:nebula-test = 10.6.1
 org.junit.jupiter:* = 5.11.0
 org.assertj:assertj-core = 3.26.3
 org.mockito:* = 5.13.0
@@ -21,4 +21,4 @@ com.palantir.baseline:* = 5.53.0
 # conflict resolution
 com.google.code.findbugs:jsr305 = 3.0.2
 com.google.errorprone:error_prone_annotations = 2.11.0
-org.checkerframework:checker-qual = 3.46.0
+org.checkerframework:checker-qual = 3.47.0
