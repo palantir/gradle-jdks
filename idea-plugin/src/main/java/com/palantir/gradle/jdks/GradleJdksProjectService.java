@@ -32,8 +32,12 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.platform.ide.progress.TasksKt;
 import com.intellij.platform.util.progress.StepsKt;
+import com.intellij.ui.content.Content;
+import com.intellij.ui.content.ContentManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -59,14 +63,19 @@ public final class GradleJdksProjectService {
     }
 
     public void maybeSetupGradleJdks() {
+        ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
+        ToolWindow toolWindow = toolWindowManager.getToolWindow("Gradle JDK Setup");
         if (project.getBasePath() == null) {
             logger.warn("Skipping setupGradleJdks because project path is null");
             return;
         }
         Path gradleSetupScript = Path.of(project.getBasePath(), "gradle/gradle-jdks-setup.sh");
         if (!Files.exists(gradleSetupScript)) {
-            logger.info(String.format(
-                    "Skipping setupGradleJdks because gradle JDK setup is not found %s", gradleSetupScript));
+            consoleViewApply(toolWindowManager, toolWindow, consoleView -> {
+                consoleView.clear();
+                consoleView.print(
+                        "Gradle JDK setup is not enabled for this repository.", ConsoleViewContentType.LOG_INFO_OUTPUT);
+            });
             return;
         }
         TasksKt.withBackgroundProgress(
@@ -76,7 +85,7 @@ public final class GradleJdksProjectService {
                     StepsKt.withProgressText(
                             "`Gradle JDK Setup` is running. Logs in the `Gradle JDK Setup` window ...",
                             (_cor, conti) -> {
-                                setupGradleJdks();
+                                setupGradleJdks(toolWindowManager, toolWindow);
                                 return conti;
                             },
                             continuation);
@@ -93,11 +102,9 @@ public final class GradleJdksProjectService {
                 });
     }
 
-    private void setupGradleJdks() {
+    private void setupGradleJdks(ToolWindowManager toolWindowManager, ToolWindow toolWindow) {
         try {
-            GradleJdksToolWindowService toolWindowService = project.getService(GradleJdksToolWindowService.class);
-            ConsoleView consoleView = toolWindowService.getConsoleView();
-            consoleView.clear();
+            consoleViewApply(toolWindowManager, toolWindow, ConsoleView::clear);
             GeneralCommandLine cli =
                     new GeneralCommandLine("./gradle/gradle-jdks-setup.sh").withWorkDirectory(project.getBasePath());
             OSProcessHandler handler = new OSProcessHandler(cli);
@@ -106,11 +113,11 @@ public final class GradleJdksProjectService {
 
                 @Override
                 public void processTerminated(@NotNull ProcessEvent _event) {
-                    updateGradleJvm(consoleView);
+                    updateGradleJvm();
                 }
             });
-            consoleView.attachToProcess(handler);
             ProcessTerminatedListener.attach(handler, project, "Gradle JDK setup finished with exit code $EXIT_CODE$");
+            consoleViewApply(toolWindowManager, toolWindow, consoleView -> consoleView.attachToProcess(handler));
             handler.waitFor();
             if (handler.getExitCode() != 0) {
                 Notification notification = NotificationGroupManager.getInstance()
@@ -123,7 +130,7 @@ public final class GradleJdksProjectService {
                 notification.addAction(new NotificationAction("Show Gradle JDKs setup logs") {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent _event, @NotNull Notification _notification) {
-                        toolWindowService.focusOnWindow();
+                        toolWindow.activate(null, true, false);
                     }
                 });
             }
@@ -132,16 +139,12 @@ public final class GradleJdksProjectService {
         }
     }
 
-    private void updateGradleJvm(ConsoleView consoleView) {
+    private void updateGradleJvm() {
         for (GradleProjectSettings projectSettings :
                 GradleSettings.getInstance(project).getLinkedProjectsSettings()) {
             File gradleConfigFile = Path.of(projectSettings.getExternalProjectPath(), ".gradle/config.properties")
                     .toFile();
             if (!gradleConfigFile.exists()) {
-                consoleView.print(
-                        "Skipping gradleJvm Configuration because no value was configured in"
-                                + " `.gradle/config.properties`",
-                        ConsoleViewContentType.LOG_INFO_OUTPUT);
                 continue;
             }
 
@@ -155,5 +158,19 @@ public final class GradleJdksProjectService {
                 throw new RuntimeException("Failed to set gradleJvm to #GRADLE_LOCAL_JAVA_HOME", e);
             }
         }
+    }
+
+    interface ConsoleViewAction {
+        void apply(ConsoleView consoleView);
+    }
+
+    private static void consoleViewApply(
+            ToolWindowManager toolWindowManager, ToolWindow toolWindow, ConsoleViewAction consoleViewAction) {
+        toolWindowManager.invokeLater(() -> {
+            ContentManager contentManager = toolWindow.getContentManager();
+            Content content = contentManager.getContent(0);
+            ConsoleView consoleView = (ConsoleView) content.getComponent();
+            consoleViewAction.apply(consoleView);
+        });
     }
 }
