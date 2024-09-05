@@ -15,7 +15,6 @@
       <notificationGroup id="Gradle JDK setup Notifications"
                          displayType="BALLOON"
                          key="notification.group.gradleJdkSetup"/>
-    <toolWindow id="Gradle JDK Setup" anchor="bottom" icon="/icons/GradleJDKSetupIcon.png"
-                factoryClass="com.palantir.gradle.jdks.GradleJdkToolWindowFactory"/>
+    <toolWindow id="Gradle JDK Setup" anchor="bottom" factoryClass="com.palantir.gradle.jdks.GradleJdkToolWindowFactory"/>
   </extensions>
 </idea-plugin>
