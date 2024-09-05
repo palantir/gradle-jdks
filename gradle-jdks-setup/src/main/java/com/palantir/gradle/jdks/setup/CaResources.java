@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.naming.InvalidNameException;
@@ -74,17 +75,40 @@ public final class CaResources {
             char[] passwd = "changeit".toCharArray();
             Path jksPath = jdkInstallationDirectory.resolve("lib/security/cacerts");
             KeyStore jks = loadKeystore(passwd, jksPath);
-            for (Certificate cert : certificates) {
-                String alias = getAlias((X509Certificate) cert);
+            Set<BigInteger> existingSerialNumbers = getExistingCertificates(jks);
+            List<X509Certificate> newCertificates = certificates.stream()
+                    .map(X509Certificate.class::cast)
+                    .filter(certificate -> !existingSerialNumbers.contains(certificate.getSerialNumber()))
+                    .collect(Collectors.toList());
+            for (X509Certificate certificate : newCertificates) {
+                String alias = getAlias(certificate);
                 logger.log(String.format("Certificate %s imported successfully into the KeyStore.", alias));
-                jks.setCertificateEntry(alias, cert);
+                jks.setCertificateEntry(alias, certificate);
             }
-
             jks.store(new BufferedOutputStream(new FileOutputStream(jksPath.toFile())), passwd);
-
-            logger.log("Certificates imported successfully into the KeyStore.");
         } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to import certificates", e);
+        }
+    }
+
+    private static Set<BigInteger> getExistingCertificates(KeyStore keyStore) {
+        try {
+            return Collections.list(keyStore.aliases()).stream()
+                    .map(alias -> {
+                        try {
+                            return Optional.ofNullable(keyStore.getCertificate(alias))
+                                    .map(X509Certificate.class::cast);
+                        } catch (KeyStoreException e) {
+                            throw new RuntimeException(e);
+                        } catch (ClassCastException e) {
+                            return Optional.<X509Certificate>empty();
+                        }
+                    })
+                    .flatMap(Optional::stream)
+                    .map(X509Certificate::getSerialNumber)
+                    .collect(Collectors.toSet());
+        } catch (KeyStoreException e) {
+            throw new RuntimeException(e);
         }
     }
 
