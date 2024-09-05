@@ -76,6 +76,7 @@ public final class CaResources {
             Path jksPath = jdkInstallationDirectory.resolve("lib/security/cacerts");
             KeyStore jks = loadKeystore(passwd, jksPath);
             Set<BigInteger> existingSerialNumbers = getExistingCertificates(jks);
+            logger.log(String.format("Certificate %s imported successfully into the KeyStore.", existingSerialNumbers));
             List<X509Certificate> newCertificates = certificates.stream()
                     .map(X509Certificate.class::cast)
                     .filter(certificate -> !existingSerialNumbers.contains(certificate.getSerialNumber()))

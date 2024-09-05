@@ -143,7 +143,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
             }
         });
 
-        Files.copy(Path.of("src/integrationTest/resources/amazon.crt"), workingDir.resolve("amazon.crt"));
+        Files.copy(Path.of("src/integrationTest/resources/example.com.crt"), workingDir.resolve("example.com.crt"));
 
         return gradleDirectory;
     }
@@ -192,7 +192,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
     }
 
     private static void assertJdkWithNoCertsWasSetUp(String output) {
-        assertThat(output).contains("Corretto-11.0.21.9.1").contains("Amazon cert: gradlejdks_amazonrootca1");
+        assertThat(output).contains("Corretto-11.0.21.9.1").contains("Example.com cert: gradleJdks_example.com");
 
         if (palantirCert.isPresent()) {
             assertThat(output).contains("Palantir cert: gradlejdks_palantir3rd-generationrootca");
