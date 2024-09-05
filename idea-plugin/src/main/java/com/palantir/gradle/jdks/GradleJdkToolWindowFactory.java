@@ -39,13 +39,17 @@ public final class GradleJdkToolWindowFactory implements ToolWindowFactory, Dumb
 
         ContentFactory contentFactory = ContentFactory.getInstance();
         Content content = contentFactory.createContent(consoleView.getComponent(), "", false);
+        addInitialLogs(consoleView, project);
         toolWindow.getContentManager().addContent(content);
         Disposer.register(project, consoleView);
+    }
+
+    private static void addInitialLogs(ConsoleView consoleView, Project project) {
         String projectPath = project.getBasePath();
         if (projectPath == null) {
             return;
         }
-        Path gradleSetupScript = Path.of(projectPath, "gradle/gradle-jdks-setup.sh");
+        Path gradleSetupScript = Path.of(projectPath).resolve("gradle/gradle-jdks-setup.sh");
         if (!Files.exists(gradleSetupScript)) {
             consoleView.print(
                     "Gradle JDK setup is not enabled for this repository.", ConsoleViewContentType.LOG_INFO_OUTPUT);
