@@ -78,14 +78,13 @@ public final class CaResources {
             char[] passwd = "changeit".toCharArray();
             Path jksPath = jdkInstallationDirectory.resolve("lib/security/cacerts");
             KeyStore jks = loadKeystore(passwd, jksPath);
-            Set<String> existingCertSignatures = getExistingCertSignatures(jks);
+            Set<X509Certificate> existingCertificates = getExistingCertificates(jks);
             List<X509Certificate> newCertificates = certificates.stream()
                     .filter(certificate -> X509Certificate.class.isAssignableFrom(certificate.getClass()))
                     .map(X509Certificate.class::cast)
                     .filter(CaResources::isValid)
                     .filter(CaResources::isCertUsedForTls)
-                    .filter(certificate ->
-                            !existingCertSignatures.contains(getCertificateSignatureAsString(certificate)))
+                    .filter(certificate -> !existingCertificates.contains(certificate))
                     .collect(Collectors.toList());
             for (X509Certificate certificate : newCertificates) {
                 String alias = getAlias(certificate);
@@ -100,7 +99,7 @@ public final class CaResources {
         }
     }
 
-    private static Set<String> getExistingCertSignatures(KeyStore keyStore) {
+    private static Set<X509Certificate> getExistingCertificates(KeyStore keyStore) {
         try {
             return Collections.list(keyStore.aliases()).stream()
                     .map(alias -> {
@@ -113,16 +112,10 @@ public final class CaResources {
                     .flatMap(Optional::stream)
                     .filter(certificate -> X509Certificate.class.isAssignableFrom(certificate.getClass()))
                     .map(X509Certificate.class::cast)
-                    .map(CaResources::getCertificateSignatureAsString)
                     .collect(Collectors.toSet());
         } catch (KeyStoreException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static String getCertificateSignatureAsString(X509Certificate certificate) {
-        byte[] signature = certificate.getSignature();
-        return Base64.getEncoder().encodeToString(signature);
     }
 
     private static boolean isCertUsedForTls(X509Certificate certificate) {
