@@ -36,7 +36,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -75,15 +78,20 @@ public final class CaResources {
             char[] passwd = "changeit".toCharArray();
             Path jksPath = jdkInstallationDirectory.resolve("lib/security/cacerts");
             KeyStore jks = loadKeystore(passwd, jksPath);
-            Set<BigInteger> existingSerialNumbers = getExistingCertificates(jks);
-            logger.log(String.format("Certificate %s imported successfully into the KeyStore.", existingSerialNumbers));
+            Set<String> existingCertSignatures = getExistingCertSignatures(jks);
             List<X509Certificate> newCertificates = certificates.stream()
+                    .filter(certificate -> X509Certificate.class.isAssignableFrom(certificate.getClass()))
                     .map(X509Certificate.class::cast)
-                    .filter(certificate -> !existingSerialNumbers.contains(certificate.getSerialNumber()))
+                    .filter(CaResources::isValid)
+                    .filter(CaResources::isCertUsedForTls)
+                    .filter(certificate ->
+                            !existingCertSignatures.contains(getCertificateSignatureAsString(certificate)))
                     .collect(Collectors.toList());
             for (X509Certificate certificate : newCertificates) {
                 String alias = getAlias(certificate);
-                logger.log(String.format("Certificate %s imported successfully into the KeyStore.", alias));
+                logger.log(String.format(
+                        "Certificate %s imported successfully into the JDK truststore from the system truststore.",
+                        alias));
                 jks.setCertificateEntry(alias, certificate);
             }
             jks.store(new BufferedOutputStream(new FileOutputStream(jksPath.toFile())), passwd);
@@ -92,40 +100,101 @@ public final class CaResources {
         }
     }
 
-    private static Set<BigInteger> getExistingCertificates(KeyStore keyStore) {
+    private static Set<String> getExistingCertSignatures(KeyStore keyStore) {
         try {
             return Collections.list(keyStore.aliases()).stream()
                     .map(alias -> {
                         try {
-                            return Optional.ofNullable(keyStore.getCertificate(alias))
-                                    .map(X509Certificate.class::cast);
+                            return Optional.ofNullable(keyStore.getCertificate(alias));
                         } catch (KeyStoreException e) {
-                            throw new RuntimeException(e);
-                        } catch (ClassCastException e) {
-                            return Optional.<X509Certificate>empty();
+                            throw new RuntimeException("Failed to load keystore", e);
                         }
                     })
                     .flatMap(Optional::stream)
-                    .map(X509Certificate::getSerialNumber)
+                    .filter(certificate -> X509Certificate.class.isAssignableFrom(certificate.getClass()))
+                    .map(X509Certificate.class::cast)
+                    .map(CaResources::getCertificateSignatureAsString)
                     .collect(Collectors.toSet());
         } catch (KeyStoreException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private static String getCertificateSignatureAsString(X509Certificate certificate) {
+        byte[] signature = certificate.getSignature();
+        return Base64.getEncoder().encodeToString(signature);
+    }
+
+    private static boolean isCertUsedForTls(X509Certificate certificate) {
+        return hasCaCertUsage(certificate) && isTlsServerAuthentication(certificate);
+    }
+
+    private static boolean isValid(X509Certificate certificate) {
+        try {
+            certificate.checkValidity();
+            return true;
+        } catch (CertificateExpiredException | CertificateNotYetValidException e) {
+            return false;
+        }
+    }
+
+    /**
+     *  KeyUsage ::= BIT STRING {
+     *      digitalSignature        (0),
+     *      nonRepudiation          (1),
+     *      keyEncipherment         (2),
+     *      dataEncipherment        (3),
+     *      keyAgreement            (4),
+     *      keyCertSign             (5),
+     *      cRLSign                 (6),
+     *      encipherOnly            (7),
+     *      decipherOnly            (8) }
+     */
+    private static boolean hasCaCertUsage(X509Certificate certificate) {
+        boolean[] keyUsage = certificate.getKeyUsage();
+        if (keyUsage == null) {
+            return true;
+        }
+        // can do digital signatures
+        if (keyUsage[0] && keyUsage[2]) {
+            return true;
+        }
+        // checks it is a CA certificate (keyCertSign=true and basicConstraints.cA == true):
+        // https://datatracker.ietf.org/doc/html/rfc3280#section-4.2.1.10
+        if (keyUsage[5] && certificate.getBasicConstraints() != -1) {
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isTlsServerAuthentication(X509Certificate certificate) {
+        try {
+            List<String> extendedKeyUsages = certificate.getExtendedKeyUsage();
+            if (extendedKeyUsages == null) {
+                return true;
+            }
+            // https://oidref.com/1.3.6.1.5.5.7.3.1
+            return extendedKeyUsages.contains("1.3.6.1.5.5.7.3.1");
+        } catch (CertificateParsingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public String getAlias(X509Certificate certificate) {
-        String distinguishedName = certificate.getSubjectX500Principal().getName();
+        String distinguishedName = certificate.getIssuerX500Principal().getName();
+        String serialNumber = certificate.getSerialNumber().toString();
         try {
             LdapName ldapName = new LdapName(distinguishedName);
             for (Rdn rdn : ldapName.getRdns()) {
                 if ("CN".equalsIgnoreCase(rdn.getType())) {
-                    return String.format("GradleJdks_%s", ((String) rdn.getValue()).replaceAll("\\s", ""));
+                    return String.format(
+                            "GradleJdks_%s_%s", ((String) rdn.getValue()).replaceAll("\\s", ""), serialNumber);
                 }
             }
         } catch (InvalidNameException e) {
             logger.logError(String.format("Failed to extract ldapName from %s", distinguishedName));
         }
-        return String.format("GradleJdks_%s", distinguishedName.replaceAll("\\s", ""));
+        return String.format("GradleJdks_%s_%s", distinguishedName.replaceAll("\\s", ""), serialNumber);
     }
 
     private KeyStore loadKeystore(char[] password, Path location) {
