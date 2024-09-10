@@ -202,9 +202,7 @@ public final class CaResources {
     }
 
     private static byte[] macosSystemCertificates() {
-        return Stream.of(
-                        "/System/Library/Keychains/SystemRootCertificates.keychain",
-                        "/Library/Keychains/System.keychain")
+        return Stream.of("/Library/Keychains/System.keychain")
                 .map(Paths::get)
                 .filter(Files::exists)
                 .map(CaResources::macosSystemCertificates)
