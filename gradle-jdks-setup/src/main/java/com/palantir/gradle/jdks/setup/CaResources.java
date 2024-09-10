@@ -73,15 +73,13 @@ public final class CaResources {
         importCertificates(jdkInstallationDirectory, parseCerts(systemCertificates()));
     }
 
-    private void importCertificates(Path jdkInstallationDirectory, List<Certificate> certificates) {
+    private void importCertificates(Path jdkInstallationDirectory, List<X509Certificate> certificates) {
         try {
             char[] passwd = "changeit".toCharArray();
             Path jksPath = jdkInstallationDirectory.resolve("lib/security/cacerts");
             KeyStore jks = loadKeystore(passwd, jksPath);
             Set<X509Certificate> existingCertificates = getExistingCertificates(jks);
             List<X509Certificate> newCertificates = certificates.stream()
-                    .filter(certificate -> X509Certificate.class.isAssignableFrom(certificate.getClass()))
-                    .map(X509Certificate.class::cast)
                     .filter(CaResources::isValid)
                     .filter(CaResources::isCertUsedForTls)
                     .filter(certificate -> !existingCertificates.contains(certificate))
@@ -131,24 +129,12 @@ public final class CaResources {
         }
     }
 
-    /**
-     *  KeyUsage ::= BIT STRING {
-     *      digitalSignature        (0),
-     *      nonRepudiation          (1),
-     *      keyEncipherment         (2),
-     *      dataEncipherment        (3),
-     *      keyAgreement            (4),
-     *      keyCertSign             (5),
-     *      cRLSign                 (6),
-     *      encipherOnly            (7),
-     *      decipherOnly            (8) }
-     */
     private static boolean hasCaCertUsage(X509Certificate certificate) {
         boolean[] keyUsage = certificate.getKeyUsage();
         if (keyUsage == null) {
             return true;
         }
-        // can do digital signatures
+        // digitalSignature and keyEncipherment are enabled
         if (keyUsage[0] && keyUsage[2]) {
             return true;
         }
@@ -270,14 +256,12 @@ public final class CaResources {
             byte[] multipleCertificateBytes, Map<String, String> certSerialNumbersToAliases) {
         return parseCerts(multipleCertificateBytes).stream()
                 .filter(cert -> certSerialNumbersToAliases.containsKey(
-                        ((X509Certificate) cert).getSerialNumber().toString()))
+                        cert.getSerialNumber().toString()))
                 .map(cert -> new AliasContentCert(
-                        certSerialNumbersToAliases.get(
-                                ((X509Certificate) cert).getSerialNumber().toString()),
-                        encodeCertificate(cert)));
+                        certSerialNumbersToAliases.get(cert.getSerialNumber().toString()), encodeCertificate(cert)));
     }
 
-    static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
+    static List<X509Certificate> parseCerts(byte[] multipleCertificateBytes) {
         CertificateFactory certificateFactory;
         try {
             certificateFactory = CertificateFactory.getInstance("X.509");
@@ -285,13 +269,13 @@ public final class CaResources {
             throw new RuntimeException("Could not make X.509 certificate factory", e);
         }
 
-        List<Certificate> certs = new ArrayList<>();
+        List<X509Certificate> certs = new ArrayList<>();
 
         ByteArrayInputStream baos = new ByteArrayInputStream(multipleCertificateBytes);
 
         for (int i = 0; baos.available() != 0; i++) {
             try {
-                certs.add(certificateFactory.generateCertificate(baos));
+                certs.add((X509Certificate) certificateFactory.generateCertificate(baos));
             } catch (CertificateException e) {
                 if (e.getMessage().contains("Duplicate extensions not allowed")) {
                     continue;
