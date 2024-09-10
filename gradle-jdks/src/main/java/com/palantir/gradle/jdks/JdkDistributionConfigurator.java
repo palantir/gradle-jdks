@@ -87,13 +87,7 @@ public final class JdkDistributionConfigurator {
                 jdkExtension.get().getDistributionName().get();
         JdkRelease jdkRelease =
                 JdkRelease.builder().arch(arch).os(os).version(jdkVersion.get()).build();
-        JdkSpec jdkSpec = JdkSpec.builder()
-                .distributionName(jdkDistributionName)
-                .release(jdkRelease)
-                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
-                .build();
         JdkDistributionConfig jdkDistribution = project.getObjects().newInstance(JdkDistributionConfig.class);
-        jdkDistribution.getConsistentHash().set(jdkSpec.consistentShortHash());
         jdkDistribution.getArch().set(arch);
         jdkDistribution.getOs().set(os);
         JdkPath jdkPath = jdkDistributions.get(jdkDistributionName).path(jdkRelease);
@@ -107,13 +101,7 @@ public final class JdkDistributionConfigurator {
                                 .get(),
                         jdkPath.filename(),
                         jdkPath.extension()));
-        jdkDistribution
-                .getLocalPath()
-                .set(String.format(
-                        "%s-%s-%s",
-                        jdkDistributionName,
-                        jdkVersion.get(),
-                        jdkDistribution.getConsistentHash().get()));
+        jdkDistribution.getLocalPath().set(String.format("%s-%s", jdkDistributionName, jdkVersion.get()));
         return Stream.of(jdkDistribution);
     }
 

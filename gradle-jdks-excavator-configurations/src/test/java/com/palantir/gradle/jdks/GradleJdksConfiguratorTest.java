@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -63,7 +62,7 @@ class GradleJdksConfiguratorTest {
                                 .build()))
                 .build();
         GradleJdksConfigurator.renderJdkInstallationConfigurations(
-                latestGradleJdksDir, jdksInfoJson, "https://corretto.aws", Optional.empty());
+                latestGradleJdksDir, jdksInfoJson, "https://corretto.aws");
 
         Files.exists(latestGradleJdksDir
                 .resolve("jdks")
@@ -77,14 +76,12 @@ class GradleJdksConfiguratorTest {
                 .resolve(CurrentOs.get().uiName())
                 .resolve(CurrentArch.get().uiName())
                 .resolve("local-path"));
-        assertThat(localPath).containsPattern(String.format("amazon-corretto-%s-([a-zA-Z0-9])+\n", JDK_VERSION));
+        assertThat(localPath).isEqualTo(String.format("amazon-corretto-%s\n", JDK_VERSION));
         Path installationScript = latestGradleJdksDir.resolve("scripts").resolve("install-jdks.sh");
-        Path certsDir = Files.createDirectories(latestGradleJdksDir.resolve("certs"));
         ProcessBuilder processBuilder = new ProcessBuilder()
                 .command(
                         installationScript.toAbsolutePath().toString(),
                         latestGradleJdksDir.toString(),
-                        certsDir.toString(),
                         symlinkDir.toAbsolutePath() + "/java${JAVA_VERSION}",
                         symlinkDir.toAbsolutePath().resolve("usr/java").toString());
         Path installationJdkDir = latestGradleJdksDir.resolve("installed-jdks");

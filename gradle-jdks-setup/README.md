@@ -1,6 +1,6 @@
 # Gradle Jdk Automanagement
 
-`gradle-jdks` manages now also the JDK used to run Gradle. This means, when you run `./gradlew <task>` or open a Gradle project in IntelliJ (using the `palantir-gradle-jdk` Intellij plugin), the correct JDKs will be downloaded and used even if you have no JDK preinstalled. The exact same version of the JDK would run in all environments. The correct root certs (if configured, see [below](#gradle-jdk-configuration-directory-structure)) would also be inserted into the JDKs' truststore.
+`gradle-jdks` manages now also the JDK used to run Gradle. This means, when you run `./gradlew <task>` or open a Gradle project in IntelliJ (using the `palantir-gradle-jdk` Intellij plugin), the correct JDKs will be downloaded and used even if you have no JDK preinstalled. The exact same version of the JDK would run in all environments. The system root certs would also be inserted into the JDKs' truststore.
 
 ## Usage
 1. First, you must apply the plugin. In the **root project**, Either use the new plugin syntax:
@@ -79,15 +79,6 @@ jdks {
       baseUrl = 'https://internal-corporate-mirror/azul-zulu-cdn-mirror'
    }
    
-   // Optional: You can specify CA certs which will be installed into
-   //           the extracted JDK to work with TLS interception.
-   // Default:  No CA certs are added.
-   caCerts.put 'corporate-tls-cert', '''
-      -----BEGIN CERTIFICATE-----
-      // snip
-      -----END CERTIFICATE-----
-   '''.stripIndent(true)
-   
    // Optional: Where to store the JDKs on disk. You almost certainly
    //           do not need to change this. 
    // Default:  $HOME/.gradle/gradle-jdks
@@ -109,7 +100,7 @@ palantir.jdk.setup.enabled=true
 ./gradlew setupJdks 
 ```
 The commands above will trigger the tasks: 
-- `generateGradleJdkConfigs` which generates in the project's `gradle/` a list of files and directories that configure the JDK versions and distributions, the certs and `gradle-daemon-jdk-version`. See more about the generated structure of the directories [here](#gradle-jdk-configuration-directory-structure). These files will need to be committed to the git repo.
+- `generateGradleJdkConfigs` which generates in the project's `gradle/` a list of files and directories that configure the JDK versions and distributions and `gradle-daemon-jdk-version`. See more about the generated structure of the directories [here](#gradle-jdk-configuration-directory-structure). These files will need to be committed to the git repo.
 - `wrapperJdkPatcher` which patches the `./gradlew` script to run `./gradle/gradle-jdks-setup.sh`
 - `setupJdks` is calling the patched `./gradlew(.bat) javaToolchains` script to install and configure the JDKs and check the configured toolchains:
 
@@ -171,8 +162,6 @@ project-root/
 │   │   │   │   ├── <arch eg. aarch64>/
 │   │   │   │   │   ├── download-url
 │   │   │   │   │   ├── local-path
-│   ├── certs/
-│   │   ├── Palantir3rdGenRootCa.serial-number
 │   ├── gradle-daemon-jdk-version
 │   ├── gradle-jdks-setup.sh
 │   ├── gradle-jdks-functions.sh
@@ -182,9 +171,6 @@ project-root/
 
 - `gradle/gradle-daemon-jdk-version` 
   - contains the Gradle JDK Daemon version rendered from `JdksExtension#daemonTarget`
-- `gradle/certs/` 
-  - contains a list of certificates (as serial numbers) that need to be added to the configured JDKs in `gradle/jdks/*`.
-  - is rendered from `JdksExtension#caCerts`
 - `gradle/jdks`
   - contains a list of directories in the format `<jdk_major_version>/<os>/<arch>` that contain 2 files: 
     - `download-url` full url path for the jdk, os and arch. Rendered from `JdksExtension#jdks` configured in step 2
@@ -213,7 +199,7 @@ We are modifying the `./gradlew` script to use the JDK setup by patching it usin
 The patching is done by the [`wrapperJdkPatcher` task.](../gradle-jdks/src/main/java/com/palantir/gradle/jdks/GradleWrapperPatcher.java).
 The patch script does the following: 
 * downloads all the JDKs that are configured in the `gradle/jdks` directory [see above the dirctory structure](#gradle-jdk-configuration-directory-structure) 
-* delegates to `gradle-jdks-setup.jar` ([setup class](src/main/java/com/palantir/gradle/jdks/setup/GradleJdkInstallationSetup.java)) the installation of the JDKS and the certs (configured in `gradle/certs`)
+* delegates to `gradle-jdks-setup.jar` ([setup class](src/main/java/com/palantir/gradle/jdks/setup/GradleJdkInstallationSetup.java)) the installation of the JDKS and the system certs.
 * sets the gradle property `org.gradle.java.home` to the installation path of the JDK configured in `gradle/gradle-daemon-jdk-version`. Hence, `./gradlew` will retrieve this java installation and it will run the wrapper using this java installation.
 
 

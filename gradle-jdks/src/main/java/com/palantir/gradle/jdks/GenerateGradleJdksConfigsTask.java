@@ -16,9 +16,10 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.jdks.setup.CaResources;
+import com.palantir.gradle.jdks.setup.FileUtils;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
@@ -35,6 +36,11 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     @Override
     protected final Directory gradleDirectory() {
         return getOutputGradleDirectory().get();
+    }
+
+    @Override
+    protected final void maybePrepareForAction(List<Path> targetPaths) {
+        targetPaths.forEach(FileUtils::delete);
     }
 
     @Override
@@ -62,11 +68,5 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     protected final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
         GradleJdksConfigsUtils.writeResourceAsStreamToFile(resourceName, gradleJdkScriptFile);
         GradleJdksConfigsUtils.setExecuteFilePermissions(gradleJdkScriptFile.toPath());
-    }
-
-    @Override
-    protected final void applyCertAction(File certFile, String alias, String content) {
-        GradleJdksConfigsUtils.createDirectories(certFile.getParentFile().toPath());
-        GradleJdksConfigsUtils.writeConfigurationFile(certFile.toPath(), CaResources.getSerialNumber(content));
     }
 }

@@ -22,9 +22,38 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Comparator;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public final class FileUtils {
+
+    public static void delete(Path path) {
+        if (!Files.exists(path)) {
+            return;
+        }
+        if (Files.isDirectory(path)) {
+            deleteDirectory(path);
+        } else {
+            deleteFile(path);
+        }
+    }
+
+    private static void deleteDirectory(Path dir) {
+        try (Stream<Path> paths = Files.walk(dir)) {
+            paths.sorted(Comparator.reverseOrder()).forEach(FileUtils::deleteFile);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete directory", e);
+        }
+    }
+
+    private static void deleteFile(Path targetPath) {
+        try {
+            Files.delete(targetPath);
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Failed to delete path %s", targetPath), e);
+        }
+    }
 
     public static void copyDirectory(Path source, Path destination) throws IOException {
         Files.walkFileTree(source, new FileVisitor<Path>() {

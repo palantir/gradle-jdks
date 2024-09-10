@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
-import com.palantir.gradle.jdks.setup.CaResources;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
@@ -43,6 +43,9 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     protected final Directory gradleDirectory() {
         return getInputGradleDirectory().get();
     }
+
+    @Override
+    protected void maybePrepareForAction(List<Path> targetPaths) {}
 
     @Override
     protected final void applyGradleJdkFileAction(
@@ -71,11 +74,6 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
     protected final void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName) {
         assertFileContent(
                 gradleJdkScriptFile.toPath(), new String(getResourceContent(resourceName), StandardCharsets.UTF_8));
-    }
-
-    @Override
-    protected final void applyCertAction(File certFile, String alias, String content) {
-        assertFileContent(certFile.toPath(), CaResources.getSerialNumber(content));
     }
 
     private static void assertFileContent(Path filePath, String expectedContent) {

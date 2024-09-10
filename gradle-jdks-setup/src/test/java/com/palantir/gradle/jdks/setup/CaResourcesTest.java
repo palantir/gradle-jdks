@@ -32,7 +32,6 @@ public class CaResourcesTest {
 
     @Test
     void handles_whitespace_and_comments_between_certs() throws IOException {
-
         assertThat(CaResources.parseCerts(certsFromResources("amazon-cas-with-whitespace-between.pem")))
                 .hasSize(3);
     }

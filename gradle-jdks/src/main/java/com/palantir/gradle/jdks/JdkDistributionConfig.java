@@ -34,7 +34,4 @@ public interface JdkDistributionConfig {
 
     @Input
     Property<Arch> getArch();
-
-    @Input
-    Property<String> getConsistentHash();
 }

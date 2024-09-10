@@ -109,8 +109,7 @@ export ARCH
 
 install_and_setup_jdks() {
   gradle_dir=$1
-  certs_dir=$2
-  scripts_dir=$3
+  scripts_dir=${2:-"$1"}
 
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}
@@ -160,7 +159,7 @@ install_and_setup_jdks() {
 
       # Finding the java_home
       java_home=$(get_java_home "$in_progress_dir")
-      "$java_home"/bin/java -cp "$scripts_dir"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" "$certs_dir" || die "Failed to set up JDK $jdk_installation_directory"
+      "$java_home"/bin/java -cp "$scripts_dir"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" || die "Failed to set up JDK $jdk_installation_directory"
       echo "Successfully installed JDK distribution in $jdk_installation_directory"
     fi
   done

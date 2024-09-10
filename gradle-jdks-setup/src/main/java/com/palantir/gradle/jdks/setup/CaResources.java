@@ -19,8 +19,10 @@ package com.palantir.gradle.jdks.setup;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import com.palantir.gradle.jdks.setup.common.Os;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -28,10 +30,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -39,8 +47,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 
 public final class CaResources {
 
@@ -53,121 +65,144 @@ public final class CaResources {
         this.logger = logger;
     }
 
-    public Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore() {
-        return systemCertificates().flatMap(CaResources::selectPalantirCertificate);
+    public static Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore() {
+        return selectPalantirCertificate(systemCertificates());
     }
 
-    public Optional<AliasContentCert> maybeGetCertificateFromSerialNumber(String serialNumber, String alias) {
-        return systemCertificates()
-                .map(certs -> selectCertificates(certs, Map.of(serialNumber, alias)))
-                .orElseGet(Stream::empty)
-                .findFirst();
+    public void importAllSystemCerts(Path jdkInstallationDirectory) {
+        importCertificates(jdkInstallationDirectory, parseCerts(systemCertificates()));
     }
 
-    public void importCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {
-        Os os = CurrentOs.get();
-        switch (os) {
-            case MACOS:
-            case LINUX_GLIBC:
-            case LINUX_MUSL:
-                unixImportCertInJdk(aliasContentCert, jdkInstallationDirectory);
+    private void importCertificates(Path jdkInstallationDirectory, List<X509Certificate> certificates) {
+        try {
+            char[] passwd = "changeit".toCharArray();
+            Path jksPath = jdkInstallationDirectory.resolve("lib/security/cacerts");
+            KeyStore jks = loadKeystore(passwd, jksPath);
+            Set<X509Certificate> existingCertificates = getExistingCertificates(jks);
+            List<X509Certificate> newCertificates = certificates.stream()
+                    .filter(CaResources::isValid)
+                    .filter(CaResources::isCertUsedForTls)
+                    .filter(certificate -> !existingCertificates.contains(certificate))
+                    .collect(Collectors.toList());
+            for (X509Certificate certificate : newCertificates) {
+                String alias = getAlias(certificate);
                 logger.log(String.format(
-                        "Successfully imported CA certificate %s into the JDK truststore",
-                        aliasContentCert.getAlias()));
-                break;
-            case WINDOWS:
-                logger.logError(
-                        String.format("Importing certificates for OS type '%s' is not yet supported", os.uiName()));
-                break;
-        }
-    }
-
-    private void unixImportCertInJdk(AliasContentCert aliasContentCert, Path jdkInstallationDirectory) {
-        try {
-            if (isCertificateInTruststore(jdkInstallationDirectory, aliasContentCert.getAlias())) {
-                logger.log("Certificate already exists in the truststore, skipping...");
-                return;
+                        "Certificate %s imported successfully into the JDK truststore from the system truststore.",
+                        alias));
+                jks.setCertificateEntry(alias, certificate);
             }
-            File palantirCertFile = File.createTempFile(aliasContentCert.getAlias(), ".pem");
-            Files.write(palantirCertFile.toPath(), aliasContentCert.getContent().getBytes(StandardCharsets.UTF_8));
-            String keytoolPath = jdkInstallationDirectory
-                    .resolve("bin/keytool")
-                    .toAbsolutePath()
-                    .toString();
-            List<String> importCertificateCommand = List.of(
-                    keytoolPath,
-                    "-import",
-                    "-trustcacerts",
-                    "-alias",
-                    aliasContentCert.getAlias(),
-                    "-cacerts",
-                    "-storepass",
-                    "changeit",
-                    "-noprompt",
-                    "-file",
-                    palantirCertFile.getAbsolutePath());
-            CommandRunner.runWithLogger(
-                    new ProcessBuilder(importCertificateCommand), this::writeStdOutput, this::writeStdError);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to import the certificate to the jdk", e);
+            jks.store(new BufferedOutputStream(new FileOutputStream(jksPath.toFile())), passwd);
+        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
+            throw new RuntimeException("Failed to import certificates", e);
         }
     }
 
-    private void writeStdOutput(InputStream inputStream) {
-        CommandRunner.processStream(inputStream, logger::log);
-    }
-
-    private void writeStdError(InputStream inputStream) {
-        CommandRunner.processStream(inputStream, logger::logError);
-    }
-
-    private static boolean isCertificateInTruststore(Path jdkInstallationDirectory, String alias) {
+    private static Set<X509Certificate> getExistingCertificates(KeyStore keyStore) {
         try {
-            String keytoolPath = jdkInstallationDirectory
-                    .resolve("bin/keytool")
-                    .toAbsolutePath()
-                    .toString();
-            List<String> checkCertificateCommand = List.of(
-                    keytoolPath,
-                    "-list",
-                    "-storepass",
-                    "changeit",
-                    "-alias",
-                    alias,
-                    "-keystore",
-                    jdkInstallationDirectory.resolve("lib/security/cacerts").toString());
-            CommandRunner.runWithOutputCollection(new ProcessBuilder().command(checkCertificateCommand));
+            return Collections.list(keyStore.aliases()).stream()
+                    .map(alias -> {
+                        try {
+                            return Optional.ofNullable(keyStore.getCertificate(alias));
+                        } catch (KeyStoreException e) {
+                            throw new RuntimeException("Failed to load keystore", e);
+                        }
+                    })
+                    .flatMap(Optional::stream)
+                    .filter(certificate -> X509Certificate.class.isAssignableFrom(certificate.getClass()))
+                    .map(X509Certificate.class::cast)
+                    .collect(Collectors.toSet());
+        } catch (KeyStoreException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static boolean isCertUsedForTls(X509Certificate certificate) {
+        return hasCaCertUsage(certificate) && isTlsServerAuthentication(certificate);
+    }
+
+    private static boolean isValid(X509Certificate certificate) {
+        try {
+            certificate.checkValidity();
             return true;
-        } catch (Exception e) {
-            if (e.getMessage().contains(String.format("Alias <%s> does not exist", alias))) {
-                return false;
-            }
-            throw new RuntimeException("Unable to check if the certificate already exists in the truststore", e);
+        } catch (CertificateExpiredException | CertificateNotYetValidException e) {
+            return false;
         }
     }
 
-    private Optional<byte[]> systemCertificates() {
+    private static boolean hasCaCertUsage(X509Certificate certificate) {
+        boolean[] keyUsage = certificate.getKeyUsage();
+        if (keyUsage == null) {
+            return true;
+        }
+        // digitalSignature and keyEncipherment are enabled
+        if (keyUsage[0] && keyUsage[2]) {
+            return true;
+        }
+        // checks it is a CA certificate (keyCertSign=true and basicConstraints.cA == true):
+        // https://datatracker.ietf.org/doc/html/rfc3280#section-4.2.1.10
+        if (keyUsage[5] && certificate.getBasicConstraints() != -1) {
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isTlsServerAuthentication(X509Certificate certificate) {
+        try {
+            List<String> extendedKeyUsages = certificate.getExtendedKeyUsage();
+            if (extendedKeyUsages == null) {
+                return true;
+            }
+            // https://oidref.com/1.3.6.1.5.5.7.3.1
+            return extendedKeyUsages.contains("1.3.6.1.5.5.7.3.1");
+        } catch (CertificateParsingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getAlias(X509Certificate certificate) {
+        String distinguishedName = certificate.getIssuerX500Principal().getName();
+        String serialNumber = certificate.getSerialNumber().toString();
+        try {
+            LdapName ldapName = new LdapName(distinguishedName);
+            for (Rdn rdn : ldapName.getRdns()) {
+                if ("CN".equalsIgnoreCase(rdn.getType())) {
+                    return String.format(
+                            "GradleJdks_%s_%s", ((String) rdn.getValue()).replaceAll("\\s", ""), serialNumber);
+                }
+            }
+        } catch (InvalidNameException e) {
+            logger.logError(String.format("Failed to extract ldapName from %s", distinguishedName));
+        }
+        return String.format("GradleJdks_%s_%s", distinguishedName.replaceAll("\\s", ""), serialNumber);
+    }
+
+    private KeyStore loadKeystore(char[] password, Path location) {
+        try (InputStream keystoreStream = new BufferedInputStream(Files.newInputStream(location))) {
+            KeyStore keystore = KeyStore.getInstance("JKS");
+            keystore.load(keystoreStream, password);
+            return keystore;
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+            logger.log(String.format("Couldn't load jks, an exception occurred %s", e));
+            throw new RuntimeException(String.format("Couldn't load keystore %s", location), e);
+        }
+    }
+
+    private static byte[] systemCertificates() {
         Os os = CurrentOs.get();
         switch (os) {
             case MACOS:
-                return Optional.of(macosSystemCertificates());
+                return macosSystemCertificates();
             case LINUX_MUSL:
             case LINUX_GLIBC:
                 return linuxSystemCertificates();
             case WINDOWS:
-                logger.logError(String.format(
-                        "Not attempting to read Palantir CA from system truststore "
-                                + "as OS type '%s' does not yet support this",
-                        os.uiName()));
-                return Optional.empty();
+                throw new RuntimeException("Windows is not supported");
         }
         throw new IllegalStateException("Unreachable code; all Os enum values should be handled");
     }
 
     private static byte[] macosSystemCertificates() {
-        return Stream.of(
-                        "/System/Library/Keychains/SystemRootCertificates.keychain",
-                        "/Library/Keychains/System.keychain")
+        return Stream.of("/Library/Keychains/System.keychain")
                 .map(Paths::get)
                 .filter(Files::exists)
                 .map(CaResources::macosSystemCertificates)
@@ -188,7 +223,7 @@ public final class CaResources {
                         keyChainPath.toAbsolutePath().toString()));
     }
 
-    private Optional<byte[]> linuxSystemCertificates() {
+    private static byte[] linuxSystemCertificates() {
         List<Path> possibleCaCertificatePaths = List.of(
                 // Ubuntu/debian
                 Paths.get("/etc/ssl/certs/ca-certificates.crt"),
@@ -197,20 +232,15 @@ public final class CaResources {
 
         return possibleCaCertificatePaths.stream()
                 .filter(Files::exists)
-                .findFirst()
                 .map(caCertificatePath -> {
                     try {
-                        return Files.readAllBytes(caCertificatePath);
+                        return Files.readString(caCertificatePath);
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to read CA certs from " + caCertificatePath, e);
                     }
                 })
-                .or(() -> {
-                    logger.logError(String.format(
-                            "Could not find system truststore at any of %s in order to load CA certs",
-                            possibleCaCertificatePaths));
-                    return Optional.empty();
-                });
+                .collect(Collectors.joining("\n"))
+                .getBytes(StandardCharsets.UTF_8);
     }
 
     private static Optional<AliasContentCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {
@@ -224,14 +254,12 @@ public final class CaResources {
             byte[] multipleCertificateBytes, Map<String, String> certSerialNumbersToAliases) {
         return parseCerts(multipleCertificateBytes).stream()
                 .filter(cert -> certSerialNumbersToAliases.containsKey(
-                        ((X509Certificate) cert).getSerialNumber().toString()))
+                        cert.getSerialNumber().toString()))
                 .map(cert -> new AliasContentCert(
-                        certSerialNumbersToAliases.get(
-                                ((X509Certificate) cert).getSerialNumber().toString()),
-                        encodeCertificate(cert)));
+                        certSerialNumbersToAliases.get(cert.getSerialNumber().toString()), encodeCertificate(cert)));
     }
 
-    static List<Certificate> parseCerts(byte[] multipleCertificateBytes) {
+    static List<X509Certificate> parseCerts(byte[] multipleCertificateBytes) {
         CertificateFactory certificateFactory;
         try {
             certificateFactory = CertificateFactory.getInstance("X.509");
@@ -239,13 +267,13 @@ public final class CaResources {
             throw new RuntimeException("Could not make X.509 certificate factory", e);
         }
 
-        List<Certificate> certs = new ArrayList<>();
+        List<X509Certificate> certs = new ArrayList<>();
 
         ByteArrayInputStream baos = new ByteArrayInputStream(multipleCertificateBytes);
 
         for (int i = 0; baos.available() != 0; i++) {
             try {
-                certs.add(certificateFactory.generateCertificate(baos));
+                certs.add((X509Certificate) certificateFactory.generateCertificate(baos));
             } catch (CertificateException e) {
                 if (e.getMessage().contains("Duplicate extensions not allowed")) {
                     continue;
@@ -276,17 +304,6 @@ public final class CaResources {
                     "-----END CERTIFICATE-----");
         } catch (CertificateEncodingException e) {
             throw new RuntimeException("Could not convert Palantir cert back to regular", e);
-        }
-    }
-
-    public static String getSerialNumber(String certContent) {
-        try {
-            InputStream in = new ByteArrayInputStream(certContent.getBytes(StandardCharsets.UTF_8));
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
-            return cert.getSerialNumber().toString();
-        } catch (CertificateException e) {
-            throw new RuntimeException(String.format("Could not get serial number for certificate %s", certContent), e);
         }
     }
 }
