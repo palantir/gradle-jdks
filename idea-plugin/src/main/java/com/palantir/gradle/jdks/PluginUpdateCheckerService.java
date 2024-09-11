@@ -31,8 +31,8 @@ import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.util.text.VersionComparatorUtil;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service(Service.Level.PROJECT)
 public final class PluginUpdateCheckerService {
@@ -77,8 +77,8 @@ public final class PluginUpdateCheckerService {
                         .showSettingsDialog(
                                 ProjectUtil.currentOrDefaultProject(project),
                                 PluginManagerConfigurable.class,
-                                _configurable ->
-                                        PluginManagerConfigurable.showPluginConfigurable(project, List.of(pluginId)));
+                                _configurable -> PluginManagerConfigurable.showPluginConfigurableAndEnable(
+                                        project, Set.of(pluginDescriptor)));
             };
             ApplicationManager.getApplication().invokeLater(runnable);
         }
