@@ -24,25 +24,31 @@ import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.components.Service;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectUtil;
-import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.util.text.VersionComparatorUtil;
 import java.util.Optional;
-import kotlin.Unit;
-import kotlin.coroutines.Continuation;
-import org.jetbrains.annotations.NotNull;
 
-public final class PluginUpdateCheckerService implements ProjectActivity {
+@Service(Service.Level.PROJECT)
+public final class PluginUpdateCheckerService {
 
-    @Override
-    public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
+    private final Logger logger = Logger.getInstance(PluginUpdateCheckerService.class);
+    private final Project project;
+
+    public PluginUpdateCheckerService(Project project) {
+        this.project = project;
+    }
+
+    public void checkPluginVersion() {
         PluginId pluginId = PluginId.getId("palantir-gradle-jdks");
         IdeaPluginDescriptor pluginDescriptor = PluginManagerCore.getPlugin(pluginId);
         if (pluginDescriptor == null) {
-            return continuation;
+            logger.info("Plugin " + pluginId + " not found");
+            return;
         }
         Optional<String> maybeMinVersion =
                 ExternalDependenciesManager.getInstance(project).getDependencies(DependencyOnPlugin.class).stream()
@@ -50,7 +56,7 @@ public final class PluginUpdateCheckerService implements ProjectActivity {
                                 dependencyOnPlugin.getPluginId().equals(pluginId.getIdString()))
                         .map(DependencyOnPlugin::getMinVersion)
                         .filter(version -> Optional.ofNullable(version).isPresent())
-                        .max((d1, d2) -> VersionComparatorUtil.compare(d1, d2));
+                        .max(VersionComparatorUtil::compare);
         boolean isPluginUpToDate = maybeMinVersion
                 .map(minVersion -> VersionComparatorUtil.compare(pluginDescriptor.getVersion(), minVersion) > 0)
                 .orElse(true);
@@ -66,14 +72,14 @@ public final class PluginUpdateCheckerService implements ProjectActivity {
                                     maybeMinVersion.get()),
                             NotificationType.ERROR)
                     .notify(project);
-            ApplicationManager.getApplication().invokeLater(() -> {
+            Runnable runnable = () -> {
                 ShowSettingsUtil.getInstance()
                         .showSettingsDialog(
                                 ProjectUtil.currentOrDefaultProject(project),
                                 PluginManagerConfigurable.class,
                                 configurable -> configurable.showPluginConfigurable(project, pluginDescriptor));
-            });
+            };
+            ApplicationManager.getApplication().invokeLater(runnable);
         }
-        return continuation;
     }
 }

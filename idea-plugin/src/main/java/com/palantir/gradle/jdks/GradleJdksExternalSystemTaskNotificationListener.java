@@ -20,6 +20,7 @@ import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationEvent;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationListener;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskType;
+import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.gradle.util.GradleConstants;
 
@@ -30,7 +31,12 @@ public final class GradleJdksExternalSystemTaskNotificationListener implements E
         if (id.getProjectSystemId().equals(GradleConstants.SYSTEM_ID)
                 && (id.getType() == ExternalSystemTaskType.RESOLVE_PROJECT
                         || id.getType() == ExternalSystemTaskType.EXECUTE_TASK)) {
-            id.findProject().getService(GradleJdksProjectService.class).maybeSetupGradleJdks();
+            Project project = id.findProject();
+            if (project == null) {
+                return;
+            }
+            project.getService(PluginUpdateCheckerService.class).checkPluginVersion();
+            project.getService(GradleJdksProjectService.class).maybeSetupGradleJdks();
         }
     }
 

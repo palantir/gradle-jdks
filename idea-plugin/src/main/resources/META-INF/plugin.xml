@@ -16,8 +16,4 @@
                        displayType="BALLOON"
                        key="notification.group.gradleJdkSetup.plugins"/>
   </extensions>
-
-  <extensions defaultExtensionNs="com.intellij">
-    <postStartupActivity implementation="com.palantir.gradle.jdks.PluginUpdateCheckerService" />
-  </extensions>
 </idea-plugin>
