@@ -31,6 +31,7 @@ import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.util.text.VersionComparatorUtil;
+import java.util.List;
 import java.util.Optional;
 
 @Service(Service.Level.PROJECT)
@@ -65,10 +66,9 @@ public final class PluginUpdateCheckerService {
             NotificationGroupManager.getInstance()
                     .getNotificationGroup("Update Palantir plugins")
                     .createNotification(
-                            "Update palantir gradle JDK intellij plugin",
+                            "Update palantir-gradle-jdks plugin",
                             String.format(
-                                    "Project requires a version of palantir-gradle-jdks higher than %s. "
-                                            + "Please update the Intellij plugin in the Settings window.",
+                                    "Please update the plugin in the Settings window to a version higher than '%s'",
                                     maybeMinVersion.get()),
                             NotificationType.ERROR)
                     .notify(project);
@@ -77,7 +77,8 @@ public final class PluginUpdateCheckerService {
                         .showSettingsDialog(
                                 ProjectUtil.currentOrDefaultProject(project),
                                 PluginManagerConfigurable.class,
-                                configurable -> configurable.showPluginConfigurable(project, pluginDescriptor));
+                                _configurable ->
+                                        PluginManagerConfigurable.showPluginConfigurable(project, List.of(pluginId)));
             };
             ApplicationManager.getApplication().invokeLater(runnable);
         }
