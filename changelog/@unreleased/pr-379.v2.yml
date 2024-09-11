@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: '[Intellij] Focus on `Gradle Jdk` Tool Window while the setup is running'
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/379
