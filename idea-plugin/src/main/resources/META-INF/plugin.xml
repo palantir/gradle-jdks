@@ -12,5 +12,12 @@
 
   <extensions defaultExtensionNs="com.intellij">
     <externalSystemTaskNotificationListener implementation="com.palantir.gradle.jdks.GradleJdksExternalSystemTaskNotificationListener"/>
+    <notificationGroup id="Update Palantir plugins"
+                       displayType="BALLOON"
+                       key="notification.group.gradleJdkSetup.plugins"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <postStartupActivity implementation="com.palantir.gradle.jdks.PluginUpdateCheckerService" />
   </extensions>
 </idea-plugin>
