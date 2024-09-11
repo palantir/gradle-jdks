@@ -32,11 +32,10 @@ public final class GradleJdksExternalSystemTaskNotificationListener implements E
                 && (id.getType() == ExternalSystemTaskType.RESOLVE_PROJECT
                         || id.getType() == ExternalSystemTaskType.EXECUTE_TASK)) {
             Project project = id.findProject();
-            if (project == null) {
-                return;
+            if (project != null) {
+                project.getService(PluginUpdateCheckerService.class).checkPluginVersion();
+                project.getService(GradleJdksProjectService.class).maybeSetupGradleJdks();
             }
-            project.getService(PluginUpdateCheckerService.class).checkPluginVersion();
-            project.getService(GradleJdksProjectService.class).maybeSetupGradleJdks();
         }
     }
 

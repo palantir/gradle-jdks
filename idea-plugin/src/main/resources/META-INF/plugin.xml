@@ -15,5 +15,8 @@
     <notificationGroup id="Update Palantir plugins"
                        displayType="BALLOON"
                        key="notification.group.gradleJdkSetup.plugins"/>
+    <notificationGroup id="Gradle JDK setup Notifications"
+                       displayType="BALLOON"
+                       key="notification.group.gradleJdkSetup"/>
   </extensions>
 </idea-plugin>
