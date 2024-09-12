@@ -35,7 +35,7 @@ import java.util.Set;
 @Service(Service.Level.PROJECT)
 public final class PluginUpdateCheckerService {
 
-    private static final String PLUGIN_ID = "palantir-gradle-jdks"
+    private static final String PLUGIN_ID = "palantir-gradle-jdks";
     private final Logger logger = Logger.getInstance(PluginUpdateCheckerService.class);
     private final Project project;
 
