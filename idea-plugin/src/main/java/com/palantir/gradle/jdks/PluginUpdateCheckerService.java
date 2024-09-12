@@ -19,17 +19,15 @@ package com.palantir.gradle.jdks;
 import com.intellij.externalDependencies.DependencyOnPlugin;
 import com.intellij.externalDependencies.ExternalDependenciesManager;
 import com.intellij.ide.plugins.IdeaPluginDescriptor;
-import com.intellij.ide.plugins.PluginManagerConfigurable;
 import com.intellij.ide.plugins.PluginManagerCore;
+import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.PluginId;
-import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectUtil;
+import com.intellij.openapi.updateSettings.impl.pluginsAdvertisement.PluginsAdvertiser;
 import com.intellij.util.text.VersionComparatorUtil;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +35,7 @@ import java.util.Set;
 @Service(Service.Level.PROJECT)
 public final class PluginUpdateCheckerService {
 
+    private static final String PLUGIN_ID = "palantir-gradle-jdks"
     private final Logger logger = Logger.getInstance(PluginUpdateCheckerService.class);
     private final Project project;
 
@@ -45,7 +44,7 @@ public final class PluginUpdateCheckerService {
     }
 
     public void checkPluginVersion() {
-        PluginId pluginId = PluginId.getId("palantir-gradle-jdks");
+        PluginId pluginId = PluginId.getId(PLUGIN_ID);
         IdeaPluginDescriptor pluginDescriptor = PluginManagerCore.getPlugin(pluginId);
         if (pluginDescriptor == null) {
             logger.info("Plugin " + pluginId + " not found");
@@ -63,24 +62,16 @@ public final class PluginUpdateCheckerService {
                 .orElse(true);
 
         if (!isPluginUpToDate) {
-            NotificationGroupManager.getInstance()
+            Notification notification = NotificationGroupManager.getInstance()
                     .getNotificationGroup("Update Palantir plugins")
                     .createNotification(
                             "Update palantir-gradle-jdks plugin",
                             String.format(
                                     "Please update the plugin in the Settings window to a version higher than '%s'",
                                     maybeMinVersion.get()),
-                            NotificationType.ERROR)
-                    .notify(project);
-            Runnable runnable = () -> {
-                ShowSettingsUtil.getInstance()
-                        .showSettingsDialog(
-                                ProjectUtil.currentOrDefaultProject(project),
-                                PluginManagerConfigurable.class,
-                                _configurable -> PluginManagerConfigurable.showPluginConfigurableAndEnable(
-                                        project, Set.of(pluginDescriptor)));
-            };
-            ApplicationManager.getApplication().invokeLater(runnable);
+                            NotificationType.ERROR);
+            notification.notify(project);
+            PluginsAdvertiser.installAndEnablePlugins(Set.of(PLUGIN_ID), notification::expire);
         }
     }
 }
