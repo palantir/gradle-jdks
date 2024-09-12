@@ -60,18 +60,18 @@ public final class PluginUpdateCheckerService {
         boolean isPluginUpToDate = maybeMinVersion
                 .map(minVersion -> VersionComparatorUtil.compare(pluginDescriptor.getVersion(), minVersion) > 0)
                 .orElse(true);
-
-        if (!isPluginUpToDate) {
-            Notification notification = NotificationGroupManager.getInstance()
-                    .getNotificationGroup("Update Palantir plugins")
-                    .createNotification(
-                            "Update palantir-gradle-jdks plugin",
-                            String.format(
-                                    "Please update the plugin in the Settings window to a version higher than '%s'",
-                                    maybeMinVersion.get()),
-                            NotificationType.ERROR);
-            notification.notify(project);
-            PluginsAdvertiser.installAndEnablePlugins(Set.of(PLUGIN_ID), notification::expire);
+        if (isPluginUpToDate) {
+            return;
         }
+        Notification notification = NotificationGroupManager.getInstance()
+                .getNotificationGroup("Update Palantir plugins")
+                .createNotification(
+                        "Update palantir-gradle-jdks plugin",
+                        String.format(
+                                "Please update the plugin in the Settings window to a version higher than '%s'",
+                                maybeMinVersion.get()),
+                        NotificationType.ERROR);
+        notification.notify(project);
+        PluginsAdvertiser.installAndEnablePlugins(Set.of(PLUGIN_ID), notification::expire);
     }
 }
