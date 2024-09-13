@@ -36,6 +36,7 @@ import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowManager;
+import com.intellij.platform.ide.progress.TaskCancellation;
 import com.intellij.platform.ide.progress.TasksKt;
 import com.intellij.platform.util.progress.StepsKt;
 import com.intellij.ui.content.Content;
@@ -111,6 +112,7 @@ public final class GradleJdksProjectService {
         TasksKt.withBackgroundProgress(
                 project,
                 "Gradle JDK Setup",
+                TaskCancellation.nonCancellable(),
                 (_coroutineScope, continuation) -> {
                     StepsKt.withProgressText(
                             "`Gradle JDK Setup` is running. Logs in the `Gradle JDK Setup` window ...",
