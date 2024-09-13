@@ -25,6 +25,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.junit.jupiter.api.Test;
+import org.spockframework.util.VersionNumber;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -48,9 +49,15 @@ public class IntellijPluginCheckerTest {
         NodeList versionList = document.getElementsByTagName("version");
         assertThat(versionList.getLength()).isGreaterThan(0);
         String version = versionList.item(0).getTextContent();
-        assertThat(version)
-                .isGreaterThanOrEqualTo(PalantirGradleJdksIdeaPlugin.MIN_IDEA_PLUGIN_VERSION)
-                .describedAs(
-                        "If this test fails, then the minimum required Intellij plugin version is not yet published.");
+        assertThat(compareVersions(version, PalantirGradleJdksIdeaPlugin.MIN_IDEA_PLUGIN_VERSION))
+                .as(
+                        "If this test fails, then the minimum required Intellij plugin version is not "
+                                + "yet published. version=%s, expected_min_version=%s",
+                        version, PalantirGradleJdksIdeaPlugin.MIN_IDEA_PLUGIN_VERSION)
+                .isGreaterThan(0);
+    }
+
+    private static int compareVersions(String version1, String version2) {
+        return VersionNumber.parse(version1).compareTo(VersionNumber.parse(version2));
     }
 }
