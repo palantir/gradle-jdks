@@ -35,6 +35,7 @@ dependencies {
     testImplementation gradleTestKit()
     testImplementation project(':gradle-jdks-settings')
     testImplementation project(':gradle-jdks-test-common')
+    testImplementation 'com.google.code.gson:gson'
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'

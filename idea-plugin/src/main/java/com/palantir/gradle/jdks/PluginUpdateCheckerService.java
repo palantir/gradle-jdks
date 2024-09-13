@@ -23,14 +23,26 @@ import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
+import com.intellij.openapi.application.ApplicationInfo;
+import com.intellij.openapi.application.PermanentInstallationID;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.updateSettings.impl.pluginsAdvertisement.PluginsAdvertiser;
+import com.intellij.openapi.util.JDOMUtil;
+import com.intellij.openapi.util.SystemInfo;
+import com.intellij.util.io.HttpRequests;
+import com.intellij.util.io.HttpRequests.RequestProcessor;
 import com.intellij.util.text.VersionComparatorUtil;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
+import org.jdom.Element;
+import org.jdom.JDOMException;
+import org.jetbrains.annotations.NotNull;
 
 @Service(Service.Level.PROJECT)
 public final class PluginUpdateCheckerService {
@@ -63,6 +75,7 @@ public final class PluginUpdateCheckerService {
         if (isPluginUpToDate) {
             return;
         }
+
         Notification notification = NotificationGroupManager.getInstance()
                 .getNotificationGroup("Update Palantir plugins")
                 .createNotification(
@@ -73,5 +86,40 @@ public final class PluginUpdateCheckerService {
                         NotificationType.ERROR);
         notification.notify(project);
         PluginsAdvertiser.installAndEnablePlugins(Set.of(PLUGIN_ID), notification::expire);
+    }
+
+    private static boolean canUpdateVersion(PluginId pluginId, String minimumExpectedVersion) throws IOException {
+        String buildNumber = ApplicationInfo.getInstance().getApiVersion();
+        String os = URLEncoder.encode(SystemInfo.OS_NAME + " " + SystemInfo.OS_VERSION, StandardCharsets.UTF_8);
+        String uid = PermanentInstallationID.get();
+        String pluginIdStr = pluginId.getIdString();
+        String url = String.format(
+                "https://plugins.jetbrains.com/plugins/list?pluginId=%s&build=%s&pluginVersion=%s&os=%s&uuid=%s",
+                buildNumber, buildNumber, pluginIdStr, os, uid);
+
+        Element responseDoc = HttpRequests.request(url).connect(new RequestProcessor<Element>() {
+            @Override
+            public Element process(@NotNull HttpRequests.Request request) throws IOException {
+                try {
+                    return JDOMUtil.load(request.getInputStream());
+                } catch (JDOMException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+        // No plugin version compatible with current IDEA build; don't try updating
+        if (!responseDoc.getName().equals("plugin-repository")
+                || responseDoc.getChildren().isEmpty()) {
+            return false;
+        }
+
+        Optional<String> latestVersion = Optional.ofNullable(responseDoc.getChild("category"))
+                .map(element -> element.getChild("idea-plugin"))
+                .map(element -> element.getChild("version"))
+                .map(Element::getText);
+        return latestVersion
+                .map(version -> VersionComparatorUtil.compare(version, minimumExpectedVersion) >= 0)
+                .orElse(false);
     }
 }
