@@ -94,7 +94,7 @@ jobs:
           name: Install Java 11
           command: |
             sudo mkdir -p /opt/java && cd /opt/java && sudo chown -R circleci:circleci .
-            curl https://corretto.aws/downloads/resources/11.0.23.9.1/amazon-corretto-11.0.23.9.1-linux-x64.tar.gz | tar -xzf - -C /opt/java
+            curl https://corretto.aws/downloads/resources/11.0.24.8.1/amazon-corretto-11.0.24.8.1-linux-x64.tar.gz | tar -xzf - -C /opt/java
             sudo ln -s /opt/java/*/ /opt/java11
       - run:
           name: build-setup
