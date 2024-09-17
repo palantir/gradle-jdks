@@ -26,12 +26,16 @@ import com.intellij.execution.process.ProcessListener;
 import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
+import com.intellij.ide.plugins.CannotUnloadPluginException;
+import com.intellij.ide.plugins.DynamicPluginListener;
+import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
@@ -48,6 +52,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import kotlin.coroutines.Continuation;
 import kotlin.coroutines.CoroutineContext;
@@ -57,15 +62,16 @@ import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
 
 @Service(Service.Level.PROJECT)
-public final class GradleJdksProjectService implements Disposable {
+public final class GradleJdksProjectService implements Disposable, DynamicPluginListener {
 
     private final Logger logger = Logger.getInstance(GradleJdksProjectService.class);
     private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
 
+    private AtomicBoolean executingFlag = new AtomicBoolean(false);
     private final Project project;
     private final Supplier<ConsoleView> consoleView = Suppliers.memoize(this::initConsoleView);
 
-    public GradleJdksProjectService(Project project) {
+    private GradleJdksProjectService(Project project) {
         this.project = project;
     }
 
@@ -108,6 +114,10 @@ public final class GradleJdksProjectService implements Disposable {
                     "Skipping setupGradleJdks because gradle JDK setup is not found %s", gradleSetupScript));
             return;
         }
+        if (!this.executingFlag.compareAndSet(false, true)) {
+            logger.warn("executing flag was true, another update action should be already running");
+            // TODO(crogoz): figure out a way to wait on the existing background process if it is still running.
+        }
         TasksKt.withBackgroundProgress(
                 project,
                 "Gradle JDK Setup",
@@ -116,7 +126,11 @@ public final class GradleJdksProjectService implements Disposable {
                     StepsKt.withProgressText(
                             "`Gradle JDK Setup` is running. Logs in the `Gradle JDK Setup` window ...",
                             (_cor, conti) -> {
-                                setupGradleJdks();
+                                try {
+                                    setupGradleJdks();
+                                } finally {
+                                    executingFlag.set(false);
+                                }
                                 return conti;
                             },
                             continuation);
@@ -195,9 +209,18 @@ public final class GradleJdksProjectService implements Disposable {
 
     @Override
     public void dispose() {
+        executingFlag.set(false);
         ConsoleView view = consoleView.get();
         if (view != null) {
             view.dispose();
+        }
+    }
+
+    @Override
+    public void checkUnloadPlugin(IdeaPluginDescriptor ideaPluginDescriptor) {
+        PluginId pluginId = PluginId.getId("palantir-gradle-jdks");
+        if (ideaPluginDescriptor.getPluginId().equals(pluginId) && executingFlag.get()) {
+            throw new CannotUnloadPluginException("Gradle JDK Setup is still in progress...");
         }
     }
 }
