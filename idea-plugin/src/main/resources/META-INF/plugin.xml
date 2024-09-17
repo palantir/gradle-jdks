@@ -1,4 +1,4 @@
-<idea-plugin url="https://github.com/palantir/gradle-jdks">
+<idea-plugin url="https://github.com/palantir/gradle-jdks" require-restart="false">
   <id>palantir-gradle-jdks</id>
   <name>palantir-gradle-jdks</name>
   <vendor url="https://github.com/palantir/gradle-jdks">
