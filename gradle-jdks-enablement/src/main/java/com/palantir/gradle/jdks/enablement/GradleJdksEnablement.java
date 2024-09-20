@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
 
-public class GradleJdksEnablement {
+public final class GradleJdksEnablement {
 
     public static final String MINIMUM_SUPPORTED_GRADLE_VERSION = "7.6";
 
