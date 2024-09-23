@@ -55,5 +55,5 @@ publishing.publications {
 tasks.withType(Test) {
     environment("HOME", "/tmp/gradleJdksSettingsTest")
     systemProperty 'user.home', '/tmp/gradleJdksSettingsTest'
+    dependsOn project(':gradle-jdks').tasks.withType(PluginUnderTestMetadata.class)
 }
-
