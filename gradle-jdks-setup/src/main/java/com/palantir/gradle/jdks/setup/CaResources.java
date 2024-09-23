@@ -65,12 +65,12 @@ public final class CaResources {
         this.logger = logger;
     }
 
-    public static Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore() {
-        return selectPalantirCertificate(systemCertificates());
+    public Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore() {
+        return systemCertificates().flatMap(CaResources::selectPalantirCertificate);
     }
 
     public void importAllSystemCerts(Path jdkInstallationDirectory) {
-        importCertificates(jdkInstallationDirectory, parseCerts(systemCertificates()));
+        systemCertificates().ifPresent(certs -> importCertificates(jdkInstallationDirectory, parseCerts(certs)));
     }
 
     private void importCertificates(Path jdkInstallationDirectory, List<X509Certificate> certificates) {
@@ -187,16 +187,20 @@ public final class CaResources {
         }
     }
 
-    private static byte[] systemCertificates() {
+    private Optional<byte[]> systemCertificates() {
         Os os = CurrentOs.get();
         switch (os) {
             case MACOS:
-                return macosSystemCertificates();
+                return Optional.of(macosSystemCertificates());
             case LINUX_MUSL:
             case LINUX_GLIBC:
-                return linuxSystemCertificates();
+                return Optional.of(linuxSystemCertificates());
             case WINDOWS:
-                throw new RuntimeException("Windows is not supported");
+                logger.logError(String.format(
+                        "Not attempting to read Palantir CA from system truststore "
+                                + "as OS type '%s' does not yet support this",
+                        os.uiName()));
+                return Optional.empty();
         }
         throw new IllegalStateException("Unreachable code; all Os enum values should be handled");
     }

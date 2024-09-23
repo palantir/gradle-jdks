@@ -46,7 +46,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
     private static final AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
     private static final boolean DO_NOT_INSTALL_CURL = false;
     private static final boolean INSTALL_CURL = true;
-    private static final Optional<AliasContentCert> palantirCert = CaResources.readPalantirRootCaFromSystemTruststore();
+    private static final CaResources caResources = new CaResources(new StdLogger());
 
     @TempDir
     private Path workingDir;
@@ -135,13 +135,16 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Files.copy(Path.of("src/integrationTest/resources/testing-script.sh"), workingDir.resolve("testing-script.sh"));
 
         // copy the certs to the working directory
-        palantirCert.map(AliasContentCert::getContent).ifPresent(content -> {
-            try {
-                Files.write(workingDir.resolve("palantir.crt"), content.getBytes(StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to write cert", e);
-            }
-        });
+        caResources
+                .readPalantirRootCaFromSystemTruststore()
+                .map(AliasContentCert::getContent)
+                .ifPresent(content -> {
+                    try {
+                        Files.write(workingDir.resolve("palantir.crt"), content.getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to write cert", e);
+                    }
+                });
 
         Files.copy(Path.of("src/integrationTest/resources/example.com.crt"), workingDir.resolve("example.com.crt"));
 
@@ -194,7 +197,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
     private static void assertJdkWithNoCertsWasSetUp(String output) {
         assertThat(output).contains("Corretto-11.0.21.9.1").contains("Example.com cert: gradleJdks_example.com");
 
-        if (palantirCert.isPresent()) {
+        if (caResources.readPalantirRootCaFromSystemTruststore().isPresent()) {
             assertThat(output).contains("Palantir cert: gradlejdks_palantir3rd-generationrootca");
         }
     }
