@@ -23,6 +23,7 @@ buildscript {
 
 apply plugin: 'com.palantir.external-publish'
 apply plugin: 'com.palantir.git-version'
+apply plugin: 'com.palantir.jdks'
 apply plugin: 'com.palantir.consistent-versions'
 apply plugin: 'com.palantir.baseline'
 apply plugin: 'com.palantir.baseline-java-versions'
@@ -53,3 +54,7 @@ allprojects {
 // workaround for:
 // `Error during resolution of the dependency graph of configuration configuration ':gradle-jdks-settings:unshadedCopy'`
 checkUnusedConstraints.enabled = false
+
+jdks {
+    daemonTarget = 17
+}
