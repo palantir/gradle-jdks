@@ -197,7 +197,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
     private static void assertJdkWithNoCertsWasSetUp(String output) {
         assertThat(output).contains("Corretto-11.0.21.9.1").contains("Example.com cert: gradleJdks_example.com");
 
-        if (palantirCert.isPresent()) {
+        if (caResources.readPalantirRootCaFromSystemTruststore().isPresent()) {
             assertThat(output).contains("Palantir cert: gradlejdks_palantir3rd-generationrootca");
         }
     }
