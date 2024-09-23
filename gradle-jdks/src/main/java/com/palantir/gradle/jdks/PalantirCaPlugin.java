@@ -43,11 +43,13 @@ public final class PalantirCaPlugin implements Plugin<Project> {
         ILogger logger = new GradleLogger(
                 rootProject.getLogger(), extension.getLogLevel().get());
 
+        CaResources caResources = new CaResources(logger);
         rootProject
                 .getExtensions()
                 .getByType(JdksExtension.class)
                 .getCaCerts()
-                .putAll(possibleRootProject.provider(() -> CaResources.readPalantirRootCaFromSystemTruststore()
+                .putAll(possibleRootProject.provider(() -> caResources
+                        .readPalantirRootCaFromSystemTruststore()
                         .map(cert -> Map.of(cert.getAlias(), cert.getContent()))
                         .orElseGet(() -> {
                             logger.logError("Could not find Palantir CA in system truststore");
