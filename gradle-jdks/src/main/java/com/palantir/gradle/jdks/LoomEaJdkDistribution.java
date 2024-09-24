@@ -1,12 +1,29 @@
+/*
+ * (c) Copyright 2024 Palantir Technologies Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.palantir.gradle.jdks;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Splitter;
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
+import java.util.List;
 import org.immutables.value.Value;
 
-public class LoomEaJdkDistribution implements JdkDistribution {
+public final class LoomEaJdkDistribution implements JdkDistribution {
     // example:
     // https://download.java.net/java/early_access/loom/7/openjdk-24-loom+7-60_linux-aarch64_bin.tar.gz
 
@@ -78,27 +95,29 @@ public class LoomEaJdkDistribution implements JdkDistribution {
         //   the "loomMajorVersion" to be: "7"
         //   the "loomMinorVersion" to be: "60"
 
-        String[] parts = fullVersion.split("\\+");
-        if (parts.length != 2) {
+        List<String> parts = Splitter.on("+").splitToList(fullVersion);
+        if (parts.size() != 2) {
             throw new IllegalArgumentException(String.format(
                     "Expected %s to be of the form: `javaMajorVersion+loomMajorVersion-loomMinorVersion`"
-                            + "(e.g. 24-loom+7-60 == Java Major Version: 24-loom, Loom Major Version: 7, Loom Minor Version: 60)",
+                            + " (e.g. 24-loom+7-60 == Java Major Version: 24-loom, Loom Major Version: 7,"
+                            + " Loom Minor Version: 60)",
                     fullVersion));
         }
 
-        String javaMajorVersion = parts[0];
-        String[] loomParts = parts[1].split("-");
-        if (loomParts.length != 2) {
+        String javaMajorVersion = parts.get(0);
+        List<String> loomParts = Splitter.on("-").splitToList(parts.get(1));
+        if (loomParts.size() != 2) {
             throw new IllegalArgumentException(String.format(
                     "Expected %s to be of the form: `javaMajorVersion+loomMajorVersion-loomMinorVersion`"
-                            + "(e.g. 24-loom+7-60 == Java Major Version: 24-loom, Loom Major Version: 7, Loom Minor Version: 60)",
+                            + " (e.g. 24-loom+7-60 == Java Major Version: 24-loom, Loom Major Version: 7,"
+                            + " Loom Minor Version: 60)",
                     fullVersion));
         }
 
         return ImmutableLoomEaVersion.builder()
                 .javaMajorVersion(javaMajorVersion)
-                .loomMajorVersion(loomParts[0])
-                .loomMinorVersion(loomParts[1])
+                .loomMajorVersion(loomParts.get(0))
+                .loomMinorVersion(loomParts.get(1))
                 .build();
     }
 
