@@ -24,7 +24,8 @@ import java.util.Optional;
 public enum JdkDistributionName {
     AZUL_ZULU,
     AMAZON_CORRETTO,
-    GRAALVM_CE;
+    GRAALVM_CE,
+    LOOM_EA;
 
     JdkDistributionName() {}
 
