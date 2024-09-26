@@ -44,6 +44,6 @@ class GradleJdkPatchHelperTest {
     private void assertEqualFiles(Path actualPath, Path expectedPath) throws IOException {
         List<String> actualBytes = Files.readAllLines(actualPath);
         List<String> expectedBytes = Files.readAllLines(expectedPath);
-        assertThat(actualBytes).isEqualTo(expectedBytes);
+        assertThat(actualBytes).containsExactlyElementsOf(expectedBytes);
     }
 }
