@@ -25,8 +25,7 @@ public enum JdkDistributionName {
     AZUL_ZULU,
     AMAZON_CORRETTO,
     GRAALVM_CE,
-    JAVA_EARLY_ACCESS,
-    LOOM_EA;
+    JAVA_EARLY_ACCESS;
 
     JdkDistributionName() {}
 
