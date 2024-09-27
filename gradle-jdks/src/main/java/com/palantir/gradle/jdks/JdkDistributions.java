@@ -27,8 +27,8 @@ final class JdkDistributions {
             new AmazonCorrettoJdkDistribution(),
             JdkDistributionName.GRAALVM_CE,
             new GraalVmCeDistribution(),
-            JdkDistributionName.LOOM_EA,
-            new LoomEaJdkDistribution());
+            JdkDistributionName.JAVA_EARLY_ACCESS,
+            new JavaEarlyAccessJdkDistribution());
 
     public JdkDistribution get(JdkDistributionName jdkDistributionName) {
         return Optional.ofNullable(JDK_DISTRIBUTIONS.get(jdkDistributionName))
