@@ -65,7 +65,7 @@ public final class GradleJdksProjectService implements Disposable {
     private final Project project;
     private final Supplier<ConsoleView> consoleView = Suppliers.memoize(this::initConsoleView);
 
-    private GradleJdksProjectService(Project project) {
+    public GradleJdksProjectService(Project project) {
         this.project = project;
     }
 
