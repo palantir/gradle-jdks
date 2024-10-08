@@ -29,9 +29,15 @@ import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
+import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.externalSystem.service.execution.ExternalSystemJdkUtil;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.projectRoots.JavaSdk;
+import com.intellij.openapi.projectRoots.ProjectJdkTable;
+import com.intellij.openapi.projectRoots.Sdk;
+import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
@@ -183,12 +189,29 @@ public final class GradleJdksProjectService {
             try {
                 Properties properties = new Properties();
                 properties.load(new FileInputStream(gradleConfigFile));
-                if (Optional.ofNullable(properties.getProperty("java.home")).isPresent()) {
-                    projectSettings.setGradleJvm("#GRADLE_LOCAL_JAVA_HOME");
+                Optional<String> javaHome = Optional.ofNullable(properties.getProperty("java.home"));
+                if (javaHome.isPresent()) {
+                    String sdkName = getSdkName(javaHome.get());
+                    WriteAction.runAndWait(() -> {
+                        Sdk sdk = Optional.ofNullable(
+                                        ProjectJdkTable.getInstance().findJdk(sdkName))
+                                .orElseGet(() -> {
+                                    Sdk newSdk = JavaSdk.getInstance().createJdk(sdkName, javaHome.get(), false);
+                                    ProjectJdkTable.getInstance().addJdk(newSdk);
+                                    return newSdk;
+                                });
+                        ProjectRootManager.getInstance(project).setProjectSdk(sdk);
+                        projectSettings.setGradleJvm(ExternalSystemJdkUtil.USE_PROJECT_JDK);
+                    });
                 }
             } catch (IOException e) {
-                throw new RuntimeException("Failed to set gradleJvm to #GRADLE_LOCAL_JAVA_HOME", e);
+                throw new RuntimeException("Failed to set gradleJvm", e);
             }
         }
+    }
+
+    private String getSdkName(String javaHomePath) {
+        return String.format(
+                "gradle-jdks-%s", Path.of(javaHomePath).getFileName().toString());
     }
 }
