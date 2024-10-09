@@ -17,7 +17,7 @@ patchPluginXml {
 dependencies {
     implementation project(':gradle-jdks-setup-common')
     implementation project(':gradle-jdks-enablement')
-
+    
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }

@@ -25,7 +25,7 @@ import org.gradle.api.logging.Logging;
 public class PalantirGradleJdksIdeaPlugin implements Plugin<Project> {
 
     private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
-    private static final String MIN_IDEA_PLUGIN_VERSION = "0.44.0";
+    protected static final String MIN_IDEA_PLUGIN_VERSION = "0.44.0";
 
     @Override
     public final void apply(Project rootProject) {
