@@ -29,6 +29,7 @@ import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
@@ -38,10 +39,10 @@ import com.intellij.openapi.projectRoots.JavaSdk;
 import com.intellij.openapi.projectRoots.ProjectJdkTable;
 import com.intellij.openapi.projectRoots.Sdk;
 import com.intellij.openapi.roots.ProjectRootManager;
-import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowManager;
+import com.intellij.platform.ide.progress.TaskCancellation;
 import com.intellij.platform.ide.progress.TasksKt;
 import com.intellij.platform.util.progress.StepsKt;
 import com.intellij.ui.content.Content;
@@ -62,7 +63,7 @@ import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
 
 @Service(Service.Level.PROJECT)
-public final class GradleJdksProjectService {
+public final class GradleJdksProjectService implements Disposable {
 
     private final Logger logger = Logger.getInstance(GradleJdksProjectService.class);
     private static final String TOOL_WINDOW_NAME = "Gradle JDK Setup";
@@ -87,7 +88,6 @@ public final class GradleJdksProjectService {
             ContentFactory contentFactory = ContentFactory.getInstance();
             Content content = contentFactory.createContent(newConsoleView.getComponent(), "", false);
             toolWindow.getContentManager().addContent(content);
-            Disposer.register(project, newConsoleView);
         });
 
         return newConsoleView;
@@ -117,6 +117,7 @@ public final class GradleJdksProjectService {
         TasksKt.withBackgroundProgress(
                 project,
                 "Gradle JDK Setup",
+                TaskCancellation.nonCancellable(),
                 (_coroutineScope, continuation) -> {
                     StepsKt.withProgressText(
                             "`Gradle JDK Setup` is running. Logs in the `Gradle JDK Setup` window ...",
@@ -213,5 +214,13 @@ public final class GradleJdksProjectService {
     private String getSdkName(String javaHomePath) {
         return String.format(
                 "gradle-jdks-%s", Path.of(javaHomePath).getFileName().toString());
+    }
+
+    @Override
+    public void dispose() {
+        ConsoleView view = consoleView.get();
+        if (view != null) {
+            view.dispose();
+        }
     }
 }
