@@ -135,7 +135,7 @@ New JDK distributions are easily added - you just need to:
 4. Write some tests to check the path is being built correctly - [Azul Zulu example](https://github.com/palantir/gradle-jdks/blob/develop/gradle-jdks/src/test/groovy/com/palantir/gradle/jdks/AzulZuluJdkDistributionTest.java).
 5. Make a PR.
 
-## [Beta Feature][Gradle JDK Automanagement] Run the Gradle wrapper/daemon with a certain JDK
+## [Feature flagged][Gradle JDK Automanagement] Run the Gradle wrapper/daemon with a certain JDK
    * More details in [grade-jdks-setup](gradle-jdks-setup/README.md)
    * Disabled by default for now
 
