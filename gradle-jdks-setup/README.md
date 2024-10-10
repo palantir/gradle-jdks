@@ -137,13 +137,7 @@ Note that now, when running any `./gradlew` the following line would show up if 
 JDK installation '/.gradle/gradle-jdks/amazon-corretto-11.0.23.9.1-d6ef2c62dc4d4dd4' does not exist, installing 'https://corretto.....' in progress ...
 ```
 
-7. [Intellij] Install the Intellij plugin [`palantir-gradle-jdks`](https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions/stable) and restart Intellij. The plugin will automatically configure the Gradle JVM to use the JDK setup by the `com.palantir.jdks` plugin.
-
-![Intellij Gradle JDK setup](Intellij%20Gradle%20JDK.png)
-
-* Gradle JVM is set to `#GRADLE_LOCAL_JAVA_HOME` which is resolved by Intellij to the `java.home` set in `.gradle/config.properties`.
-* The `java.home` is set to the Gradle JDK Daemon resolved path which is resolved from the `gradle/gradle-daemon-jdk-version` file.
-* When opening a Project in Intellij with the Gradle JDK setup enabled, a tab will appear at the bottom `Gradle JDK Setup` which will call the `gradle/gradle-jdks-setup.sh` script
+7. [Intellij] Install the Intellij plugin [`palantir-gradle-jdks`](https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions/stable) and restart Intellij. The plugin will automatically configure the Gradle JVM to use the JDK setup by the `com.palantir.jdks` plugin. More details in https://github.com/palantir/gradle-jdks-idea-plugin.
 
 ## Gradle JDK Configuration directory structure
 
@@ -190,7 +184,7 @@ project-root/
 There are 2 main entry points for running Gradle. Both of these would need to support installing/using the specified JDK. 
 
 * `./gradlew(.bat)` script
-* Running a Gradle build from inside `Intellij`
+* Running a Gradle build from inside `Intellij` (mre details in https://github.com/palantir/gradle-jdks-idea-plugin)
 
 ### Supporting Gradle JDK auto-management from `./gradlew` scripts
 
@@ -202,12 +196,6 @@ The patch script does the following:
 * delegates to `gradle-jdks-setup.jar` ([setup class](src/main/java/com/palantir/gradle/jdks/setup/GradleJdkInstallationSetup.java)) the installation of the JDKS and the system certs.
 * sets the gradle property `org.gradle.java.home` to the installation path of the JDK configured in `gradle/gradle-daemon-jdk-version`. Hence, `./gradlew` will retrieve this java installation and it will run the wrapper using this java installation.
 
-
-### Running a Gradle build from inside `Intellij`
-`IntelliJ` doesn't use the `./gradlew` script, instead it uses the [Gradle Tooling API](https://docs.gradle.org/current/userguide/third_party_integration.html#sec:embedding_introduction).
-The Intellij plugin [`palantir-gradle-jdks`](https://plugins.jetbrains.com/plugin/24776-palantir-gradle-jdks/versions/stable) will:
-* run the gradle jdks setup script: `./gradle/gradle-jdks-setup.sh` *before* any Gradle Task and *before* the idea project is configured.
-* set the Gradle JVM version to the Gradle local java home (`GRADLE_LOCAL_JAVA_HOME` which is resolved from the `gradle/gradle-daemon-jdk-version` file).
 
 ## ToolchainsPlugin tasks
 
