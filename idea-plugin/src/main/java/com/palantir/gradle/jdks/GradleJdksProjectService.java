@@ -88,6 +88,7 @@ public final class GradleJdksProjectService implements Disposable {
             ContentFactory contentFactory = ContentFactory.getInstance();
             Content content = contentFactory.createContent(newConsoleView.getComponent(), "", false);
             toolWindow.getContentManager().addContent(content);
+            content.setDisposer(newConsoleView);
         });
 
         return newConsoleView;
@@ -217,10 +218,5 @@ public final class GradleJdksProjectService implements Disposable {
     }
 
     @Override
-    public void dispose() {
-        ConsoleView view = consoleView.get();
-        if (view != null) {
-            view.dispose();
-        }
-    }
+    public void dispose() {}
 }
