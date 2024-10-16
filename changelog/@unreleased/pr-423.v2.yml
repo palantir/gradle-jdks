@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: add support for Project Loom JDK24 Early Access builds
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/423
