@@ -31,8 +31,7 @@ apply plugin: 'com.palantir.jdks.latest'
 apply plugin: 'com.palantir.failure-reports'
 
 javaVersions {
-    libraryTarget = 11
-    runtime = 17
+    libraryTarget = 17
 }
 
 version gitVersion()
