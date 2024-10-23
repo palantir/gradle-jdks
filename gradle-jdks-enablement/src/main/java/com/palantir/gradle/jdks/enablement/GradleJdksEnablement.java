@@ -35,7 +35,9 @@ public final class GradleJdksEnablement {
 
     private static boolean isSupportedOS() {
         try {
-            return !CurrentOs.get().equals(Os.WINDOWS);
+            Os os = CurrentOs.get();
+            // we only support Linux and MacOs atm, Windows is not supported
+            return os.equals(Os.LINUX_GLIBC) || os.equals(Os.LINUX_MUSL) || os.equals(Os.MACOS);
         } catch (UnsupportedOperationException exception) {
             return false;
         }
