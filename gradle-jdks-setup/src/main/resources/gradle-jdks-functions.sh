@@ -34,7 +34,15 @@ die() {
     echo "$*"
     echo
     cleanup
-    exit 1
+    exit 64
+} >&2
+
+skip_setup() {
+    echo
+    echo "$*"
+    echo
+    cleanup
+    exit 65
 } >&2
 
 read_value() {
@@ -50,7 +58,7 @@ get_os() {
   case "$( uname )" in                          #(
     Linux* )          os_name="linux"  ;;       #(
     Darwin* )         os_name="macos"  ;;       #(
-    * )               die "ERROR Unsupported OS: $( uname )" ;;
+    * )               skip_setup "ERROR Unsupported OS: $( uname )" ;;
   esac
 
   if [ "$os_name" = "linux" ]; then
@@ -62,7 +70,7 @@ get_os() {
       elif echo "$ldd_output" | grep -qi musl; then
         os_name="linux-musl"
       else
-        die "Unable to determine glibc or musl based Linux distribution: ldd_output: $ldd_output"
+        skip_setup "Unable to determine glibc or musl based Linux distribution: ldd_output: $ldd_output"
       fi
   fi
 
@@ -80,7 +88,7 @@ get_arch() {
     aarch64* )      arch_name="aarch64"  ;;     #(
     x86* )          arch_name="x86"  ;;         #(
     i686* )         arch_name="x86"  ;;         #(
-    * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
+    * )             skip_setup "ERROR Unsupported architecture: $( uname -m )" ;;
   esac
 
   echo "$arch_name"
