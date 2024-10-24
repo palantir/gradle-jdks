@@ -139,7 +139,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Files.writeString(path, content + "\n");
     }
 
-    private String dockerBuildAndRunTestingScript(String baseImage, String shell, boolean installCurl)
+    private void dockerBuildAndRunTestingScript(String baseImage, String shell, boolean installCurl)
             throws IOException, InterruptedException {
         Path dockerFile = Path.of("src/integrationTest/resources/template.Dockerfile");
         String dockerImage = String.format("jdk-test-%s", baseImage);
@@ -157,7 +157,10 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 "-f",
                 dockerFile.toAbsolutePath().toString(),
                 workingDir.toAbsolutePath().toString()));
-        return runCommandWithZeroExitCode(List.of("docker", "run", "--rm", dockerImage, shell, "/testing-script.sh"));
+        assertThat(runCommandWithZeroExitCode(
+                        List.of("docker", "run", "--rm", dockerImage, shell, "/testing-script.sh")))
+                .contains("openjdk version \"21.0.4\"")
+                .contains("JAVA_HOME is set to /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1");
     }
 
     private static String runCommandWithZeroExitCode(List<String> commandArguments)

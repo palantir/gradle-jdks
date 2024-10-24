@@ -17,6 +17,4 @@ if [ -f gradle/gradle-jdks-setup.sh ]; then
 fi
 # <<< Gradle JDK setup <<<
 
-if ! "$JAVA_HOME/bin/java" -version 2>&1 | grep -q "11.0.21.9.1"; then
-  echo "Invalid JAVA_HOME: $JAVA_HOME" >&2
-fi
+echo "JAVA_HOME is set to: $JAVA_HOME"
