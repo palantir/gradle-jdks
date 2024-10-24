@@ -56,5 +56,5 @@ allprojects {
 checkUnusedConstraints.enabled = false
 
 jdks {
-    daemonTarget = 17
+    daemonTarget = 21
 }
