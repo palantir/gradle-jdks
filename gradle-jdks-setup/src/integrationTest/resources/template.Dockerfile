@@ -9,6 +9,6 @@ RUN if [ "$INSTALL_CURL" = "true" ] ; then \
         apt-get install -y curl ; \
     fi
 COPY . /
-RUN mkdir -p /etc/ssl/certs && cat /example.com.crt >> /etc/ssl/certs/ca-bundle.crt
+RUN mkdir -p /etc/ssl/certs && cat /example.com.crt >> /etc/ssl/certs/ca-bundle.crt && update-ca-certificates
 RUN if [ -f /palantir.crt ]; then cat /palantir.crt >> /etc/ssl/certs/ca-bundle.crt; else echo "File does not exist."; fi
 RUN $SCRIPT_SHELL /gradle/gradle-jdks-setup.sh
