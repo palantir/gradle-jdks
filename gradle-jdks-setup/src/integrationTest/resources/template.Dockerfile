@@ -6,7 +6,7 @@ ARG INSTALL_CURL=false
 # Update package lists and conditionally install curl
 RUN if [ "$INSTALL_CURL" = "true" ] ; then \
         apt-get update && \
-        apt-get install -y curl ; \
+        apt-get install -y curl ca-certificates; \
     fi
 COPY . /
 RUN mkdir -p /etc/ssl/certs && cat /example.com.crt >> /etc/ssl/certs/ca-bundle.crt && update-ca-certificates

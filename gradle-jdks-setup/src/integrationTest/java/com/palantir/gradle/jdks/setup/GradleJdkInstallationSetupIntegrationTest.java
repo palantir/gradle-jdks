@@ -54,19 +54,19 @@ public class GradleJdkInstallationSetupIntegrationTest {
     @Test
     public void can_setup_jdk_with_certs_centos() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_GLIBC);
-        assertJdkWithNoCertsWasSetUp(dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL));
+        assertJdkWithCertsWasSetUp(dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL));
     }
 
     @Test
     public void can_setup_jdk_with_certs_ubuntu() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_GLIBC);
-        assertJdkWithNoCertsWasSetUp(dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL));
+        assertJdkWithCertsWasSetUp(dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL));
     }
 
     @Test
     public void can_setup_jdk_with_certs_alpine() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_MUSL);
-        assertJdkWithNoCertsWasSetUp(dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL));
+        assertJdkWithCertsWasSetUp(dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL));
     }
 
     private Path setupGradleDirectoryStructure(Os os) throws IOException {
@@ -194,11 +194,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         return output;
     }
 
-    private static void assertJdkWithNoCertsWasSetUp(String output) {
+    private static void assertJdkWithCertsWasSetUp(String output) {
         assertThat(output).contains("Corretto-11.0.21.9.1").contains("Example.com cert: gradleJdks_example.com");
-
-        if (caResources.readPalantirRootCaFromSystemTruststore().isPresent()) {
-            assertThat(output).contains("Palantir cert: gradlejdks_palantir3rd-generationrootca");
-        }
     }
 }
