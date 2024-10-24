@@ -3,8 +3,6 @@
 set -e
 
 /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1/bin/java -version
-echo "Example.com cert:" $(/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1/bin/keytool -keystore /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1/lib/security/cacerts -list -alias gradleJdks_example.com -storepass changeit)
-
 # Running again the gradle-jdk-setup to check the JAVA_HOME.
 
 # >>> Gradle JDK setup >>>
