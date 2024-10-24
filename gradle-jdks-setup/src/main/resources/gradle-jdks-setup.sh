@@ -76,4 +76,7 @@ gradle_daemon_jdk_distribution_local_path=$(read_value "$APP_GRADLE_DIR"/jdks/"$
 # [Used by ./gradlew only] Setting the Gradle Daemon Java Home to the JDK distribution
 set -- "-Dorg.gradle.java.home=$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path" "$@"
 
+# Setting JAVA_HOME to the gradle daemon to make sure gradlew gets this java OOTB
+export JAVA_HOME="$GRADLE_JDKS_HOME/$gradle_daemon_jdk_distribution_local_path"
+
 cleanup
