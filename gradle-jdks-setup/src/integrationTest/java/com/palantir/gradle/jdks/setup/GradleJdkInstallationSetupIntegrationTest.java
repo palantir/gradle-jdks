@@ -26,6 +26,7 @@ import com.palantir.gradle.jdks.JdkRelease;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
+import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper;
 import com.palantir.gradle.jdks.setup.common.Os;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -130,7 +132,19 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 gradleDirectory.resolve("gradle-jdks-functions.sh"));
 
         // copy the testing script to the working directory
-        Files.copy(Path.of("src/integrationTest/resources/testing-script.sh"), workingDir.resolve("testing-script.sh"));
+        List<String> gradlewPatchLines =
+                Files.readAllLines(Path.of("../gradle-jdks/src/main/resources/gradlew-patch.sh"));
+        List<String> initialTestLines =
+                Files.readAllLines(Path.of("src/integrationTest/resources/testing-script.template.sh"));
+        int placeholderIndex = IntStream.range(0, initialTestLines.size())
+                .filter(lineNo -> initialTestLines.get(lineNo).equals("PLACEHOLDER_INSERT_GRADLEW_PATCH"))
+                .findFirst()
+                .orElseThrow(() ->
+                        new RuntimeException("unable to find PLACEHOLDER_INSERT_GRADLEW_PATCH in testing-script.sh"));
+        initialTestLines.remove(placeholderIndex);
+        Files.write(
+                workingDir.resolve("testing-script.sh"),
+                GradleJdksPatchHelper.getContentWithPatch(initialTestLines, gradlewPatchLines, placeholderIndex));
 
         return gradleDirectory;
     }
@@ -159,7 +173,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 workingDir.toAbsolutePath().toString()));
         assertThat(runCommandWithZeroExitCode(
                         List.of("docker", "run", "--rm", dockerImage, shell, "/testing-script.sh")))
-                .contains("openjdk version \"21.0.4\"")
+                .contains("openjdk version \"11.0.21\"")
                 .contains("JAVA_HOME is set to /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1");
     }
 
