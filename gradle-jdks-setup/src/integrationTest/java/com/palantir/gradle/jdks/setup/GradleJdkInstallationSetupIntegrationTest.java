@@ -174,7 +174,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 "--build-arg",
                 String.format("SCRIPT_SHELL=%s", shell),
                 "--build-arg",
-                String.format("INSTALL_CURL=%s", addEmptyGradleJdkDir),
+                String.format("EMPTY_GRADLE_JDK_DIR=%s", addEmptyGradleJdkDir),
                 "-t",
                 dockerImage,
                 "-f",

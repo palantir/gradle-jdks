@@ -10,7 +10,7 @@ RUN if [ "$INSTALL_CURL" = "true" ] ; then \
         apt-get install -y curl; \
     fi
 RUN if [ "$EMPTY_GRADLE_JDK_DIR" = "true" ] ; then \
-    mkdir -p "/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1" \
+    mkdir -p "/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1"; \
     fi
 COPY . /
 RUN $SCRIPT_SHELL /gradle/gradle-jdks-setup.sh

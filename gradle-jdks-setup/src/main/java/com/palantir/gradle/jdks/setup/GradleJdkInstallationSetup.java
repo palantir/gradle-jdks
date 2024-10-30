@@ -121,7 +121,8 @@ public final class GradleJdkInstallationSetup {
                 lockFile, StandardOpenOption.READ, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             channel.lock();
             // double-check, now that we hold the lock
-            if (Files.exists(destinationJdkInstallationDirectory)) {
+            if (Files.exists(destinationJdkInstallationDirectory)
+                    && Files.exists(destinationJdkInstallationDirectory.resolve("bin/java"))) {
                 logger.log(String.format("Distribution URL %s already exists", destinationJdkInstallationDirectory));
                 return false;
             }
