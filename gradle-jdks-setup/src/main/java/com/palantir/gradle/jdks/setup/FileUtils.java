@@ -71,7 +71,7 @@ public final class FileUtils {
 
             @Override
             public FileVisitResult visitFileFailed(Path _file, IOException exc) throws IOException {
-                throw new RuntimeException("Failed to copy file", exc);
+                throw new IOException("Failed to copy file", exc);
             }
 
             @Override
