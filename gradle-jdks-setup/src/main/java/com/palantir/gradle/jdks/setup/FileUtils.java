@@ -21,6 +21,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
 import java.util.Optional;
@@ -65,7 +66,7 @@ public final class FileUtils {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes _attrs) throws IOException {
-                Files.copy(file, destination.resolve(source.relativize(file)));
+                Files.copy(file, destination.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
                 return FileVisitResult.CONTINUE;
             }
 

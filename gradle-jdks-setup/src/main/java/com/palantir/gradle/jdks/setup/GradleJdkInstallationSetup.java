@@ -122,17 +122,38 @@ public final class GradleJdkInstallationSetup {
             channel.lock();
             // double-check, now that we hold the lock
             if (Files.exists(destinationJdkInstallationDirectory)
-                    && Files.exists(destinationJdkInstallationDirectory.resolve("bin/java"))) {
+                    && isJdkInstallationValid(destinationJdkInstallationDirectory)) {
                 logger.log(String.format("Distribution URL %s already exists", destinationJdkInstallationDirectory));
                 return false;
             }
             logger.log(
                     String.format("Copying JDK from %s into %s", currentJavaHome, destinationJdkInstallationDirectory));
             FileUtils.copyDirectory(currentJavaHome, destinationJdkInstallationDirectory);
+            createSentinelFile(destinationJdkInstallationDirectory);
             return true;
         } catch (IOException e) {
-            throw new RuntimeException("Unable to acquire locks, won't move the JDK installation directory", e);
+            throw new RuntimeException(
+                    String.format(
+                            "Failed to copy the JDK installation to path= %s", destinationJdkInstallationDirectory),
+                    e);
         }
+    }
+
+    // A JDK installation is considered valid if we either have a 'sentinel' file or 'bin/java' exists
+    private static boolean isJdkInstallationValid(Path destinationJdkInstallationDirectory) {
+        return Files.exists(getSantinelPath(destinationJdkInstallationDirectory))
+                || Files.exists(destinationJdkInstallationDirectory.resolve("bin/java"));
+    }
+
+    private static void createSentinelFile(Path destinationJdkInstallationDirectory) throws IOException {
+        Path sentinelPath = getSantinelPath(destinationJdkInstallationDirectory);
+        if (!Files.exists(sentinelPath)) {
+            Files.createFile(sentinelPath);
+        }
+    }
+
+    private static Path getSantinelPath(Path destinationJdkInstallationDirectory) {
+        return destinationJdkInstallationDirectory.resolve(".sentinel");
     }
 
     private GradleJdkInstallationSetup() {}
