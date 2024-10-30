@@ -19,7 +19,6 @@ package com.palantir.gradle.jdks.setup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution;
 import com.palantir.gradle.jdks.JdkPath;
@@ -44,7 +43,6 @@ public class GradleJdkInstallationSetupIntegrationTest {
 
     private static final String JDK_VERSION = "11.0.21.9.1";
     private static final Arch ARCH = CurrentArch.get();
-    private static final Optional<Path> NO_MOUNT = Optional.empty();
     private static final String CORRETTO_DISTRIBUTION_URL_ENV = "CORRETTO_DISTRIBUTION_URL";
     private static final AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
     private static final boolean DO_NOT_INSTALL_CURL = false;
@@ -56,26 +54,25 @@ public class GradleJdkInstallationSetupIntegrationTest {
     @Test
     public void can_setup_jdks_centos() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_GLIBC);
-        dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL, NO_MOUNT);
+        dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL, false);
     }
 
     @Test
     public void can_setup_jdks_ubuntu() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_GLIBC);
-        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, NO_MOUNT);
+        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, false);
     }
 
     @Test
     public void can_reinstall_jdks_ubuntu() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_GLIBC);
-        Path dir = Files.createDirectories(workingDir.resolve("amazon-corretto-11.0.21.9.1"));
-        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, Optional.of(dir));
+        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, true);
     }
 
     @Test
     public void can_setup_jdks_alpine() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_MUSL);
-        dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL, NO_MOUNT);
+        dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL, false);
     }
 
     private Path setupGradleDirectoryStructure(Os os) throws IOException {
@@ -163,7 +160,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
     }
 
     private void dockerBuildAndRunTestingScript(
-            String baseImage, String shell, boolean installCurl, Optional<Path> mountGradleJdkDir)
+            String baseImage, String shell, boolean installCurl, boolean addEmptyGradleJdkDir)
             throws IOException, InterruptedException {
         Path dockerFile = Path.of("src/integrationTest/resources/template.Dockerfile");
         String dockerImage = String.format("jdk-test-%s", baseImage);
@@ -176,17 +173,16 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 String.format("INSTALL_CURL=%s", installCurl),
                 "--build-arg",
                 String.format("SCRIPT_SHELL=%s", shell),
+                "--build-arg",
+                String.format("INSTALL_CURL=%s", addEmptyGradleJdkDir),
                 "-t",
                 dockerImage,
                 "-f",
                 dockerFile.toAbsolutePath().toString(),
                 workingDir.toAbsolutePath().toString()));
 
-        ImmutableList.Builder runCommand = ImmutableList.builder().add("docker", "run");
-        mountGradleJdkDir.ifPresent(dir -> runCommand.add(
-                "-v", String.format("%s:/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1", dir.toAbsolutePath())));
-        runCommand.add("--rm", dockerImage, shell, "/testing-script.sh");
-        assertThat(runCommandWithZeroExitCode(runCommand.build()))
+        assertThat(runCommandWithZeroExitCode(
+                        List.of("docker", "run", "--rm", dockerImage, shell, "/testing-script.sh")))
                 .contains("openjdk version \"11.0.21\"")
                 .contains("JAVA_HOME is set to: /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1");
     }
