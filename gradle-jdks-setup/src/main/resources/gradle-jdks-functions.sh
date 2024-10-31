@@ -122,10 +122,10 @@ install_and_setup_jdks() {
     distribution_url=$(read_value "$major_version_dir"/"$OS"/"$ARCH"/download-url)
     # Check if distribution exists in $GRADLE_JDKS_HOME
     jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
-    if [ ! -f "$jdk_installation_directory/bin/java" ]; then
-      echo "Java executable not found in $jdk_installation_directory/bin/java, re-installing the JDK...."
-    elif [ ! -d "$jdk_installation_directory" ]; then
+    if [ ! -d "$jdk_installation_directory" ]; then
       echo "JDK installation '$jdk_installation_directory' does not exist, installing '$distribution_url' in progress ..."
+    elif [ ! -f "$jdk_installation_directory/bin/java" ]; then
+      echo "Java executable not found in $jdk_installation_directory/bin/java, re-installing the JDK...."
     else
       echo "JDK installation $jdk_installation_directory was already configured"
       continue
