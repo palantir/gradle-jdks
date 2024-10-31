@@ -20,8 +20,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
@@ -122,14 +124,24 @@ public final class GradleJdkInstallationSetup {
             channel.lock();
             // double-check, now that we hold the lock
             if (Files.exists(destinationJdkInstallationDirectory)
-                    && isJdkInstallationValid(destinationJdkInstallationDirectory)) {
+                    && Files.exists(destinationJdkInstallationDirectory.resolve("bin/java"))) {
                 logger.log(String.format("Distribution URL %s already exists", destinationJdkInstallationDirectory));
                 return false;
             }
             logger.log(
                     String.format("Copying JDK from %s into %s", currentJavaHome, destinationJdkInstallationDirectory));
-            FileUtils.copyDirectory(currentJavaHome, destinationJdkInstallationDirectory);
-            createSentinelFile(destinationJdkInstallationDirectory);
+            Path tempDirWithPrefix = Files.createTempDirectory("gradle-jdks");
+            FileUtils.copyDirectory(currentJavaHome, tempDirWithPrefix);
+            try {
+                Files.move(
+                        tempDirWithPrefix,
+                        destinationJdkInstallationDirectory,
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                logger.log("Cannot move the directory to the final directory, attempting to do a non-atomic operation");
+                Files.move(tempDirWithPrefix, destinationJdkInstallationDirectory, StandardCopyOption.REPLACE_EXISTING);
+            }
             return true;
         } catch (IOException e) {
             throw new RuntimeException(
@@ -137,23 +149,6 @@ public final class GradleJdkInstallationSetup {
                             "Failed to copy the JDK installation to path= %s", destinationJdkInstallationDirectory),
                     e);
         }
-    }
-
-    // A JDK installation is considered valid if we either have a 'sentinel' file or 'bin/java' exists
-    private static boolean isJdkInstallationValid(Path destinationJdkInstallationDirectory) {
-        return Files.exists(getSantinelPath(destinationJdkInstallationDirectory))
-                || Files.exists(destinationJdkInstallationDirectory.resolve("bin/java"));
-    }
-
-    private static void createSentinelFile(Path destinationJdkInstallationDirectory) throws IOException {
-        Path sentinelPath = getSantinelPath(destinationJdkInstallationDirectory);
-        if (!Files.exists(sentinelPath)) {
-            Files.createFile(sentinelPath);
-        }
-    }
-
-    private static Path getSantinelPath(Path destinationJdkInstallationDirectory) {
-        return destinationJdkInstallationDirectory.resolve(".sentinel");
     }
 
     private GradleJdkInstallationSetup() {}
