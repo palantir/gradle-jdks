@@ -142,12 +142,20 @@ public final class GradleJdkInstallationSetup {
                 logger.log("Cannot move the directory to the final directory, attempting to do a non-atomic operation");
                 Files.move(tempDirWithPrefix, destinationJdkInstallationDirectory, StandardCopyOption.REPLACE_EXISTING);
             }
+            createSentinelFile(destinationJdkInstallationDirectory);
             return true;
         } catch (IOException e) {
             throw new RuntimeException(
                     String.format(
                             "Failed to copy the JDK installation to path= %s", destinationJdkInstallationDirectory),
                     e);
+        }
+    }
+
+    private static void createSentinelFile(Path destinationJdkInstallationDirectory) throws IOException {
+        Path sentinelPath = destinationJdkInstallationDirectory.resolve(".sentinel");
+        if (!Files.exists(sentinelPath)) {
+            Files.createFile(sentinelPath);
         }
     }
 
