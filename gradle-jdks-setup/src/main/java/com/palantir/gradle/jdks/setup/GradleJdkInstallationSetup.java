@@ -20,7 +20,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -130,32 +129,30 @@ public final class GradleJdkInstallationSetup {
             }
             logger.log(
                     String.format("Copying JDK from %s into %s", currentJavaHome, destinationJdkInstallationDirectory));
-            Path tempDirWithPrefix = Files.createTempDirectory("gradle-jdks");
-            FileUtils.copyDirectory(currentJavaHome, tempDirWithPrefix);
+
+            // same filesystem for the temporary diretory as the destinationDirectory to ensure an atomic move
+            Path tempCopyDir = jdksInstallationDirectory.resolve(
+                    String.format("tmp-%s", destinationJdkInstallationDirectory.getFileName()));
+            // Ensuring that the JDK installation directory won't be partially copied.
+            // 1. Copying the currentJavaHome to a temporary directory inside the jdksInstallationDirectory
+            // 2. Atomic move of the temporary directory to the destination directory
             try {
+                Files.createDirectories(tempCopyDir);
+                FileUtils.copyDirectory(currentJavaHome, tempCopyDir);
                 Files.move(
-                        tempDirWithPrefix,
+                        tempCopyDir,
                         destinationJdkInstallationDirectory,
                         StandardCopyOption.REPLACE_EXISTING,
                         StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException e) {
-                logger.log("Cannot move the directory to the final directory, attempting to do a non-atomic operation");
-                Files.move(tempDirWithPrefix, destinationJdkInstallationDirectory, StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                FileUtils.delete(tempCopyDir);
             }
-            createSentinelFile(destinationJdkInstallationDirectory);
             return true;
         } catch (IOException e) {
             throw new RuntimeException(
                     String.format(
                             "Failed to copy the JDK installation to path= %s", destinationJdkInstallationDirectory),
                     e);
-        }
-    }
-
-    private static void createSentinelFile(Path destinationJdkInstallationDirectory) throws IOException {
-        Path sentinelPath = destinationJdkInstallationDirectory.resolve(".sentinel");
-        if (!Files.exists(sentinelPath)) {
-            Files.createFile(sentinelPath);
         }
     }
 

@@ -159,8 +159,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Files.writeString(path, content + "\n");
     }
 
-    private void dockerBuildAndRunTestingScript(
-            String baseImage, String shell, boolean installCurl, boolean addEmptyGradleJdkDir)
+    private void dockerBuildAndRunTestingScript(String baseImage, String shell, boolean installCurl, boolean addJdkDir)
             throws IOException, InterruptedException {
         Path dockerFile = Path.of("src/integrationTest/resources/template.Dockerfile");
         String dockerImage = String.format("jdk-test-%s", baseImage);
@@ -174,7 +173,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 "--build-arg",
                 String.format("SCRIPT_SHELL=%s", shell),
                 "--build-arg",
-                String.format("EMPTY_GRADLE_JDK_DIR=%s", addEmptyGradleJdkDir),
+                String.format("ADD_JDK_DIR=%s", addJdkDir),
                 "-t",
                 dockerImage,
                 "-f",
