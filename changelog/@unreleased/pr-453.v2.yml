@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Rename check & setupJdks to disambiguate task shortcuts
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/453

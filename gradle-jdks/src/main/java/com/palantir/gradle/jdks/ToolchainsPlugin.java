@@ -116,7 +116,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             task.finalizedBy(wrapperPatcherTask);
         });
 
-        TaskProvider<Task> checkJdksLifecycle = rootProject.getTasks().register("checkJdks", Task.class, task -> {
+        TaskProvider<Task> checkJdksLifecycle = rootProject.getTasks().register("checkGradleJdks", Task.class, task -> {
             task.setDescription("Lifecycle task that checks the Gradle JDK configurations.");
             task.setGroup(GRADLE_JDK_GROUP);
             task.dependsOn(checkGradleJdkConfigs, checkWrapperPatcherTask);
