@@ -20,8 +20,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
@@ -121,16 +123,39 @@ public final class GradleJdkInstallationSetup {
                 lockFile, StandardOpenOption.READ, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             channel.lock();
             // double-check, now that we hold the lock
-            if (Files.exists(destinationJdkInstallationDirectory)) {
+            if (Files.exists(destinationJdkInstallationDirectory)
+                    && Files.exists(destinationJdkInstallationDirectory.resolve("bin/java"))) {
                 logger.log(String.format("Distribution URL %s already exists", destinationJdkInstallationDirectory));
                 return false;
             }
             logger.log(
                     String.format("Copying JDK from %s into %s", currentJavaHome, destinationJdkInstallationDirectory));
-            FileUtils.copyDirectory(currentJavaHome, destinationJdkInstallationDirectory);
+
+            // same filesystem for the temporary diretory as the destinationDirectory to ensure an atomic move
+            Path tempCopyDir = jdksInstallationDirectory.resolve(
+                    String.format("tmp-%s", destinationJdkInstallationDirectory.getFileName()));
+            // Ensuring that the JDK installation directory won't be partially copied.
+            // 1. Copying the currentJavaHome to a temporary directory inside the jdksInstallationDirectory
+            // 2. Atomic move of the temporary directory to the destination directory
+            try {
+                Files.createDirectories(tempCopyDir);
+                FileUtils.copyDirectory(currentJavaHome, tempCopyDir);
+                Files.move(
+                        tempCopyDir,
+                        destinationJdkInstallationDirectory,
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(tempCopyDir, destinationJdkInstallationDirectory, StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                FileUtils.delete(tempCopyDir);
+            }
             return true;
         } catch (IOException e) {
-            throw new RuntimeException("Unable to acquire locks, won't move the JDK installation directory", e);
+            throw new RuntimeException(
+                    String.format(
+                            "Failed to copy the JDK installation to path= %s", destinationJdkInstallationDirectory),
+                    e);
         }
     }
 
