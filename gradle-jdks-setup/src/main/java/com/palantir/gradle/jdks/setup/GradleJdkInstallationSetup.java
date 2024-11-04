@@ -20,6 +20,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -144,6 +145,8 @@ public final class GradleJdkInstallationSetup {
                         destinationJdkInstallationDirectory,
                         StandardCopyOption.REPLACE_EXISTING,
                         StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(tempCopyDir, destinationJdkInstallationDirectory, StandardCopyOption.REPLACE_EXISTING);
             } finally {
                 FileUtils.delete(tempCopyDir);
             }
