@@ -107,7 +107,8 @@ public final class CaResources {
                             throw new RuntimeException("Failed to load keystore", e);
                         }
                     })
-                    .flatMap(Optional::stream)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
                     .filter(certificate -> X509Certificate.class.isAssignableFrom(certificate.getClass()))
                     .map(X509Certificate.class::cast)
                     .collect(Collectors.toSet());
