@@ -63,7 +63,7 @@ public final class GradleJdkInstallationSetup {
     }
 
     public static void main(String[] args) {
-        StdLogger logger = new StdLogger();
+        StdErrLogger logger = new StdErrLogger();
         CaResources caResources = new CaResources(logger);
         if (args.length < 1) {
             throw new IllegalArgumentException("Expected at least an argument: jdkSetup or daemonSetup");
@@ -100,7 +100,7 @@ public final class GradleJdkInstallationSetup {
         }
     }
 
-    private static void setupJdk(StdLogger logger, CaResources caResources, String[] args) {
+    private static void setupJdk(StdErrLogger logger, CaResources caResources, String[] args) {
         if (args.length != 2) {
             throw new IllegalArgumentException("Expected 2 arguments: jdkSetup <destinationJdkInstallationDir>");
         }

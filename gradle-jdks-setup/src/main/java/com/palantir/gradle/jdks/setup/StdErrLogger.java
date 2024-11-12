@@ -17,14 +17,14 @@
 package com.palantir.gradle.jdks.setup;
 
 /**
- * A simple logger that logs to stdout and stderr.
+ * A simple logger that logs to stderr only. Useful for writing diagnostic information.
  */
 @SuppressWarnings({"BanSystemOut", "BanSystemErr"})
-public final class StdLogger implements ILogger {
+public final class StdErrLogger implements ILogger {
 
     @Override
     public void log(String message) {
-        System.out.println(message);
+        logError(message);
     }
 
     @Override

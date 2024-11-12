@@ -13,4 +13,5 @@ RUN if [ "$ADD_JDK_DIR" = "true" ] ; then \
     mkdir -p "/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1"; \
     fi
 COPY . /
-RUN $SCRIPT_SHELL /gradle/gradle-jdks-setup.sh
+RUN mkdir -p /logsOutput &&\
+    $SCRIPT_SHELL /gradle/gradle-jdks-setup.sh > "/logsOutput/stdout"
