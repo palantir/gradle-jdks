@@ -16,9 +16,7 @@
 
 package com.palantir.gradle.jdks
 
-import com.palantir.gradle.jdks.setup.AliasContentCert
-import com.palantir.gradle.jdks.setup.CaResources
-import com.palantir.gradle.jdks.setup.StdLogger
+
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.gradle.jdks.setup.common.CurrentOs
 import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper

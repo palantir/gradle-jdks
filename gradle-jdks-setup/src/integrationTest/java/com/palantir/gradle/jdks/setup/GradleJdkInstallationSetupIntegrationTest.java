@@ -183,7 +183,8 @@ public class GradleJdkInstallationSetupIntegrationTest {
         assertThat(runCommandWithZeroExitCode(
                         List.of("docker", "run", "--rm", dockerImage, shell, "/testing-script.sh")))
                 .contains("openjdk version \"11.0.21\"")
-                .contains("JAVA_HOME is set to: /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1");
+                .contains("JAVA_HOME is set to: /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1")
+                .doesNotContain("Unexpected output:");
     }
 
     private static String runCommandWithZeroExitCode(List<String> commandArguments)
