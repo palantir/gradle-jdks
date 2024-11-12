@@ -163,7 +163,7 @@ install_and_setup_jdks() {
     else
       die "ERROR: Neither curl nor wget are installed, Could not set up JAVA_HOME"
     fi
-    cd - || exit
+    cd - > /dev/null || die "failed to change dir to old pwd: $OLDPWD"
 
     # Finding the java_home
     java_home=$(get_java_home "$in_progress_dir")
