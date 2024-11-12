@@ -14,8 +14,8 @@ PLACEHOLDER_INSERT_GRADLEW_PATCH
 
 echo "JAVA_HOME is set to: $JAVA_HOME"
 
-# running again Gradle JDKs setup, won't write anything to stdout
+# running again Gradle JDKs setup, won't write anything to stdout/stderr
 . /gradle/gradle-jdks-setup.sh > /tmp/all-output 2>&1
-if [ -s /tmp/all-outpu ]; then
+if [ -s /tmp/all-output ]; then
   echo "Unexpected output after all JDKs were installed: $(cat /tmp/all-output)"
 fi
