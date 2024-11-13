@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,6 +28,19 @@ class GradleJdkPatchHelperTest {
 
     @TempDir
     Path tmpDir;
+
+    @Test
+    void correctly_adds_patch() throws IOException {
+        Path expectedFileWithPatch = Path.of("src/test/resources/file_with_patch.txt");
+        Path originalFileNoPatch = Path.of("src/test/resources/file_no_patch.txt");
+        Path patch = Path.of("src/test/resources/patch.txt");
+        Path processedFile = tmpDir.resolve("file_with_patch.txt");
+        Files.write(
+                tmpDir.resolve("file_with_patch.txt"),
+                GradleJdksPatchHelper.getContentWithPatch(
+                        Files.readAllLines(originalFileNoPatch), Files.readAllLines(patch), 4));
+        assertEqualFiles(processedFile, expectedFileWithPatch);
+    }
 
     @Test
     void correctly_removes_patch() throws IOException {
@@ -42,8 +54,6 @@ class GradleJdkPatchHelperTest {
     }
 
     private void assertEqualFiles(Path actualPath, Path expectedPath) throws IOException {
-        List<String> actualBytes = Files.readAllLines(actualPath);
-        List<String> expectedBytes = Files.readAllLines(expectedPath);
-        assertThat(actualBytes).containsExactlyElementsOf(expectedBytes);
+        assertThat(Files.readString(actualPath)).isEqualTo(Files.readString(expectedPath));
     }
 }

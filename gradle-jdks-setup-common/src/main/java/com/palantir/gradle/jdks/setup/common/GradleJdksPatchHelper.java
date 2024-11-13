@@ -90,6 +90,8 @@ public final class GradleJdksPatchHelper {
         newLines.addAll(initialLines.subList(0, insertIndex));
         newLines.addAll(patchLines);
         newLines.addAll(initialLines.subList(insertIndex, initialLines.size()));
+        // ensure that the file ends with a new line
+        newLines.add(System.lineSeparator());
         return newLines.stream()
                 .collect(Collectors.joining(System.lineSeparator()))
                 .getBytes(StandardCharsets.UTF_8);
