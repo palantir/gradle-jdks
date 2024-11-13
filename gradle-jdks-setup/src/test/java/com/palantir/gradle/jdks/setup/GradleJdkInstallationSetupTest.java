@@ -69,5 +69,4 @@ public final class GradleJdkInstallationSetupTest {
                 .contains("key1=value1")
                 .doesNotContain("java.home=initial_value");
     }
-
 }
