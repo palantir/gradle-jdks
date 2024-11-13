@@ -148,9 +148,8 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 .orElseThrow(() ->
                         new RuntimeException("unable to find PLACEHOLDER_INSERT_GRADLEW_PATCH in testing-script.sh"));
         initialTestLines.remove(placeholderIndex);
-        Files.write(
-                workingDir.resolve("testing-script.sh"),
-                GradleJdksPatchHelper.getContentWithPatch(initialTestLines, gradlewPatchLines, placeholderIndex));
+        GradleJdksPatchHelper.writeContentWithPatch(
+                workingDir.resolve("testing-script.sh"), initialTestLines, gradlewPatchLines, placeholderIndex);
 
         return gradleDirectory;
     }

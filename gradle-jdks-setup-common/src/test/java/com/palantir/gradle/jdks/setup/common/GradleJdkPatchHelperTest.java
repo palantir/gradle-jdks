@@ -35,22 +35,12 @@ class GradleJdkPatchHelperTest {
         Path originalFileNoPatch = Path.of("src/test/resources/file_no_patch.txt");
         Path patch = Path.of("src/test/resources/patch.txt");
         Path processedFile = tmpDir.resolve("file_with_patch.txt");
-        Files.write(
+        GradleJdksPatchHelper.writeContentWithPatch(
                 tmpDir.resolve("file_with_patch.txt"),
-                GradleJdksPatchHelper.getContentWithPatch(
-                        Files.readAllLines(originalFileNoPatch), Files.readAllLines(patch), 4));
+                Files.readAllLines(originalFileNoPatch),
+                Files.readAllLines(patch),
+                4);
         assertEqualFiles(processedFile, expectedFileWithPatch);
-    }
-
-    @Test
-    void correctly_removes_patch() throws IOException {
-        Path originalFileWithPatch = Path.of("src/test/resources/file_with_patch.txt");
-        Path originalFileNoPatch = Path.of("src/test/resources/file_no_patch.txt");
-        Path processedFile = Files.copy(originalFileWithPatch, tmpDir.resolve("file_with_patch.txt"));
-        GradleJdksPatchHelper.maybeRemovePatch(processedFile);
-        assertEqualFiles(processedFile, originalFileNoPatch);
-        GradleJdksPatchHelper.maybeRemovePatch(processedFile);
-        assertEqualFiles(processedFile, originalFileNoPatch);
     }
 
     private void assertEqualFiles(Path actualPath, Path expectedPath) throws IOException {

@@ -92,17 +92,8 @@ public abstract class GradleWrapperPatcher {
         List<String> linesNoPatch = GradleJdksPatchHelper.getLinesWithoutPatch(initialLines);
         List<String> patchLines = getPatchLines("gradlew-patch.sh");
         int insertIndex = getGradlewInsertLineIndex(initialLines);
-        write(
-                patchedGradlewScript.getAsFile().get().toPath(),
-                GradleJdksPatchHelper.getContentWithPatch(linesNoPatch, patchLines, insertIndex));
-    }
-
-    private static void write(Path destPath, byte[] content) {
-        try {
-            Files.write(destPath, content);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to write file", e);
-        }
+        GradleJdksPatchHelper.writeContentWithPatch(
+                patchedGradlewScript.getAsFile().get().toPath(), linesNoPatch, patchLines, insertIndex);
     }
 
     private static List<String> getPatchedLines(File gradlewFile) {

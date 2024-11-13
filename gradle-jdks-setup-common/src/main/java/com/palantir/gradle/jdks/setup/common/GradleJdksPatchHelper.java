@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -69,32 +68,23 @@ public final class GradleJdksPatchHelper {
         return linesNoPatch;
     }
 
-    public static void maybeRemovePatch(Path filePath) {
+    public static void writeContentWithPatch(
+            Path outputPath, List<String> initialLines, List<String> patchLines, int insertIndex) {
         try {
-            List<String> initialLines = Files.readAllLines(filePath);
-            List<String> linesWithoutPatch = getLinesWithoutPatch(initialLines);
-            if (!linesWithoutPatch.equals(initialLines)) {
-                Files.write(
-                        filePath,
-                        String.join("\n", linesWithoutPatch).getBytes(StandardCharsets.UTF_8),
-                        StandardOpenOption.TRUNCATE_EXISTING,
-                        StandardOpenOption.WRITE);
-            }
+            Files.write(
+                    outputPath,
+                    getContentWithPatch(initialLines, patchLines, insertIndex).getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Unable to read file %s", filePath), e);
+            throw new RuntimeException("Unable to write file", e);
         }
     }
 
-    public static byte[] getContentWithPatch(List<String> initialLines, List<String> patchLines, int insertIndex) {
+    private static String getContentWithPatch(List<String> initialLines, List<String> patchLines, int insertIndex) {
         List<String> newLines = new ArrayList<>(initialLines.size() + patchLines.size());
         newLines.addAll(initialLines.subList(0, insertIndex));
         newLines.addAll(patchLines);
         newLines.addAll(initialLines.subList(insertIndex, initialLines.size()));
-        // ensure that the file ends with a new line
-        newLines.add(System.lineSeparator());
-        return newLines.stream()
-                .collect(Collectors.joining(System.lineSeparator()))
-                .getBytes(StandardCharsets.UTF_8);
+        return newLines.stream().collect(Collectors.joining(System.lineSeparator())) + "\n";
     }
 
     public static Optional<PatchLineNumbers> getPatchLineNumbers(List<String> content) {
