@@ -17,15 +17,14 @@
 package com.palantir.gradle.jdks.setup.common;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class GradleJdksPatchHelper {
 
@@ -69,30 +68,32 @@ public final class GradleJdksPatchHelper {
         return linesNoPatch;
     }
 
-    public static void maybeRemovePatch(Path filePath) {
+    // reads all lines including the last empty line (if it exists)
+    public static List<String> readAllLines(Path filePath) {
         try {
-            List<String> initialLines = Files.readAllLines(filePath);
-            List<String> linesWithoutPatch = getLinesWithoutPatch(initialLines);
-            if (!linesWithoutPatch.equals(initialLines)) {
-                Files.write(
-                        filePath,
-                        String.join("\n", linesWithoutPatch).getBytes(StandardCharsets.UTF_8),
-                        StandardOpenOption.TRUNCATE_EXISTING,
-                        StandardOpenOption.WRITE);
-            }
+            Stream<String> maybeExtraLine = Files.readString(filePath).endsWith("\n") ? Stream.of("") : Stream.empty();
+            return Stream.concat(Files.readAllLines(filePath).stream(), maybeExtraLine)
+                    .collect(Collectors.toList());
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Unable to read file %s", filePath), e);
+            throw new RuntimeException("Unable to read the gradlew patch file", e);
         }
     }
 
-    public static byte[] getContentWithPatch(List<String> initialLines, List<String> patchLines, int insertIndex) {
+    public static void writeContentWithPatch(
+            Path outputPath, List<String> initialLines, List<String> patchLines, int insertIndex) {
+        try {
+            Files.writeString(outputPath, getContentWithPatch(initialLines, patchLines, insertIndex));
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write file", e);
+        }
+    }
+
+    private static String getContentWithPatch(List<String> initialLines, List<String> patchLines, int insertIndex) {
         List<String> newLines = new ArrayList<>(initialLines.size() + patchLines.size());
         newLines.addAll(initialLines.subList(0, insertIndex));
         newLines.addAll(patchLines);
         newLines.addAll(initialLines.subList(insertIndex, initialLines.size()));
-        return newLines.stream()
-                .collect(Collectors.joining(System.lineSeparator()))
-                .getBytes(StandardCharsets.UTF_8);
+        return newLines.stream().collect(Collectors.joining(System.lineSeparator()));
     }
 
     public static Optional<PatchLineNumbers> getPatchLineNumbers(List<String> content) {

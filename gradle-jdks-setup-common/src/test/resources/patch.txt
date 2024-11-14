@@ -1,0 +1,6 @@
+# >>> Gradle JDK setup >>>
+# one comment
+entry
+entry
+entry
+# <<< Gradle JDK setup <<<
