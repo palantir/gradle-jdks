@@ -1,5 +1,0 @@
-type: fix
-fix:
-  description: Basic check for insecure curl/wget requests
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/464
