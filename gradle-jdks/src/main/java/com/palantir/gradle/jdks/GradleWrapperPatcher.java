@@ -24,8 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -88,7 +86,7 @@ public abstract class GradleWrapperPatcher {
     }
 
     private static void patchGradlewContent(File originalGradlewScript, RegularFileProperty patchedGradlewScript) {
-        List<String> initialLines = readAllLines(originalGradlewScript.toPath());
+        List<String> initialLines = GradleJdksPatchHelper.readAllLines(originalGradlewScript.toPath());
         List<String> linesNoPatch = GradleJdksPatchHelper.getLinesWithoutPatch(initialLines);
         List<String> patchLines = getPatchLines("gradlew-patch.sh");
         int insertIndex = getGradlewInsertLineIndex(initialLines);
@@ -97,7 +95,7 @@ public abstract class GradleWrapperPatcher {
     }
 
     private static List<String> getPatchedLines(File gradlewFile) {
-        List<String> initialLines = readAllLines(gradlewFile.toPath());
+        List<String> initialLines = GradleJdksPatchHelper.readAllLines(gradlewFile.toPath());
         return GradleJdksPatchHelper.getPatchLineNumbers(initialLines)
                 .map(integerIntegerPair ->
                         initialLines.subList(integerIntegerPair.getStartIndex(), integerIntegerPair.getEndIndex() + 1))
@@ -125,14 +123,6 @@ public abstract class GradleWrapperPatcher {
             return shebangLine + 1;
         }
         throw new RuntimeException("Unable to find where to patch the gradlew file, aborting...");
-    }
-
-    private static List<String> readAllLines(Path filePath) {
-        try {
-            return Files.readAllLines(filePath);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to read the gradlew patch file", e);
-        }
     }
 
     private static List<String> getPatchLines(String resource) {

@@ -37,8 +37,8 @@ class GradleJdkPatchHelperTest {
         Path processedFile = tmpDir.resolve("file_with_patch.txt");
         GradleJdksPatchHelper.writeContentWithPatch(
                 tmpDir.resolve("file_with_patch.txt"),
-                Files.readAllLines(originalFileNoPatch),
-                Files.readAllLines(patch),
+                GradleJdksPatchHelper.readAllLines(originalFileNoPatch),
+                GradleJdksPatchHelper.readAllLines(patch),
                 4);
         assertEqualFiles(processedFile, expectedFileWithPatch);
     }

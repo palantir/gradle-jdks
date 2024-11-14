@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks.setup.common;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class GradleJdksPatchHelper {
 
@@ -68,12 +68,21 @@ public final class GradleJdksPatchHelper {
         return linesNoPatch;
     }
 
+    // reads all lines including the last empty line (if it exists)
+    public static List<String> readAllLines(Path filePath) {
+        try {
+            Stream<String> maybeExtraLine = Files.readString(filePath).endsWith("\n") ? Stream.of("") : Stream.empty();
+            return Stream.concat(Files.readAllLines(filePath).stream(), maybeExtraLine)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to read the gradlew patch file", e);
+        }
+    }
+
     public static void writeContentWithPatch(
             Path outputPath, List<String> initialLines, List<String> patchLines, int insertIndex) {
         try {
-            Files.write(
-                    outputPath,
-                    getContentWithPatch(initialLines, patchLines, insertIndex).getBytes(StandardCharsets.UTF_8));
+            Files.writeString(outputPath, getContentWithPatch(initialLines, patchLines, insertIndex));
         } catch (IOException e) {
             throw new RuntimeException("Unable to write file", e);
         }
@@ -84,7 +93,7 @@ public final class GradleJdksPatchHelper {
         newLines.addAll(initialLines.subList(0, insertIndex));
         newLines.addAll(patchLines);
         newLines.addAll(initialLines.subList(insertIndex, initialLines.size()));
-        return newLines.stream().collect(Collectors.joining(System.lineSeparator())) + "\n";
+        return newLines.stream().collect(Collectors.joining(System.lineSeparator()));
     }
 
     public static Optional<PatchLineNumbers> getPatchLineNumbers(List<String> content) {
