@@ -69,6 +69,7 @@ public final class GradleJdksPatchHelper {
     }
 
     // reads all lines including the last empty line (if it exists)
+    @SuppressWarnings("for-rollout:PreferSafeLoggableExceptions")
     public static List<String> readAllLines(Path filePath) {
         try {
             Stream<String> maybeExtraLine = Files.readString(filePath).endsWith("\n") ? Stream.of("") : Stream.empty();
@@ -79,6 +80,7 @@ public final class GradleJdksPatchHelper {
         }
     }
 
+    @SuppressWarnings("for-rollout:PreferSafeLoggableExceptions")
     public static void writeContentWithPatch(
             Path outputPath, List<String> initialLines, List<String> patchLines, int insertIndex) {
         try {
