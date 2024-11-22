@@ -62,7 +62,7 @@ public abstract class JdksExtension {
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
         this.getDaemonTarget().finalizeValueOnRead();
-        this.getDaemonJdkOnly().finalizeValueOnRead();
+        this.getDaemonJdkOnly().convention(false);
     }
 
     public final Property<JavaLanguageVersion> getDaemonTarget() {
