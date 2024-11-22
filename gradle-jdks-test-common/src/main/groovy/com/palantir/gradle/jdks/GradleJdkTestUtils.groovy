@@ -97,7 +97,7 @@ class GradleJdkTestUtils {
                 .stripIndent(true)
     }
 
-    static setupJdksHardcodedVersions(File settingsFile, File buildFile, String daemonJdkVersion = DAEMON_MAJOR_VERSION_11) {
+    static setupJdksHardcodedVersions(File settingsFile, File buildFile, String daemonJdkVersion = DAEMON_MAJOR_VERSION_11, boolean onlyIncludeDaemonJdk = false) {
 
         applyJdksPlugins(settingsFile, buildFile)
 
@@ -120,6 +120,7 @@ class GradleJdkTestUtils {
                }
                
                daemonTarget = DAEMON_MAJOR_VERSION_11
+               daemonJdkOnly = DAEMON_JDK_ONLY
             }
         """.replace("JDK_11_DISTRO", quoted(JDK_11.getLeft()))
                 .replace("JDK_11_VERSION", quoted(JDK_11.getRight()))
@@ -128,6 +129,7 @@ class GradleJdkTestUtils {
                 .replace("JDK_21_DISTRO", quoted(JDK_21.getLeft()))
                 .replace("JDK_21_VERSION", quoted(JDK_21.getRight()))
                 .replace("DAEMON_MAJOR_VERSION_11", quoted(daemonJdkVersion))
+                .replace("DAEMON_JDK_ONLY", onlyIncludeDaemonJdk.toString())
                 .stripIndent(true)
     }
 

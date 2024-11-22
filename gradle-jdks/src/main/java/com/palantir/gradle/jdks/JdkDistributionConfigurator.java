@@ -38,8 +38,12 @@ public final class JdkDistributionConfigurator {
 
     public static Map<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros(
             Project project, JdkDistributions jdkDistributions, JdksExtension jdksExtension) {
-        Set<JavaLanguageVersion> javaVersions = Arrays.stream(JavaVersion.values())
-                .map(javaVersion -> JavaLanguageVersion.of(javaVersion.getMajorVersion()))
+        Stream<JavaLanguageVersion> requestedJavaVersions =
+                jdksExtension.getDaemonJdkOnly().get()
+                        ? Stream.of(jdksExtension.getDaemonTarget().get())
+                        : Arrays.stream(JavaVersion.values())
+                                .map(javaVersion -> JavaLanguageVersion.of(javaVersion.getMajorVersion()));
+        Set<JavaLanguageVersion> javaVersions = requestedJavaVersions
                 .filter(javaLanguageVersion -> javaLanguageVersion.canCompileOrRun(MINIMUM_SUPPORTED_JAVA_VERSION))
                 .collect(Collectors.toSet());
         return javaVersions.stream()

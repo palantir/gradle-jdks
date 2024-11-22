@@ -21,9 +21,11 @@ import com.palantir.gradle.jdks.setup.common.CurrentOs
 import org.apache.commons.lang3.tuple.Pair
 import spock.lang.TempDir
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import java.util.stream.Collectors
 
 class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
@@ -156,6 +158,9 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         Path daemonJvm = workingDir().resolve("gradle-jdks").resolve(daemonJdkFileName).toAbsolutePath()
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 
+        then: 'generates directories for all jdk versions'
+        Files.list(projectDir.toPath().resolve("gradle/jdks")).map {it -> it.getFileName()}.collect(Collectors.toList()).equals(List.of("11", "17", "21"))
+
         when: 'compiling projects'
         def output = runGradlewTasksSuccessfully("compileJava", "--info")
 
@@ -170,6 +175,26 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         and: 'the project is compiled with the overridden `target` version'
         File subproject21Class = new File(subprojectLib21, "build/classes/java/main/Main.class")
         readBytecodeVersion(subproject21Class) == Pair.of(0, JAVA_21_BYTECODE)
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
+    }
+
+
+    def '#gradleVersionNumber: only generates daemon jdk'() {
+        gradleVersion = gradleVersionNumber
+        setupJdksHardcodedVersions('11', true)
+        applyBaselineJavaVersions()
+        applyApplicationPlugin()
+
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('src/main/java/Main.java') << java17PreviewCode
+
+        when:
+        runTasksSuccessfully('wrapper')
+
+        then: 'only jdk 11 is generated'
+        Files.list(projectDir.toPath().resolve("gradle/jdks")).allMatch { it -> it.endsWith("gradle/jdks/11")}
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS

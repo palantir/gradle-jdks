@@ -36,6 +36,7 @@ public abstract class JdksExtension {
     private final MapProperty<String, String> caCerts;
     private final DirectoryProperty jdkStorageLocation;
     private final Property<JavaLanguageVersion> daemonTarget;
+    private final Property<Boolean> daemonJdkOnly;
 
     @Inject
     protected abstract ObjectFactory getObjectFactory();
@@ -57,9 +58,11 @@ public abstract class JdksExtension {
         this.jdkStorageLocation = SynchronizedInterface.synchronizeAllInterfaceMethods(
                 DirectoryProperty.class, getObjectFactory().directoryProperty());
         this.daemonTarget = getObjectFactory().property(JavaLanguageVersion.class);
+        this.daemonJdkOnly = getObjectFactory().property(Boolean.class);
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
         this.getDaemonTarget().finalizeValueOnRead();
+        this.getDaemonJdkOnly().finalizeValueOnRead();
     }
 
     public final Property<JavaLanguageVersion> getDaemonTarget() {
@@ -72,6 +75,14 @@ public abstract class JdksExtension {
 
     public final void setDaemonTarget(int value) {
         getDaemonTarget().set(JavaLanguageVersion.of(value));
+    }
+
+    public final Property<Boolean> getDaemonJdkOnly() {
+        return daemonJdkOnly;
+    }
+
+    public final void setDaemonJdkOnly(Boolean value) {
+        getDaemonJdkOnly().set(value);
     }
 
     public final MapProperty<String, String> getCaCerts() {
