@@ -159,7 +159,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 
         then: 'generates directories for all jdk versions'
-        Files.list(projectDir.toPath().resolve("gradle/jdks")).map {it -> it.getFileName()}.collect(Collectors.toList()).equals(List.of("11", "17", "21"))
+        Files.list(projectDir.toPath().resolve("gradle/jdks")).map { it -> it.getFileName().toString() }.collect(Collectors.toList()).containsAll(List.of("11", "17", "21"))
 
         when: 'compiling projects'
         def output = runGradlewTasksSuccessfully("compileJava", "--info")
