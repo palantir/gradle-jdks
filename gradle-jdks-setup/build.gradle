@@ -48,5 +48,5 @@ tasks.build.dependsOn tasks.fatJar, tasks.integrationTest
 // consumers would want to set up with the JDK auto-management workflow (used by ./gradle-jdks-setup.sh and GradleWrapperMain.java classes)
 javaVersion {
     target = 11
-    runtime = 11
+    //runtime = 11
 }
