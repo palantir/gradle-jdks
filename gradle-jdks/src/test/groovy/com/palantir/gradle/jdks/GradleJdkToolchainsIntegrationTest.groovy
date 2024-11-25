@@ -159,7 +159,10 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 
         then: 'generates directories for all jdk versions'
-        Files.list(projectDir.toPath().resolve("gradle/jdks")).map { it -> it.getFileName().toString() }.collect(Collectors.toList()).containsAll(List.of("11", "17", "21"))
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toList())
+                .containsAll(List.of("11", "17", "21"))
 
         when: 'compiling projects'
         def output = runGradlewTasksSuccessfully("compileJava", "--info")
@@ -201,7 +204,8 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         runTasksSuccessfully('wrapper')
 
         then: 'only jdk 11 is generated'
-        Files.list(projectDir.toPath().resolve("gradle/jdks")).allMatch { it -> it.endsWith("gradle/jdks/11")}
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .allMatch { it -> it.endsWith("gradle/jdks/11")}
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS
