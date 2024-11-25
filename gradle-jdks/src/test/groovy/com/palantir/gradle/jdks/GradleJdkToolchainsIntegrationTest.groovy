@@ -250,7 +250,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
         buildFile << '''
             javaVersions {
-                distributionTarget = '15'
+                libraryTarget = 15
             }
         '''.stripIndent(true)
         writeHelloWorld(projectDir)
