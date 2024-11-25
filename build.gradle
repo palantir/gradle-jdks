@@ -2,13 +2,12 @@ buildscript {
     repositories {
         mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
         gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-        mavenLocal()
     }
 
     dependencies {
         classpath 'com.palantir.gradle.failure-reports:gradle-failure-reports:1.13.0'
         classpath 'com.palantir.jakartapackagealignment:jakarta-package-alignment:0.6.0'
-        classpath 'com.palantir.gradle.jdks:gradle-jdks:0.57.0-14-g2d592ff.dirty'
+        classpath 'com.palantir.gradle.jdks:gradle-jdks:0.57.0'
         classpath 'com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.16.0'
         classpath 'org.unbroken-dome.gradle-plugins:gradle-testsets-plugin:4.1.0'
         classpath 'com.palantir.gradle.externalpublish:gradle-external-publish-plugin:1.19.0'
@@ -43,7 +42,6 @@ allprojects {
     repositories {
         mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
         gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-        mavenLocal()
     }
 
     group 'com.palantir.gradle.jdks'
