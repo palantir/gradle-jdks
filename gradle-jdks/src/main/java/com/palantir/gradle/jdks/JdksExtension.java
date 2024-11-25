@@ -21,7 +21,6 @@ import com.palantir.gradle.utils.lazilyconfiguredmapping.LazilyConfiguredMapping
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -89,7 +88,7 @@ public abstract class JdksExtension {
         return this.jdkMajorVersionsToUse;
     }
 
-    public final void setJdkMajorVersionsToUse(List<JavaLanguageVersion> javaLanguageVersions) {
+    public final void setJdkMajorVersionsToUse(Set<JavaLanguageVersion> javaLanguageVersions) {
         this.jdkMajorVersionsToUse.set(javaLanguageVersions);
     }
 

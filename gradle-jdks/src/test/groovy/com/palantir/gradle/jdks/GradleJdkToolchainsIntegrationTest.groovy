@@ -180,6 +180,41 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
+    def '#gradleVersionNumber: only required java versions are configured'() {
+        gradleVersion = gradleVersionNumber
+        setupJdksHardcodedVersions('17')
+        applyBaselineJavaVersions()
+        applyApplicationPlugin()
+
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('src/main/java/Main.java') << java17PreviewCode
+
+        // language=Groovy
+        buildFile << """
+            javaVersions {
+                libraryTarget = '17'
+            }
+        """.stripIndent(true)
+
+        //language=groovy
+        def subprojectLib21 = addSubproject 'subproject-lib-21', '''
+            apply plugin: 'java-library'
+            javaVersion {
+               target = 21
+            }
+        '''.stripIndent(true)
+        writeJavaSourceFile(getMainJavaCode(), subprojectLib21)
+
+        when:
+        runTasksSuccessfully('wrapper')
+
+        then: 'generates directories for all jdk versions'
+        Files.list(projectDir.toPath().resolve("gradle/jdks")).map { it -> it.getFileName().toString() }.collect(Collectors.toList()).containsAll(List.of("17", "21"))
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
+    }
+
 
     def '#gradleVersionNumber: only generates daemon jdk'() {
         gradleVersion = gradleVersionNumber
