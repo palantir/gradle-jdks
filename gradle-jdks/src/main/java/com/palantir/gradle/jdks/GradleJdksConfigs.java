@@ -27,9 +27,11 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.file.Directory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.options.Option;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 /**
@@ -42,6 +44,15 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     public static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     public static final String GRADLE_JDKS_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
+
+    /**
+     * Option to include a specific java major version when generating/checking the gradle jdk configuration files.
+     */
+    @Input
+    @Option(
+            option = "includeJava",
+            description = "Generates the jdk configuration directories for the Java major version.")
+    public abstract SetProperty<JavaLanguageVersion> getIncludedJavaMajorVersion();
 
     @Nested
     public abstract MapProperty<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros();
