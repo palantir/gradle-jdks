@@ -67,7 +67,7 @@ tasks.register("crogoz") {
         processBuilder.command("docker");
         processBuilder.inheritIO();
         //processBuilder.environment().clear();
-        processBuilder.environment().put("A", "dada");
+        //processBuilder.environment().put("A", "dada");
         processBuilder.start();
     }
 }
