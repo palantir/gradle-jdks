@@ -114,7 +114,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             task.getDaemonJavaVersion().set(jdksExtension.getDaemonTarget());
             task.getJavaVersionToJdkDistros()
                     .putAll(rootProject.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
-                            rootProject, jdkDistributions, jdksExtension)));
+                            rootProject, jdkDistributions, jdksExtension, task.getIncludedJavaMajorVersion())));
             task.getCaCerts().putAll(jdksExtension.getCaCerts());
         });
 

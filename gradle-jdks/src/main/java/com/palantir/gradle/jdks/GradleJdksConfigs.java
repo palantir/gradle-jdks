@@ -52,7 +52,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     @Option(
             option = "includeJava",
             description = "Generates the jdk configuration directories for the Java major version.")
-    public abstract SetProperty<JavaLanguageVersion> getIncludedJavaMajorVersion();
+    public abstract SetProperty<String> getIncludedJavaMajorVersion();
 
     @Nested
     public abstract MapProperty<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros();
