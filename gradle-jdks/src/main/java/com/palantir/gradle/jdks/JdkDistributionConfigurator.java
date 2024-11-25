@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -38,8 +37,7 @@ public final class JdkDistributionConfigurator {
 
     public static Map<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros(
             Project project, JdkDistributions jdkDistributions, JdksExtension jdksExtension) {
-        Set<JavaLanguageVersion> javaVersions = Arrays.stream(JavaVersion.values())
-                .map(javaVersion -> JavaLanguageVersion.of(javaVersion.getMajorVersion()))
+        Set<JavaLanguageVersion> javaVersions = jdksExtension.getJdkMajorVersionsToUse().get().stream()
                 .filter(javaLanguageVersion -> javaLanguageVersion.canCompileOrRun(MINIMUM_SUPPORTED_JAVA_VERSION))
                 .collect(Collectors.toSet());
         return javaVersions.stream()

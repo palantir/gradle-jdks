@@ -20,14 +20,19 @@ import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.utils.lazilyconfiguredmapping.LazilyConfiguredMapping;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import org.gradle.api.Action;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class JdksExtension {
@@ -36,6 +41,7 @@ public abstract class JdksExtension {
     private final MapProperty<String, String> caCerts;
     private final DirectoryProperty jdkStorageLocation;
     private final Property<JavaLanguageVersion> daemonTarget;
+    private final SetProperty<JavaLanguageVersion> jdkMajorVersionsToUse;
 
     @Inject
     protected abstract ObjectFactory getObjectFactory();
@@ -57,6 +63,10 @@ public abstract class JdksExtension {
         this.jdkStorageLocation = SynchronizedInterface.synchronizeAllInterfaceMethods(
                 DirectoryProperty.class, getObjectFactory().directoryProperty());
         this.daemonTarget = getObjectFactory().property(JavaLanguageVersion.class);
+        this.jdkMajorVersionsToUse = getObjectFactory().setProperty(JavaLanguageVersion.class);
+        this.jdkMajorVersionsToUse.convention(Arrays.stream(JavaVersion.values())
+                .map(javaVersion -> JavaLanguageVersion.of(javaVersion.getMajorVersion()))
+                .collect(Collectors.toSet()));
         this.getCaCerts().finalizeValueOnRead();
         this.getJdkStorageLocation().finalizeValueOnRead();
         this.getDaemonTarget().finalizeValueOnRead();
@@ -72,6 +82,18 @@ public abstract class JdksExtension {
 
     public final void setDaemonTarget(int value) {
         getDaemonTarget().set(JavaLanguageVersion.of(value));
+    }
+
+    public final SetProperty<JavaLanguageVersion> getJdkMajorVersionsToUse() {
+        return this.jdkMajorVersionsToUse;
+    }
+
+    public final void setJdkMajorVersionsToUse(Set<JavaLanguageVersion> javaLanguageVersions) {
+        this.jdkMajorVersionsToUse.set(javaLanguageVersions);
+    }
+
+    public final void daemonJdkOnly() {
+        this.jdkMajorVersionsToUse.set(daemonTarget.map(Set::of));
     }
 
     public final MapProperty<String, String> getCaCerts() {
