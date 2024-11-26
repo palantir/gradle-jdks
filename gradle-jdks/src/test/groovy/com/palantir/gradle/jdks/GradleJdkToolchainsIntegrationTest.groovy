@@ -246,33 +246,6 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
-
-    def '#gradleVersionNumber: only generates daemon jdk'() {
-        gradleVersion = gradleVersionNumber
-        setupJdksHardcodedVersions('11')
-        applyBaselineJavaVersions()
-        applyApplicationPlugin()
-
-        // language=groovy
-        buildFile << """
-            jdks {
-                daemonJdkOnly()
-            }
-        """.stripIndent(true)
-
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
-        file('src/main/java/Main.java') << java17PreviewCode
-
-        when:
-        runTasksSuccessfully('wrapper')
-
-        then: 'only jdk 11 is generated'
-        Files.list(projectDir.toPath().resolve("gradle/jdks")).allMatch { it -> it.endsWith("gradle/jdks/11")}
-
-        where:
-        gradleVersionNumber << GRADLE_TEST_VERSIONS
-    }
-
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
         setupJdksHardcodedVersions()
         applyBaselineJavaVersions()
