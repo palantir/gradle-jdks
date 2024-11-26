@@ -89,8 +89,8 @@ jdks {
 ```
 jdks {
     daemonTarget = <version eg. 11/17/21>
-    daemonOnly() # optional, only installs & configures the daemon JDK version
-    jdkVersionsToUse = <set of versions eg. 11/17/21> # optional, the set of java versions to install, by default it will contain all the major versions configured in step 3.
+    daemonJdkOnly() # optional, only installs & configures the daemon JDK version
+    jdkVersionsToUse = [11, 17, 21, 23] # optional, the set of java versions to install, by default it will contain all the major versions configured in step 3.
 }
 ```
 5. Enable the jdk setup by adding the following to `gradle.properties`:

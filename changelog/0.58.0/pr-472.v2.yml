@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Add `daemonJdkOnly ` property for gradle jdk directory generation
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/472
