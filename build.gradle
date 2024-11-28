@@ -33,7 +33,7 @@ apply plugin: 'com.palantir.failure-reports'
 
 javaVersions {
     libraryTarget = 11
-    runtime = 17
+    runtime = 21
 }
 
 version gitVersion()
@@ -61,13 +61,22 @@ jdks {
 }
 
 
-tasks.register("crogoz") {
-    doLast {
+tasks.register("execTask", Exec) {
+    setCommandLine("docker")
+    environment("PATH", System.getenv())
+}
+
+// the logic from https://github.com/gradle/gradle/blob/253ca380343e89d6fba742f7f64fd81d0c513266/subprojects/core/src/main/java/org/gradle/process/internal/ProcessBuilderFactory.java#L36-L38
+tasks.register("processBuilderTask") {
+    doFirst {
+        println(System.getenv())
         ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.command("docker");
+        processBuilder.command("docker"); // located in: /usr/local/bin on mac
         processBuilder.inheritIO();
-        //processBuilder.environment().clear();
-        //processBuilder.environment().put("A", "dada");
+        // commenting the 2 lines below, makes the task successful
+        // basically any change to the environment will lead to "docker" Cause: error=2, No such file or directory
+        processBuilder.environment().clear();
+        processBuilder.environment().put("PATH", "/usr/local/bin");
         processBuilder.start();
     }
 }

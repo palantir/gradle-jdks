@@ -44,6 +44,13 @@ public final class GradleJdkInstallationSetupTest {
         Path destJavaHome = destDistribution.resolve("bin/java");
         assertThat(destDistribution).exists();
         assertThat(destJavaHome).exists();
+
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command("docker");
+        processBuilder.inheritIO();
+        processBuilder.environment().clear();
+        // processBuilder.environment().put("A", "dada");
+        processBuilder.start();
     }
 
     @Test
