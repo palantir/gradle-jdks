@@ -61,6 +61,11 @@ jdks {
 }
 
 
+// Reproducing `docker` Cause: error=2, No such file or directory
+// 1. make sure that Settings > Gradle > Gradle JVM = JDK21
+// 2. run `./gradlew --stop` to stop all existing daemons
+// 3. run through Intellij the tasks below
+
 tasks.register("execTask", Exec) {
     setCommandLine("docker")
     environment("PATH", System.getenv())
