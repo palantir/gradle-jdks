@@ -231,7 +231,8 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         def subprojectLib21 = addSubproject 'subproject-lib-21', '''
             apply plugin: 'java-library'
             javaVersion {
-               target = 21
+               target = 17
+               runtime = 21
             }
         '''.stripIndent(true)
         writeJavaSourceFile(getMainJavaCode(), subprojectLib21)
