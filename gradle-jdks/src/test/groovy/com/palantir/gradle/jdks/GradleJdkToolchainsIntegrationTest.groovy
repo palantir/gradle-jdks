@@ -209,6 +209,72 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS
+
+    }
+
+    def '#gradleVersionNumber: can bump java major version when baseline-java is applied'() {
+        gradleVersion = gradleVersionNumber
+        setupJdksHardcodedVersions('11')
+        applyBaselineJavaVersions()
+        applyApplicationPlugin()
+
+        // language=groovy
+        buildFile << """
+            javaVersions {
+                libraryTarget = '11'
+            }
+        """.stripIndent(true)
+
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('src/main/java/Main.java') << java17PreviewCode
+        runTasksSuccessfully('wrapper')
+
+        when:
+        runTasksSuccessfully('generateGradleJdkConfigs', '--includeAllJdks')
+
+        then: 'generates directories for all jdk versions'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toList())
+                .containsAll(List.of("11", "17", "21"))
+
+        when:
+        runTasksSuccessfully('setupJdks')
+
+        then: 'only jdk 11 is generated'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .allMatch { it -> it.endsWith("gradle/jdks/11")}
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
+    }
+
+    def '#gradleVersionNumber: only jdkVersionsToUse jdks are generated'() {
+        gradleVersion = gradleVersionNumber
+        setupJdksHardcodedVersions('11')
+        applyApplicationPlugin()
+
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('src/main/java/Main.java') << java17PreviewCode
+        runTasksSuccessfully('wrapper')
+
+        when:
+        buildFile << """
+            jdks {
+                jdkMajorVersionsToUse = ["11", "21"]
+            }
+        """.stripIndent(true)
+
+        runTasksSuccessfully('setupJdks')
+
+        then: 'only jdkVersionsToUse files are generated'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toList())
+                .containsAll(List.of("11", "21"))
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
     def '#gradleVersionNumber: only required java versions are configured'() {

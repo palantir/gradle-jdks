@@ -27,7 +27,6 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.file.Directory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
@@ -50,9 +49,9 @@ public abstract class GradleJdksConfigs extends DefaultTask {
      */
     @Input
     @Option(
-            option = "includeJava",
-            description = "Generates the jdk configuration directories for the Java major version.")
-    public abstract SetProperty<String> getIncludedJavaMajorVersion();
+            option = "includeAllJdks",
+            description = "Generates the configuration directories for all configured Java major versions.")
+    public abstract Property<Boolean> getIncludeAllJdks();
 
     @Nested
     public abstract MapProperty<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros();
@@ -75,6 +74,10 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     protected abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
 
     protected abstract void maybePrepareForAction(List<Path> targetPaths);
+
+    public GradleJdksConfigs() {
+        getIncludeAllJdks().convention(false);
+    }
 
     @TaskAction
     public final void action() {

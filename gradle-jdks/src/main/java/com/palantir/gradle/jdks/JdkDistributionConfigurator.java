@@ -25,10 +25,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.api.provider.SetProperty;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public final class JdkDistributionConfigurator {
@@ -37,13 +37,11 @@ public final class JdkDistributionConfigurator {
     private static final JavaLanguageVersion MINIMUM_SUPPORTED_JAVA_VERSION = JavaLanguageVersion.of(11);
 
     public static Map<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros(
-            Project project,
-            JdkDistributions jdkDistributions,
-            JdksExtension jdksExtension,
-            SetProperty<String> extraLanguageVersions) {
-        Set<JavaLanguageVersion> javaVersions = Stream.concat(
-                        jdksExtension.getJdkMajorVersionsToUse().get().stream(),
-                        extraLanguageVersions.get().stream().map(JavaLanguageVersion::of))
+            Project project, JdkDistributions jdkDistributions, JdksExtension jdksExtension, Boolean includeAllJdks) {
+        Set<JavaLanguageVersion> javaVersions = (includeAllJdks
+                        ? Arrays.stream(JavaVersion.values())
+                                .map(javaVersion -> JavaLanguageVersion.of(javaVersion.getMajorVersion()))
+                        : jdksExtension.jdkMajorVersionsToUse().get().stream())
                 .filter(javaLanguageVersion -> javaLanguageVersion.canCompileOrRun(MINIMUM_SUPPORTED_JAVA_VERSION))
                 .collect(Collectors.toSet());
         return javaVersions.stream()

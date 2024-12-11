@@ -90,7 +90,7 @@ jdks {
 jdks {
     daemonTarget = <version eg. 11/17/21>
     daemonJdkOnly() # optional, only installs & configures the daemon JDK version
-    jdkVersionsToUse = [11, 17, 21, 23] # optional, the set of java versions to install, by default it will contain all the major versions configured in step 3.
+    jdkMajorVersionsToUse = [11, 17, 21, 23] # optional, the set of java versions to install, by default it will contain all the major versions configured in step 3.
 }
 ```
 5. Enable the jdk setup by adding the following to `gradle.properties`:
@@ -210,6 +210,24 @@ The plugin registers the following tasks:
 - `generateGradleJdkConfigs` - generates the [`gradle/` configurations](#gradle-jdk-configuration-directory-structure) required for running the JDKs setup
 - `checkGradleJdkConfigs` - checks that all the `gradle/` configurations are up-to-date. E.g. if the `jdks-latest` plugin is updated, we need to make sure the `gradle/jdks` files reflect the jdk versions.
 - `setupJdks` - task that triggers `wrapperJdkPatcher` and `generateGradleJdkConfigs` and runs the patched `./gradlew` script.
+
+
+## Using a new java version
+
+We are only generating the jdk configuration files for the jdk versions that are used see: [jdkMajorVersionsToUse](https://github.com/palantir/gradle-jdks/blob/26d54605b7827b232024ec7e0c34a87983804492/gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdksExtension.java#L44)
+Using a new java version is a 2-step process: 
+1. Firstly, we need to generate the gradle jdk configuration files for the new java version that we are going to use
+2. Secondly, once the new files are generated, the javaVersion can be configured in the gradle build configuration.
+
+### Palantir specific, if using `baseline-java-version` through excavators
+1. Run `./gradlew generateGradleJdkConfigs --includeAllJdks`. The command will generate the Gradle jdk configuration files for all jdks.
+2. Update the javaVersion(s)/jdks extension values with the desired java major version.
+3. Run `./gradlew setupJdks` to only keep the Gradle jdk configuration files for the used Gradle JDKs.
+
+### Gradle Toolchains workflow
+1. Update `jdkMajorVersionsToUse` with the required jdk versions 
+2. Run `./gradlew setupJdks`
+
 
 ## Unsupported
 

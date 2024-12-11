@@ -67,7 +67,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     rootProject.getExtensions().getByType(BaselineJavaVersionsExtension.class);
             baselineJavaVersionsExtension.getSetupJdkToolchains().set(false);
 
-            jdksExtension.getJdkMajorVersionsToUse().set(rootProject.provider(() -> Stream.of(
+            jdksExtension.jdkMajorVersionsToUse().set(rootProject.provider(() -> Stream.of(
                             jdksExtension.getDaemonTarget(),
                             baselineJavaVersionsExtension.libraryTarget(),
                             baselineJavaVersionsExtension.runtime().map(ChosenJavaVersion::javaLanguageVersion),
@@ -83,7 +83,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     BaselineJavaVersionExtension projectVersions =
                             proj.getExtensions().getByType(BaselineJavaVersionExtension.class);
 
-                    jdksExtension.getJdkMajorVersionsToUse().addAll(rootProject.provider(() -> Stream.of(
+                    jdksExtension.jdkMajorVersionsToUse().addAll(rootProject.provider(() -> Stream.of(
                                     projectVersions.target(), projectVersions.runtime())
                             .map(Provider::get)
                             .map(ChosenJavaVersion::javaLanguageVersion)
@@ -114,7 +114,10 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             task.getDaemonJavaVersion().set(jdksExtension.getDaemonTarget());
             task.getJavaVersionToJdkDistros()
                     .putAll(rootProject.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
-                            rootProject, jdkDistributions, jdksExtension, task.getIncludedJavaMajorVersion())));
+                            rootProject,
+                            jdkDistributions,
+                            jdksExtension,
+                            task.getIncludeAllJdks().get())));
             task.getCaCerts().putAll(jdksExtension.getCaCerts());
         });
 
