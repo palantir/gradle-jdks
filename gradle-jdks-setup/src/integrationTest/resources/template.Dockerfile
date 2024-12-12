@@ -10,7 +10,8 @@ RUN if [ "$INSTALL_CURL" = "true" ] ; then \
         apt-get install -y curl; \
     fi
 RUN if [ "$ADD_JDK_DIR" = "true" ] ; then \
-    mkdir -p "/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1"; \
+    mkdir -p "/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1/bin"; \
+    touch "/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1/bin/java" \
     fi
 COPY . /
 RUN mkdir -p /logsOutput &&\
