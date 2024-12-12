@@ -36,9 +36,8 @@ public enum Os {
         return UiNames.uiName(this);
     }
 
-
-    public static Optional<String> glibcOrMuslDistribution(Os os) {
-        switch (os) {
+    public Optional<String> glibcOrMuslDistribution() {
+        switch (this) {
             case LINUX_MUSL:
                 return Optional.of("musl");
             case LINUX_GLIBC:
@@ -47,7 +46,7 @@ public enum Os {
             case WINDOWS:
                 return Optional.empty();
         }
-        throw new IllegalStateException("Unsupported OS: " + os);
+        throw new IllegalStateException("Unsupported OS: " + this);
     }
 
     public static Optional<Os> fromString(String osUiName) {

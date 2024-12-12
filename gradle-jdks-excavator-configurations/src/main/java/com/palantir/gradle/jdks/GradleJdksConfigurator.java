@@ -93,8 +93,14 @@ public final class GradleJdksConfigurator {
         GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "gradle-jdks-setup.jar");
     }
 
+    // TODO(crogoz): Remove glibcOrMusl from the localPath name. This is a workaround for the excavator workflow.
+    // Excavator caches the location of gradle-jdks directory, however it doesn't take into consideration if the job
+    // is running on a musl/glibc image. Without this, we might be using the jdk used for a different c implementation.
     private static String resolveLocalPath(Os os, JdkDistributionName jdkDistributionName, JdkRelease jdkRelease) {
-        return String.format("%s-%s-%s", jdkDistributionName, jdkRelease.version(), Os.glibcOrMuslDistribution(os));
+        return os.glibcOrMuslDistribution()
+                .map(cDistribution ->
+                        String.format("%s-%s-%s", jdkDistributionName, jdkRelease.version(), cDistribution))
+                .orElseGet(() -> String.format("%s-%s", jdkDistributionName, jdkRelease.version()));
     }
 
     private static String resolveDownloadUrl(
