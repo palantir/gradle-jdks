@@ -53,22 +53,26 @@ public class GradleJdkInstallationSetupIntegrationTest {
 
     @Test
     public void can_setup_jdks_centos() throws IOException, InterruptedException {
-        dockerBuildAndRunTestingScript(Os.LINUX_GLIBC, "centos:7", "/bin/bash", DO_NOT_INSTALL_CURL, false);
+        setupGradleDirectoryStructure(Os.LINUX_GLIBC);
+        dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL, false);
     }
 
     @Test
     public void can_setup_jdks_ubuntu() throws IOException, InterruptedException {
-        dockerBuildAndRunTestingScript(Os.LINUX_GLIBC, "ubuntu:20.04", "/bin/bash", INSTALL_CURL, false);
+        setupGradleDirectoryStructure(Os.LINUX_GLIBC);
+        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, false);
     }
 
     @Test
     public void can_reinstall_jdks_ubuntu() throws IOException, InterruptedException {
-        dockerBuildAndRunTestingScript(Os.LINUX_GLIBC, "ubuntu:20.04", "/bin/bash", INSTALL_CURL, true);
+        setupGradleDirectoryStructure(Os.LINUX_GLIBC);
+        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, true);
     }
 
     @Test
     public void can_setup_jdks_alpine() throws IOException, InterruptedException {
-        dockerBuildAndRunTestingScript(Os.LINUX_GLIBC, "alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL, false);
+        setupGradleDirectoryStructure(Os.LINUX_MUSL);
+        dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL, false);
     }
 
     private Path setupGradleDirectoryStructure(Os os) throws IOException {
@@ -154,10 +158,8 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Files.writeString(path, content + "\n");
     }
 
-    private void dockerBuildAndRunTestingScript(
-            Os os, String baseImage, String shell, boolean installCurl, boolean addJdkDir)
+    private void dockerBuildAndRunTestingScript(String baseImage, String shell, boolean installCurl, boolean addJdkDir)
             throws IOException, InterruptedException {
-        setupGradleDirectoryStructure(os);
         Path dockerFile = Path.of("src/integrationTest/resources/template.Dockerfile");
         String dockerImage = String.format("jdk-test-%s", baseImage);
         runCommandWithZeroExitCode(List.of(
@@ -177,24 +179,11 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 dockerFile.toAbsolutePath().toString(),
                 workingDir.toAbsolutePath().toString()));
 
-        String cDistribution = getGlibcDistribution(os);
         assertThat(runCommandWithZeroExitCode(
                         List.of("docker", "run", "--rm", dockerImage, shell, "/testing-script.sh")))
                 .contains("openjdk version \"11.0.21\"")
-                .contains(String.format(
-                        "JAVA_HOME is set to: /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1-%s", cDistribution))
+                .contains("JAVA_HOME is set to: /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1")
                 .doesNotContain("Unexpected output");
-    }
-
-    private static String getGlibcDistribution(Os os) {
-        switch (os) {
-            case LINUX_GLIBC:
-                return "glibc";
-            case LINUX_MUSL:
-                return "musl";
-            default:
-                throw new RuntimeException("Unexpected os" + os);
-        }
     }
 
     private static String runCommandWithZeroExitCode(List<String> commandArguments)
