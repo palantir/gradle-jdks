@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: Gradle JDK installation directory contains glibc/musl name for linux
+    distributions
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/482
