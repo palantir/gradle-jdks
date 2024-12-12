@@ -2,7 +2,7 @@
 
 set -e
 
-/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1/bin/java -version
+echo "Running jdk" `/root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1/bin/java -version`
 # Running again the gradle-jdk-setup to check the JAVA_HOME.
 
 if [ -s /logsOutput/stdout ]; then
