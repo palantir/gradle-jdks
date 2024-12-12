@@ -52,12 +52,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     @Input
     public abstract MapProperty<String, String> getCaCerts();
 
-    /**
-     * Semantic version that should be bumped if we need to force the regeneration of the jdk configuration files.
-     */
-    @Input
-    public abstract Property<Integer> getSemanticVersion();
-
     abstract Directory gradleDirectory();
 
     protected abstract void applyGradleJdkFileAction(
@@ -70,10 +64,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     protected abstract void applyGradleJdkScriptAction(File gradleJdkScriptFile, String resourceName);
 
     protected abstract void maybePrepareForAction(List<Path> targetPaths);
-
-    public GradleJdksConfigs() {
-        getSemanticVersion().convention(1);
-    }
 
     @TaskAction
     public final void action() {
