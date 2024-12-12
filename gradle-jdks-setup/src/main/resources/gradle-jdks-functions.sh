@@ -145,7 +145,7 @@ install_and_setup_jdks() {
           tar -xzf "$distribution_name"
           ;;
         *)
-          curl -k -C - "$distribution_url" | tar -xzf -
+          curl -C - "$distribution_url" | tar -xzf -
           ;;
       esac
     elif command -v wget > /dev/null 2>&1; then
