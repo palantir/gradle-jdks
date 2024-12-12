@@ -99,7 +99,10 @@ public final class JdkDistributionConfigurator {
                                 .get(),
                         jdkPath.filename(),
                         jdkPath.extension()));
-        jdkDistribution.getLocalPath().set(String.format("%s-%s", jdkDistributionName, jdkVersion.get()));
+        String localPathName = os.glibcOrMuslDistribution()
+                .map(cDistribution -> String.format("%s-%s-%s", jdkDistributionName, jdkVersion.get(), cDistribution))
+                .orElseGet(() -> String.format("%s-%s", jdkDistributionName, jdkVersion.get()));
+        jdkDistribution.getLocalPath().set(localPathName);
         return Stream.of(jdkDistribution);
     }
 

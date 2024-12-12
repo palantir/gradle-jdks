@@ -72,7 +72,7 @@ public final class GradleJdksConfigurator {
             GradleJdksConfigsUtils.writeConfigurationFile(
                     jdkOsArchDir.resolve("download-url"), resolveDownloadUrl(baseUrl, jdkDistributionName, jdkRelease));
             GradleJdksConfigsUtils.writeConfigurationFile(
-                    jdkOsArchDir.resolve("local-path"), resolveLocalPath(jdkDistributionName, jdkRelease));
+                    jdkOsArchDir.resolve("local-path"), resolveLocalPath(os, jdkDistributionName, jdkRelease));
         } catch (Exception e) {
             throw new RuntimeException(
                     String.format("Failed to crate jdk configuration files in dir %s", jdkOsArchDir), e);
@@ -93,8 +93,14 @@ public final class GradleJdksConfigurator {
         GradleJdksConfigsUtils.copyResourceToPath(scriptsDir, "gradle-jdks-setup.jar");
     }
 
-    private static String resolveLocalPath(JdkDistributionName jdkDistributionName, JdkRelease jdkRelease) {
-        return String.format("%s-%s", jdkDistributionName, jdkRelease.version());
+    // TODO(crogoz): Remove glibcOrMusl from the localPath name. This is a workaround for the excavator workflow.
+    // Excavator caches the location of gradle-jdks directory, however it doesn't take into consideration if the job
+    // is running on a musl/glibc image. Without this, we might be using the jdk used for a different c implementation.
+    private static String resolveLocalPath(Os os, JdkDistributionName jdkDistributionName, JdkRelease jdkRelease) {
+        return os.glibcOrMuslDistribution()
+                .map(cDistribution ->
+                        String.format("%s-%s-%s", jdkDistributionName, jdkRelease.version(), cDistribution))
+                .orElseGet(() -> String.format("%s-%s", jdkDistributionName, jdkRelease.version()));
     }
 
     private static String resolveDownloadUrl(

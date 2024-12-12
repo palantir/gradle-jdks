@@ -76,7 +76,19 @@ class GradleJdksConfiguratorTest {
                 .resolve(CurrentOs.get().uiName())
                 .resolve(CurrentArch.get().uiName())
                 .resolve("local-path"));
-        assertThat(localPath).isEqualTo(String.format("amazon-corretto-%s\n", JDK_VERSION));
+
+        switch (CurrentOs.get()) {
+            case LINUX_MUSL:
+                assertThat(localPath).isEqualTo(String.format("amazon-corretto-%s-musl\n", JDK_VERSION));
+                break;
+            case LINUX_GLIBC:
+                assertThat(localPath).isEqualTo(String.format("amazon-corretto-%s-glibc\n", JDK_VERSION));
+                break;
+            case WINDOWS:
+            case MACOS:
+                assertThat(localPath).isEqualTo(String.format("amazon-corretto-%s\n", JDK_VERSION));
+                break;
+        }
         Path installationScript = latestGradleJdksDir.resolve("scripts").resolve("install-jdks.sh");
         ProcessBuilder processBuilder = new ProcessBuilder()
                 .command(
