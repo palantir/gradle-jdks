@@ -17,16 +17,16 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
+import com.palantir.logsafe.logger.SafeLogger;
+import com.palantir.logsafe.logger.SafeLoggerFactory;
 import java.io.File;
 import java.util.Arrays;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class JdksPlugin implements Plugin<Project> {
 
-    private static final Logger log = LoggerFactory.getLogger(JdksPlugin.class);
+    private static final SafeLogger log = SafeLoggerFactory.get(JdksPlugin.class);
 
     @Override
     public void apply(Project rootProject) {
