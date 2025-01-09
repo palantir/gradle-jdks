@@ -54,7 +54,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     @Option(
             option = "includeVersion",
             description = "Generates the configuration directory for the java major versions passed in as parameters.")
-    public void setIncludeVersionsFromCli(List<String> versions) {
+    public final void setIncludeVersionsFromCli(List<String> versions) {
         getIncludeJavaMajorVersions().set(versions);
     }
 

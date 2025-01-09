@@ -29,7 +29,6 @@ import org.gradle.api.flow.FlowParameters;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
-import org.gradle.jvm.toolchain.internal.NoToolchainAvailableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,10 +45,12 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
     }
 
     @Override
+    @SuppressWarnings("LineLength")
     public void execute(Parameters parameters) {
         parameters.getBuildResult().get().getFailure().ifPresent(failure -> {
             List<Throwable> noToolchainsAvailable = Throwables.getCausalChain(failure).stream()
-                    .filter(throwable -> throwable instanceof NoToolchainAvailableException)
+                    .filter(throwable ->
+                            throwable instanceof org.gradle.jvm.toolchain.internal.NoToolchainAvailableException)
                     .collect(Collectors.toList());
             if (noToolchainsAvailable.isEmpty()) {
                 return;
@@ -76,16 +77,17 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                             .collect(Collectors.joining(" "));
             log.error(
                     "\n"
-                            + "\u001B[31m****************************************************************************************************\n"
-                            + "****************************************************************************************************\n"
-                            + "Gradle JDK Auto-management is enabled but {} are not configured. The current configured versions are: {}.\n"
-                            + "If you are trying to manually change the Java versions used, please follow the steps:\n"
-                            + "\t- Make sure build.gradle files only use the configured java major versions: {}\n"
-                            + "\t- Run `./gradlew generateGradleJdkConfigs {}` to generate the jdk configuration files.\n"
-                            + "\t- Update the build.gradle's java versions with the newly configured jdks\n"
-                            + "****************************************************************************************************\n"
-                            + "****************************************************************************************************"
-                            + "\u001B[0m",
+                        + "\u001B[31m****************************************************************************************************\n"
+                        + "****************************************************************************************************\n"
+                        + "Gradle JDK Auto-management is enabled but {} are not configured. The current configured"
+                        + " versions are: {}.\n"
+                        + "If you are trying to manually change the Java versions used, please follow the steps:\n"
+                        + "\t- Make sure build.gradle files only use the configured java major versions: {}\n"
+                        + "\t- Run `./gradlew generateGradleJdkConfigs {}` to generate the jdk configuration files.\n"
+                        + "\t- Update the build.gradle's java versions with the newly configured jdks\n"
+                        + "****************************************************************************************************\n"
+                        + "****************************************************************************************************"
+                        + "\u001B[0m",
                     maybeMissingToolchains,
                     parameters.getConfiguredJavaMajorVersions().get(),
                     parameters.getConfiguredJavaMajorVersions().get(),
