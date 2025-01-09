@@ -53,9 +53,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     @Input
     public abstract MapProperty<String, String> getCaCerts();
 
-    /**
-     * Option to include a specific java major version when generating/checking the gradle jdk configuration files.
-     */
     @Input
     @Option(
             option = "includeAllJdks",
