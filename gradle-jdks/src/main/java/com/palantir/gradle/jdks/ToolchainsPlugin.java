@@ -21,6 +21,7 @@ import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
+import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.gradle.api.Plugin;
@@ -33,11 +34,14 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.gradle.util.GradleVersion;
+import org.slf4j.LoggerFactory;
 
 public final class ToolchainsPlugin implements Plugin<Project> {
 
     private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
+    private static final GradleVersion GRADLE_FLOW_ACTIONS_ENABLED = GradleVersion.version("8.6");
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(ToolchainsPlugin.class);
 
     @Override
     public void apply(Project rootProject) {
@@ -51,6 +55,9 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     "Cannot apply `com.palantir.jdks.settings` with Gradle version < %s. Please upgrade to a higher "
                             + "Gradle version in order to use the JDK setup.",
                     GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION));
+        }
+        if (GradleVersion.version(rootProject.getGradle().getGradleVersion()).compareTo(GRADLE_FLOW_ACTIONS_ENABLED) >= 0) {
+            rootProject.getPluginManager().apply(ToolchainFailureFlowActionsPlugin.class);
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
         rootProject.getPluginManager().apply(PalantirGradleJdksIdeaPlugin.class);
@@ -169,7 +176,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
 
     private static boolean isGradleVersionSupported() {
         return GradleVersion.current()
-                        .compareTo(GradleVersion.version(GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION))
+                .compareTo(GradleVersion.version(GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION))
                 >= 0;
     }
 }
