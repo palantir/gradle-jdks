@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.Directory;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -44,14 +45,21 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     public static final String GRADLE_JDKS_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
 
-    /**
-     * Option to include a specific java major version when generating/checking the gradle jdk configuration files.
-     */
     @Input
     @Option(
             option = "includeAllJdks",
             description = "Generates the configuration directories for all configured Java major versions.")
     public abstract Property<Boolean> getIncludeAllJdks();
+
+    @Option(
+            option = "includeVersion",
+            description = "Generates the configuration directory for the java major versions passed in as parameters.")
+    public void setIncludeVersionsFromCli(List<String> versions) {
+        getIncludeJavaMajorVersions().set(versions);
+    }
+
+    @Input
+    public abstract ListProperty<String> getIncludeJavaMajorVersions();
 
     @Nested
     public abstract MapProperty<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros();
@@ -77,6 +85,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     public GradleJdksConfigs() {
         getIncludeAllJdks().convention(false);
+        getIncludeJavaMajorVersions().convention(List.of());
     }
 
     @TaskAction

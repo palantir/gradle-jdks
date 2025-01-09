@@ -70,17 +70,20 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                     ? "some language versions"
                     : String.format("the language versions=%s", missingToolchains);
             log.error(
-                    "\n\u001B[31m"
-                            + "****************************************************************************************************\n"
-                            + "****************************************************************************************************\n"
-                            + "Gradle JDK Auto-management is enabled but {} are not configured. The current major jdks configured"
-                            + "are only {}. \nIf you are trying to manually change the JDK versions used, please run the following steps:\n"
-                            + "\t- Make sure build.gradle files only use the configured java major versions: {}\n"
-                            + "\t- Run `./gradlew generateGradleJdkConfigs --includeAllJdks` to generate all the jdks configuration files.\n"
-                            + "\t- Update the build.gradle's java versions with the newly configured jdks\n"
-                            + "****************************************************************************************************\n"
-                            + "****************************************************************************************************"
-                            + "\u001B[0m",
+                    "\n"
+                        + "\u001B[31m****************************************************************************************************\n"
+                        + "****************************************************************************************************\n"
+                        + "Gradle JDK Auto-management is enabled but {} are not configured. The current major jdks"
+                        + " configuredare only {}. \n"
+                        + "If you are trying to manually change the JDK versions used, please run the following"
+                        + " steps:\n"
+                        + "\t- Make sure build.gradle files only use the configured java major versions: {}\n"
+                        + "\t- Run `./gradlew generateGradleJdkConfigs --includeAllJdks` to generate all the jdks"
+                        + " configuration files.\n"
+                        + "\t- Update the build.gradle's java versions with the newly configured jdks\n"
+                        + "****************************************************************************************************\n"
+                        + "****************************************************************************************************"
+                        + "\u001B[0m",
                     maybeMissingToolchains,
                     parameters.getConfiguredJavaMajorVersions().get(),
                     parameters.getConfiguredJavaMajorVersions().get());

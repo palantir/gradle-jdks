@@ -224,6 +224,10 @@ Using a new java version is a 2-step process:
 2. Update the javaVersion(s)/jdks extension values with the desired java major version.
 3. Run `./gradlew setupJdks` to only keep the Gradle jdk configuration files for the used Gradle JDKs.
 
+### Manual bumps of the java versions 
+1. Run `./gradlew generateGradleJdkConfigs --includeVersion=<newVersion> [--includeVersion=<otherNewVersion>]`. The command will generate the Gradle jdk configuration files for the major versions passed as parameters.
+2. Update the javaVersion(s)/jdks extension values with the desired java major version.
+
 ### Gradle Toolchains workflow
 1. Update `jdkMajorVersionsToUse` with the required jdk versions 
 2. Run `./gradlew setupJdks`

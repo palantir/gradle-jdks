@@ -230,6 +230,24 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         runTasksSuccessfully('wrapper')
 
         when:
+        runTasksSuccessfully('generateGradleJdkConfigs', '--includeVersion=11')
+
+        then: 'generates directories for jdk version == 11'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toList())
+                .containsAll(List.of("11"))
+
+        when:
+        runTasksSuccessfully('generateGradleJdkConfigs', '--includeVersion=11', '--includeVersion=21')
+
+        then: 'generates directories for jdk versions == 11, 21'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toList())
+                .containsAll(List.of("11", "21"))
+
+        when:
         runTasksSuccessfully('generateGradleJdkConfigs', '--includeAllJdks')
 
         then: 'generates directories for all jdk versions'
@@ -334,11 +352,14 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
         then:
         expectedErrorLines.forEach { expectedErrorLine -> result.contains(expectedErrorLine) }
+        if (shouldLogExplanation) {
+            result.contains("If you are trying to manually change the JDK versions used")
+        }
 
         where:
-        gradleVersionNumber  | expectedErrorLines
-        GradleJdkTestUtils.GRADLE_7_6_4_VERSION | ["No compatible toolchains found for request specification: {languageVersion=15, vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false)."]
-        GradleJdkTestUtils.GRADLE_8_5_VERSION   | ["No matching toolchains found for requested specification: {languageVersion=15, vendor=any, implementation=vendor-specific}", "No locally installed toolchains match and toolchain auto-provisioning is not enabled."]
+        gradleVersionNumber  | expectedErrorLines | shouldLogExplanation
+        GradleJdkTestUtils.GRADLE_7_6_4_VERSION | ["No compatible toolchains found for request specification: {languageVersion=15, vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false)."] | false
+        GradleJdkTestUtils.GRADLE_8_5_VERSION   | ["No matching toolchains found for requested specification: {languageVersion=15, vendor=any, implementation=vendor-specific}", "No locally installed toolchains match and toolchain auto-provisioning is not enabled."] | true
     }
 
     def java17PreviewCode = '''

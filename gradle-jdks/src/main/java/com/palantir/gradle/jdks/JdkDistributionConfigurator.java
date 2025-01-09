@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.collect.Streams;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
 import java.util.Arrays;
@@ -37,11 +38,17 @@ public final class JdkDistributionConfigurator {
     private static final JavaLanguageVersion MINIMUM_SUPPORTED_JAVA_VERSION = JavaLanguageVersion.of(11);
 
     public static Map<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros(
-            Project project, JdkDistributions jdkDistributions, JdksExtension jdksExtension, Boolean includeAllJdks) {
+            Project project,
+            JdkDistributions jdkDistributions,
+            JdksExtension jdksExtension,
+            Boolean includeAllJdks,
+            List<String> includeSpecificJdks) {
         Set<JavaLanguageVersion> javaVersions = (includeAllJdks
                         ? Arrays.stream(JavaVersion.values())
                                 .map(javaVersion -> JavaLanguageVersion.of(javaVersion.getMajorVersion()))
-                        : jdksExtension.jdkMajorVersionsToUse().get().stream())
+                        : Streams.concat(
+                                includeSpecificJdks.stream().map(JavaLanguageVersion::of),
+                                jdksExtension.jdkMajorVersionsToUse().get().stream()))
                 .filter(javaLanguageVersion -> javaLanguageVersion.canCompileOrRun(MINIMUM_SUPPORTED_JAVA_VERSION))
                 .collect(Collectors.toSet());
         return javaVersions.stream()

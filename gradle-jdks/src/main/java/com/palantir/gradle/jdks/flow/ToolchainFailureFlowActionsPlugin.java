@@ -32,8 +32,12 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Project> {
+
+    private static final Logger log = LoggerFactory.getLogger(ToolchainFailureFlowActionsPlugin.class);
 
     @Inject
     protected abstract FlowScope getFlowScope();
@@ -46,7 +50,11 @@ public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Projec
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(
                 project.getRootProject().getProjectDir().toPath())) {
             throw new RuntimeException(
-                    "Cannot apply `com.palantir.jdks.settings` without enabling palantir.jdk.setup.enabled");
+                    "Cannot apply `ToolchainFailureFlowActionsPlugin` without enabling palantir.jdk.setup.enabled");
+        }
+        if (!project.getRootProject().file("gradle/jdks").exists()) {
+            log.debug("Skipping the ToolchainFailureFlowActions setup because gradle/jdks were not yet configured");
+            return;
         }
         getFlowScope().always(ToolchainFlowAction.class, spec -> {
             spec.getParameters().getBuildResult().set(getFlowProviders().getBuildWorkResult());
@@ -68,7 +76,7 @@ public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Projec
                     .map(path -> path.getFileName().toString())
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            throw new RuntimeException("Unable to list the local JDK installation paths", e);
+            throw new RuntimeException("Unable to list the configured gradle/jdks major versions", e);
         }
     }
 }
