@@ -20,6 +20,7 @@ package com.palantir.gradle.jdks
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.gradle.jdks.setup.common.CurrentOs
 import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper
+import org.gradle.internal.impldep.com.amazonaws.util.Throwables
 import spock.lang.TempDir
 
 import java.nio.file.Files
@@ -38,7 +39,6 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
 
         when: 'running setupJdks'
-        file("gradle/certs/cert.pem") << "dummy cert"
         def result = runTasksSuccessfully("setupJdks")
 
         then: 'it triggers the execution of Gradle JDK setup tasks'

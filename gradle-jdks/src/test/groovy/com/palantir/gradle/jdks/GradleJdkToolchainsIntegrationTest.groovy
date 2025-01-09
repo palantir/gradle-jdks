@@ -19,6 +19,7 @@ package com.palantir.gradle.jdks
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.gradle.jdks.setup.common.CurrentOs
 import org.apache.commons.lang3.tuple.Pair
+import org.gradle.internal.impldep.com.amazonaws.util.Throwables
 import spock.lang.TempDir
 
 import java.nio.file.Files
@@ -246,6 +247,21 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
                 .map { it -> it.getFileName().toString() }
                 .collect(Collectors.toList())
                 .containsAll(List.of("11", "21"))
+
+        when:
+        def failingCheck = runTasksWithFailure("check")
+
+        then: 'the check will fail because we have too many jdk files'
+        Throwables.getRootCause(failingCheck.failure).getMessage().contains("Unexpected Java versions configured: [21]")
+
+        when:
+        def output = runTasksSuccessfully("setupJdks")
+
+        then: 'the extra directory was deleted'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toList())
+                .containsAll(List.of("11"))
 
         when:
         runTasksSuccessfully('generateGradleJdkConfigs', '--includeAllJdks')

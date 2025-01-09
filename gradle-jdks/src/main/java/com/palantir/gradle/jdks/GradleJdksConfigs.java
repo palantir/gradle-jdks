@@ -16,13 +16,16 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.collect.Sets;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.Directory;
 import org.gradle.api.provider.ListProperty;
@@ -120,6 +123,18 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                     "No JDKs were configured for the gradle setup. Please run `./gradlew setupJdks` to generate the"
                             + " JDKs and ensure that you have configured JDKs properly for gradle-jdks as per"
                             + " the readme: https://github.com/palantir/gradle-jdks#usage");
+        }
+
+        Set<String> configuredJavaMajorVersions = GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(gradleJdksDir);
+        Set<String> unexpectedConfiguredJavaVersions = Sets.difference(
+                configuredJavaMajorVersions,
+                getJavaVersionToJdkDistros().get().keySet().stream()
+                        .map(JavaLanguageVersion::toString)
+                        .collect(Collectors.toSet()));
+        if (!unexpectedConfiguredJavaVersions.isEmpty()) {
+            throw new RuntimeException(String.format(
+                    "Unexpected Java versions configured: %s. Please run `./gradlew setupJdks` to regenerate the used JDKS.",
+                    unexpectedConfiguredJavaVersions));
         }
 
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();

@@ -16,17 +16,8 @@
 
 package com.palantir.gradle.jdks.flow;
 
+import com.palantir.gradle.jdks.GradleJdksConfigsUtils;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
-import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.CurrentArch;
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
-import com.palantir.gradle.jdks.setup.common.Os;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -56,23 +47,8 @@ public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Projec
             spec.getParameters().getBuildResult().set(getFlowProviders().getBuildWorkResult());
             spec.getParameters()
                     .getConfiguredJavaMajorVersions()
-                    .set(project.provider(() -> getConfiguredJavaMajorVersions(
+                    .set(project.provider(() -> GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(
                             project.getRootProject().file("gradle/jdks").toPath())));
         });
-    }
-
-    private static List<String> getConfiguredJavaMajorVersions(Path gradleJdksLocalDirectory) {
-        Os os = CurrentOs.get();
-        Arch arch = CurrentArch.get();
-        try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
-            return stream.filter(path -> path.resolve(os.toString())
-                            .resolve(arch.toString())
-                            .toFile()
-                            .exists())
-                    .map(path -> path.getFileName().toString())
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to list the configured gradle/jdks major versions", e);
-        }
     }
 }
