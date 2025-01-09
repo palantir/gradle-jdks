@@ -88,8 +88,8 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                             + "\u001B[0m",
                     maybeMissingToolchains,
                     parameters.getConfiguredJavaMajorVersions().get(),
-                    includeVersionsOption,
-                    parameters.getConfiguredJavaMajorVersions().get());
+                    parameters.getConfiguredJavaMajorVersions().get(),
+                    includeVersionsOption);
         });
     }
 }
