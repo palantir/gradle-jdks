@@ -52,16 +52,12 @@ public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Projec
             throw new RuntimeException(
                     "Cannot apply `ToolchainFailureFlowActionsPlugin` without enabling palantir.jdk.setup.enabled");
         }
-        if (!project.getRootProject().file("gradle/jdks").exists()) {
-            log.debug("Skipping the ToolchainFailureFlowActions setup because gradle/jdks were not yet configured");
-            return;
-        }
         getFlowScope().always(ToolchainFlowAction.class, spec -> {
             spec.getParameters().getBuildResult().set(getFlowProviders().getBuildWorkResult());
             spec.getParameters()
                     .getConfiguredJavaMajorVersions()
-                    .set(getConfiguredJavaMajorVersions(
-                            project.getRootProject().file("gradle/jdks").toPath()));
+                    .set(project.provider(() -> getConfiguredJavaMajorVersions(
+                            project.getRootProject().file("gradle/jdks").toPath())));
         });
     }
 
