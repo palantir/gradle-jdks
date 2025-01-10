@@ -133,7 +133,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                         .collect(Collectors.toSet()));
         if (!unexpectedConfiguredJavaVersions.isEmpty()) {
             throw new RuntimeException(String.format(
-                    "Unexpected Java versions configured: %s. Please run `./gradlew setupJdks` to regenerate the used JDKS.",
+                    "Unexpected Java versions configured: %s. Please run `./gradlew setupJdks` to regenerate the used"
+                            + " JDKS.",
                     unexpectedConfiguredJavaVersions));
         }
 
