@@ -26,14 +26,14 @@ import org.junit.jupiter.api.Test;
 class GraalVmCeDistributionTest {
 
     @Test
-    void jdk_path_linux_x86_64() {
+    void jdk_path_linux_aarch64() {
         GraalVmCeDistribution distribution = new GraalVmCeDistribution();
         JdkPath path = distribution.path(JdkRelease.builder()
-                .arch(Arch.X86_64)
+                .arch(Arch.AARCH64)
                 .os(Os.LINUX_GLIBC)
-                .version("17.22.3.0")
+                .version("23.0.2")
                 .build());
-        assertThat(path.filename()).isEqualTo("vm-22.3.0/graalvm-ce-java17-linux-amd64-22.3.0");
+        assertThat(path.filename()).isEqualTo("jdk-23.0.2/graalvm-community-jdk-23.0.2_linux-aarch64_bin");
         assertThat(path.extension()).isEqualTo(Extension.TARGZ);
     }
 
@@ -43,9 +43,9 @@ class GraalVmCeDistributionTest {
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.AARCH64)
                 .os(Os.MACOS)
-                .version("19.22.3.0")
+                .version("23.0.2")
                 .build());
-        assertThat(path.filename()).isEqualTo("vm-22.3.0/graalvm-ce-java19-darwin-aarch64-22.3.0");
+        assertThat(path.filename()).isEqualTo("jdk-23.0.2/graalvm-community-jdk-23.0.2_macos-aarch64_bin");
         assertThat(path.extension()).isEqualTo(Extension.TARGZ);
     }
 
@@ -55,9 +55,9 @@ class GraalVmCeDistributionTest {
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
                 .os(Os.WINDOWS)
-                .version("11.20.3.6")
+                .version("23.0.2")
                 .build());
-        assertThat(path.filename()).isEqualTo("vm-20.3.6/graalvm-ce-java11-windows-amd64-20.3.6");
+        assertThat(path.filename()).isEqualTo("jdk-23.0.2/graalvm-community-jdk-23.0.2_windows-x64_bin");
         assertThat(path.extension()).isEqualTo(Extension.ZIP);
     }
 }
