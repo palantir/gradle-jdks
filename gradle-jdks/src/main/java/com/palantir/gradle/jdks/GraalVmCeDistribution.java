@@ -16,11 +16,9 @@
 
 package com.palantir.gradle.jdks;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
-import org.immutables.value.Value;
 
 final class GraalVmCeDistribution implements JdkDistribution {
     @Override
@@ -30,15 +28,9 @@ final class GraalVmCeDistribution implements JdkDistribution {
 
     @Override
     public JdkPath path(JdkRelease jdkRelease) {
-        GraalVersionSplit splitVersion = splitVersion(jdkRelease.version());
-
         String filename = String.format(
-                "vm-%s/graalvm-ce-java%s-%s-%s-%s",
-                splitVersion.graalVersion(),
-                splitVersion.javaVersion(),
-                os(jdkRelease.os()),
-                arch(jdkRelease.arch()),
-                splitVersion.graalVersion());
+                "jdk-%s/graalvm-community-jdk-%s_%s-%s_bin",
+                jdkRelease.version(), jdkRelease.version(), os(jdkRelease.os()), arch(jdkRelease.arch()));
 
         return JdkPath.builder()
                 .filename(filename)
@@ -49,8 +41,9 @@ final class GraalVmCeDistribution implements JdkDistribution {
     private static String os(Os os) {
         switch (os) {
             case MACOS:
-                return "darwin";
+                return "macos";
             case LINUX_GLIBC:
+            case LINUX_MUSL:
                 return "linux";
             case WINDOWS:
                 return "windows";
@@ -61,8 +54,9 @@ final class GraalVmCeDistribution implements JdkDistribution {
 
     private static String arch(Arch arch) {
         switch (arch) {
+            case X86:
             case X86_64:
-                return "amd64";
+                return "x64";
             case AARCH64:
                 return "aarch64";
             default:
@@ -73,6 +67,7 @@ final class GraalVmCeDistribution implements JdkDistribution {
     private static Extension extension(Os operatingSystem) {
         switch (operatingSystem) {
             case LINUX_GLIBC:
+            case LINUX_MUSL:
             case MACOS:
                 return Extension.TARGZ;
             case WINDOWS:
@@ -80,36 +75,5 @@ final class GraalVmCeDistribution implements JdkDistribution {
             default:
                 throw new UnsupportedOperationException("Unknown OS: " + operatingSystem);
         }
-    }
-
-    @VisibleForTesting
-    static GraalVersionSplit splitVersion(String combinedVersion) {
-        int splitIndex = combinedVersion.indexOf(".");
-
-        if (splitIndex == -1) {
-            throw new IllegalArgumentException(String.format(
-                    "Expected %s to at least contain one dot separating the java version from graal version. "
-                            + "Expected Format `javaVersion.graalVersion` (e.g. 17.21.2.0 -> Java Version: 17, "
-                            + "Graal Version: 21.2.0)",
-                    combinedVersion));
-        }
-
-        return GraalVersionSplit.builder()
-                .graalVersion(combinedVersion.substring(splitIndex + 1))
-                .javaVersion(combinedVersion.substring(0, splitIndex))
-                .build();
-    }
-
-    @Value.Immutable
-    interface GraalVersionSplit {
-        String graalVersion();
-
-        String javaVersion();
-
-        static Builder builder() {
-            return new Builder();
-        }
-
-        class Builder extends ImmutableGraalVersionSplit.Builder {}
     }
 }

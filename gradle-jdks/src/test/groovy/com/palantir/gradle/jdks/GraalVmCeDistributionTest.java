@@ -18,20 +18,12 @@ package com.palantir.gradle.jdks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.palantir.gradle.jdks.GraalVmCeDistribution.GraalVersionSplit;
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
 import org.junit.jupiter.api.Test;
 
 class GraalVmCeDistributionTest {
-
-    @Test
-    void graalvm_ce_version_splits_version() {
-        GraalVersionSplit versionSplit = GraalVmCeDistribution.splitVersion("17.23.2.0");
-        assertThat(versionSplit.javaVersion()).isEqualTo("17");
-        assertThat(versionSplit.graalVersion()).isEqualTo("23.2.0");
-    }
 
     @Test
     void jdk_path_linux_x86_64() {

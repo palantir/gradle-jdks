@@ -42,6 +42,19 @@ public enum JdkDistributionName {
         return UiNames.fromString(values(), distributionUiName);
     }
 
+    @JsonValue
+    public final String getVendorExtensionName() {
+        switch (this) {
+            case AZUL_ZULU:
+            case AMAZON_CORRETTO:
+                return "";
+            case GRAALVM_CE:
+                return "graal";
+            default:
+                throw new IllegalStateException("Unexpected value: " + this);
+        }
+    }
+
     @JsonCreator
     public static JdkDistributionName fromStringThrowing(String distributionUiName) {
         return UiNames.fromStringThrowing(JdkDistributionName.class, values(), distributionUiName);

@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -27,6 +28,8 @@ public interface JdkRelease {
     Os os();
 
     Arch arch();
+
+    Optional<String> vendor();
 
     class Builder extends ImmutableJdkRelease.Builder {}
 

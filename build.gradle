@@ -2,12 +2,13 @@ buildscript {
     repositories {
         mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
         gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+        mavenLocal()
     }
 
     dependencies {
         classpath 'com.palantir.gradle.failure-reports:gradle-failure-reports:1.13.0'
         classpath 'com.palantir.jakartapackagealignment:jakarta-package-alignment:0.6.0'
-        classpath 'com.palantir.gradle.jdks:gradle-jdks:0.59.0'
+        classpath 'com.palantir.gradle.jdks:gradle-jdks:0.59.0-13-g2a85b19.dirty'
         classpath 'com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.16.0'
         classpath 'com.palantir.gradle.plugintesting:gradle-plugin-testing:0.5.0'
         classpath 'org.unbroken-dome.gradle-plugins:gradle-testsets-plugin:4.1.0'
@@ -59,4 +60,9 @@ checkUnusedConstraints.enabled = false
 
 jdks {
     daemonTarget = 17
+
+    jdk(23) {
+        distribution = 'graalvm-ce'
+        jdkVersion = '23.0.1'
+    }
 }
