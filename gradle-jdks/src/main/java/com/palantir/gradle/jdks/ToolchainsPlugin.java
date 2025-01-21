@@ -19,17 +19,13 @@ package com.palantir.gradle.jdks;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
-import org.gradle.jvm.toolchain.JavaToolchainSpec;
-import org.gradle.jvm.toolchain.JvmVendorSpec;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.gradle.util.GradleVersion;
 
@@ -51,17 +47,6 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                             + "Gradle version in order to use the JDK setup.",
                     GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION));
         }
-        rootProject.allprojects(proj -> proj.getPluginManager().withPlugin("java", unused -> {
-            JavaPluginExtension javaPluginExtension =
-                    rootProject.getExtensions().getByType(JavaPluginExtension.class);
-            // by default we are setting the java vendor spec to amazon corretto.
-            javaPluginExtension.toolchain(new Action<JavaToolchainSpec>() {
-                @Override
-                public void execute(JavaToolchainSpec javaToolchainSpec) {
-                    javaToolchainSpec.getVendor().set(JvmVendorSpec.GRAAL_VM);
-                }
-            });
-        }));
 
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
         rootProject.getPluginManager().apply(PalantirGradleJdksIdeaPlugin.class);

@@ -28,18 +28,13 @@ import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
 /**
- * Class responsible for  installing the current JDK into {@code destinationJdkInstallationDir} and,
- * in the case of Hotspot, importing the system certificates into the JDK's truststore.
- * The class will be called by the Gradle setup script in
+ * Class responsible for  installing the current JDK into {@code destinationJdkInstallationDir} and importing the
+ * system certificates into the JDK's truststore. The class will be called by the Gradle setup script in
  * <a href="file:../resources/gradle-jdks-setup.sh">resources/gradle-jdks-setup.sh</a>.
  */
 public final class GradleJdkInstallationSetup {
 
-    public interface Labeled {
-        String getLabel();
-    }
-
-    public enum Command implements Labeled {
+    public enum Command {
         JDK_SETUP("jdkSetup"),
         DAEMON_SETUP("daemonSetup");
 
@@ -50,24 +45,17 @@ public final class GradleJdkInstallationSetup {
         }
 
         @Override
-        public String getLabel() {
+        public String toString() {
             return label;
         }
-    }
 
-    public enum JvmCompiler implements Labeled {
-        HOTSPOT("hotspot"),
-        GRAAL("graal");
-
-        private final String label;
-
-        JvmCompiler(String label) {
-            this.label = label;
-        }
-
-        @Override
-        public String getLabel() {
-            return label;
+        public static Command fromLabel(String label) {
+            for (Command e : values()) {
+                if (e.label.equals(label)) {
+                    return e;
+                }
+            }
+            throw new RuntimeException(String.format("Cannot convert %s to a Command", label));
         }
     }
 
@@ -77,7 +65,7 @@ public final class GradleJdkInstallationSetup {
         if (args.length < 1) {
             throw new IllegalArgumentException("Expected at least an argument: jdkSetup or daemonSetup");
         }
-        Command command = fromLabel(Command.class, args[0]);
+        Command command = Command.fromLabel(args[0]);
         switch (command) {
             case JDK_SETUP:
                 setupJdk(logger, caResources, args);
@@ -110,18 +98,15 @@ public final class GradleJdkInstallationSetup {
     }
 
     private static void setupJdk(StdErrLogger logger, CaResources caResources, String[] args) {
-        if (args.length != 3) {
-            throw new IllegalArgumentException(
-                    "Expected 3 arguments: jdkSetup <destinationJdkInstallationDir> <jdksType>");
+        if (args.length != 2) {
+            throw new IllegalArgumentException("Expected 2 arguments: jdkSetup <destinationJdkInstallationDir>");
         }
         Path destinationJdkInstallationDir = Path.of(args[1]);
-        JvmCompiler jvmCompiler = fromLabel(JvmCompiler.class, args[2]);
         boolean wasCopied = copy(logger, destinationJdkInstallationDir);
-        // Only adding certificates to the Hotspot Jdks.
         // If the JDK was not copied by the current process - which means that we waited for the lock while another
         // process set up the JDK - then we shouldn't try to add the certificate because the certificate was already
         // added.
-        if (wasCopied && jvmCompiler.equals(JvmCompiler.HOTSPOT)) {
+        if (wasCopied) {
             caResources.importAllSystemCerts(destinationJdkInstallationDir);
         }
     }
@@ -169,15 +154,6 @@ public final class GradleJdkInstallationSetup {
                             "Failed to copy the JDK installation to path= %s", destinationJdkInstallationDirectory),
                     e);
         }
-    }
-
-    private static <T extends Enum<T> & Labeled> T fromLabel(Class<T> enumType, String label) {
-        for (T e : enumType.getEnumConstants()) {
-            if (e.getLabel().equals(label)) {
-                return e;
-            }
-        }
-        throw new IllegalArgumentException(String.format("Cannot convert %s to %s", label, enumType.getSimpleName()));
     }
 
     private GradleJdkInstallationSetup() {}

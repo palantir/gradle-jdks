@@ -115,31 +115,14 @@ install_and_setup_jdks() {
   scripts_dir=${2:-"$1"}
 
   for dir in "$gradle_dir"/jdks/*/; do
-    major_version_jdk_type_dir=${dir%*/}
-    major_version_jdk_type=${major_version_jdk_type_dir##*/}
-    case "$major_version_jdk_type" in
-      *-graal)
-        major_version=${major_version_jdk_type%%-*}
-        jvm_compiler=${major_version_jdk_type#*-}
-        ;;
-      *-*)
-        jvm_compiler=${major_version_jdk_type#*-}
-        die "ERROR: Only GraalVM flavour of jvm compiler is expected. Unexpected $jvm_compiler"
-        ;;
-      [0-9]*)
-        major_version=$major_version_jdk_type
-        jvm_compiler="hotspot"
-        ;;
-      *)
-        die "ERROR: Unexpected $major_version_jdk_type"
-        ;;
-    esac
+    major_version_dir=${dir%*/}
+    major_version=${major_version_dir##*/}
     if [ "$major_version" = "8" ]; then
       write "Skipping JDK 8 installation as it is not supported by Gradle JDKs Setup."
       continue
     fi
-    distribution_local_path=$(read_value "$major_version_jdk_type_dir"/"$OS"/"$ARCH"/local-path)
-    distribution_url=$(read_value "$major_version_jdk_type_dir"/"$OS"/"$ARCH"/download-url)
+    distribution_local_path=$(read_value "$major_version_dir"/"$OS"/"$ARCH"/local-path)
+    distribution_url=$(read_value "$major_version_dir"/"$OS"/"$ARCH"/download-url)
     # Check if distribution exists in $GRADLE_JDKS_HOME
     jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
     if [ ! -d "$jdk_installation_directory" ]; then
@@ -185,8 +168,7 @@ install_and_setup_jdks() {
 
     # Finding the java_home
     java_home=$(get_java_home "$in_progress_dir")
-    echo $java_home
-    "$java_home"/bin/java -cp "$scripts_dir"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" "$jvm_compiler" || die "Failed to set up JDK $jdk_installation_directory"
+    "$java_home"/bin/java -cp "$scripts_dir"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" || die "Failed to set up JDK $jdk_installation_directory"
     write "Successfully installed JDK distribution in $jdk_installation_directory"
   done
 }
