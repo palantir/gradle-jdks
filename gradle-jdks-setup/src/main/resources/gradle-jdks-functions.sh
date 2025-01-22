@@ -142,11 +142,10 @@ install_and_setup_jdks() {
         *.zip)
           distribution_name=${distribution_url##*/}
           curl -L -C - "$distribution_url" -o "$distribution_name"
-          tar -xzf "$distribution_name" --strip-components=1 -C "$distribution_local_path"
+          tar -xzf "$distribution_name"
           ;;
         *)
-          mkdir -p "$distribution_local_path"
-          curl -L -C - "$distribution_url" | tar -xzf - --strip-components=1 -C "$distribution_local_path"
+          curl -L -C - "$distribution_url" | tar -xzf -
           ;;
       esac
     elif command -v wget > /dev/null 2>&1; then
@@ -155,11 +154,10 @@ install_and_setup_jdks() {
         *.zip)
           distribution_name=${distribution_url##*/}
           wget -c "$distribution_url" -O "$distribution_name"
-          tar -xzf "$distribution_name" --strip-components=1 -C "$distribution_local_path"
+          tar -xzf "$distribution_name"
           ;;
         *)
-          mkdir -p "$distribution_local_path"
-          wget -qO- -c "$distribution_url" | tar -xzf - --strip-components=1 -C "$distribution_local_path"
+          wget -qO- -c "$distribution_url" | tar -xzf -
           ;;
       esac
     else
