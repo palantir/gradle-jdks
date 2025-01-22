@@ -138,11 +138,11 @@ install_and_setup_jdks() {
     cd "$in_progress_dir" || die "failed to change dir to $in_progress_dir"
     if command -v curl > /dev/null 2>&1; then
       write "Using curl to download $distribution_url"
-      distribution_name=${distribution_url##*/}
       case "$distribution_url" in
         *.zip)
+          distribution_name=${distribution_url##*/}
           curl -L -C - "$distribution_url" -o "$distribution_name"
-          tar -xzf "$distribution_name"
+          tar -xzf "$distribution_name" --strip-components=1 -C "$distribution_local_path"
           ;;
         *)
           mkdir -p "$distribution_local_path"
@@ -155,10 +155,11 @@ install_and_setup_jdks() {
         *.zip)
           distribution_name=${distribution_url##*/}
           wget -c "$distribution_url" -O "$distribution_name"
-          tar -xzf "$distribution_name"
+          tar -xzf "$distribution_name" --strip-components=1 -C "$distribution_local_path"
           ;;
         *)
-          wget -qO- -c "$distribution_url" | tar -xzf -
+          mkdir -p "$distribution_local_path"
+          wget -qO- -c "$distribution_url" | tar -xzf - --strip-components=1 -C "$distribution_local_path"
           ;;
       esac
     else
