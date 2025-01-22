@@ -20,7 +20,7 @@ import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.Os;
 
-final class GraalVmCeDistribution implements JdkDistribution {
+public final class GraalVmCeDistribution implements JdkDistribution {
     @Override
     public String defaultBaseUrl() {
         return "https://github.com/graalvm/graalvm-ce-builds/releases/download";

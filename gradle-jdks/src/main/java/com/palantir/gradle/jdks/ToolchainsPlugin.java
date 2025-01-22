@@ -47,7 +47,6 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                             + "Gradle version in order to use the JDK setup.",
                     GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION));
         }
-
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
         rootProject.getPluginManager().apply(PalantirGradleJdksIdeaPlugin.class);
         rootProject

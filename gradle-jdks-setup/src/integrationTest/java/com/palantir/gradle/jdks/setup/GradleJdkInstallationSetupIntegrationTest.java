@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution;
+import com.palantir.gradle.jdks.GraalVmCeDistribution;
 import com.palantir.gradle.jdks.JdkPath;
 import com.palantir.gradle.jdks.JdkRelease;
 import com.palantir.gradle.jdks.setup.common.Arch;
@@ -42,9 +43,11 @@ import org.junit.jupiter.api.io.TempDir;
 public class GradleJdkInstallationSetupIntegrationTest {
 
     private static final String JDK_VERSION = "11.0.21.9.1";
+    private static final String GRAAL_VERSION = "23.0.1";
     private static final Arch ARCH = CurrentArch.get();
     private static final String CORRETTO_DISTRIBUTION_URL_ENV = "CORRETTO_DISTRIBUTION_URL";
     private static final AmazonCorrettoJdkDistribution CORRETTO_JDK_DISTRIBUTION = new AmazonCorrettoJdkDistribution();
+    private static final GraalVmCeDistribution GRAAL_VM_CE_DISTRIBUTION = new GraalVmCeDistribution();
     private static final boolean DO_NOT_INSTALL_CURL = false;
     private static final boolean INSTALL_CURL = true;
 
@@ -97,8 +100,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
          * ├── subProjects/...
          * ...
          */
-        String jdkMajorVersion =
-                Iterables.get(Splitter.on('.').split(GradleJdkInstallationSetupIntegrationTest.JDK_VERSION), 0);
+        String jdkMajorVersion = Iterables.get(Splitter.on('.').split(JDK_VERSION), 0);
         Path gradleDirectory = Files.createDirectories(workingDir.resolve("gradle"));
         Path gradleJdkVersion = Files.createFile(gradleDirectory.resolve("gradle-daemon-jdk-version"));
         writeFileContent(gradleJdkVersion, jdkMajorVersion);
@@ -109,6 +111,8 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 .build());
         Path archDirectory = Files.createDirectories(
                 gradleDirectory.resolve(String.format("jdks/%s/%s/%s", jdkMajorVersion, os.uiName(), ARCH.uiName())));
+
+        // Adding an Amazon Corretto distribution
         Path downloadUrlPath = Files.createFile(archDirectory.resolve("download-url"));
         String correttoDistributionUrl = Optional.ofNullable(System.getenv(CORRETTO_DISTRIBUTION_URL_ENV))
                 .orElseGet(CORRETTO_JDK_DISTRIBUTION::defaultBaseUrl);
@@ -117,8 +121,22 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 String.format(
                         String.format("%s/%s.%s", correttoDistributionUrl, jdkPath.filename(), jdkPath.extension())));
         Path localPath = Files.createFile(archDirectory.resolve("local-path"));
+        writeFileContent(localPath, String.format("amazon-corretto-%s", JDK_VERSION));
+
+        // Adding a GraalVm distribution
+        String graalMajorVersion = Iterables.get(Splitter.on('.').split(GRAAL_VERSION), 0);
+        Path graalDirectory = Files.createDirectories(
+                gradleDirectory.resolve(String.format("jdks/%s/%s/%s", graalMajorVersion, os.uiName(), ARCH.uiName())));
+        Path graalDownloadUrlPath = Files.createFile(graalDirectory.resolve("download-url"));
+        JdkPath graalJdkPath = GRAAL_VM_CE_DISTRIBUTION.path(
+                JdkRelease.builder().version(GRAAL_VERSION).os(os).arch(ARCH).build());
         writeFileContent(
-                localPath, String.format("amazon-corretto-%s", GradleJdkInstallationSetupIntegrationTest.JDK_VERSION));
+                graalDownloadUrlPath,
+                String.format(String.format(
+                        "%s/%s.%s",
+                        GRAAL_VM_CE_DISTRIBUTION.defaultBaseUrl(), graalJdkPath.filename(), graalJdkPath.extension())));
+        Path graalLocalPath = Files.createFile(graalDirectory.resolve("local-path"));
+        writeFileContent(graalLocalPath, String.format("graalvm-community-jdk-%s", GRAAL_VERSION));
 
         // copy the jar from build/libs to the gradle directory
         Files.copy(
@@ -183,6 +201,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
                         List.of("docker", "run", "--rm", dockerImage, shell, "/testing-script.sh")))
                 .contains("openjdk version \"11.0.21\"")
                 .contains("JAVA_HOME is set to: /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1")
+                .contains("GraalVM CE 23.0.1")
                 .doesNotContain("Unexpected output");
     }
 
