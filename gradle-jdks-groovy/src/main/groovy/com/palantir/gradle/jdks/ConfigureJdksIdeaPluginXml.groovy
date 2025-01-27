@@ -18,7 +18,6 @@ package com.palantir.gradle.jdks
 
 import groovy.xml.XmlNodePrinter
 import groovy.xml.XmlParser
-import org.gradle.internal.impldep.com.google.common.collect.ImmutableMap
 import org.xml.sax.SAXException
 
 import javax.xml.parsers.ParserConfigurationException
@@ -39,7 +38,9 @@ class ConfigureJdksIdeaPluginXml {
             if (!createIfAbsent) {
                 return;
             }
-            rootNode = new Node(null, "project", ImmutableMap.of("version", "4"));
+            // Using Map rather than ImmutableMap to avoid a Guava dependency.
+            Map<String, String> projectNodeAttributes = Map.of("version", "4");
+            rootNode = new Node(null, "project", projectNodeAttributes);
         }
 
         configureExternalDependencies(rootNode, minVersion)
