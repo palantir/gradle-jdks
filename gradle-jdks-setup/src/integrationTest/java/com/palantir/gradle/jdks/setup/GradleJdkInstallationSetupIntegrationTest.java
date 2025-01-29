@@ -57,19 +57,25 @@ public class GradleJdkInstallationSetupIntegrationTest {
     @Test
     public void can_setup_jdks_centos_using_wget() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_GLIBC);
-        dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL, false);
+        dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL, false, true);
     }
 
     @Test
     public void can_setup_jdks_ubuntu_using_curl() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_GLIBC);
-        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, false);
+        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, false, true);
     }
 
     @Test
     public void can_reinstall_jdks_ubuntu_using_curl() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(Os.LINUX_GLIBC);
-        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, true);
+        dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, true, true);
+    }
+
+    @Test
+    public void can_setup_jdks_alpine() throws IOException, InterruptedException {
+        setupGradleDirectoryStructure(Os.LINUX_MUSL);
+        dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL, false, false);
     }
 
     private Path setupGradleDirectoryStructure(Os os) throws IOException {
@@ -117,21 +123,27 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Path localPath = Files.createFile(archDirectory.resolve("local-path"));
         writeFileContent(localPath, String.format("amazon-corretto-%s", JDK_VERSION));
 
-        // Adding a GraalVm distribution
-        String graalMajorVersion = Iterables.get(Splitter.on('.').split(GRAAL_VERSION), 0);
-        Path graalDirectory = Files.createDirectories(
-                gradleDirectory.resolve(String.format("jdks/%s/%s/%s", graalMajorVersion, os.uiName(), ARCH.uiName())));
-        Path graalDownloadUrlPath = Files.createFile(graalDirectory.resolve("download-url"));
-        JdkPath graalJdkPath = GRAAL_VM_CE_DISTRIBUTION.path(
-                JdkRelease.builder().version(GRAAL_VERSION).os(os).arch(ARCH).build());
-        writeFileContent(
-                graalDownloadUrlPath,
-                String.format(String.format(
-                        "%s/%s.%s",
-                        GRAAL_VM_CE_DISTRIBUTION.defaultBaseUrl(), graalJdkPath.filename(), graalJdkPath.extension())));
-        Path graalLocalPath = Files.createFile(graalDirectory.resolve("local-path"));
-        writeFileContent(graalLocalPath, String.format("graalvm-community-jdk-%s", GRAAL_VERSION));
-
+        if (!os.equals(Os.LINUX_MUSL)) {
+            // Adding a GraalVm distribution only for non-musl
+            String graalMajorVersion = Iterables.get(Splitter.on('.').split(GRAAL_VERSION), 0);
+            Path graalDirectory = Files.createDirectories(gradleDirectory.resolve(
+                    String.format("jdks/%s/%s/%s", graalMajorVersion, os.uiName(), ARCH.uiName())));
+            Path graalDownloadUrlPath = Files.createFile(graalDirectory.resolve("download-url"));
+            JdkPath graalJdkPath = GRAAL_VM_CE_DISTRIBUTION.path(JdkRelease.builder()
+                    .version(GRAAL_VERSION)
+                    .os(os)
+                    .arch(ARCH)
+                    .build());
+            writeFileContent(
+                    graalDownloadUrlPath,
+                    String.format(String.format(
+                            "%s/%s.%s",
+                            GRAAL_VM_CE_DISTRIBUTION.defaultBaseUrl(),
+                            graalJdkPath.filename(),
+                            graalJdkPath.extension())));
+            Path graalLocalPath = Files.createFile(graalDirectory.resolve("local-path"));
+            writeFileContent(graalLocalPath, String.format("graalvm-community-jdk-%s", GRAAL_VERSION));
+        }
         // copy the jar from build/libs to the gradle directory
         Files.copy(
                 Path.of(String.format(
@@ -170,7 +182,8 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Files.writeString(path, content + "\n");
     }
 
-    private void dockerBuildAndRunTestingScript(String baseImage, String shell, boolean installCurl, boolean addJdkDir)
+    private void dockerBuildAndRunTestingScript(
+            String baseImage, String shell, boolean installCurl, boolean addJdkDir, boolean expectedGraalJdk)
             throws IOException, InterruptedException {
         Path dockerFile = Path.of("src/integrationTest/resources/template.Dockerfile");
         String dockerImage = String.format("jdk-test-%s", baseImage);
@@ -190,12 +203,17 @@ public class GradleJdkInstallationSetupIntegrationTest {
                 "-f",
                 dockerFile.toAbsolutePath().toString(),
                 workingDir.toAbsolutePath().toString()));
-        assertThat(runCommandWithZeroExitCode(
-                        List.of("docker", "run", "--rm", dockerImage, shell, "/testing-script.sh")))
+        String output =
+                runCommandWithZeroExitCode(List.of("docker", "run", "--rm", dockerImage, shell, "/testing-script.sh"));
+        assertThat(output)
                 .contains("openjdk version \"11.0.21\"")
                 .contains("JAVA_HOME is set to: /root/.gradle/gradle-jdks/amazon-corretto-11.0.21.9.1")
-                .contains("GraalVM CE 23.0.1")
                 .doesNotContain("Unexpected output");
+        if (expectedGraalJdk) {
+            assertThat(output).contains("GraalVM CE 23.0.1");
+        } else {
+            assertThat(output).contains("GraalVM is not set");
+        }
     }
 
     private static String runCommandWithZeroExitCode(List<String> commandArguments)

@@ -20,4 +20,8 @@ if [ -s /tmp/all-output ]; then
   echo "Unexpected output after all JDKs were installed: $(cat /tmp/all-output)"
 fi
 
-/root/.gradle/gradle-jdks/graalvm-community-jdk-23.0.1/bin/java -version
+if [ ! -f /root/.gradle/gradle-jdks/graalvm-community-jdk-23.0.1 ]; then
+  echo "GraalVM is not set"
+else
+  /root/.gradle/gradle-jdks/graalvm-community-jdk-23.0.1/bin/java -version
+fi
