@@ -96,9 +96,9 @@ public abstract class GradleJdksConfigs extends DefaultTask {
             throw new RuntimeException(
                     "No JDKs were configured for the gradle setup. Please run `./gradlew setupJdks` to generate the"
                             + " JDKs and ensure that you have configured JDKs properly for gradle-jdks as per"
-                            + " the readme: https://github.com/palantir/gradle-jdks#usage"
-                            + " if you see this error after removing all `gradle-sls-docker` plugins"
-                            + " see: https://pl.ntr/2v1");
+                            + " the readme: https://github.com/palantir/gradle-jdks#usage."
+                            + " Palantirians: If you see this error on an internal project after removing all"
+                            + " gradle-sls-docker related plugins, see https://pl.ntr/2v1 to fix.");
         }
 
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();
