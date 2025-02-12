@@ -98,7 +98,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                             + " JDKs and ensure that you have configured JDKs properly for gradle-jdks as per"
                             + " the readme: https://github.com/palantir/gradle-jdks#usage."
                             + " Palantirians: If you see this error on an internal project after removing all"
-                            + " gradle-sls-docker related plugins, see https://pl.ntr/2v1 to fix.");
+                            + " `gradle-sls-docker` related plugins, see https://pl.ntr/2v1 to fix.");
         }
 
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();
