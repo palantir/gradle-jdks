@@ -33,6 +33,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
     private static final int JAVA_11_BYTECODE = 55
     private static final int JAVA_17_BYTECODE = 61
     private static final int JAVA_21_BYTECODE = 65
+    private static final int JAVA_23_BYTECODE = 67
     private static final int ENABLE_PREVIEW_BYTECODE = 65535
 
     @TempDir
@@ -179,6 +180,50 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         and: 'the project is compiled with the overridden `target` version'
         File subproject21Class = new File(subprojectLib21, "build/classes/java/main/Main.class")
         readBytecodeVersion(subproject21Class) == Pair.of(0, JAVA_21_BYTECODE)
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
+    }
+
+
+    def '#gradleVersionNumber: graal jdks are generated'() {
+        gradleVersion = gradleVersionNumber
+        setupJdksHardcodedVersions()
+        applyBaselineJavaVersions()
+        applyApplicationPlugin()
+
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('src/main/java/Main.java') << java17PreviewCode
+
+        // language=Groovy
+        buildFile << """
+            javaVersions {
+                libraryTarget = '23'
+            }
+            
+            jdks {
+                jdk(23) {
+                    distribution = 'graalvm-ce'
+                    jdkVersion = '23.0.1'
+                }
+            }
+        """.stripIndent(true)
+
+        when: 'running printGradleHome task'
+        runTasksSuccessfully('wrapper')
+
+        then: 'generates directories for all jdk versions'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toList())
+                .containsAll(List.of("11", "17", "21", "23"))
+
+        when: 'compiling projects'
+        def output = runGradlewTasksSuccessfully("compileJava", "--info")
+
+        then: 'the main project is compiled with `distributionTarget` version'
+        File compiledClass = new File(projectDir, "build/classes/java/main/Main.class")
+        readBytecodeVersion(compiledClass) == Pair.of(0, JAVA_23_BYTECODE)
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS

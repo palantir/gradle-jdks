@@ -28,11 +28,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
 /**
- * Class responsible for 2 workflows:
- * 1. installing the current JDK into {@code destinationJdkInstallationDir} and importing the
- *  system certificates into the JDK's truststore.
- * 2. setting the java.home value in .gradle/config.properties to {@code gradleDaemonJavaHome} in the project directory.
- * The class will be called by the Gradle setup script in
+ * Class responsible for  installing the current JDK into {@code destinationJdkInstallationDir} and importing the
+ * system certificates into the JDK's truststore. The class will be called by the Gradle setup script in
  * <a href="file:../resources/gradle-jdks-setup.sh">resources/gradle-jdks-setup.sh</a>.
  */
 public final class GradleJdkInstallationSetup {
@@ -131,7 +128,7 @@ public final class GradleJdkInstallationSetup {
             logger.log(
                     String.format("Copying JDK from %s into %s", currentJavaHome, destinationJdkInstallationDirectory));
 
-            // same filesystem for the temporary diretory as the destinationDirectory to ensure an atomic move
+            // same filesystem for the temporary directory as the destinationDirectory to ensure an atomic move
             Path tempCopyDir = jdksInstallationDirectory.resolve(
                     String.format("tmp-%s", destinationJdkInstallationDirectory.getFileName()));
             // Ensuring that the JDK installation directory won't be partially copied.

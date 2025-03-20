@@ -119,7 +119,7 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
             jdks {                
                 jdk(11) {
                     distribution = 'graalvm-ce'
-                    jdkVersion = '11.22.3.0'    
+                    jdkVersion = '23.0.1'    
                 }
             }
         '''.stripIndent(true)
@@ -128,7 +128,7 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
         def stdout = runTasksSuccessfully('printJavaVersion').standardOutput
 
         then:
-        stdout.contains 'version: 11.0.17, vendor: GraalVM Community'
+        stdout.contains 'version: 23.0.1, vendor: GraalVM Community'
 
         where:
         gradleVersionNumber << GRADLE_VERSIONS
