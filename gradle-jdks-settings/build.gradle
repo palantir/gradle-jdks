@@ -58,3 +58,7 @@ tasks.withType(Test) {
     systemProperty 'user.home', '/tmp/gradleJdksSettingsTest'
     dependsOn project(':gradle-jdks').tasks.withType(PluginUnderTestMetadata.class)
 }
+
+gradleTestUtils {
+    gradleVersions = ['7.6.4', '8.8', '8.12.1']
+}
