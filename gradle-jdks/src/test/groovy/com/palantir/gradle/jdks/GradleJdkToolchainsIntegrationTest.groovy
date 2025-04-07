@@ -212,11 +212,12 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         when: 'running printGradleHome task'
         runTasksSuccessfully('wrapper')
 
-        then: 'generates directories for all jdk versions'
+        then: 'generates directories for all used jdk versions'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
                 .collect(Collectors.toList())
-                .containsAll(List.of("11", "17", "21", "23"))
+                // only the daemonTarget and graal JDK versions are used
+                .containsAll(List.of("11", "23"))
 
         when: 'compiling projects'
         def output = runGradlewTasksSuccessfully("compileJava", "--info")
