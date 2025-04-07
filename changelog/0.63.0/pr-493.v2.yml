@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Add default includeAllJdks option to generateGradleJdkConfigs
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/493
