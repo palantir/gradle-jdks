@@ -214,20 +214,20 @@ The plugin registers the following tasks:
 
 ## Using a new java version
 
-We are only generating the jdk configuration files for the jdk versions that are used see: [jdkMajorVersionsToUse](https://github.com/palantir/gradle-jdks/blob/26d54605b7827b232024ec7e0c34a87983804492/gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdksExtension.java#L44)
-Using a new java version is a 2-step process: 
-1. Firstly, we need to generate the gradle jdk configuration files for the new java version that we are going to use
-2. Secondly, once the new files are generated, the javaVersion can be configured in the gradle build configuration.
+We are only generating the JDK configuration files for the JDK versions that are used see: [`jdkMajorVersionsToUse`](https://github.com/palantir/gradle-jdks/blob/26d54605b7827b232024ec7e0c34a87983804492/gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdksExtension.java#L44)
+Using a new Java version is a 2-step process: 
+1. Firstly, we need to generate the `gradle-jdks` configuration files for the new Java version that we are going to use
+2. Secondly, once the new files are generated, the `javaVersion` can be configured in the Gradle build configuration.
 
 ### Palantir specific, if using `baseline-java-version` through excavators
-1. Run `./gradlew generateGradleJdkConfigs --includeAllJdks`. The command will generate the Gradle jdk configuration files for all jdks the plugin is aware of.
-2. Update the javaVersion(s)/jdks extension values with the desired java major version.
-3. Run `./gradlew setupJdks` to only keep the Gradle jdk configuration files for the used Gradle JDKs.
+1. Run `./gradlew generateGradleJdkConfigs --includeAllJdks`. The command will generate the `gradle-jdks` configuration files for *all* JDKs the plugin is aware of.
+2. Update the `javaVersion`(s)/`jdks` extension values with the desired Java major version.
+3. Run `./gradlew setupJdks` to only keep the `gradle-jdks` configuration files for the used Gradle JDKs.
 
 ### Manual bumps of the java versions 
-1. Run `./gradlew generateGradleJdkConfigs --includeVersion=<newVersion> [--includeVersion=<otherNewVersion>]`. The command will generate the Gradle jdk configuration files for the major versions passed as parameters.
-2. Update the javaVersion(s)/jdks extension values with the desired java major version.
-3. Run `./gradlew setupJdks` to only keep the Gradle jdk configuration files for the used Gradle JDKs.
+1. Run `./gradlew generateGradleJdkConfigs --includeVersion=<newVersion> [--includeVersion=<otherNewVersion>]`. The command will generate the `gradle-jdks` configuration files for the major versions passed as parameters.
+2. Update the `javaVersion`(s)/`jdks` extension values with the desired Java major version.
+3. Run `./gradlew setupJdks` to only keep the `gradle-jdks` configuration files for the used Gradle JDKs.
 
 ### Gradle Toolchains workflow
 1. Update `jdkMajorVersionsToUse` with the required jdk versions 
