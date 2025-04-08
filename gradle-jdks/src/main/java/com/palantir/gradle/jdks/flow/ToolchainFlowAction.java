@@ -103,7 +103,7 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                             .add(headerFooter)
                             .add(explanation)
                             .add(headerFooter)
-                            .add(ANSI_RESET_COLOR)
+                            .add(ansi(ANSI_RESET_COLOR))
                             .build()));
         });
     }
