@@ -80,12 +80,12 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                             .map(version -> String.format("--includeVersion=%s", version))
                             .collect(Collectors.joining(" "));
             String explanation = String.format(
-                    "Gradle JDK Auto-management is enabled but %s are not configured. The "
-                            + "current configured versions are: %s.\n"
-                            + "If you are trying to manually change the Java versions used, please follow the steps:\n"
-                            + "\t- Make sure build.gradle files only use the configured java major versions: %s\n"
-                            + "\t- Run `./gradlew generateGradleJdkConfigs %s` to generate the jdk configuration files.\n"
-                            + "\t- Update the build.gradle's java versions with the newly configured jdks\n",
+                    "Gradle JDK Auto-management is enabled but %s are not configured. The current configured versions"
+                        + " are: %s.\n"
+                        + "If you are trying to manually change the Java versions used, please follow the steps:\n"
+                        + "\t- Make sure build.gradle files only use the configured java major versions: %s\n"
+                        + "\t- Run `./gradlew generateGradleJdkConfigs %s` to generate the jdk configuration files.\n"
+                        + "\t- Update the build.gradle's java versions with the newly configured jdks\n",
                     maybeMissingToolchains,
                     parameters.getConfiguredJavaMajorVersions().get(),
                     parameters.getConfiguredJavaMajorVersions().get(),
