@@ -95,9 +95,11 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                     explanations.stream().mapToInt(String::length).max().orElseThrow(IllegalStateException::new);
             String headerFooter = "*".repeat(maxLineSize);
             ImmutableList.Builder<String> explanationList = ImmutableList.<String>builder();
-            Optional.ofNullable(System.getenv("CI")).ifPresent(_ignored -> explanationList.add(ANSI_RED_COLOR));
+            Optional.ofNullable(System.getenv("CI"))
+                    .ifPresentOrElse(_ignored -> {}, () -> explanationList.add(ANSI_RED_COLOR));
             explanationList.add(headerFooter).addAll(explanations).add(headerFooter);
-            Optional.ofNullable(System.getenv("CI")).ifPresent(_ignored -> explanationList.add(ANSI_RED_COLOR));
+            Optional.ofNullable(System.getenv("CI"))
+                    .ifPresentOrElse(_ignored -> {}, () -> explanationList.add(ANSI_RED_COLOR));
 
             log.error(String.join("\n", explanationList.build()));
         });
