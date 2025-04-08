@@ -221,7 +221,7 @@ Using a new Java version is a 2-step process:
 2. Secondly, once the new files are generated, the `javaVersion` can be configured in the Gradle build configuration.
 
 ### Palantir specific, if using `baseline-java-version` through excavators
-1. Run `./gradlew generateGradleJdkConfigs --includeAllJdks`. The command will generate the `gradle-jdks` configuration files for *all* JDKs the plugin is aware of.
+1. Run `./gradlew generateGradleJdkConfigs --includeAllJdks`. The command will generate the `gradle-jdks` configuration files for *all* JDKs the plugin is aware of (all available JDKs are configured by the JdksExtension, see the [Usage section](#usage) )
 2. Update the `javaVersion`(s)/`jdks` extension values with the desired Java major version.
 3. Run `./gradlew setupJdks` to only keep the `gradle-jdks` configuration files for the used Gradle JDKs.
 
