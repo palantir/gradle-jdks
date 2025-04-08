@@ -38,7 +38,6 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
 
         when: 'running setupJdks'
-        file("gradle/certs/cert.pem") << "dummy cert"
         def result = runTasksSuccessfully("setupJdks")
 
         then: 'it triggers the execution of Gradle JDK setup tasks'

@@ -84,12 +84,13 @@ public abstract class JdksExtension {
         getDaemonTarget().set(JavaLanguageVersion.of(value));
     }
 
-    public final SetProperty<JavaLanguageVersion> getJdkMajorVersionsToUse() {
+    public final SetProperty<JavaLanguageVersion> jdkMajorVersionsToUse() {
         return this.jdkMajorVersionsToUse;
     }
 
-    public final void setJdkMajorVersionsToUse(Set<JavaLanguageVersion> javaLanguageVersions) {
-        this.jdkMajorVersionsToUse.set(javaLanguageVersions);
+    public final void setJdkMajorVersionsToUse(Set<String> jdkMajorVersions) {
+        jdkMajorVersionsToUse()
+                .set(jdkMajorVersions.stream().map(JavaLanguageVersion::of).collect(Collectors.toSet()));
     }
 
     public final void daemonJdkOnly() {

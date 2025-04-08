@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks
 
+import com.google.common.base.Throwables
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.gradle.jdks.setup.common.CurrentOs
 import org.apache.commons.lang3.tuple.Pair
@@ -162,8 +163,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'generates directories for all jdk versions'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toList())
-                .containsAll(List.of("11", "17", "21"))
+                .collect(Collectors.toSet()) == Set.of("11", "17", "21")
 
         when: 'compiling projects'
         def output = runGradlewTasksSuccessfully("compileJava", "--info")
@@ -211,11 +211,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         when: 'running printGradleHome task'
         runTasksSuccessfully('wrapper')
 
-        then: 'generates directories for all jdk versions'
+        then: 'generates directories for all used jdk versions'
+        // only the daemonTarget and graal JDK versions are used
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toList())
-                .containsAll(List.of("11", "17", "21", "23"))
+                .collect(Collectors.toSet()) == Set.of("11", "23")
 
         when: 'compiling projects'
         def output = runGradlewTasksSuccessfully("compileJava", "--info")
@@ -254,6 +254,138 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS
+
+    }
+
+    def '#gradleVersionNumber: can bump java major version when baseline-java is applied'() {
+        gradleVersion = gradleVersionNumber
+        setupJdksHardcodedVersions('11')
+        applyBaselineJavaVersions()
+        applyApplicationPlugin()
+
+        // language=groovy
+        buildFile << """
+            javaVersions {
+                libraryTarget = '11'
+            }
+        """.stripIndent(true)
+
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('src/main/java/Main.java') << java17PreviewCode
+        runTasksSuccessfully('wrapper')
+
+        when:
+        runTasksSuccessfully('generateGradleJdkConfigs', '--includeVersion=11')
+
+        then: 'generates directories for jdk version == 11'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toSet()) == Set.of("11")
+
+        when:
+        runTasksSuccessfully('generateGradleJdkConfigs', '--includeVersion=11', '--includeVersion=21')
+
+        then: 'generates directories for jdk versions == 11, 21'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toSet()) == Set.of("11", "21")
+
+        when:
+        def failingCheck = runTasksWithFailure("check")
+
+        then: 'the check will fail because we have too many jdk files'
+        Throwables.getRootCause(failingCheck.failure).getMessage().contains("Unexpected Java versions configured: [21]")
+
+        when:
+        def output = runTasksSuccessfully("setupJdks")
+
+        then: 'the extra directory was deleted'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toSet()) == Set.of("11")
+
+        when:
+        runTasksSuccessfully('generateGradleJdkConfigs', '--includeAllJdks')
+
+        then: 'generates directories for all jdk versions'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toSet()) == Set.of("11", "17", "21")
+
+        when:
+        runTasksSuccessfully('setupJdks')
+
+        then: 'only jdk 11 is generated'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .allMatch { it -> it.endsWith("gradle/jdks/11")}
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
+    }
+
+    def '#gradleVersionNumber: only jdkVersionsToUse jdks are generated'() {
+        gradleVersion = gradleVersionNumber
+        setupJdksHardcodedVersions('11')
+        applyApplicationPlugin()
+
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('src/main/java/Main.java') << java17PreviewCode
+        runTasksSuccessfully('wrapper')
+
+        when:
+        buildFile << """
+            jdks {
+                jdkMajorVersionsToUse = ["11", "21"]
+            }
+        """.stripIndent(true)
+
+        runTasksSuccessfully('setupJdks')
+
+        then: 'only jdkVersionsToUse files are generated'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toSet()) == Set.of("11", "21")
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
+    }
+
+    def '#gradleVersionNumber: only required java versions are configured'() {
+        gradleVersion = gradleVersionNumber
+        setupJdksHardcodedVersions('17')
+        applyBaselineJavaVersions()
+        applyApplicationPlugin()
+
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('src/main/java/Main.java') << java17PreviewCode
+
+        // language=Groovy
+        buildFile << """
+            javaVersions {
+                libraryTarget = '17'
+            }
+        """.stripIndent(true)
+
+        //language=groovy
+        def subprojectLib21 = addSubproject 'subproject-lib-21', '''
+            apply plugin: 'java-library'
+            javaVersion {
+               target = 17
+               runtime = 21
+            }
+        '''.stripIndent(true)
+        writeJavaSourceFile(getMainJavaCode(), subprojectLib21)
+
+        when:
+        runTasksSuccessfully('wrapper')
+
+        then: 'generates directories for all jdk versions'
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toSet()) == Set.of("17", "21")
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
     def '#gradleVersionNumber: fails if the jdk version is not configured'() {
@@ -264,7 +396,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
         buildFile << '''
             javaVersions {
-                distributionTarget = '15'
+                libraryTarget = 15
             }
         '''.stripIndent(true)
         writeHelloWorld(projectDir)
@@ -277,11 +409,14 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
         then:
         expectedErrorLines.forEach { expectedErrorLine -> result.contains(expectedErrorLine) }
+        if (shouldLogExplanation) {
+            result.contains("If you are trying to manually change the JDK versions used")
+        }
 
         where:
-        gradleVersionNumber  | expectedErrorLines
-        GradleJdkTestUtils.GRADLE_7_6_4_VERSION | ["No compatible toolchains found for request specification: {languageVersion=15, vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false)."]
-        GradleJdkTestUtils.GRADLE_8_5_VERSION   | ["No matching toolchains found for requested specification: {languageVersion=15, vendor=any, implementation=vendor-specific}", "No locally installed toolchains match and toolchain auto-provisioning is not enabled."]
+        gradleVersionNumber  | expectedErrorLines | shouldLogExplanation
+        GradleJdkTestUtils.GRADLE_7_6_4_VERSION | ["No compatible toolchains found for request specification: {languageVersion=15, vendor=any, implementation=vendor-specific} (auto-detect false, auto-download false)."] | false
+        GradleJdkTestUtils.GRADLE_8_5_VERSION   | ["No matching toolchains found for requested specification: {languageVersion=15, vendor=any, implementation=vendor-specific}", "No locally installed toolchains match and toolchain auto-provisioning is not enabled."] | true
     }
 
     def java17PreviewCode = '''

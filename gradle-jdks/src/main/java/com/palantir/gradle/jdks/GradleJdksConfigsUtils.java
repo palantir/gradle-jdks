@@ -16,6 +16,10 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.common.Arch;
+import com.palantir.gradle.jdks.setup.common.CurrentArch;
+import com.palantir.gradle.jdks.setup.common.CurrentOs;
+import com.palantir.gradle.jdks.setup.common.Os;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,6 +34,8 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 import java.util.jar.JarEntry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class GradleJdksConfigsUtils {
 
@@ -113,6 +119,21 @@ public final class GradleJdksConfigsUtils {
             Files.createDirectories(directory);
         } catch (IOException e) {
             throw new RuntimeException(String.format("Failed to create directory %s", directory), e);
+        }
+    }
+
+    public static Set<String> getConfiguredJavaMajorVersions(Path gradleJdksLocalDirectory) {
+        Os os = CurrentOs.get();
+        Arch arch = CurrentArch.get();
+        try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
+            return stream.filter(path -> path.resolve(os.toString())
+                            .resolve(arch.toString())
+                            .toFile()
+                            .exists())
+                    .map(path -> path.getFileName().toString())
+                    .collect(Collectors.toSet());
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to list the configured gradle/jdks major versions", e);
         }
     }
 

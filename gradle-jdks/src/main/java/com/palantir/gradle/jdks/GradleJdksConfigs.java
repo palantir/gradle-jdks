@@ -16,15 +16,19 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.collect.Sets;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.Directory;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -44,6 +48,22 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     public static final String GRADLE_JDKS_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
 
+    @Input
+    @Option(
+            option = "includeAllJdks",
+            description = "Generates the configuration directories for all configured Java major versions.")
+    public abstract Property<Boolean> getIncludeAllJdks();
+
+    @Option(
+            option = "includeVersion",
+            description = "Generates the configuration directory for the java major versions passed in as parameters.")
+    public final void setIncludeVersionsFromCli(List<String> versions) {
+        getIncludeJavaMajorVersions().set(versions);
+    }
+
+    @Input
+    public abstract ListProperty<String> getIncludeJavaMajorVersions();
+
     @Nested
     public abstract MapProperty<JavaLanguageVersion, List<JdkDistributionConfig>> getJavaVersionToJdkDistros();
 
@@ -52,12 +72,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     @Input
     public abstract MapProperty<String, String> getCaCerts();
-
-    @Input
-    @Option(
-            option = "includeAllJdks",
-            description = "Generates the configuration directories for all configured Java major versions.")
-    public abstract Property<Boolean> getIncludeAllJdks();
 
     abstract Directory gradleDirectory();
 
@@ -73,8 +87,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     protected abstract void maybePrepareForAction(List<Path> targetPaths);
 
     public GradleJdksConfigs() {
-        // TODO(crogoz): change to false, once we switch to using jdksExtension's jdkMajorVersionsToUse
-        getIncludeAllJdks().convention(true);
+        getIncludeAllJdks().convention(false);
     }
 
     @TaskAction
@@ -111,6 +124,19 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                             + " the readme: https://github.com/palantir/gradle-jdks#usage."
                             + " Palantirians: If you see this error on an internal project after removing all"
                             + " `gradle-sls-docker` related plugins, see https://pl.ntr/2v1 to fix.");
+        }
+
+        Set<String> configuredJavaMajorVersions = GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(gradleJdksDir);
+        Set<String> unexpectedConfiguredJavaVersions = Sets.difference(
+                configuredJavaMajorVersions,
+                getJavaVersionToJdkDistros().get().keySet().stream()
+                        .map(JavaLanguageVersion::toString)
+                        .collect(Collectors.toSet()));
+        if (!unexpectedConfiguredJavaVersions.isEmpty()) {
+            throw new RuntimeException(String.format(
+                    "Unexpected Java versions configured: %s. Please run `./gradlew setupJdks` to regenerate the used"
+                            + " JDKS.",
+                    unexpectedConfiguredJavaVersions));
         }
 
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();

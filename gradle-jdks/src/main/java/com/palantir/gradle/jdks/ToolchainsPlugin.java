@@ -16,16 +16,22 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionExtension;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
+import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
+import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.gradle.util.GradleVersion;
 
@@ -47,6 +53,9 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                             + "Gradle version in order to use the JDK setup.",
                     GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION));
         }
+        if (areFlowActionsSupported()) {
+            rootProject.getPluginManager().apply(ToolchainFailureFlowActionsPlugin.class);
+        }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
         rootProject.getPluginManager().apply(PalantirGradleJdksIdeaPlugin.class);
         rootProject
@@ -58,12 +67,25 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
 
         rootProject.getPluginManager().withPlugin("com.palantir.baseline-java-versions", unused -> {
-            rootProject
-                    .getExtensions()
-                    .getByType(BaselineJavaVersionsExtension.class)
-                    .getSetupJdkToolchains()
-                    .set(false);
+            BaselineJavaVersionsExtension baselineJavaVersionsExtension =
+                    rootProject.getExtensions().getByType(BaselineJavaVersionsExtension.class);
+            baselineJavaVersionsExtension.getSetupJdkToolchains().set(false);
+
+            jdksExtension.jdkMajorVersionsToUse().add(jdksExtension.getDaemonTarget());
+            jdksExtension.jdkMajorVersionsToUse().add(baselineJavaVersionsExtension.libraryTarget());
+            jdksExtension.jdkMajorVersionsToUse().add(asJavaLanguageVersion(baselineJavaVersionsExtension.runtime()));
+            jdksExtension
+                    .jdkMajorVersionsToUse()
+                    .add(asJavaLanguageVersion(baselineJavaVersionsExtension.distributionTarget()));
         });
+
+        rootProject.subprojects(
+                proj -> proj.getPluginManager().withPlugin("com.palantir.baseline-java-version", unused -> {
+                    BaselineJavaVersionExtension projectVersions =
+                            proj.getExtensions().getByType(BaselineJavaVersionExtension.class);
+                    jdksExtension.jdkMajorVersionsToUse().add(asJavaLanguageVersion(projectVersions.target()));
+                    jdksExtension.jdkMajorVersionsToUse().add(asJavaLanguageVersion(projectVersions.runtime()));
+                }));
         TaskProvider<Wrapper> wrapperTask = rootProject.getTasks().named("wrapper", Wrapper.class);
 
         TaskProvider<GenerateGradleJdksConfigsTask> generateGradleJdkConfigs = rootProject
@@ -89,7 +111,11 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             task.getDaemonJavaVersion().set(jdksExtension.getDaemonTarget());
             task.getJavaVersionToJdkDistros()
                     .putAll(rootProject.provider(() -> JdkDistributionConfigurator.getJavaVersionToJdkDistros(
-                            rootProject, jdkDistributions, jdksExtension)));
+                            rootProject,
+                            jdkDistributions,
+                            jdksExtension,
+                            task.getIncludeAllJdks().get(),
+                            task.getIncludeJavaMajorVersions().get())));
             task.getCaCerts().putAll(jdksExtension.getCaCerts());
         });
 
@@ -143,5 +169,13 @@ public final class ToolchainsPlugin implements Plugin<Project> {
         return GradleVersion.current()
                         .compareTo(GradleVersion.version(GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION))
                 >= 0;
+    }
+
+    private static boolean areFlowActionsSupported() {
+        return GradleVersion.current().compareTo(GradleVersion.version("8.6")) >= 0;
+    }
+
+    private static Provider<JavaLanguageVersion> asJavaLanguageVersion(Property<ChosenJavaVersion> version) {
+        return version.map(ChosenJavaVersion::javaLanguageVersion);
     }
 }
