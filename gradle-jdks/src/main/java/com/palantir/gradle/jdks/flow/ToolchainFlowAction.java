@@ -38,6 +38,7 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
     private static final Logger log = LoggerFactory.getLogger(ToolchainFlowAction.class);
     private static final Pattern LANGUAGE_VERSION_PATTERN = Pattern.compile("languageVersion=(\\d+)");
     private static final String ANSI_RED_COLOR = "\u001B[31m";
+    private static final String ANSI_RESET_COLOR = "\u001B[0m";
 
     interface Parameters extends FlowParameters {
         @Input
@@ -99,7 +100,7 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                     .ifPresentOrElse(_ignored -> {}, () -> explanationList.add(ANSI_RED_COLOR));
             explanationList.add(headerFooter).addAll(explanations).add(headerFooter);
             Optional.ofNullable(System.getenv("CI"))
-                    .ifPresentOrElse(_ignored -> {}, () -> explanationList.add(ANSI_RED_COLOR));
+                    .ifPresentOrElse(_ignored -> {}, () -> explanationList.add(ANSI_RESET_COLOR));
 
             log.error(String.join("\n", explanationList.build()));
         });
