@@ -16,10 +16,10 @@
 
 package com.palantir.gradle.jdks
 
+import com.google.common.base.Throwables
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.gradle.jdks.setup.common.CurrentOs
 import org.apache.commons.lang3.tuple.Pair
-import org.gradle.internal.impldep.com.amazonaws.util.Throwables
 import spock.lang.TempDir
 
 import java.nio.file.Files
@@ -163,8 +163,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'generates directories for all jdk versions'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toList())
-                .containsAll(List.of("11", "17", "21"))
+                .collect(Collectors.toSet()) == Set.of("11", "17", "21")
 
         when: 'compiling projects'
         def output = runGradlewTasksSuccessfully("compileJava", "--info")
@@ -213,11 +212,10 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         runTasksSuccessfully('wrapper')
 
         then: 'generates directories for all used jdk versions'
+        // only the daemonTarget and graal JDK versions are used
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toList())
-                // only the daemonTarget and graal JDK versions are used
-                .containsAll(List.of("11", "23"))
+                .collect(Collectors.toSet()) == Set.of("11", "23")
 
         when: 'compiling projects'
         def output = runGradlewTasksSuccessfully("compileJava", "--info")
@@ -282,8 +280,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'generates directories for jdk version == 11'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toList())
-                .containsAll(List.of("11"))
+                .collect(Collectors.toSet()) == Set.of("11")
 
         when:
         runTasksSuccessfully('generateGradleJdkConfigs', '--includeVersion=11', '--includeVersion=21')
@@ -291,8 +288,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'generates directories for jdk versions == 11, 21'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toList())
-                .containsAll(List.of("11", "21"))
+                .collect(Collectors.toSet()) == Set.of("11", "21")
 
         when:
         def failingCheck = runTasksWithFailure("check")
@@ -306,8 +302,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'the extra directory was deleted'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toList())
-                .containsAll(List.of("11"))
+                .collect(Collectors.toSet()) == Set.of("11")
 
         when:
         runTasksSuccessfully('generateGradleJdkConfigs', '--includeAllJdks')
@@ -315,8 +310,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'generates directories for all jdk versions'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toList())
-                .containsAll(List.of("11", "17", "21"))
+                .collect(Collectors.toSet()) == Set.of("11", "17", "21")
 
         when:
         runTasksSuccessfully('setupJdks')
@@ -350,8 +344,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'only jdkVersionsToUse files are generated'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toList())
-                .containsAll(List.of("11", "21"))
+                .collect(Collectors.toSet()) == Set.of("11", "21")
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS
@@ -387,7 +380,9 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         runTasksSuccessfully('wrapper')
 
         then: 'generates directories for all jdk versions'
-        Files.list(projectDir.toPath().resolve("gradle/jdks")).map { it -> it.getFileName().toString() }.collect(Collectors.toList()).containsAll(List.of("17", "21"))
+        Files.list(projectDir.toPath().resolve("gradle/jdks"))
+                .map { it -> it.getFileName().toString() }
+                .collect(Collectors.toSet()) == Set.of("17", "21")
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS

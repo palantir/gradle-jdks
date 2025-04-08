@@ -88,7 +88,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     public GradleJdksConfigs() {
         getIncludeAllJdks().convention(false);
-        getIncludeJavaMajorVersions().convention(List.of());
     }
 
     @TaskAction

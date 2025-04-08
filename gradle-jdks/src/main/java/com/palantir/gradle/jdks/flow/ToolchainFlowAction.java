@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks.flow;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.palantir.gradle.jdks.flow.ToolchainFlowAction.Parameters;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,8 @@ import org.slf4j.LoggerFactory;
 public final class ToolchainFlowAction implements FlowAction<Parameters> {
 
     private static final Logger log = LoggerFactory.getLogger(ToolchainFlowAction.class);
+    private static final Pattern LANGUAGE_VERSION_PATTERN = Pattern.compile("languageVersion=(\\d+)");
+    private static final String ANSI_RED_COLOR = "\u001B[31m";
 
     interface Parameters extends FlowParameters {
         @Input
@@ -57,8 +60,7 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
             }
             List<String> missingToolchains = noToolchainsAvailable.stream()
                     .map(exception -> {
-                        Pattern pattern = Pattern.compile("languageVersion=(\\d+)");
-                        Matcher matcher = pattern.matcher(exception.getMessage());
+                        Matcher matcher = LANGUAGE_VERSION_PATTERN.matcher(exception.getMessage());
                         if (matcher.find()) {
                             return Optional.of(matcher.group(1));
                         }
@@ -75,23 +77,29 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                     : missingToolchains.stream()
                             .map(version -> String.format("--includeVersion=%s", version))
                             .collect(Collectors.joining(" "));
-            log.error(
-                    "\n"
-                        + "\u001B[31m****************************************************************************************************\n"
-                        + "****************************************************************************************************\n"
-                        + "Gradle JDK Auto-management is enabled but {} are not configured. The current configured"
-                        + " versions are: {}.\n"
-                        + "If you are trying to manually change the Java versions used, please follow the steps:\n"
-                        + "\t- Make sure build.gradle files only use the configured java major versions: {}\n"
-                        + "\t- Run `./gradlew generateGradleJdkConfigs {}` to generate the jdk configuration files.\n"
-                        + "\t- Update the build.gradle's java versions with the newly configured jdks\n"
-                        + "****************************************************************************************************\n"
-                        + "****************************************************************************************************"
-                        + "\u001B[0m",
-                    maybeMissingToolchains,
-                    parameters.getConfiguredJavaMajorVersions().get(),
-                    parameters.getConfiguredJavaMajorVersions().get(),
-                    includeVersionsOption);
+            List<String> explanations = List.of(
+                    String.format(
+                            "Gradle JDK Auto-management is enabled but %s are not configured. The current configured"
+                                    + " versions are: %s.",
+                            maybeMissingToolchains,
+                            parameters.getConfiguredJavaMajorVersions().get()),
+                    "If you are trying to manually change the Java versions used, please follow the steps:",
+                    String.format(
+                            "\t- Make sure build.gradle files only use the configured java major versions: %s",
+                            parameters.getConfiguredJavaMajorVersions().get()),
+                    String.format(
+                            "\t- Run `./gradlew generateGradleJdkConfigs %s` to generate the jdk configuration files.",
+                            includeVersionsOption),
+                    "\t- Update the build.gradle's java versions with the newly configured jdks");
+            int maxLineSize =
+                    explanations.stream().mapToInt(String::length).max().orElseThrow(IllegalStateException::new);
+            String headerFooter = "*".repeat(maxLineSize);
+            ImmutableList.Builder<String> explanationList = ImmutableList.<String>builder();
+            Optional.ofNullable(System.getenv("CI")).ifPresent(_ignored -> explanationList.add(ANSI_RED_COLOR));
+            explanationList.add(headerFooter).addAll(explanations).add(headerFooter);
+            Optional.ofNullable(System.getenv("CI")).ifPresent(_ignored -> explanationList.add(ANSI_RED_COLOR));
+
+            log.error(String.join("\n", explanationList.build()));
         });
     }
 }

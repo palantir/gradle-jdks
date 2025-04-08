@@ -41,7 +41,7 @@ public final class JdkDistributionConfigurator {
             Project project,
             JdkDistributions jdkDistributions,
             JdksExtension jdksExtension,
-            Boolean includeAllJdks,
+            boolean includeAllJdks,
             List<String> includeSpecificJdks) {
         Set<JavaLanguageVersion> javaVersions = (includeAllJdks
                         ? Arrays.stream(JavaVersion.values())
