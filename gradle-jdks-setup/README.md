@@ -215,6 +215,7 @@ The plugin registers the following tasks:
 ## Using a new java version
 
 We are only generating the JDK configuration files for the JDK versions that are used see: [`jdkMajorVersionsToUse`](https://github.com/palantir/gradle-jdks/blob/26d54605b7827b232024ec7e0c34a87983804492/gradle-jdks/src/main/java/com/palantir/gradle/jdks/JdksExtension.java#L44)
+
 Using a new Java version is a 2-step process: 
 1. Firstly, we need to generate the `gradle-jdks` configuration files for the new Java version that we are going to use
 2. Secondly, once the new files are generated, the `javaVersion` can be configured in the Gradle build configuration.

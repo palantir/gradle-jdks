@@ -22,16 +22,16 @@ import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.gradle.util.GradleVersion;
 
@@ -71,27 +71,20 @@ public final class ToolchainsPlugin implements Plugin<Project> {
                     rootProject.getExtensions().getByType(BaselineJavaVersionsExtension.class);
             baselineJavaVersionsExtension.getSetupJdkToolchains().set(false);
 
-            jdksExtension.jdkMajorVersionsToUse().set(rootProject.provider(() -> Stream.of(
-                            jdksExtension.getDaemonTarget(),
-                            baselineJavaVersionsExtension.libraryTarget(),
-                            baselineJavaVersionsExtension.runtime().map(ChosenJavaVersion::javaLanguageVersion),
-                            baselineJavaVersionsExtension
-                                    .distributionTarget()
-                                    .map(ChosenJavaVersion::javaLanguageVersion))
-                    .map(Provider::get)
-                    .collect(Collectors.toSet())));
+            jdksExtension.jdkMajorVersionsToUse().add(jdksExtension.getDaemonTarget());
+            jdksExtension.jdkMajorVersionsToUse().add(baselineJavaVersionsExtension.libraryTarget());
+            jdksExtension.jdkMajorVersionsToUse().add(asJavaLanguageVersion(baselineJavaVersionsExtension.runtime()));
+            jdksExtension
+                    .jdkMajorVersionsToUse()
+                    .add(asJavaLanguageVersion(baselineJavaVersionsExtension.distributionTarget()));
         });
 
         rootProject.subprojects(
                 proj -> proj.getPluginManager().withPlugin("com.palantir.baseline-java-version", unused -> {
                     BaselineJavaVersionExtension projectVersions =
                             proj.getExtensions().getByType(BaselineJavaVersionExtension.class);
-
-                    jdksExtension.jdkMajorVersionsToUse().addAll(rootProject.provider(() -> Stream.of(
-                                    projectVersions.target(), projectVersions.runtime())
-                            .map(Provider::get)
-                            .map(ChosenJavaVersion::javaLanguageVersion)
-                            .collect(Collectors.toSet())));
+                    jdksExtension.jdkMajorVersionsToUse().add(asJavaLanguageVersion(projectVersions.target()));
+                    jdksExtension.jdkMajorVersionsToUse().add(asJavaLanguageVersion(projectVersions.runtime()));
                 }));
         TaskProvider<Wrapper> wrapperTask = rootProject.getTasks().named("wrapper", Wrapper.class);
 
@@ -180,5 +173,9 @@ public final class ToolchainsPlugin implements Plugin<Project> {
 
     private static boolean areFlowActionsSupported() {
         return GradleVersion.current().compareTo(GradleVersion.version("8.6")) >= 0;
+    }
+
+    private static Provider<JavaLanguageVersion> asJavaLanguageVersion(Property<ChosenJavaVersion> version) {
+        return version.map(ChosenJavaVersion::javaLanguageVersion);
     }
 }
