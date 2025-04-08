@@ -19,6 +19,7 @@ package com.palantir.gradle.jdks.flow;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.palantir.gradle.jdks.flow.ToolchainFlowAction.Parameters;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -78,31 +79,36 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                     : missingToolchains.stream()
                             .map(version -> String.format("--includeVersion=%s", version))
                             .collect(Collectors.joining(" "));
-            List<String> explanations = List.of(
-                    String.format(
-                            "Gradle JDK Auto-management is enabled but %s are not configured. The current configured"
-                                    + " versions are: %s.",
-                            maybeMissingToolchains,
-                            parameters.getConfiguredJavaMajorVersions().get()),
-                    "If you are trying to manually change the Java versions used, please follow the steps:",
-                    String.format(
-                            "\t- Make sure build.gradle files only use the configured java major versions: %s",
-                            parameters.getConfiguredJavaMajorVersions().get()),
-                    String.format(
-                            "\t- Run `./gradlew generateGradleJdkConfigs %s` to generate the jdk configuration files.",
-                            includeVersionsOption),
-                    "\t- Update the build.gradle's java versions with the newly configured jdks");
-            int maxLineSize =
-                    explanations.stream().mapToInt(String::length).max().orElseThrow(IllegalStateException::new);
+            String explanation = String.format(
+                    "Gradle JDK Auto-management is enabled but %s are not configured. The "
+                            + "current configured versions are: %s.\n"
+                            + "If you are trying to manually change the Java versions used, please follow the steps:\n"
+                            + "\t- Make sure build.gradle files only use the configured java major versions: %s\n"
+                            + "\t- Run `./gradlew generateGradleJdkConfigs %s` to generate the jdk configuration files.\n"
+                            + "\t- Update the build.gradle's java versions with the newly configured jdks\n",
+                    maybeMissingToolchains,
+                    parameters.getConfiguredJavaMajorVersions().get(),
+                    parameters.getConfiguredJavaMajorVersions().get(),
+                    includeVersionsOption);
+            int maxLineSize = Arrays.stream(explanation.split("\n"))
+                    .mapToInt(String::length)
+                    .max()
+                    .orElseThrow(IllegalStateException::new);
             String headerFooter = "*".repeat(maxLineSize);
-            ImmutableList.Builder<String> explanationList = ImmutableList.<String>builder();
-            Optional.ofNullable(System.getenv("CI"))
-                    .ifPresentOrElse(_ignored -> {}, () -> explanationList.add(ANSI_RED_COLOR));
-            explanationList.add(headerFooter).addAll(explanations).add(headerFooter);
-            Optional.ofNullable(System.getenv("CI"))
-                    .ifPresentOrElse(_ignored -> {}, () -> explanationList.add(ANSI_RESET_COLOR));
 
-            log.error(String.join("\n", explanationList.build()));
+            log.error(String.join(
+                    "\n",
+                    ImmutableList.<String>builder()
+                            .add(ansi(ANSI_RED_COLOR))
+                            .add(headerFooter)
+                            .add(explanation)
+                            .add(headerFooter)
+                            .add(ANSI_RESET_COLOR)
+                            .build()));
         });
+    }
+
+    private static String ansi(String code) {
+        return Optional.ofNullable(System.getenv("CI")).map(_ignored -> "").orElse(code);
     }
 }
