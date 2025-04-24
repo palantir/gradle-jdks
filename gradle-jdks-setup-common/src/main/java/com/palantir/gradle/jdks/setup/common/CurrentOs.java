@@ -31,7 +31,7 @@ public final class CurrentOs {
             return Os.MACOS;
         }
 
-        if (osName.startsWith("windows")) {
+        if (osName.startsWith("windows") || osName.startsWith("mingw")) {
             return Os.WINDOWS;
         }
 

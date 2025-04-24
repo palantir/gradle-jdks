@@ -49,11 +49,12 @@ read_value() {
 }
 
 get_os() {
+  local os_name = "unsupported"
   # OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentOs.java
   case "$( uname )" in                          #(
     Linux* )          os_name="linux"  ;;       #(
     Darwin* )         os_name="macos"  ;;       #(
-    * )               die "ERROR Unsupported OS: $( uname )" ;;
+    * )               echo "ERROR Unsupported OS: $( uname )" ;;
   esac
 
   if [ "$os_name" = "linux" ]; then
@@ -73,6 +74,7 @@ get_os() {
 }
 
 get_arch() {
+  local arch_name = "unsupported"
   # Arch specific support, see: gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentArch.java
   case "$(uname -m)" in                         #(
     x86_64* )       arch_name="x86-64"  ;;      #(
@@ -83,7 +85,7 @@ get_arch() {
     aarch64* )      arch_name="aarch64"  ;;     #(
     x86* )          arch_name="x86"  ;;         #(
     i686* )         arch_name="x86"  ;;         #(
-    * )             die "ERROR Unsupported architecture: $( uname -m )" ;;
+    * )             echo "Unsupported architecture: $( uname -m )" ;;
   esac
 
   echo "$arch_name"
@@ -110,9 +112,22 @@ export OS
 ARCH=$(get_arch)
 export ARCH
 
+is_arch_os_supported() {
+  if [ "$OS" = "unsupported" || "$ARCH" = "unsupported"]; then
+    echo false
+  fi
+  echo true
+}
+
 install_and_setup_jdks() {
   gradle_dir=$1
   scripts_dir=${2:-"$1"}
+
+  supported=$(is_arch_os_supported)
+  if [ ! supported ]; then
+    echo "OS/Arch not supported, Skipping Gradle JDK Automanagemnt Setup..."
+    return
+  fi
 
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}
