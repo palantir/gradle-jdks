@@ -49,7 +49,7 @@ read_value() {
 }
 
 get_os() {
-  local os_name = "unsupported"
+  os_name = "unsupported"
   # OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentOs.java
   case "$( uname )" in                          #(
     Linux* )          os_name="linux"  ;;       #(
@@ -74,7 +74,7 @@ get_os() {
 }
 
 get_arch() {
-  local arch_name = "unsupported"
+  arch_name = "unsupported"
   # Arch specific support, see: gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentArch.java
   case "$(uname -m)" in                         #(
     x86_64* )       arch_name="x86-64"  ;;      #(
