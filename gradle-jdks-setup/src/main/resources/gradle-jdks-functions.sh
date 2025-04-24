@@ -49,12 +49,11 @@ read_value() {
 }
 
 get_os() {
-  os_name = "unsupported"
   # OS specific support; same as gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentOs.java
   case "$( uname )" in                          #(
     Linux* )          os_name="linux"  ;;       #(
     Darwin* )         os_name="macos"  ;;       #(
-    * )               echo "ERROR Unsupported OS: $( uname )" ;;
+    * )               os_name = "unsupported" && echo "ERROR Unsupported OS: $( uname )" ;;
   esac
 
   if [ "$os_name" = "linux" ]; then
@@ -74,7 +73,6 @@ get_os() {
 }
 
 get_arch() {
-  arch_name = "unsupported"
   # Arch specific support, see: gradle-jdks:com.palantir.gradle.jdks.setup.common.CurrentArch.java
   case "$(uname -m)" in                         #(
     x86_64* )       arch_name="x86-64"  ;;      #(
@@ -85,7 +83,7 @@ get_arch() {
     aarch64* )      arch_name="aarch64"  ;;     #(
     x86* )          arch_name="x86"  ;;         #(
     i686* )         arch_name="x86"  ;;         #(
-    * )             echo "Unsupported architecture: $( uname -m )" ;;
+    * )             arch_name = "unsupported" && echo "Unsupported architecture: $( uname -m )" ;;
   esac
 
   echo "$arch_name"
@@ -113,7 +111,7 @@ ARCH=$(get_arch)
 export ARCH
 
 is_arch_os_supported() {
-  if [ "$OS" = "unsupported" || "$ARCH" = "unsupported"]; then
+  if [ "$OS" = "unsupported" ] || [ "$ARCH" = "unsupported" ]; then
     echo false
   fi
   echo true
