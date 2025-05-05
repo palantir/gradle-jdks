@@ -121,12 +121,6 @@ install_and_setup_jdks() {
   gradle_dir=$1
   scripts_dir=${2:-"$1"}
 
-  supported=$(is_arch_os_supported)
-  if [ ! supported ]; then
-    echo "OS/Arch not supported, Skipping Gradle JDK Automanagemnt Setup..."
-    return
-  fi
-
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}
     major_version=${major_version_dir##*/}
