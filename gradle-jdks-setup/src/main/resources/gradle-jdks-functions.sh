@@ -53,7 +53,7 @@ get_os() {
   case "$( uname )" in                          #(
     Linux* )          os_name="linux"  ;;       #(
     Darwin* )         os_name="macos"  ;;       #(
-    * )               os_name = "unsupported" && echo "ERROR Unsupported OS: $( uname )" ;;
+    * )               os_name="unsupported";;
   esac
 
   if [ "$os_name" = "linux" ]; then
@@ -83,7 +83,7 @@ get_arch() {
     aarch64* )      arch_name="aarch64"  ;;     #(
     x86* )          arch_name="x86"  ;;         #(
     i686* )         arch_name="x86"  ;;         #(
-    * )             arch_name = "unsupported" && echo "Unsupported architecture: $( uname -m )" ;;
+    * )             arch_name="unsupported";;
   esac
 
   echo "$arch_name"
