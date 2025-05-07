@@ -84,7 +84,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'java home is set to out jdk 11 configured version'
         String os = CurrentOs.get().uiName()
         String arch = CurrentArch.get().uiName()
-        String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${GradleJdkTestUtils.DAEMON_MAJOR_VERSION_11}/${os}/${arch}/local-path").text.trim()
+        String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${GradleJdkTestUtils.DAEMON_MAJOR_VERSION_17}/${os}/${arch}/local-path").text.trim()
         Path daemonJvm = workingDir().resolve("gradle-jdks").resolve(daemonJdkFileName).toAbsolutePath()
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 
@@ -156,7 +156,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'java home is set to out jdk 11 configured version'
         String os = CurrentOs.get().uiName()
         String arch = CurrentArch.get().uiName()
-        String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${GradleJdkTestUtils.DAEMON_MAJOR_VERSION_11}/${os}/${arch}/local-path").text.trim()
+        String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${GradleJdkTestUtils.DAEMON_MAJOR_VERSION_17}/${os}/${arch}/local-path").text.trim()
         Path daemonJvm = workingDir().resolve("gradle-jdks").resolve(daemonJdkFileName).toAbsolutePath()
         gradleHomeOutput.contains("java.home: ${daemonJvm}")
 

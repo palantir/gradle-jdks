@@ -16,7 +16,7 @@
 
 package com.palantir.gradle.jdks
 
-import com.palantir.gradle.jdks.setup.common.CommandRunner
+
 import org.apache.commons.lang3.tuple.Pair
 
 import java.nio.file.Path
@@ -35,7 +35,7 @@ class GradleJdkTestUtils {
     static String JDK_21_VERSION = "21.0.2.13.1"
     static String SIMPLIFIED_JDK_21_VERSION = "21.0.2"
 
-    static String DAEMON_MAJOR_VERSION_11 = "11"
+    static String DAEMON_MAJOR_VERSION_17 = "17"
     static Pair<String, String> JDK_11 = Pair.of("azul-zulu", JDK_11_VERSION)
     static Pair<String, String> JDK_17 = Pair.of("amazon-corretto", JDK_17_VERSION)
     static Pair<String, String> JDK_21 = Pair.of("amazon-corretto", JDK_21_VERSION)
@@ -97,7 +97,7 @@ class GradleJdkTestUtils {
                 .stripIndent(true)
     }
 
-    static setupJdksHardcodedVersions(File settingsFile, File buildFile, String daemonJdkVersion = DAEMON_MAJOR_VERSION_11) {
+    static setupJdksHardcodedVersions(File settingsFile, File buildFile, String daemonJdkVersion = DAEMON_MAJOR_VERSION_17) {
 
         applyJdksPlugins(settingsFile, buildFile)
 
@@ -119,7 +119,7 @@ class GradleJdkTestUtils {
                   jdkVersion = JDK_21_VERSION
                }
                
-               daemonTarget = DAEMON_MAJOR_VERSION_11
+               daemonTarget = DAEMON_MAJOR_VERSION_17
             }
         """.replace("JDK_11_DISTRO", quoted(JDK_11.getLeft()))
                 .replace("JDK_11_VERSION", quoted(JDK_11.getRight()))
@@ -127,7 +127,7 @@ class GradleJdkTestUtils {
                 .replace("JDK_17_VERSION", quoted(JDK_17.getRight()))
                 .replace("JDK_21_DISTRO", quoted(JDK_21.getLeft()))
                 .replace("JDK_21_VERSION", quoted(JDK_21.getRight()))
-                .replace("DAEMON_MAJOR_VERSION_11", quoted(daemonJdkVersion))
+                .replace("DAEMON_MAJOR_VERSION_17", quoted(daemonJdkVersion))
                 .stripIndent(true)
     }
 
