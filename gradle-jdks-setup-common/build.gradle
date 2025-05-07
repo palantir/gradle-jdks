@@ -10,7 +10,7 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
 }
 
-
+// Used by gradle-jdks-setup so it needs to keep Java 11 compatibility.
 javaVersion {
     target = 11
 }
