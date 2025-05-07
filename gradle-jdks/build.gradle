@@ -15,7 +15,6 @@ dependencies {
     api project(':gradle-jdks-distributions')
     api project(':gradle-jdks-json')
     api project(':gradle-jdks-setup')
-    api project(':gradle-jdks-groovy')
     api project(':gradle-jdks-enablement')
 
     implementation('com.palantir.baseline:gradle-baseline-java') {
@@ -27,6 +26,7 @@ dependencies {
     implementation 'commons-io:commons-io'
     implementation 'org.apache.commons:commons-compress'
     implementation 'org.ow2.asm:asm'
+    implementation 'com.palantir.gradle.idea-configuration:gradle-idea-configuration'
 
     compileOnly 'com.palantir.gradle.auto-parallelizable:auto-parallelizable-annotations'
     compileOnly 'org.immutables:value::annotations'
@@ -51,13 +51,6 @@ gradlePlugin {
             description = 'Auto-provisions specific versions of JDKs'
             implementationClass = 'com.palantir.gradle.jdks.JdksPlugin'
             tags.addAll("java", "jdks")
-        }
-        jdksIdea {
-            id = 'com.palantir.jdks.idea'
-            displayName = 'Palantir Gradle JDK Configuring IDEA'
-            description = 'Plugin for configuring the IDEA Gradle JDK setup'
-            implementationClass = 'com.palantir.gradle.jdks.PalantirGradleJdksIdeaPlugin'
-            tags.addAll("java", "jdks", "idea")
         }
         palantirCa {
             id = 'com.palantir.jdks.palantir-ca'
