@@ -215,7 +215,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         // only the daemonTarget and graal JDK versions are used
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toSet()) == Set.of("11", "23")
+                .collect(Collectors.toSet()) == Set.of("17", "23")
 
         when: 'compiling projects'
         def output = runGradlewTasksSuccessfully("compileJava", "--info")
@@ -231,7 +231,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
     def '#gradleVersionNumber: only generates daemon jdk'() {
         gradleVersion = gradleVersionNumber
-        setupJdksHardcodedVersions('11')
+        setupJdksHardcodedVersions('17')
         applyBaselineJavaVersions()
         applyApplicationPlugin()
 
@@ -248,9 +248,9 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         when:
         runTasksSuccessfully('wrapper')
 
-        then: 'only jdk 11 is generated'
+        then: 'only jdk 17 is generated'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
-                .allMatch { it -> it.endsWith("gradle/jdks/11")}
+                .allMatch { it -> it.endsWith("gradle/jdks/17")}
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS
@@ -259,14 +259,14 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
     def '#gradleVersionNumber: can bump java major version when baseline-java is applied'() {
         gradleVersion = gradleVersionNumber
-        setupJdksHardcodedVersions('11')
+        setupJdksHardcodedVersions('17')
         applyBaselineJavaVersions()
         applyApplicationPlugin()
 
         // language=groovy
         buildFile << """
             javaVersions {
-                libraryTarget = '11'
+                libraryTarget = '17'
             }
         """.stripIndent(true)
 
@@ -277,24 +277,24 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         when:
         runTasksSuccessfully('generateGradleJdkConfigs', '--includeVersion=11')
 
-        then: 'generates directories for jdk version == 11'
+        then: 'generates directories for jdk version == 11, 17'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toSet()) == Set.of("11")
+                .collect(Collectors.toSet()) == Set.of("11", "17")
 
         when:
         runTasksSuccessfully('generateGradleJdkConfigs', '--includeVersion=11', '--includeVersion=21')
 
-        then: 'generates directories for jdk versions == 11, 21'
+        then: 'generates directories for jdk versions == 11, 17, 21'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toSet()) == Set.of("11", "21")
+                .collect(Collectors.toSet()) == Set.of("11", "17", "21")
 
         when:
         def failingCheck = runTasksWithFailure("check")
 
         then: 'the check will fail because we have too many jdk files'
-        Throwables.getRootCause(failingCheck.failure).getMessage().contains("Unexpected Java versions configured: [21]")
+        Throwables.getRootCause(failingCheck.failure).getMessage().contains("Unexpected Java versions configured: [11, 21]")
 
         when:
         def output = runTasksSuccessfully("setupJdks")
@@ -302,7 +302,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'the extra directory was deleted'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toSet()) == Set.of("11")
+                .collect(Collectors.toSet()) == Set.of("17")
 
         when:
         runTasksSuccessfully('generateGradleJdkConfigs', '--includeAllJdks')
@@ -315,9 +315,9 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         when:
         runTasksSuccessfully('setupJdks')
 
-        then: 'only jdk 11 is generated'
+        then: 'only jdk 17 is generated'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
-                .allMatch { it -> it.endsWith("gradle/jdks/11")}
+                .allMatch { it -> it.endsWith("gradle/jdks/17")}
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS
@@ -325,7 +325,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
     def '#gradleVersionNumber: only jdkVersionsToUse jdks are generated'() {
         gradleVersion = gradleVersionNumber
-        setupJdksHardcodedVersions('11')
+        setupJdksHardcodedVersions('17')
         applyApplicationPlugin()
 
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
@@ -335,7 +335,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         when:
         buildFile << """
             jdks {
-                jdkMajorVersionsToUse = ["11", "21"]
+                jdkMajorVersionsToUse = ["17", "21"]
             }
         """.stripIndent(true)
 
@@ -344,7 +344,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         then: 'only jdkVersionsToUse files are generated'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toSet()) == Set.of("11", "21")
+                .collect(Collectors.toSet()) == Set.of("17", "21")
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS

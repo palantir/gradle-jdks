@@ -51,7 +51,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
 
         and: 'the `gradle/` configuration files are generated'
         checkJdksVersions(projectDir, Set.of("11", "17", "21"))
-        Files.readString(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version")).trim() == "11"
+        Files.readString(projectDir.toPath().resolve("gradle/gradle-daemon-jdk-version")).trim() == "17"
         Path scriptPath = projectDir.toPath().resolve("gradle/gradle-jdks-setup.sh");
         Files.isExecutable(scriptPath)
         Path functionsPath = projectDir.toPath().resolve("gradle/gradle-jdks-functions.sh");
