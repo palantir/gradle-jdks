@@ -2,11 +2,6 @@ apply plugin: 'java'
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'org.unbroken-dome.test-sets'
 
-
-testSets {
-    integrationTest
-}
-
 dependencies {
     // Avoid adding large compile dependencies here, as they will also be added in the gradle-jdks-setup-all*.jar using the fatJar task
     implementation project(':gradle-jdks-setup-common')
@@ -14,12 +9,6 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'commons-io:commons-io'
-
-    integrationTestImplementation project(':gradle-jdks')
-    integrationTestImplementation 'commons-io:commons-io'
-    integrationTestImplementation 'com.google.guava:guava'
-    integrationTestImplementation 'org.junit.jupiter:junit-jupiter'
-    integrationTestImplementation 'org.assertj:assertj-core'
 }
 
 tasks.register('fatJar', Jar) {
@@ -37,16 +26,8 @@ tasks.withType(JavaCompile) {
     options.errorprone.disable 'PreferSafeLoggableExceptions', 'StringSplitter'
 }
 
-tasks.integrationTest {
-    environment("PROJECT_VERSION", project.version)
-    dependsOn tasks.fatJar
-}
-
-tasks.build.dependsOn tasks.fatJar, tasks.integrationTest
-
 // DO NOT UPDATE! This needs to be kept as low as possible, such that it is compatible with all the jdk versions the
 // consumers would want to set up with the JDK auto-management workflow (used by ./gradle-jdks-setup.sh and GradleWrapperMain.java classes)
 javaVersion {
     target = 11
-    runtime = 11
 }
