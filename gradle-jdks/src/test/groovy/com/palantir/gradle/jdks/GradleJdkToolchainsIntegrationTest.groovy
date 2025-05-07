@@ -266,16 +266,16 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         // language=groovy
         buildFile << """
             javaVersions {
-                libraryTarget = '17'
+                libraryTarget = '11'
             }
         """.stripIndent(true)
 
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
-        file('src/main/java/Main.java') << java17PreviewCode
+        file('src/main/java/Main.java') << getMainJavaCode()
         runTasksSuccessfully('wrapper')
 
         when:
-        runTasksSuccessfully('generateGradleJdkConfigs', '--includeVersion=11')
+        runTasksSuccessfully('generateGradleJdkConfigs')
 
         then: 'generates directories for jdk version == 11, 17'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
@@ -294,15 +294,15 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         def failingCheck = runTasksWithFailure("check")
 
         then: 'the check will fail because we have too many jdk files'
-        Throwables.getRootCause(failingCheck.failure).getMessage().contains("Unexpected Java versions configured: [11, 21]")
+        Throwables.getRootCause(failingCheck.failure).getMessage().contains("Unexpected Java versions configured: [21]")
 
         when:
-        def output = runTasksSuccessfully("setupJdks")
+        def output = runTasksSuccessfully("setupJdks", "compileJava")
 
         then: 'the extra directory was deleted'
         Files.list(projectDir.toPath().resolve("gradle/jdks"))
                 .map { it -> it.getFileName().toString() }
-                .collect(Collectors.toSet()) == Set.of(GradleJdkTestUtils.DAEMON_MAJOR_VERSION_17)
+                .collect(Collectors.toSet()) == Set.of("11", GradleJdkTestUtils.DAEMON_MAJOR_VERSION_17)
 
         when:
         runTasksSuccessfully('generateGradleJdkConfigs', '--includeAllJdks')
@@ -312,20 +312,13 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
                 .map { it -> it.getFileName().toString() }
                 .collect(Collectors.toSet()) == Set.of("11", "17", "21")
 
-        when:
-        runTasksSuccessfully('setupJdks')
-
-        then: 'only jdk 17 is generated'
-        Files.list(projectDir.toPath().resolve("gradle/jdks"))
-                .allMatch { it -> it.endsWith(String.format("gradle/jdks/%s", GradleJdkTestUtils.DAEMON_MAJOR_VERSION_17))}
-
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
     def '#gradleVersionNumber: only jdkVersionsToUse jdks are generated'() {
         gradleVersion = gradleVersionNumber
-        setupJdksHardcodedVersions("17")
+        setupJdksHardcodedVersions()
         applyApplicationPlugin()
 
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
