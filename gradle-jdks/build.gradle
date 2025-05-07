@@ -41,11 +41,6 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
-    
-    integTestImplementation 'commons-io:commons-io'
-    integTestImplementation 'com.google.guava:guava'
-    integTestImplementation 'org.junit.jupiter:junit-jupiter'
-    integTestImplementation 'org.assertj:assertj-core'
 }
 
 gradlePlugin {
