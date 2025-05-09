@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.setup;
+package com.palantir.gradle.jdks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
-import com.palantir.gradle.jdks.AmazonCorrettoJdkDistribution;
-import com.palantir.gradle.jdks.GraalVmCeDistribution;
-import com.palantir.gradle.jdks.JdkPath;
-import com.palantir.gradle.jdks.JdkRelease;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
@@ -165,7 +161,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         List<String> gradlewPatchLines =
                 Files.readAllLines(Path.of("../gradle-jdks/src/main/resources/gradlew-patch.sh"));
         List<String> initialTestLines =
-                Files.readAllLines(Path.of("src/integrationTest/resources/testing-script.template.sh"));
+                Files.readAllLines(Path.of("src/integTest/resources/testing-script.template.sh"));
         int placeholderIndex = IntStream.range(0, initialTestLines.size())
                 .filter(lineNo -> initialTestLines.get(lineNo).equals("PLACEHOLDER_INSERT_GRADLEW_PATCH"))
                 .findFirst()
@@ -185,7 +181,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
     private void dockerBuildAndRunTestingScript(
             String baseImage, String shell, boolean installCurl, boolean addJdkDir, boolean expectedGraalJdk)
             throws IOException, InterruptedException {
-        Path dockerFile = Path.of("src/integrationTest/resources/template.Dockerfile");
+        Path dockerFile = Path.of("src/integTest/resources/template.Dockerfile");
         String dockerImage = String.format("jdk-test-%s", baseImage);
         runCommandWithZeroExitCode(List.of(
                 "docker",

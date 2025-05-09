@@ -33,11 +33,6 @@ apply plugin: 'com.palantir.baseline-java-versions'
 apply plugin: 'com.palantir.jdks.latest'
 apply plugin: 'com.palantir.failure-reports'
 
-javaVersions {
-    libraryTarget = 11
-    runtime = 17
-}
-
 version gitVersion()
 
 allprojects {
@@ -57,6 +52,11 @@ allprojects {
 // workaround for:
 // `Error during resolution of the dependency graph of configuration configuration ':gradle-jdks-settings:unshadedCopy'`
 checkUnusedConstraints.enabled = false
+
+
+javaVersions {
+    libraryTarget = 17
+}
 
 jdks {
     daemonTarget = 21
