@@ -19,6 +19,8 @@ package com.palantir.gradle.jdks;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionExtension;
 import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
+import com.palantir.gradle.ideaconfiguration.IdeaConfigurationExtension;
+import com.palantir.gradle.ideaconfiguration.IdeaConfigurationPlugin;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
@@ -57,11 +59,15 @@ public final class ToolchainsPlugin implements Plugin<Project> {
             rootProject.getPluginManager().apply(ToolchainFailureFlowActionsPlugin.class);
         }
         rootProject.getPluginManager().apply(LifecycleBasePlugin.class);
-        rootProject.getPluginManager().apply(PalantirGradleJdksIdeaPlugin.class);
         rootProject
                 .getLogger()
                 .info("Gradle JDK automanagement is enabled. The JDKs used for all subprojects "
                         + "are managed by the configured custom toolchains.");
+
+        rootProject.getPluginManager().apply(IdeaConfigurationPlugin.class);
+        IdeaConfigurationExtension extension = rootProject.getExtensions().getByType(IdeaConfigurationExtension.class);
+        extension.externalDependency("palantir-gradle-jdks", "0.44.0");
+
         JdkDistributions jdkDistributions = new JdkDistributions();
 
         JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
