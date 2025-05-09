@@ -16,8 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.ideaconfiguration.IdeaConfigurationExtension;
-import com.palantir.gradle.ideaconfiguration.IdeaConfigurationPlugin;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import java.io.File;
 import java.util.Arrays;
@@ -35,10 +33,6 @@ public final class JdksPlugin implements Plugin<Project> {
         if (rootProject.getRootProject() != rootProject) {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
-
-        rootProject.getPluginManager().apply(IdeaConfigurationPlugin.class);
-        IdeaConfigurationExtension extension = rootProject.getExtensions().getByType(IdeaConfigurationExtension.class);
-        extension.externalDependency("palantir-gradle-jdks", "0.44.0");
 
         if (GradleJdksEnablement.isGradleJdkSetupEnabled(
                 rootProject.getProjectDir().toPath())) {
