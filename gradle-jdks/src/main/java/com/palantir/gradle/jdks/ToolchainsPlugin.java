@@ -66,7 +66,7 @@ public final class ToolchainsPlugin implements Plugin<Project> {
 
         rootProject.getPluginManager().apply(IdeaConfigurationPlugin.class);
         IdeaConfigurationExtension extension = rootProject.getExtensions().getByType(IdeaConfigurationExtension.class);
-        extension.externalDependency("palantir-gradle-jdks", "0.44.0");
+        extension.getExternalDependencies().register("palantir-gradle-jdks", dep -> dep.atLeastVersion("0.44.0"));
 
         JdkDistributions jdkDistributions = new JdkDistributions();
 
