@@ -22,6 +22,7 @@ import com.palantir.gradle.jdks.flow.ToolchainFlowAction.Parameters;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -37,6 +38,13 @@ import org.slf4j.LoggerFactory;
 public final class ToolchainFlowAction implements FlowAction<Parameters> {
 
     private static final Logger log = LoggerFactory.getLogger(ToolchainFlowAction.class);
+
+    // This internal exception was renamed in https://github.com/gradle/gradle/pull/29166 and
+    // https://github.com/gradle/gradle/pull/29376
+    private static final Set<String> TOOLCHAIN_EXCEPTIONS = Set.of(
+            "org.gradle.jvm.toolchain.internal.NoToolchainAvailableException",
+            "org.gradle.jvm.toolchain.internal.install.exceptions.ToolchainProvisioningException");
+
     private static final Pattern LANGUAGE_VERSION_PATTERN = Pattern.compile("languageVersion=(\\d+)");
     private static final String ANSI_RED_COLOR = "\u001B[31m";
     private static final String ANSI_RESET_COLOR = "\u001B[0m";
@@ -55,7 +63,7 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
         parameters.getBuildResult().get().getFailure().ifPresent(failure -> {
             List<Throwable> noToolchainsAvailable = Throwables.getCausalChain(failure).stream()
                     .filter(throwable ->
-                            throwable instanceof org.gradle.jvm.toolchain.internal.NoToolchainAvailableException)
+                            TOOLCHAIN_EXCEPTIONS.contains(throwable.getClass().getName()))
                     .collect(Collectors.toList());
             if (noToolchainsAvailable.isEmpty()) {
                 return;
