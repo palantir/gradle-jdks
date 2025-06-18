@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: 'Revert "Excavator:  Updating Gradle Testing Versions"'
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/561
