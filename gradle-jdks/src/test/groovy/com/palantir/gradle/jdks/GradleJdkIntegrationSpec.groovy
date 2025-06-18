@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks
 
 import com.palantir.gradle.jdks.setup.common.CommandRunner
-import com.palantir.gradle.plugintesting.GradleTestVersions
 import nebula.test.IntegrationSpec
 import org.apache.commons.lang3.tuple.Pair
 
@@ -25,7 +24,7 @@ import java.nio.file.Path
 
 abstract class GradleJdkIntegrationSpec extends IntegrationSpec {
 
-    static final List<String> GRADLE_TEST_VERSIONS = GradleTestVersions.getGradleVersionsForTests()
+    static final List<String> GRADLE_TEST_VERSIONS = [GradleJdkTestUtils.GRADLE_7_6_VERSION, GradleJdkTestUtils.GRADLE_8_8_VERSION]
 
     abstract Path workingDir();
 

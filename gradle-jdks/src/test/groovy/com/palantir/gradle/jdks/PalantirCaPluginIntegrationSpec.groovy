@@ -16,16 +16,12 @@
 
 package com.palantir.gradle.jdks
 
-import com.palantir.gradle.plugintesting.GradleTestVersions
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
-import spock.lang.Unroll
 
-@Unroll
 class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
 
-    def '#gradleVersionNumber: can add ca certs to a JDK'() {
-        gradleVersion = gradleVersionNumber
+    def 'can add ca certs to a JDK'() {
         // language=gradle
         buildFile << '''
             // Can't do strict as open source CI does not have the Palantir CA
@@ -87,9 +83,6 @@ class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
         if (System.getenv("CI") == null) {
             assert stdout.contains(palantir3rdGenCaSerial)
         }
-        
-        where:
-        gradleVersionNumber << GradleTestVersions.getGradleVersionsForTests()
     }
 
     @Override

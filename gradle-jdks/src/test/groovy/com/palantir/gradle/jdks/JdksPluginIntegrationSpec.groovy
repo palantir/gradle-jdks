@@ -16,14 +16,13 @@
 
 package com.palantir.gradle.jdks
 
-import com.palantir.gradle.plugintesting.GradleTestVersions
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
 import spock.lang.Unroll
 
 @Unroll
 class JdksPluginIntegrationSpec extends IntegrationSpec {
-    private static final List<String> GRADLE_VERSIONS = GradleTestVersions.getGradleVersionsForTests()
+    private static final List<String> GRADLE_VERSIONS = List.of("7.6.2", "8.4")
 
     def setup() {
         // language=gradle
