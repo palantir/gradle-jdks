@@ -20,6 +20,7 @@ package com.palantir.gradle.jdks
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.gradle.jdks.setup.common.CurrentOs
 import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper
+import com.palantir.gradle.plugintesting.GradleTestVersions
 import spock.lang.TempDir
 
 import java.nio.file.Files
@@ -143,8 +144,9 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
-    def 'no gradleWrapper patch if palantir.jdk.setup.enabled == false'() {
+    def '#gradleVersionNumber: no gradleWrapper patch if palantir.jdk.setup.enabled == false'() {
         setupJdksHardcodedVersions()
+        gradleVersion = gradleVersionNumber
 
         when:
         def output = runTasksSuccessfully('wrapper')
@@ -152,6 +154,9 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         then:
         !output.wasExecuted('wrapperJdkPatcher')
         !file("gradlew").text.contains("gradle-jdks-setup.sh")
+        
+        where:
+        gradleVersionNumber << GradleTestVersions.getGradleVersionsForTests()
     }
 
     private static void checkJdksVersions(File projectDir, Set<String> versions) {
