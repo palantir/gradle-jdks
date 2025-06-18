@@ -16,8 +16,11 @@
 
 package com.palantir.gradle.jdks
 
+import com.palantir.gradle.plugintesting.GradleTestVersions
 import nebula.test.IntegrationSpec
+import spock.lang.Unroll
 
+@Unroll
 final class JdksExtensionProjectSpec extends IntegrationSpec {
     def setup() {
         // language=Gradle
@@ -28,7 +31,8 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
         '''.stripIndent(true)
     }
 
-    def 'correctly handles multi level version overrides'() {
+    def '#gradleVersionNumber: correctly handles multi level version overrides'() {
+        gradleVersion = gradleVersionNumber
         // language=Gradle
         buildFile << '''
             import com.palantir.gradle.jdks.setup.common.Arch
@@ -64,5 +68,8 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
         stdout.contains('jdkVersion macos aarch64: 11.1')
         stdout.contains('jdkVersion linux-glibc aarch64: 11.2')
         stdout.contains('jdkVersion linux-glibc x64: 11.3')
+        
+        where:
+        gradleVersionNumber << GradleTestVersions.getGradleVersionsForTests()
     }
 }
