@@ -83,5 +83,5 @@ tasks.withType(ProcessResources.class).configureEach {
 }
 
 gradleTestUtils {
-    gradleVersions = ['7.6.5', '8.14.2']
+    gradleVersions = ['8.14.2']
 }
