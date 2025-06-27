@@ -16,16 +16,20 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.jdks.setup.CaResources;
 import com.palantir.gradle.jdks.setup.ILogger;
 import java.util.Map;
+import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.model.ObjectFactory;
 
-public final class PalantirCaPlugin implements Plugin<Project> {
+public abstract class PalantirCaPlugin implements Plugin<Project> {
 
     private Project rootProject;
     private PalantirCaExtension extension;
+
+    @Inject
+    protected abstract ObjectFactory getObjectFactory();
 
     @Override
     public void apply(Project possibleRootProject) {
@@ -43,13 +47,13 @@ public final class PalantirCaPlugin implements Plugin<Project> {
         ILogger logger = new GradleLogger(
                 rootProject.getLogger(), extension.getLogLevel().get());
 
-        CaResources caResources = new CaResources(logger);
+        GradleAwareCaResources caResources = getObjectFactory().newInstance(GradleAwareCaResources.class, logger);
+
         rootProject
                 .getExtensions()
                 .getByType(JdksExtension.class)
                 .getCaCerts()
-                .putAll(possibleRootProject.provider(() -> caResources
-                        .readPalantirRootCaFromSystemTruststore()
+                .putAll(caResources.readPalantirRootCaFromSystemTruststore().map(maybeCert -> maybeCert
                         .map(cert -> Map.of(cert.getAlias(), cert.getContent()))
                         .orElseGet(() -> {
                             logger.logError("Could not find Palantir CA in system truststore");

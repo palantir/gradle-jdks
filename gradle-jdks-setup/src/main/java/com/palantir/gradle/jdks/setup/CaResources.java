@@ -59,25 +59,22 @@ public final class CaResources {
     private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
     private static final String PALANTIR_3RD_GEN_CERTIFICATE = "Palantir3rdGenRootCa";
 
-    private final ILogger logger;
-
-    public CaResources(ILogger logger) {
-        this.logger = logger;
+    // TODO delete
+    public static Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore(ILogger logger) {
+        return systemCertificates(logger).flatMap(CaResources::selectPalantirCertificate);
     }
 
-    public Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore() {
-        return systemCertificates().flatMap(CaResources::selectPalantirCertificate);
+    public static void importAllSystemCerts(Path jdkInstallationDirectory, ILogger logger) {
+        systemCertificates(logger)
+                .ifPresent(certs -> importCertificates(jdkInstallationDirectory, parseCerts(certs), logger));
     }
 
-    public void importAllSystemCerts(Path jdkInstallationDirectory) {
-        systemCertificates().ifPresent(certs -> importCertificates(jdkInstallationDirectory, parseCerts(certs)));
-    }
-
-    private void importCertificates(Path jdkInstallationDirectory, List<X509Certificate> certificates) {
+    private static void importCertificates(
+            Path jdkInstallationDirectory, List<X509Certificate> certificates, ILogger logger) {
         try {
             char[] passwd = "changeit".toCharArray();
             Path jksPath = jdkInstallationDirectory.resolve("lib/security/cacerts");
-            KeyStore jks = loadKeystore(passwd, jksPath);
+            KeyStore jks = loadKeystore(passwd, jksPath, logger);
             Set<X509Certificate> existingCertificates = getExistingCertificates(jks);
             List<X509Certificate> newCertificates = certificates.stream()
                     .filter(CaResources::isValid)
@@ -85,7 +82,7 @@ public final class CaResources {
                     .filter(certificate -> !existingCertificates.contains(certificate))
                     .collect(Collectors.toList());
             for (X509Certificate certificate : newCertificates) {
-                String alias = getAlias(certificate);
+                String alias = getAlias(certificate, logger);
                 logger.log(String.format(
                         "Certificate %s imported successfully into the JDK truststore from the system truststore.",
                         alias));
@@ -160,7 +157,7 @@ public final class CaResources {
         }
     }
 
-    public String getAlias(X509Certificate certificate) {
+    public static String getAlias(X509Certificate certificate, ILogger logger) {
         String distinguishedName = certificate.getIssuerX500Principal().getName();
         String serialNumber = certificate.getSerialNumber().toString();
         try {
@@ -177,7 +174,7 @@ public final class CaResources {
         return String.format("GradleJdks_%s_%s", distinguishedName.replaceAll("\\s", ""), serialNumber);
     }
 
-    private KeyStore loadKeystore(char[] password, Path location) {
+    private static KeyStore loadKeystore(char[] password, Path location, ILogger logger) {
         try (InputStream keystoreStream = new BufferedInputStream(Files.newInputStream(location))) {
             KeyStore keystore = KeyStore.getInstance("JKS");
             keystore.load(keystoreStream, password);
@@ -188,7 +185,7 @@ public final class CaResources {
         }
     }
 
-    private Optional<byte[]> systemCertificates() {
+    private static Optional<byte[]> systemCertificates(ILogger logger) {
         Os os = CurrentOs.get();
         switch (os) {
             case MACOS:
@@ -228,7 +225,7 @@ public final class CaResources {
                         keyChainPath.toAbsolutePath().toString()));
     }
 
-    private static byte[] linuxSystemCertificates() {
+    public static byte[] linuxSystemCertificates() {
         List<Path> possibleCaCertificatePaths = List.of(
                 // Ubuntu/debian
                 Paths.get("/etc/ssl/certs/ca-certificates.crt"),
@@ -248,7 +245,8 @@ public final class CaResources {
                 .getBytes(StandardCharsets.UTF_8);
     }
 
-    private static Optional<AliasContentCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {
+    // TODO: don't expose to public
+    public static Optional<AliasContentCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {
         return selectCertificates(
                         multipleCertificateBytes,
                         Map.of(PALANTIR_3RD_GEN_SERIAL.toString(), PALANTIR_3RD_GEN_CERTIFICATE))
