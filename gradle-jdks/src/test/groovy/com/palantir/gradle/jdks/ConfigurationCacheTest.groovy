@@ -35,6 +35,8 @@ class ConfigurationCacheTest extends IntegrationTestKitSpec {
             jdks {
                 daemonTarget = 21
             }
+
+            def value = jdks.getCaCerts().get()
         '''.stripIndent(true)
 
         expect:
