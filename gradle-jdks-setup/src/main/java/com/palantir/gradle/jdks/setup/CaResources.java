@@ -59,11 +59,6 @@ public final class CaResources {
     private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
     private static final String PALANTIR_3RD_GEN_CERTIFICATE = "Palantir3rdGenRootCa";
 
-    // TODO delete
-    public static Optional<AliasContentCert> readPalantirRootCaFromSystemTruststore(ILogger logger) {
-        return systemCertificates(logger).flatMap(CaResources::selectPalantirCertificate);
-    }
-
     public static void importAllSystemCerts(Path jdkInstallationDirectory, ILogger logger) {
         systemCertificates(logger)
                 .ifPresent(certs -> importCertificates(jdkInstallationDirectory, parseCerts(certs), logger));
@@ -245,7 +240,6 @@ public final class CaResources {
                 .getBytes(StandardCharsets.UTF_8);
     }
 
-    // TODO: don't expose to public
     public static Optional<AliasContentCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {
         return selectCertificates(
                         multipleCertificateBytes,
