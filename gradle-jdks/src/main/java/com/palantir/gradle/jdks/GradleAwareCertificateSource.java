@@ -37,14 +37,17 @@ public abstract class GradleAwareCertificateSource {
     @Inject
     protected abstract ProviderFactory getProviderFactory();
 
+    private final Provider<byte[]> macosSystemCert = macosSystemCertificates();
+    private final Provider<byte[]> linuxSystemCert = linuxSystemCertificates();
+
     public final Optional<Provider<byte[]>> systemCertificates(ILogger logger) {
         Os os = CurrentOs.get();
         switch (os) {
             case MACOS:
-                return Optional.of(macosSystemCertificates());
+                return Optional.of(macosSystemCert);
             case LINUX_MUSL:
             case LINUX_GLIBC:
-                return Optional.of(linuxSystemCertificates());
+                return Optional.of(linuxSystemCert);
             case WINDOWS:
                 logger.logError(String.format(
                         "Not attempting to read Palantir CA from system truststore "
