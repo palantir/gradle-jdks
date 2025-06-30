@@ -47,7 +47,10 @@ public abstract class PalantirCaPlugin implements Plugin<Project> {
         ILogger logger = new GradleLogger(
                 rootProject.getLogger(), extension.getLogLevel().get());
 
-        GradleAwareCaResources caResources = getObjectFactory().newInstance(GradleAwareCaResources.class, logger);
+        GradleAwareCertificateSource certificateSource =
+                this.getObjectFactory().newInstance(GradleAwareCertificateSource.class);
+        GradleAwareCaResources caResources =
+                getObjectFactory().newInstance(GradleAwareCaResources.class, logger, certificateSource);
 
         rootProject
                 .getExtensions()
