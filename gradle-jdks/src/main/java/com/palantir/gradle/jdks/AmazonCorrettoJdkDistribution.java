@@ -18,7 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 
 public final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     @Override
@@ -42,7 +42,7 @@ public final class AmazonCorrettoJdkDistribution implements JdkDistribution {
                 .build();
     }
 
-    private static String os(Os os) {
+    private static String os(OperatingSystem os) {
         switch (os) {
             case MACOS:
                 return "macosx";
@@ -57,7 +57,7 @@ public final class AmazonCorrettoJdkDistribution implements JdkDistribution {
         throw new UnsupportedOperationException("Case " + os + " not implemented");
     }
 
-    private static Extension extension(Os os) {
+    private static Extension extension(OperatingSystem os) {
         switch (os) {
             case MACOS:
             case LINUX_GLIBC:
@@ -83,8 +83,8 @@ public final class AmazonCorrettoJdkDistribution implements JdkDistribution {
         throw new UnsupportedOperationException("Case " + arch + " not implemented");
     }
 
-    private static String windowsDashJdk(Os os) {
-        if (os == Os.WINDOWS) {
+    private static String windowsDashJdk(OperatingSystem os) {
+        if (os == OperatingSystem.WINDOWS) {
             return "-jdk";
         }
 

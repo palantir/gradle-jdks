@@ -18,7 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.google.common.collect.Streams;
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +63,7 @@ public final class JdkDistributionConfigurator {
             JdkDistributions jdkDistributions,
             JavaLanguageVersion javaVersion,
             JdksExtension jdksExtension) {
-        return Arrays.stream(Os.values())
+        return Arrays.stream(OperatingSystem.values())
                 .flatMap(os -> Arrays.stream(Arch.values())
                         .flatMap(arch -> getJdkDistributionConfig(
                                 project, jdkDistributions, os, arch, javaVersion, jdksExtension)))
@@ -73,7 +73,7 @@ public final class JdkDistributionConfigurator {
     private static Stream<JdkDistributionConfig> getJdkDistributionConfig(
             Project project,
             JdkDistributions jdkDistributions,
-            Os os,
+            OperatingSystem os,
             Arch arch,
             JavaLanguageVersion javaVersion,
             JdksExtension jdksExtension) {

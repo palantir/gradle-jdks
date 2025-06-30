@@ -17,7 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.json.JdkInfoJson;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -31,20 +31,20 @@ public abstract class JdkExtension {
 
     public abstract Property<JdkDistributionName> getDistributionName();
 
-    private final Map<Os, JdkOsExtension> jdkOsExtensions = new HashMap<>();
+    private final Map<OperatingSystem, JdkOsExtension> jdkOsExtensions = new HashMap<>();
 
     @Inject
     protected abstract ObjectFactory getObjectFactory();
 
     public JdkExtension() {
-        for (Os os : Os.values()) {
+        for (OperatingSystem os : OperatingSystem.values()) {
             JdkOsExtension jdkOsExtension = getObjectFactory().newInstance(JdkOsExtension.class);
             jdkOsExtension.getJdkVersion().set(getJdkVersion());
             jdkOsExtensions.put(os, jdkOsExtension);
         }
     }
 
-    final JdkOsExtension jdkFor(Os os) {
+    final JdkOsExtension jdkFor(OperatingSystem os) {
         return jdkOsExtensions.get(os);
     }
 
@@ -56,12 +56,12 @@ public abstract class JdkExtension {
         setDistribution(JdkDistributionName.fromStringThrowing(distributionName));
     }
 
-    public final void os(Os os, Action<JdkOsExtension> action) {
+    public final void os(OperatingSystem os, Action<JdkOsExtension> action) {
         action.execute(jdkOsExtensions.get(os));
     }
 
     public final void os(String os, Action<JdkOsExtension> action) {
-        os(Os.fromStringThrowing(os), action);
+        os(OperatingSystem.fromStringThrowing(os), action);
     }
 
     public final void fromJson(JdkInfoJson jdkInfo) {

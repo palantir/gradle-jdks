@@ -19,7 +19,7 @@ package com.palantir.gradle.jdks.json;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.palantir.gradle.jdks.JdkDistributionName;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import java.util.Map;
 import org.immutables.value.Value;
 
@@ -29,7 +29,7 @@ import org.immutables.value.Value;
 public abstract class JdkInfoJson {
     public abstract JdkDistributionName distribution();
 
-    public abstract Map<Os, JdkOsInfoJson> os();
+    public abstract Map<OperatingSystem, JdkOsInfoJson> os();
 
     public static final class Builder extends ImmutableJdkInfoJson.Builder {}
 

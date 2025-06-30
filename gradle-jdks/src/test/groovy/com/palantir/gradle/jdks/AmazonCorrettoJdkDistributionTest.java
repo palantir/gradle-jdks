@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import org.junit.jupiter.api.Test;
 
 class AmazonCorrettoJdkDistributionTest {
@@ -30,7 +30,7 @@ class AmazonCorrettoJdkDistributionTest {
     void jdk_path_linux_x86_64() {
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
-                .os(Os.LINUX_GLIBC)
+                .os(OperatingSystem.LINUX_GLIBC)
                 .version("11.0.16.9.1")
                 .build());
         assertThat(path.filename()).isEqualTo("downloads/resources/11.0.16.9.1/amazon-corretto-11.0.16.9.1-linux-x64");
@@ -41,7 +41,7 @@ class AmazonCorrettoJdkDistributionTest {
     void jdk_path_macosx_aarch64() {
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.AARCH64)
-                .os(Os.MACOS)
+                .os(OperatingSystem.MACOS)
                 .version("17.0.4.9.1")
                 .build());
         assertThat(path.filename())
@@ -53,7 +53,7 @@ class AmazonCorrettoJdkDistributionTest {
     void jdk_path_macosx_x64() {
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
-                .os(Os.MACOS)
+                .os(OperatingSystem.MACOS)
                 .version("11.0.16.9.1")
                 .build());
         assertThat(path.filename()).isEqualTo("downloads/resources/11.0.16.9.1/amazon-corretto-11.0.16.9.1-macosx-x64");
@@ -64,7 +64,7 @@ class AmazonCorrettoJdkDistributionTest {
     void jdk_path_musl_linux_x64_64() {
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
-                .os(Os.LINUX_MUSL)
+                .os(OperatingSystem.LINUX_MUSL)
                 .version("11.0.16.9.1")
                 .build());
         assertThat(path.filename())
@@ -76,7 +76,7 @@ class AmazonCorrettoJdkDistributionTest {
     void jdk_path_windows_x86_64() {
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
-                .os(Os.WINDOWS)
+                .os(OperatingSystem.WINDOWS)
                 .version("17.0.4.9.1")
                 .build());
         assertThat(path.filename())

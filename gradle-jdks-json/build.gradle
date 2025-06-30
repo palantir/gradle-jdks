@@ -5,6 +5,8 @@ dependencies {
     api project(':gradle-jdks-distributions')
     api 'com.fasterxml.jackson.core:jackson-databind'
 
+    implementation 'com.palantir.gradle.utils:platform'
+
     annotationProcessor 'org.immutables:value'
     compileOnlyApi 'org.immutables:value::annotations'
     compileOnlyApi 'org.immutables:serial'

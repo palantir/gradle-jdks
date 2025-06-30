@@ -24,7 +24,7 @@ import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,29 +52,29 @@ public class GradleJdkInstallationSetupIntegrationTest {
 
     @Test
     public void can_setup_jdks_centos_using_wget() throws IOException, InterruptedException {
-        setupGradleDirectoryStructure(Os.LINUX_GLIBC);
+        setupGradleDirectoryStructure(OperatingSystem.LINUX_GLIBC);
         dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL, false, true);
     }
 
     @Test
     public void can_setup_jdks_ubuntu_using_curl() throws IOException, InterruptedException {
-        setupGradleDirectoryStructure(Os.LINUX_GLIBC);
+        setupGradleDirectoryStructure(OperatingSystem.LINUX_GLIBC);
         dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, false, true);
     }
 
     @Test
     public void can_reinstall_jdks_ubuntu_using_curl() throws IOException, InterruptedException {
-        setupGradleDirectoryStructure(Os.LINUX_GLIBC);
+        setupGradleDirectoryStructure(OperatingSystem.LINUX_GLIBC);
         dockerBuildAndRunTestingScript("ubuntu:20.04", "/bin/bash", INSTALL_CURL, true, true);
     }
 
     @Test
     public void can_setup_jdks_alpine() throws IOException, InterruptedException {
-        setupGradleDirectoryStructure(Os.LINUX_MUSL);
+        setupGradleDirectoryStructure(OperatingSystem.LINUX_MUSL);
         dockerBuildAndRunTestingScript("alpine:3.16.0", "/bin/sh", DO_NOT_INSTALL_CURL, false, false);
     }
 
-    private Path setupGradleDirectoryStructure(Os os) throws IOException {
+    private Path setupGradleDirectoryStructure(OperatingSystem os) throws IOException {
         /**
          * Each project will contain the following gradle file structure:
          * Note! Make sure the files end in a newline character, otherwise the `read` command in the
@@ -119,7 +119,7 @@ public class GradleJdkInstallationSetupIntegrationTest {
         Path localPath = Files.createFile(archDirectory.resolve("local-path"));
         writeFileContent(localPath, String.format("amazon-corretto-%s", JDK_VERSION));
 
-        if (!os.equals(Os.LINUX_MUSL)) {
+        if (!os.equals(OperatingSystem.LINUX_MUSL)) {
             // Adding a GraalVm distribution only for non-musl
             String graalMajorVersion = Iterables.get(Splitter.on('.').split(GRAAL_VERSION), 0);
             Path graalDirectory = Files.createDirectories(gradleDirectory.resolve(

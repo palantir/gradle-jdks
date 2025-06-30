@@ -24,12 +24,12 @@ import org.gradle.api.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class JdksPlugin implements Plugin<Project> {
+public class JdksPlugin implements Plugin<Project> {
 
     private static final Logger log = LoggerFactory.getLogger(JdksPlugin.class);
 
     @Override
-    public void apply(Project rootProject) {
+    public final void apply(Project rootProject) {
         if (rootProject.getRootProject() != rootProject) {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }

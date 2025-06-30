@@ -25,6 +25,7 @@ import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.CurrentOs;
+import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,7 +52,7 @@ class GradleJdksConfiguratorTest {
                         JdkInfoJson.builder()
                                 .distribution(JdkDistributionName.AMAZON_CORRETTO)
                                 .os(Map.of(
-                                        CurrentOs.get(),
+                                        OperatingSystem.get(),
                                         JdkOsInfoJson.builder()
                                                 .arch(Map.of(
                                                         CurrentArch.get(),

@@ -18,7 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -59,7 +59,7 @@ public final class GradleJdksConfigurator {
             String baseUrl,
             String javaVersion,
             String jdkVersion,
-            Os os,
+            OperatingSystem os,
             Arch arch,
             Path targetDir) {
         JdkRelease jdkRelease =
@@ -96,7 +96,8 @@ public final class GradleJdksConfigurator {
     // TODO(crogoz): Remove glibcOrMusl from the localPath name. This is a workaround for the excavator workflow.
     // Excavator caches the location of gradle-jdks directory, however it doesn't take into consideration if the job
     // is running on a musl/glibc image. Without this, we might be using the jdk used for a different c implementation.
-    private static String resolveLocalPath(Os os, JdkDistributionName jdkDistributionName, JdkRelease jdkRelease) {
+    private static String resolveLocalPath(
+            OperatingSystem os, JdkDistributionName jdkDistributionName, JdkRelease jdkRelease) {
         return os.glibcOrMuslDistribution()
                 .map(cDistribution ->
                         String.format("%s-%s-%s", jdkDistributionName, jdkRelease.version(), cDistribution))

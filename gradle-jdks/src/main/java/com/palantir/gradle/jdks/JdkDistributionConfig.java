@@ -17,7 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 
@@ -30,7 +30,7 @@ public interface JdkDistributionConfig {
     Property<String> getLocalPath();
 
     @Input
-    Property<Os> getOs();
+    Property<OperatingSystem> getOs();
 
     @Input
     Property<Arch> getArch();

@@ -19,7 +19,7 @@ package com.palantir.gradle.jdks;
 import com.google.common.collect.ImmutableSet;
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import java.util.Arrays;
 import java.util.List;
 import org.immutables.value.Value;
@@ -73,7 +73,7 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
         }
     }
 
-    private static String os(Os os) {
+    private static String os(OperatingSystem os) {
         switch (os) {
             case MACOS:
                 return "macosx";
@@ -101,7 +101,7 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
         throw new UnsupportedOperationException("Case " + arch + " not implemented");
     }
 
-    private static Extension extension(Os operatingSystem) {
+    private static Extension extension(OperatingSystem operatingSystem) {
         switch (operatingSystem) {
             case LINUX_GLIBC:
             case LINUX_MUSL:

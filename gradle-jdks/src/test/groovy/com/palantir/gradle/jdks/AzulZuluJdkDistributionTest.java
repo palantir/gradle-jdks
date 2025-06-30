@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.palantir.gradle.jdks.AzulZuluJdkDistribution.ZuluVersionSplit;
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import org.junit.jupiter.api.Test;
 
 class AzulZuluJdkDistributionTest {
@@ -47,7 +47,7 @@ class AzulZuluJdkDistributionTest {
         String version = ZuluVersionUtils.combineZuluVersions("11.56.19", "11.0.15");
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
-                .os(Os.LINUX_GLIBC)
+                .os(OperatingSystem.LINUX_GLIBC)
                 .version(version)
                 .build());
         assertThat(path.filename()).isEqualTo("zulu11.56.19-ca-jdk11.0.15-linux_x64");
@@ -60,7 +60,7 @@ class AzulZuluJdkDistributionTest {
         String version = ZuluVersionUtils.combineZuluVersions("19.0.21-ea", "19.0.0-ea.6");
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
-                .os(Os.LINUX_GLIBC)
+                .os(OperatingSystem.LINUX_GLIBC)
                 .version(version)
                 .build());
         assertThat(path.filename()).isEqualTo("zulu19.0.21-ea-jdk19.0.0-ea.6-linux_x64");
@@ -73,7 +73,7 @@ class AzulZuluJdkDistributionTest {
         String version = ZuluVersionUtils.combineZuluVersions("19.0.21", "19.0.0.6");
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.AARCH64)
-                .os(Os.MACOS)
+                .os(OperatingSystem.MACOS)
                 .version(version)
                 .build());
         assertThat(path.extension()).isEqualTo(Extension.ZIP);
@@ -85,7 +85,7 @@ class AzulZuluJdkDistributionTest {
         String version = ZuluVersionUtils.combineZuluVersions("11.56.19", "11.0.15");
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
-                .os(Os.LINUX_MUSL)
+                .os(OperatingSystem.LINUX_MUSL)
                 .version(version)
                 .build());
         assertThat(path.filename()).isEqualTo("zulu11.56.19-ca-jdk11.0.15-linux_musl_x64");
@@ -98,7 +98,7 @@ class AzulZuluJdkDistributionTest {
         String version = ZuluVersionUtils.combineZuluVersions("11.56.19", "11.0.15");
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
-                .os(Os.WINDOWS)
+                .os(OperatingSystem.WINDOWS)
                 .version(version)
                 .build());
         assertThat(path.filename()).isEqualTo("zulu11.56.19-ca-jdk11.0.15-win_x64");
