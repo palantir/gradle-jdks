@@ -47,11 +47,16 @@ public abstract class GradleAwareCaResources {
     @Inject
     protected abstract ProviderFactory getProviderFactory();
 
+    /**
+     * Provides the Palantir Root CA certificate from the system truststore for use in Gradle builds.
+     * The {@link Optional} will be empty if the system does not support certificate retrieval (e.g., Windows)
+     * or if the specific certificate is not found.
+     */
     public Provider<Optional<AliasContentCert>> readPalantirRootCaFromSystemTruststore() {
         Optional<Provider<byte[]>> certProviderOpt = certificateSource.systemCertificates(logger);
         return certProviderOpt
                 .map(provider -> provider.map(GradleAwareCaResources::selectPalantirCertificate))
-                .orElseGet(() -> getProviderFactory().provider(() -> Optional.empty()));
+                .orElseGet(() -> getProviderFactory().provider(Optional::empty));
     }
 
     private static Optional<AliasContentCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {

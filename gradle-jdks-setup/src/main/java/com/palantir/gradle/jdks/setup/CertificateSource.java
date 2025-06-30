@@ -29,7 +29,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class CertificateSource {
+public final class CertificateSource {
+    private CertificateSource() {}
+
     public static Optional<byte[]> systemCertificates(ILogger logger) {
         Os os = CurrentOs.get();
         switch (os) {

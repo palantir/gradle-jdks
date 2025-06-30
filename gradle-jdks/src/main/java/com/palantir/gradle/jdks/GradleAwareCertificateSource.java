@@ -37,7 +37,7 @@ public abstract class GradleAwareCertificateSource {
     @Inject
     protected abstract ProviderFactory getProviderFactory();
 
-    public Optional<Provider<byte[]>> systemCertificates(ILogger logger) {
+    public final Optional<Provider<byte[]>> systemCertificates(ILogger logger) {
         Os os = CurrentOs.get();
         switch (os) {
             case MACOS:
@@ -55,7 +55,7 @@ public abstract class GradleAwareCertificateSource {
         throw new IllegalStateException("Unreachable code; all Os enum values should be handled");
     }
 
-    public Provider<byte[]> macosSystemCertificates() {
+    public final Provider<byte[]> macosSystemCertificates() {
         return Stream.of("/Library/Keychains/System.keychain")
                 .map(Paths::get)
                 .filter(Files::exists)
@@ -81,7 +81,7 @@ public abstract class GradleAwareCertificateSource {
                         keyChainPath.toAbsolutePath().toString()));
     }
 
-    public Provider<byte[]> linuxSystemCertificates() {
+    public final Provider<byte[]> linuxSystemCertificates() {
         return getProviderFactory().provider(CertificateSource::linuxSystemCertificates);
     }
 }

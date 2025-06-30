@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 public final class CertificateUtils {
+    private CertificateUtils() {}
 
     public static List<X509Certificate> parseCerts(byte[] multipleCertificateBytes) {
         CertificateFactory certificateFactory;

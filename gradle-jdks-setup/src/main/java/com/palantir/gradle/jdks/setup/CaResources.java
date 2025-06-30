@@ -41,6 +41,8 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
 public final class CaResources {
+    private CaResources() {}
+
     public static void importAllSystemCerts(Path jdkInstallationDirectory, ILogger logger) {
         CertificateSource.systemCertificates(logger)
                 .ifPresent(certs ->

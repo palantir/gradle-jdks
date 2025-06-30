@@ -32,7 +32,7 @@ public abstract class PalantirCaPlugin implements Plugin<Project> {
     protected abstract ObjectFactory getObjectFactory();
 
     @Override
-    public void apply(Project possibleRootProject) {
+    public final void apply(Project possibleRootProject) {
         if (possibleRootProject.getRootProject() != possibleRootProject) {
             throw new IllegalArgumentException(
                     "com.palantir.jdks.palantir-ca must be applied to the root project only");
