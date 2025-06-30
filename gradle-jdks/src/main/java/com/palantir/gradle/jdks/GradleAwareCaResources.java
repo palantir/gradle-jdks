@@ -19,12 +19,22 @@ package com.palantir.gradle.jdks;
 import com.palantir.gradle.jdks.setup.AliasContentCert;
 import com.palantir.gradle.jdks.setup.CertificateUtils;
 import com.palantir.gradle.jdks.setup.ILogger;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
+import java.util.Base64;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 
 public abstract class GradleAwareCaResources {
+    private static final BigInteger PALANTIR_3RD_GEN_SERIAL = new BigInteger("18126334688741185161");
+    private static final String PALANTIR_3RD_GEN_CERTIFICATE = "Palantir3rdGenRootCa";
+
     private ILogger logger;
     private GradleAwareCertificateSource certificateSource;
 
@@ -40,7 +50,36 @@ public abstract class GradleAwareCaResources {
     public Provider<Optional<AliasContentCert>> readPalantirRootCaFromSystemTruststore() {
         Optional<Provider<byte[]>> certProviderOpt = certificateSource.systemCertificates(logger);
         return certProviderOpt
-                .map(provider -> provider.map(CertificateUtils::selectPalantirCertificate))
+                .map(provider -> provider.map(GradleAwareCaResources::selectPalantirCertificate))
                 .orElseGet(() -> getProviderFactory().provider(() -> Optional.empty()));
+    }
+
+    private static Optional<AliasContentCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {
+        return selectCertificates(
+                        multipleCertificateBytes,
+                        Map.of(PALANTIR_3RD_GEN_SERIAL.toString(), PALANTIR_3RD_GEN_CERTIFICATE))
+                .findFirst();
+    }
+
+    private static Stream<AliasContentCert> selectCertificates(
+            byte[] multipleCertificateBytes, Map<String, String> certSerialNumbersToAliases) {
+        return CertificateUtils.parseCerts(multipleCertificateBytes).stream()
+                .filter(cert -> certSerialNumbersToAliases.containsKey(
+                        cert.getSerialNumber().toString()))
+                .map(cert -> new AliasContentCert(
+                        certSerialNumbersToAliases.get(cert.getSerialNumber().toString()), encodeCertificate(cert)));
+    }
+
+    private static String encodeCertificate(Certificate palantirCert) {
+        Base64.Encoder encoder = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8));
+        try {
+            return String.join(
+                    "\n",
+                    "-----BEGIN CERTIFICATE-----",
+                    encoder.encodeToString(palantirCert.getEncoded()),
+                    "-----END CERTIFICATE-----");
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException("Could not convert Palantir cert back to regular", e);
+        }
     }
 }
