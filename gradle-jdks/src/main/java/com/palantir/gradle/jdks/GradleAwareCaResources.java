@@ -53,10 +53,8 @@ public abstract class GradleAwareCaResources {
      * or if the specific certificate is not found.
      */
     public Provider<Optional<AliasContentCert>> readPalantirRootCaFromSystemTruststore() {
-        Optional<Provider<byte[]>> certProviderOpt = certificateSource.systemCertificates(logger);
-        return certProviderOpt
-                .map(provider -> provider.map(GradleAwareCaResources::selectPalantirCertificate))
-                .orElseGet(() -> getProviderFactory().provider(Optional::empty));
+        Provider<Optional<byte[]>> certProvider = certificateSource.systemCertificates(logger);
+        return certProvider.map(certMaybe -> certMaybe.flatMap(GradleAwareCaResources::selectPalantirCertificate));
     }
 
     private static Optional<AliasContentCert> selectPalantirCertificate(byte[] multipleCertificateBytes) {

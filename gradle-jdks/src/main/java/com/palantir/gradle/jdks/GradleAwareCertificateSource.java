@@ -18,8 +18,8 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.CertificateSource;
 import com.palantir.gradle.jdks.setup.ILogger;
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.GradleOperatingSystem;
+import com.palantir.platform.OperatingSystem;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,25 +37,33 @@ public abstract class GradleAwareCertificateSource {
     @Inject
     protected abstract ProviderFactory getProviderFactory();
 
+    private Provider<OperatingSystem> osProvider;
+
     private final Provider<byte[]> macosSystemCert = macosSystemCertificates();
     private final Provider<byte[]> linuxSystemCert = linuxSystemCertificates();
 
-    public final Optional<Provider<byte[]>> systemCertificates(ILogger logger) {
-        Os os = CurrentOs.get();
-        switch (os) {
-            case MACOS:
-                return Optional.of(macosSystemCert);
-            case LINUX_MUSL:
-            case LINUX_GLIBC:
-                return Optional.of(linuxSystemCert);
-            case WINDOWS:
-                logger.logError(String.format(
-                        "Not attempting to read Palantir CA from system truststore "
-                                + "as OS type '%s' does not yet support this",
-                        os.uiName()));
-                return Optional.empty();
-        }
-        throw new IllegalStateException("Unreachable code; all Os enum values should be handled");
+    @Inject
+    public GradleAwareCertificateSource(GradleOperatingSystem gradleOperatingSystem) {
+        this.osProvider = gradleOperatingSystem.getOperatingSystem();
+    }
+
+    public final Provider<Optional<byte[]>> systemCertificates(ILogger logger) {
+        return osProvider.flatMap(os -> {
+            switch (os) {
+                case MACOS:
+                    return macosSystemCert.map(Optional::of);
+                case LINUX_MUSL:
+                case LINUX_GLIBC:
+                    return linuxSystemCert.map(Optional::of);
+                case WINDOWS:
+                    logger.logError(String.format(
+                            "Not attempting to read Palantir CA from system truststore "
+                                    + "as OS type '%s' does not yet support this",
+                            os.uiName()));
+                    return getProviderFactory().provider(Optional::empty);
+            }
+            throw new IllegalStateException("Unreachable code; all Os enum values should be handled");
+        });
     }
 
     public final Provider<byte[]> macosSystemCertificates() {

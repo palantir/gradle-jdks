@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.ILogger;
+import com.palantir.platform.GradleOperatingSystem;
 import java.util.Map;
 import javax.inject.Inject;
 import org.gradle.api.Plugin;
@@ -47,8 +48,9 @@ public abstract class PalantirCaPlugin implements Plugin<Project> {
         ILogger logger = new GradleLogger(
                 rootProject.getLogger(), extension.getLogLevel().get());
 
+        GradleOperatingSystem os = getObjectFactory().newInstance(GradleOperatingSystem.class);
         GradleAwareCertificateSource certificateSource =
-                this.getObjectFactory().newInstance(GradleAwareCertificateSource.class);
+                getObjectFactory().newInstance(GradleAwareCertificateSource.class, os);
         GradleAwareCaResources caResources =
                 getObjectFactory().newInstance(GradleAwareCaResources.class, logger, certificateSource);
 
