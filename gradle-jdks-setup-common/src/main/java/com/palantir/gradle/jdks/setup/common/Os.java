@@ -20,6 +20,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Optional;
 
+/**
+ * This class exists because gradle-jdks-setup has to be compatible with Java 11.
+ * If you don't need to support Java 11, prefer gradle-utils' <a href="https://github.com/palantir/gradle-utils/blob/17cacbf469772cef3c8ea213bd525f92ede6453f/platform/src/main/java/com/palantir/platform/OperatingSystem.java#L35">OperatingSystem</a>
+ */
 public enum Os {
     MACOS,
     LINUX_GLIBC,
