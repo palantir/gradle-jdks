@@ -27,14 +27,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.Directory;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
@@ -51,12 +52,13 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     public static final String GRADLE_JDKS_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
 
-    @Nested
-    @Internal
-    protected abstract GradleOperatingSystem getGradleOperatingSystem();
+    @Inject
+    protected abstract ObjectFactory getObjectFactory();
+
+    private GradleOperatingSystem gradleOperatingSystem = getObjectFactory().newInstance(GradleOperatingSystem.class);
 
     private final Provider<OperatingSystem> operatingSystem =
-            getGradleOperatingSystem().getOperatingSystem();
+            gradleOperatingSystem.getOperatingSystem();
 
     @Input
     @Option(
