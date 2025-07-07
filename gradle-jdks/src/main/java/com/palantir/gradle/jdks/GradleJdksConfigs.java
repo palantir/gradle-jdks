@@ -57,8 +57,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     private GradleOperatingSystem gradleOperatingSystem = getObjectFactory().newInstance(GradleOperatingSystem.class);
 
-    private final Provider<OperatingSystem> operatingSystem =
-            gradleOperatingSystem.getOperatingSystem();
+    private final Provider<OperatingSystem> operatingSystem = gradleOperatingSystem.getOperatingSystem();
 
     @Input
     @Option(
