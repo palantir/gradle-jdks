@@ -19,6 +19,7 @@ package com.palantir.gradle.jdks;
 import com.google.common.io.Closer;
 import com.google.common.util.concurrent.Striped;
 import com.palantir.gradle.jdks.JdkPath.Extension;
+import com.palantir.platform.OperatingSystem;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -48,11 +49,17 @@ public final class JdkManager {
     private final Provider<Directory> storageLocation;
     private final JdkDistributions jdkDistributions;
     private final JdkDownloaders jdkDownloaders;
+    private final Provider<OperatingSystem> operatingSystem;
 
-    JdkManager(Provider<Directory> storageLocation, JdkDistributions jdkDistributions, JdkDownloaders jdkDownloaders) {
+    JdkManager(
+            Provider<Directory> storageLocation,
+            JdkDistributions jdkDistributions,
+            JdkDownloaders jdkDownloaders,
+            Provider<OperatingSystem> operatingSystem) {
         this.storageLocation = storageLocation;
         this.jdkDistributions = jdkDistributions;
         this.jdkDownloaders = jdkDownloaders;
+        this.operatingSystem = operatingSystem;
     }
 
     public Path jdk(Project project, JdkSpec jdkSpec) {
@@ -194,7 +201,7 @@ public final class JdkManager {
             return files.filter(file -> Files.isRegularFile(file)
                             // macos JDKs have a `bin/java` symlink to `Contents/Home/bin/java`
                             && !Files.isSymbolicLink(file)
-                            && file.endsWith(Paths.get("bin", SystemTools.java())))
+                            && file.endsWith(Paths.get("bin", SystemTools.java(operatingSystem.get()))))
                     .findFirst()
                     // JAVA_HOME/bin/java
                     .orElseThrow(() -> new RuntimeException("Failed to find java home in " + temporaryJdkPath))
@@ -212,7 +219,7 @@ public final class JdkManager {
 
         ExecResult keytoolResult = project.exec(exec -> {
             exec.setCommandLine(
-                    Paths.get("bin", SystemTools.keytool()).toString(),
+                    Paths.get("bin", SystemTools.keytool(operatingSystem.get())).toString(),
                     "-import",
                     "-trustcacerts",
                     "-alias",

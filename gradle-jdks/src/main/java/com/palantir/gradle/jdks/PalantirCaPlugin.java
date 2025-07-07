@@ -16,24 +16,19 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.CaResources;
 import com.palantir.gradle.jdks.setup.ILogger;
-import com.palantir.platform.GradleOperatingSystem;
 import java.util.Map;
-import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.model.ObjectFactory;
 
-public abstract class PalantirCaPlugin implements Plugin<Project> {
+public final class PalantirCaPlugin implements Plugin<Project> {
 
     private Project rootProject;
     private PalantirCaExtension extension;
 
-    @Inject
-    protected abstract ObjectFactory getObjectFactory();
-
     @Override
-    public final void apply(Project possibleRootProject) {
+    public void apply(Project possibleRootProject) {
         if (possibleRootProject.getRootProject() != possibleRootProject) {
             throw new IllegalArgumentException(
                     "com.palantir.jdks.palantir-ca must be applied to the root project only");
@@ -48,17 +43,13 @@ public abstract class PalantirCaPlugin implements Plugin<Project> {
         ILogger logger = new GradleLogger(
                 rootProject.getLogger(), extension.getLogLevel().get());
 
-        GradleOperatingSystem os = getObjectFactory().newInstance(GradleOperatingSystem.class);
-        GradleAwareCertificateSource certificateSource =
-                getObjectFactory().newInstance(GradleAwareCertificateSource.class, os);
-        GradleAwareCaResources caResources =
-                getObjectFactory().newInstance(GradleAwareCaResources.class, logger, certificateSource);
-
+        CaResources caResources = new CaResources(logger);
         rootProject
                 .getExtensions()
                 .getByType(JdksExtension.class)
                 .getCaCerts()
-                .putAll(caResources.readPalantirRootCaFromSystemTruststore().map(maybeCert -> maybeCert
+                .putAll(possibleRootProject.provider(() -> caResources
+                        .readPalantirRootCaFromSystemTruststore()
                         .map(cert -> Map.of(cert.getAlias(), cert.getContent()))
                         .orElseGet(() -> {
                             logger.logError("Could not find Palantir CA in system truststore");

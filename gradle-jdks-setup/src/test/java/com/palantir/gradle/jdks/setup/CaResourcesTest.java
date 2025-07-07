@@ -22,30 +22,29 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-public class CertificateUtilsTest {
+public class CaResourcesTest {
 
     @Test
     void handles_just_whitespace_truststore() {
-        assertThat(CertificateUtils.parseCerts("         \n      ".getBytes(StandardCharsets.UTF_8)))
+        assertThat(CaResources.parseCerts("         \n      ".getBytes(StandardCharsets.UTF_8)))
                 .isEmpty();
     }
 
     @Test
     void handles_whitespace_and_comments_between_certs() throws IOException {
-        assertThat(CertificateUtils.parseCerts(certsFromResources("amazon-cas-with-whitespace-between.pem")))
+        assertThat(CaResources.parseCerts(certsFromResources("amazon-cas-with-whitespace-between.pem")))
                 .hasSize(3);
     }
 
     @Test
     void does_not_explode_when_given_certs_with_duplicate_extensions() throws IOException {
-        assertThat(CertificateUtils.parseCerts(certsFromResources("apple-kdc-cert-with-duplicate-extension.pem")))
+        assertThat(CaResources.parseCerts(certsFromResources("apple-kdc-cert-with-duplicate-extension.pem")))
                 .isEmpty();
     }
 
     @Test
     void does_not_explode_when_given_certs_with_incorrect_vesion() throws IOException {
-        assertThat(CertificateUtils.parseCerts(
-                        certsFromResources("strongloop-cert-with-v3-extensions-but-v1-version.pem")))
+        assertThat(CaResources.parseCerts(certsFromResources("strongloop-cert-with-v3-extensions-but-v1-version.pem")))
                 .isEmpty();
     }
 

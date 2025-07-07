@@ -61,13 +61,14 @@ public final class GradleJdkInstallationSetup {
 
     public static void main(String[] args) {
         StdErrLogger logger = new StdErrLogger();
+        CaResources caResources = new CaResources(logger);
         if (args.length < 1) {
             throw new IllegalArgumentException("Expected at least an argument: jdkSetup or daemonSetup");
         }
         Command command = Command.fromLabel(args[0]);
         switch (command) {
             case JDK_SETUP:
-                setupJdk(logger, args);
+                setupJdk(logger, caResources, args);
                 break;
             case DAEMON_SETUP:
                 setupDaemon(args);
@@ -96,7 +97,7 @@ public final class GradleJdkInstallationSetup {
         }
     }
 
-    private static void setupJdk(StdErrLogger logger, String[] args) {
+    private static void setupJdk(StdErrLogger logger, CaResources caResources, String[] args) {
         if (args.length != 2) {
             throw new IllegalArgumentException("Expected 2 arguments: jdkSetup <destinationJdkInstallationDir>");
         }
@@ -106,7 +107,7 @@ public final class GradleJdkInstallationSetup {
         // process set up the JDK - then we shouldn't try to add the certificate because the certificate was already
         // added.
         if (wasCopied) {
-            CaResources.importAllSystemCerts(destinationJdkInstallationDir, logger);
+            caResources.importAllSystemCerts(destinationJdkInstallationDir);
         }
     }
 

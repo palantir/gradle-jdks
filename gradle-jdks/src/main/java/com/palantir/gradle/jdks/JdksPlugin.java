@@ -17,16 +17,25 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
+import com.palantir.platform.GradleOperatingSystem;
+import com.palantir.platform.OperatingSystem;
 import java.io.File;
 import java.util.Arrays;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Nested;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JdksPlugin implements Plugin<Project> {
+public abstract class JdksPlugin implements Plugin<Project> {
 
     private static final Logger log = LoggerFactory.getLogger(JdksPlugin.class);
+
+    @Nested
+    protected abstract GradleOperatingSystem getOperatingSystem();
+
+    private Provider<OperatingSystem> osProvider = getOperatingSystem().getOperatingSystem();
 
     @Override
     public final void apply(Project rootProject) {
@@ -35,7 +44,7 @@ public class JdksPlugin implements Plugin<Project> {
         }
 
         if (GradleJdksEnablement.isGradleJdkSetupEnabled(
-                rootProject.getProjectDir().toPath())) {
+                osProvider, rootProject.getProjectDir().toPath())) {
             rootProject.getPluginManager().apply(ToolchainsPlugin.class);
         } else {
             rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);

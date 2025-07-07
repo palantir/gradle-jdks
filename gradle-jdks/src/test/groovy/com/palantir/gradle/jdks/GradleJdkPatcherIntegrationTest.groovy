@@ -18,9 +18,9 @@ package com.palantir.gradle.jdks
 
 
 import com.palantir.gradle.jdks.setup.common.CurrentArch
-import com.palantir.gradle.jdks.setup.common.CurrentOs
 import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper
 import com.palantir.gradle.plugintesting.GradleTestVersions
+import com.palantir.platform.OperatingSystem
 import spock.lang.TempDir
 
 import java.nio.file.Files
@@ -163,7 +163,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         assert Files.list(projectDir.toPath().resolve("gradle/jdks")).filter(Files::isDirectory)
                 .map(path -> path.getFileName().toString())
                 .collect(Collectors.toSet()) == versions
-        String osName = CurrentOs.get().uiName();
+        String osName = OperatingSystem.get().uiName();
         String archName = CurrentArch.get().uiName();
         versions.stream().findFirst().ifPresent(version -> {
             assert Files.exists(projectDir.toPath().resolve("gradle/jdks/${version}/${osName}/${archName}/download-url"))

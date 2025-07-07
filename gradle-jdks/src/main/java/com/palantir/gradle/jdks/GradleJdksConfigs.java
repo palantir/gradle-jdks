@@ -18,7 +18,8 @@ package com.palantir.gradle.jdks;
 
 import com.google.common.collect.Sets;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
+import com.palantir.platform.GradleOperatingSystem;
+import com.palantir.platform.OperatingSystem;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +32,9 @@ import org.gradle.api.file.Directory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
@@ -47,6 +50,13 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     public static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     public static final String GRADLE_JDKS_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
+
+    @Nested
+    @Internal
+    protected abstract GradleOperatingSystem getGradleOperatingSystem();
+
+    private final Provider<OperatingSystem> operatingSystem =
+            getGradleOperatingSystem().getOperatingSystem();
 
     @Input
     @Option(
@@ -126,7 +136,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                             + " `gradle-sls-docker` related plugins, see https://pl.ntr/2v1 to fix.");
         }
 
-        Set<String> configuredJavaMajorVersions = GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(gradleJdksDir);
+        Set<String> configuredJavaMajorVersions =
+                GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(gradleJdksDir, operatingSystem.get());
         Set<String> unexpectedConfiguredJavaVersions = Sets.difference(
                 configuredJavaMajorVersions,
                 getJavaVersionToJdkDistros().get().keySet().stream()
@@ -140,7 +151,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         }
 
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();
-        String os = CurrentOs.get().toString();
+        String os = operatingSystem.get().toString();
         String arch = CurrentArch.get().toString();
         Path expectedJdkDir =
                 gradleJdksDir.resolve(gradleJdkDaemonVersion).resolve(os).resolve(arch);
