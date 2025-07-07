@@ -25,12 +25,6 @@ import java.util.Optional;
 import java.util.Properties;
 import org.gradle.api.provider.Provider;
 
-/**
- * If palantir.jdk.setup.enabled=true, use Gradle JDK Automanagement: https://github.com/palantir/gradle-jdks/issues/333
- * <p></p>
- * Otherwise, use legacy manual installation. PalantirCaPlugin has to be applied to manually copy the palantir root CA
- * from the system truststore into the JDK being installed.
- */
 public final class GradleJdksEnablement {
 
     public static final String MINIMUM_SUPPORTED_GRADLE_VERSION = "7.6";
