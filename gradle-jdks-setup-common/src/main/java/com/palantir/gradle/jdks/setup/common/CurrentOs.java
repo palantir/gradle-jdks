@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 
 /**
- * This class exists because gradle-jdks-setup has to be compatible with Java 11
+ * This class exists because gradle-jdks-setup has to be compatible with Java 11.
  * If you don't need to support Java 11, prefer gradle-utils' <a href="https://github.com/palantir/gradle-utils/blob/17cacbf469772cef3c8ea213bd525f92ede6453f/platform/src/main/java/com/palantir/platform/OperatingSystem.java#L35">OperatingSystem</a>
  */
 public final class CurrentOs {
