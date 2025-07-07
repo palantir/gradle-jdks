@@ -17,7 +17,6 @@ package com.palantir.gradle.jdks.settings
 
 import com.palantir.gradle.jdks.GradleJdkTestUtils
 import com.palantir.gradle.jdks.setup.common.CurrentArch
-import com.palantir.gradle.jdks.setup.common.CurrentOs
 import com.palantir.platform.OperatingSystem
 import nebula.test.IntegrationSpec
 import nebula.test.functional.ExecutionResult
@@ -99,8 +98,8 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
         where:
         // testing for the different gradle versions to make sure the reflection in the settings plugin works
         gradleVersionNumber << [
-//                GradleJdkTestUtils.GRADLE_7_6_VERSION,
-//                GradleJdkTestUtils.GRADLE_8_5_VERSION,
+                GradleJdkTestUtils.GRADLE_7_6_4_VERSION,
+                GradleJdkTestUtils.GRADLE_8_5_VERSION,
                 GradleJdkTestUtils.GRADLE_8_8_VERSION
         ]
     }

@@ -5,6 +5,7 @@ apply plugin: 'org.unbroken-dome.test-sets'
 dependencies {
     // Avoid adding large compile dependencies here, as they will also be added in the gradle-jdks-setup-all*.jar using the fatJar task
     implementation project(':gradle-jdks-setup-common')
+    implementation 'com.palantir.gradle.utils:platform'
 
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
