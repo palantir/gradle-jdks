@@ -52,11 +52,11 @@ public abstract class SetupJdksTask extends DefaultTask {
     protected abstract ObjectFactory getObjectFactory();
 
     @Nested
-    protected abstract GradleOperatingSystem gradleOperatingSystem();
+    protected abstract GradleOperatingSystem getOperatingSystem();
 
     @TaskAction
     public final void exec() {
-        if (gradleOperatingSystem().getOperatingSystem().get().equals(OperatingSystem.WINDOWS)) {
+        if (getOperatingSystem().getOperatingSystem().get().equals(OperatingSystem.WINDOWS)) {
             logger.debug("Windows gradleJdk setup is not yet supported.");
             return;
         }
