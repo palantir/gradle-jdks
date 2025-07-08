@@ -27,14 +27,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.Directory;
-import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
@@ -52,12 +49,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     public static final String GRADLE_JDKS_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
 
-    @Inject
-    protected abstract ObjectFactory getObjectFactory();
-
-    private GradleOperatingSystem gradleOperatingSystem = getObjectFactory().newInstance(GradleOperatingSystem.class);
-
-    private final Provider<OperatingSystem> operatingSystem = gradleOperatingSystem.getOperatingSystem();
+    @Nested
+    protected abstract GradleOperatingSystem getOperatingSystem();
 
     @Input
     @Option(
@@ -103,6 +96,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     @TaskAction
     public final void action() {
+        OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
         Path gradleJdksDir = gradleDirectory().dir("jdks").getAsFile().toPath();
         Path gradleJdksSetupJar =
                 gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile().toPath();
@@ -138,7 +132,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         }
 
         Set<String> configuredJavaMajorVersions =
-                GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(gradleJdksDir, operatingSystem.get());
+                GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(gradleJdksDir, os);
         Set<String> unexpectedConfiguredJavaVersions = Sets.difference(
                 configuredJavaMajorVersions,
                 getJavaVersionToJdkDistros().get().keySet().stream()
@@ -152,10 +146,10 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         }
 
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();
-        String os = operatingSystem.get().toString();
+        String osString = os.toString();
         String arch = CurrentArch.get().toString();
         Path expectedJdkDir =
-                gradleJdksDir.resolve(gradleJdkDaemonVersion).resolve(os).resolve(arch);
+                gradleJdksDir.resolve(gradleJdkDaemonVersion).resolve(osString).resolve(arch);
         if (!Files.exists(expectedJdkDir)) {
             throw new RuntimeException(String.format(
                     "Gradle daemon JDK version is `%s` but no JDK configured for that version. Please ensure that you"

@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.Arrays;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,16 +34,15 @@ public abstract class JdksPlugin implements Plugin<Project> {
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
 
-    private Provider<OperatingSystem> osProvider = getOperatingSystem().getOperatingSystem();
-
     @Override
     public final void apply(Project rootProject) {
         if (rootProject.getRootProject() != rootProject) {
             throw new IllegalArgumentException("com.palantir.jdks must be applied to the root project only");
         }
 
+        OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
         if (GradleJdksEnablement.isGradleJdkSetupEnabled(
-                osProvider, rootProject.getProjectDir().toPath())) {
+                os, rootProject.getProjectDir().toPath())) {
             rootProject.getPluginManager().apply(ToolchainsPlugin.class);
         } else {
             rootProject.getPluginManager().apply(BaselineJavaJdksPlugin.class);

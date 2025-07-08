@@ -25,7 +25,6 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.slf4j.Logger;
@@ -43,16 +42,13 @@ public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Projec
 
     @Internal
     @Nested
-    protected abstract GradleOperatingSystem getGradleOperatingSystem();
-
-    @Internal
-    private final Provider<OperatingSystem> operatingSystem =
-            getGradleOperatingSystem().getOperatingSystem();
+    protected abstract GradleOperatingSystem getOperatingSystem();
 
     @Override
     public final void apply(Project project) {
+        OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(
-                operatingSystem, project.getRootProject().getProjectDir().toPath())) {
+                os, project.getRootProject().getProjectDir().toPath())) {
             throw new RuntimeException(
                     "Cannot apply `ToolchainFailureFlowActionsPlugin` without enabling palantir.jdk.setup.enabled");
         }
@@ -61,7 +57,7 @@ public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Projec
             spec.getParameters()
                     .getConfiguredJavaMajorVersions()
                     .set(project.provider(() -> GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(
-                            project.getRootProject().file("gradle/jdks").toPath(), operatingSystem.get())));
+                            project.getRootProject().file("gradle/jdks").toPath(), os)));
         });
     }
 }

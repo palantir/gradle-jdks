@@ -23,13 +23,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
-import org.gradle.api.provider.Provider;
 
 public final class GradleJdksEnablement {
 
     public static final String MINIMUM_SUPPORTED_GRADLE_VERSION = "7.6";
 
-    public static boolean isGradleJdkSetupEnabled(Provider<OperatingSystem> operatingSystem, Path projectDir) {
+    public static boolean isGradleJdkSetupEnabled(OperatingSystem operatingSystem, Path projectDir) {
         return !operatingSystem.get().equals(OperatingSystem.WINDOWS) && isGradleJdkPropertyEnabled(projectDir);
     }
 

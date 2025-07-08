@@ -49,13 +49,13 @@ public final class JdkManager {
     private final Provider<Directory> storageLocation;
     private final JdkDistributions jdkDistributions;
     private final JdkDownloaders jdkDownloaders;
-    private final Provider<OperatingSystem> operatingSystem;
+    private final OperatingSystem operatingSystem;
 
     JdkManager(
             Provider<Directory> storageLocation,
             JdkDistributions jdkDistributions,
             JdkDownloaders jdkDownloaders,
-            Provider<OperatingSystem> operatingSystem) {
+            OperatingSystem operatingSystem) {
         this.storageLocation = storageLocation;
         this.jdkDistributions = jdkDistributions;
         this.jdkDownloaders = jdkDownloaders;
@@ -201,7 +201,7 @@ public final class JdkManager {
             return files.filter(file -> Files.isRegularFile(file)
                             // macos JDKs have a `bin/java` symlink to `Contents/Home/bin/java`
                             && !Files.isSymbolicLink(file)
-                            && file.endsWith(Paths.get("bin", SystemTools.java(operatingSystem.get()))))
+                            && file.endsWith(Paths.get("bin", SystemTools.java(operatingSystem))))
                     .findFirst()
                     // JAVA_HOME/bin/java
                     .orElseThrow(() -> new RuntimeException("Failed to find java home in " + temporaryJdkPath))
@@ -219,7 +219,7 @@ public final class JdkManager {
 
         ExecResult keytoolResult = project.exec(exec -> {
             exec.setCommandLine(
-                    Paths.get("bin", SystemTools.keytool(operatingSystem.get())).toString(),
+                    Paths.get("bin", SystemTools.keytool(operatingSystem)).toString(),
                     "-import",
                     "-trustcacerts",
                     "-alias",

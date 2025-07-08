@@ -35,15 +35,13 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 public abstract class BaselineJavaJdksPlugin implements Plugin<Project> {
 
     @Nested
-    protected abstract GradleOperatingSystem getGradleOperatingSystem();
-
-    private final Provider<OperatingSystem> operatingSystem =
-            getGradleOperatingSystem().getOperatingSystem();
+    protected abstract GradleOperatingSystem getOperatingSystem();
 
     @Override
     public final void apply(Project rootProject) {
+        OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
         if (GradleJdksEnablement.isGradleJdkSetupEnabled(
-                operatingSystem, rootProject.getProjectDir().toPath())) {
+                os, rootProject.getProjectDir().toPath())) {
             throw new RuntimeException("Cannot apply BaselineJavaJdksPlugin with palantir.jdk.setup.enabled");
         }
 
@@ -53,10 +51,7 @@ public abstract class BaselineJavaJdksPlugin implements Plugin<Project> {
 
         JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
         JdkManager jdkManager = new JdkManager(
-                jdksExtension.getJdkStorageLocation(),
-                jdkDistributions,
-                new JdkDownloaders(jdksExtension),
-                operatingSystem);
+                jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension), os);
 
         rootProject
                 .getExtensions()
@@ -72,7 +67,7 @@ public abstract class BaselineJavaJdksPlugin implements Plugin<Project> {
                                     javaLanguageVersion.toString(), project.getPath())));
 
                     return Optional.of(javaInstallationForLanguageVersion(
-                            project, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion));
+                            project, jdksExtension, jdkExtension, jdkManager, javaLanguageVersion, os));
                 });
     }
 
@@ -81,15 +76,13 @@ public abstract class BaselineJavaJdksPlugin implements Plugin<Project> {
             JdksExtension jdksExtension,
             JdkExtension jdkExtension,
             JdkManager jdkManager,
-            JavaLanguageVersion javaLanguageVersion) {
+            JavaLanguageVersion javaLanguageVersion,
+            OperatingSystem os) {
 
         Arch currentArch = CurrentArch.get();
 
-        String version = jdkExtension
-                .jdkFor(operatingSystem.get())
-                .jdkFor(currentArch)
-                .getJdkVersion()
-                .get();
+        String version =
+                jdkExtension.jdkFor(os).jdkFor(currentArch).getJdkVersion().get();
 
         JdkDistributionName jdkDistributionName =
                 jdkExtension.getDistributionName().get();
@@ -101,7 +94,7 @@ public abstract class BaselineJavaJdksPlugin implements Plugin<Project> {
                                 .distributionName(jdkDistributionName)
                                 .release(JdkRelease.builder()
                                         .version(version)
-                                        .os(operatingSystem.get())
+                                        .os(os)
                                         .arch(currentArch)
                                         .build())
                                 .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))

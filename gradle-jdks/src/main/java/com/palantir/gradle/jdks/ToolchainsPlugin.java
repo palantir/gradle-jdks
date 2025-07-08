@@ -25,7 +25,6 @@ import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
 import com.palantir.platform.GradleOperatingSystem;
-import com.palantir.platform.OperatingSystem;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -46,15 +45,13 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
 
     @Nested
-    protected abstract GradleOperatingSystem getGradleOperatingSystem();
-
-    private final Provider<OperatingSystem> operatingSystem =
-            getGradleOperatingSystem().getOperatingSystem();
+    protected abstract GradleOperatingSystem getOperatingSystem();
 
     @Override
     public final void apply(Project rootProject) {
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(
-                operatingSystem, rootProject.getProjectDir().toPath())) {
+                getOperatingSystem().getOperatingSystem().get(),
+                rootProject.getProjectDir().toPath())) {
             throw new RuntimeException(
                     "Cannot apply `com.palantir.jdks.settings` without enabling palantir.jdk.setup.enabled");
         }

@@ -28,8 +28,8 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
@@ -51,26 +51,12 @@ public abstract class SetupJdksTask extends DefaultTask {
     @Inject
     protected abstract ObjectFactory getObjectFactory();
 
-    /**
-     * If we make this an abstract getter and use @Nested, we get the following error:
-     *
-     * 'com.palantir.gradle.jdks.SetupJdksTask' property 'gradleOperatingSystem.operatingSystem' is missing an input
-     *  or output annotation.
-     *
-     *  Reason: A property without annotation isn't considered during up-to-date checking.
-     *
-     *  Possible solutions:
-     *  1. Add an input or output annotation.
-     *  2. Mark it as @Internal.
-     */
-    private final GradleOperatingSystem gradleOperatingSystem =
-            getObjectFactory().newInstance(GradleOperatingSystem.class);
-
-    private final Provider<OperatingSystem> getOperatingSystem = gradleOperatingSystem.getOperatingSystem();
+    @Nested
+    protected abstract GradleOperatingSystem gradleOperatingSystem();
 
     @TaskAction
     public final void exec() {
-        if (getOperatingSystem.get().equals(OperatingSystem.WINDOWS)) {
+        if (gradleOperatingSystem().getOperatingSystem().get().equals(OperatingSystem.WINDOWS)) {
             logger.debug("Windows gradleJdk setup is not yet supported.");
             return;
         }
