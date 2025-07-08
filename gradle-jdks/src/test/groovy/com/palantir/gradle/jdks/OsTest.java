@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.setup;
+package com.palantir.gradle.jdks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
