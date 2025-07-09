@@ -28,8 +28,6 @@ import com.palantir.platform.GradleOperatingSystem;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
@@ -41,7 +39,6 @@ import org.gradle.util.GradleVersion;
 
 public abstract class ToolchainsPlugin implements Plugin<Project> {
 
-    private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
 
     @Nested
