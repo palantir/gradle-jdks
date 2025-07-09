@@ -33,7 +33,6 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
@@ -50,7 +49,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     public static final String GRADLE_JDKS_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
 
-    @Internal
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
 

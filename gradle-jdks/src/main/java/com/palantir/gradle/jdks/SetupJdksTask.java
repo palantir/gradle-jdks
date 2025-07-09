@@ -28,7 +28,6 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.ExecOperations;
@@ -48,7 +47,6 @@ public abstract class SetupJdksTask extends DefaultTask {
     @Inject
     protected abstract ExecOperations getExecOperations();
 
-    @Internal
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
 
