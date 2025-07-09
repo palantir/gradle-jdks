@@ -29,7 +29,7 @@ public final class GradleJdksEnablement {
     public static final String MINIMUM_SUPPORTED_GRADLE_VERSION = "7.6";
 
     public static boolean isGradleJdkSetupEnabled(OperatingSystem operatingSystem, Path projectDir) {
-        return !operatingSystem.get().equals(OperatingSystem.WINDOWS) && isGradleJdkPropertyEnabled(projectDir);
+        return !operatingSystem.equals(OperatingSystem.WINDOWS) && isGradleJdkPropertyEnabled(projectDir);
     }
 
     @SuppressWarnings("for-rollout:PreferSafeLoggableExceptions")
