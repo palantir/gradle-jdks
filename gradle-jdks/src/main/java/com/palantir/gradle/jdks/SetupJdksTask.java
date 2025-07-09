@@ -16,8 +16,8 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.GradleOperatingSystem;
+import com.palantir.platform.OperatingSystem;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +28,7 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
@@ -46,9 +47,12 @@ public abstract class SetupJdksTask extends DefaultTask {
     @Inject
     protected abstract ExecOperations getExecOperations();
 
+    @Nested
+    protected abstract GradleOperatingSystem getOperatingSystem();
+
     @TaskAction
     public final void exec() {
-        if (CurrentOs.get().equals(Os.WINDOWS)) {
+        if (getOperatingSystem().getOperatingSystem().get().equals(OperatingSystem.WINDOWS)) {
             logger.debug("Windows gradleJdk setup is not yet supported.");
             return;
         }

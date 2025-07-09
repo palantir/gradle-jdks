@@ -22,8 +22,8 @@ import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.GradleOperatingSystem;
+import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -45,6 +45,7 @@ import org.gradle.api.internal.provider.DefaultValueSourceProviderFactory;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.tasks.Nested;
 import org.gradle.initialization.DefaultSettings;
 import org.gradle.util.GradleVersion;
 
@@ -53,14 +54,19 @@ import org.gradle.util.GradleVersion;
  * Gradle JDK Setup.
  * @see <a href=/Volumes/git/gradle-jdks/gradle-jdks-setup/README.md>Gradle JDK Readme</a>
  */
-public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
+public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
 
     private static final Logger logger = Logging.getLogger(ToolchainJdksSettingsPlugin.class);
 
+    @Nested
+    protected abstract GradleOperatingSystem getOperatingSystem();
+
     @Override
-    public void apply(Settings settings) {
+    public final void apply(Settings settings) {
+        OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
+
         Path rootProjectDir = settings.getRootDir().toPath();
-        if (!GradleJdksEnablement.isGradleJdkSetupEnabled(rootProjectDir)) {
+        if (!GradleJdksEnablement.isGradleJdkSetupEnabled(os, rootProjectDir)) {
             logger.debug("Skipping Gradle JDK gradle properties patching");
             return;
         }
@@ -80,7 +86,7 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         }
         // Forces the installation of the configured jdks if they are not installed. Fixes the case when a user doesn't
         // have the Intellij plugin installed and some jdks are missing.
-        getOrInstallJdkPaths(rootProjectDir, gradleJdksLocalDirectory);
+        getOrInstallJdkPaths(rootProjectDir, gradleJdksLocalDirectory, os);
         ProviderFactory providerFactory =
                 ((DefaultSettings) settings).getServices().get(ProviderFactory.class);
         if (!(providerFactory instanceof DefaultProviderFactory)) {
@@ -104,7 +110,7 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     GradleProperties.class.getClassLoader(),
                     new Class[] {GradleProperties.class},
                     new GradlePropertiesInvocationHandler(
-                            rootProjectDir, gradleJdksLocalDirectory, originalGradleProperties));
+                            rootProjectDir, gradleJdksLocalDirectory, originalGradleProperties, os));
             field.set(defaultValueSourceProviderFactory, ourGradleProperties);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Failed to update the Gradle JDK properties using reflection", e);
@@ -115,12 +121,17 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         private final GradleProperties originalGradleProperties;
         private final Path gradleJdksLocalDirectory;
         private final Path rootProjectDir;
+        private final OperatingSystem operatingSystem;
 
         GradlePropertiesInvocationHandler(
-                Path rootProjectDir, Path gradleJdksLocalDirectory, GradleProperties originalGradleProperties) {
+                Path rootProjectDir,
+                Path gradleJdksLocalDirectory,
+                GradleProperties originalGradleProperties,
+                OperatingSystem operatingSystem) {
             this.rootProjectDir = rootProjectDir;
             this.gradleJdksLocalDirectory = gradleJdksLocalDirectory;
             this.originalGradleProperties = originalGradleProperties;
+            this.operatingSystem = operatingSystem;
         }
 
         @Override
@@ -128,7 +139,8 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
             // see: https://github.com/gradle/gradle/blob/4bd1b3d3fc3f31db5a26eecb416a165b8cc36082/subprojects/core-api/
             // src/main/java/org/gradle/api/internal/properties/GradleProperties.java#L28
             if (method.getName().equals("find") && args.length == 1) {
-                List<Path> installedLocalToolchains = getOrInstallJdkPaths(rootProjectDir, gradleJdksLocalDirectory);
+                List<Path> installedLocalToolchains =
+                        getOrInstallJdkPaths(rootProjectDir, gradleJdksLocalDirectory, operatingSystem);
                 String onlyArg = (String) args[0];
                 if (onlyArg.equals("org.gradle.java.installations.auto-detect")
                         || onlyArg.equals("org.gradle.java.installations.auto-download")) {
@@ -151,8 +163,9 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         }
     }
 
-    private static List<Path> getOrInstallJdkPaths(Path rootProjectDir, Path gradleJdksLocalDirectory) {
-        List<Path> jdkPaths = getConfiguredJdkPaths(gradleJdksLocalDirectory);
+    private static List<Path> getOrInstallJdkPaths(
+            Path rootProjectDir, Path gradleJdksLocalDirectory, OperatingSystem operatingSystem) {
+        List<Path> jdkPaths = getConfiguredJdkPaths(gradleJdksLocalDirectory, operatingSystem);
         List<Path> missingJdkPaths = getMissingPaths(jdkPaths);
         if (!missingJdkPaths.isEmpty()) {
             logger.error(
@@ -167,9 +180,8 @@ public final class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         return jdkPaths;
     }
 
-    private static List<Path> getConfiguredJdkPaths(Path gradleJdksLocalDirectory) {
+    private static List<Path> getConfiguredJdkPaths(Path gradleJdksLocalDirectory, OperatingSystem os) {
         Path installationDirectory = getToolchainInstallationDir();
-        Os os = CurrentOs.get();
         Arch arch = CurrentArch.get();
         try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
             return stream.map(path ->

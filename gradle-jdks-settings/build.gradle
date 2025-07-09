@@ -10,6 +10,7 @@ dependencies {
     // settings classLoader and the build classLoaders.
     shadeTransitively project(':gradle-jdks-setup-common')
     shadeTransitively project(':gradle-jdks-enablement')
+    shadeTransitively 'com.palantir.gradle.utils:platform'
 
     testImplementation gradleTestKit()
     testImplementation 'com.netflix.nebula:nebula-test'

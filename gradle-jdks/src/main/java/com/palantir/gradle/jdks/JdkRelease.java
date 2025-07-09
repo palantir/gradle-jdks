@@ -17,14 +17,14 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import org.immutables.value.Value;
 
 @Value.Immutable
 public interface JdkRelease {
     String version();
 
-    Os os();
+    OperatingSystem os();
 
     Arch arch();
 

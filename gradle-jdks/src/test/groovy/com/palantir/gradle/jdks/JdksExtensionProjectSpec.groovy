@@ -26,6 +26,17 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
         // language=Gradle
         buildFile << '''
             import com.palantir.gradle.jdks.*
+            
+            buildscript {
+                repositories {
+                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+                }
+
+                dependencies {
+                    classpath "com.palantir.gradle.utils:platform:0.13.0"
+                }
+            }
 
             extensions.create('jdks', JdksExtension)
         '''.stripIndent(true)
@@ -36,7 +47,8 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
         // language=Gradle
         buildFile << '''
             import com.palantir.gradle.jdks.setup.common.Arch
-            import com.palantir.gradle.jdks.setup.common.Os
+            import com.palantir.platform.OperatingSystem
+
             jdks {
                 jdk(11) {
                     distribution = 'amazon-corretto'
@@ -56,9 +68,9 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
                 jdks.jdkFor(JavaLanguageVersion.of(11), project).get().jdkFor(os).jdkFor(arch).jdkVersion.get()
             }
             
-            println('jdkVersion macos aarch64: ' + jdkVersionFor(Os.MACOS, Arch.AARCH64))
-            println('jdkVersion linux-glibc aarch64: ' + jdkVersionFor(Os.LINUX_GLIBC, Arch.AARCH64))
-            println('jdkVersion linux-glibc x64: ' + jdkVersionFor(Os.LINUX_GLIBC, Arch.X86_64))
+            println('jdkVersion macos aarch64: ' + jdkVersionFor(OperatingSystem.MACOS, Arch.AARCH64))
+            println('jdkVersion linux-glibc aarch64: ' + jdkVersionFor(OperatingSystem.LINUX_GLIBC, Arch.AARCH64))
+            println('jdkVersion linux-glibc x64: ' + jdkVersionFor(OperatingSystem.LINUX_GLIBC, Arch.X86_64))
         '''.stripIndent(true)
 
         when:

@@ -16,21 +16,20 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 
 final class SystemTools {
     private SystemTools() {}
 
-    static String java() {
-        if (CurrentOs.get() == Os.WINDOWS) {
+    static String java(OperatingSystem os) {
+        if (os == OperatingSystem.WINDOWS) {
             return "java.exe";
         }
         return "java";
     }
 
-    static String keytool() {
-        if (CurrentOs.get() == Os.WINDOWS) {
+    static String keytool(OperatingSystem os) {
+        if (os == OperatingSystem.WINDOWS) {
             return "keytool.exe";
         }
         return "keytool";

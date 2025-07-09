@@ -24,7 +24,7 @@ import com.palantir.gradle.jdks.json.JdkOsInfoJson;
 import com.palantir.gradle.jdks.json.JdksInfoJson;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
+import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,7 +51,7 @@ class GradleJdksConfiguratorTest {
                         JdkInfoJson.builder()
                                 .distribution(JdkDistributionName.AMAZON_CORRETTO)
                                 .os(Map.of(
-                                        CurrentOs.get(),
+                                        OperatingSystem.get(),
                                         JdkOsInfoJson.builder()
                                                 .arch(Map.of(
                                                         CurrentArch.get(),
@@ -67,17 +67,17 @@ class GradleJdksConfiguratorTest {
         Files.exists(latestGradleJdksDir
                 .resolve("jdks")
                 .resolve("21")
-                .resolve(CurrentOs.get().uiName())
+                .resolve(OperatingSystem.get().uiName())
                 .resolve(CurrentArch.get().uiName())
                 .resolve("download-url"));
         String localPath = Files.readString(latestGradleJdksDir
                 .resolve("jdks")
                 .resolve("21")
-                .resolve(CurrentOs.get().uiName())
+                .resolve(OperatingSystem.get().uiName())
                 .resolve(CurrentArch.get().uiName())
                 .resolve("local-path"));
 
-        switch (CurrentOs.get()) {
+        switch (OperatingSystem.get()) {
             case LINUX_MUSL:
                 assertThat(localPath).isEqualTo(String.format("amazon-corretto-%s-musl\n", JDK_VERSION));
                 break;

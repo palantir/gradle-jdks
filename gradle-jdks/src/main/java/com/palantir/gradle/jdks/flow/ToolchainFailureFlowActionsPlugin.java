@@ -18,11 +18,14 @@ package com.palantir.gradle.jdks.flow;
 
 import com.palantir.gradle.jdks.GradleJdksConfigsUtils;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
+import com.palantir.platform.GradleOperatingSystem;
+import com.palantir.platform.OperatingSystem;
 import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
+import org.gradle.api.tasks.Nested;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,10 +39,14 @@ public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Projec
     @Inject
     protected abstract FlowProviders getFlowProviders();
 
+    @Nested
+    protected abstract GradleOperatingSystem getOperatingSystem();
+
     @Override
     public final void apply(Project project) {
+        OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(
-                project.getRootProject().getProjectDir().toPath())) {
+                os, project.getRootProject().getProjectDir().toPath())) {
             throw new RuntimeException(
                     "Cannot apply `ToolchainFailureFlowActionsPlugin` without enabling palantir.jdk.setup.enabled");
         }
@@ -48,7 +55,7 @@ public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Projec
             spec.getParameters()
                     .getConfiguredJavaMajorVersions()
                     .set(project.provider(() -> GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(
-                            project.getRootProject().file("gradle/jdks").toPath())));
+                            project.getRootProject().file("gradle/jdks").toPath(), os)));
         });
     }
 }

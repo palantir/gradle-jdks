@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Switch to gradle-utils' `GradleOperatingSystem` to be configuration cache friendly
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/575

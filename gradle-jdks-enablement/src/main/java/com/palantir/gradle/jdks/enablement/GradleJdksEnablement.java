@@ -16,8 +16,7 @@
 
 package com.palantir.gradle.jdks.enablement;
 
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -29,8 +28,8 @@ public final class GradleJdksEnablement {
 
     public static final String MINIMUM_SUPPORTED_GRADLE_VERSION = "7.6";
 
-    public static boolean isGradleJdkSetupEnabled(Path projectDir) {
-        return !CurrentOs.get().equals(Os.WINDOWS) && isGradleJdkPropertyEnabled(projectDir);
+    public static boolean isGradleJdkSetupEnabled(OperatingSystem operatingSystem, Path projectDir) {
+        return !operatingSystem.equals(OperatingSystem.WINDOWS) && isGradleJdkPropertyEnabled(projectDir);
     }
 
     @SuppressWarnings("for-rollout:PreferSafeLoggableExceptions")

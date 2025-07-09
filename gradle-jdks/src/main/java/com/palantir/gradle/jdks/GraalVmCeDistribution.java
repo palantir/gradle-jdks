@@ -18,7 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 
 public final class GraalVmCeDistribution implements JdkDistribution {
     @Override
@@ -38,7 +38,7 @@ public final class GraalVmCeDistribution implements JdkDistribution {
                 .build();
     }
 
-    private static String os(Os os) {
+    private static String os(OperatingSystem os) {
         switch (os) {
             case MACOS:
                 return "macos";
@@ -64,7 +64,7 @@ public final class GraalVmCeDistribution implements JdkDistribution {
         }
     }
 
-    private static Extension extension(Os operatingSystem) {
+    private static Extension extension(OperatingSystem operatingSystem) {
         switch (operatingSystem) {
             case LINUX_GLIBC:
             case LINUX_MUSL:

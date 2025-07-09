@@ -27,6 +27,7 @@ dependencies {
     implementation 'org.apache.commons:commons-compress'
     implementation 'org.ow2.asm:asm'
     implementation 'com.palantir.gradle.idea-configuration:gradle-idea-configuration'
+    implementation 'com.palantir.gradle.utils:platform'
 
     compileOnly 'com.palantir.gradle.auto-parallelizable:auto-parallelizable-annotations'
     compileOnly 'org.immutables:value::annotations'

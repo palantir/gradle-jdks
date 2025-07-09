@@ -18,7 +18,7 @@ package com.palantir.gradle.jdks
 
 import com.google.common.base.Throwables
 import com.palantir.gradle.jdks.setup.common.CurrentArch
-import com.palantir.gradle.jdks.setup.common.CurrentOs
+import com.palantir.platform.OperatingSystem
 import org.apache.commons.lang3.tuple.Pair
 import spock.lang.TempDir
 
@@ -82,7 +82,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         String gradleHomeOutput = runGradlewTasksSuccessfully("printGradleHome")
 
         then: 'java home is set to out jdk 11 configured version'
-        String os = CurrentOs.get().uiName()
+        String os = OperatingSystem.get().uiName()
         String arch = CurrentArch.get().uiName()
         String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${GradleJdkTestUtils.DAEMON_MAJOR_VERSION_17}/${os}/${arch}/local-path").text.trim()
         Path daemonJvm = workingDir().resolve("gradle-jdks").resolve(daemonJdkFileName).toAbsolutePath()
@@ -154,7 +154,7 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         String gradleHomeOutput = runGradlewTasksSuccessfully("printGradleHome")
 
         then: 'java home is set to out jdk 11 configured version'
-        String os = CurrentOs.get().uiName()
+        String os = OperatingSystem.get().uiName()
         String arch = CurrentArch.get().uiName()
         String daemonJdkFileName = projectDir.toPath().resolve("gradle/jdks/${GradleJdkTestUtils.DAEMON_MAJOR_VERSION_17}/${os}/${arch}/local-path").text.trim()
         Path daemonJvm = workingDir().resolve("gradle-jdks").resolve(daemonJdkFileName).toAbsolutePath()

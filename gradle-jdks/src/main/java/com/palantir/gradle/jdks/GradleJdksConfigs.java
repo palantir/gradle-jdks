@@ -18,7 +18,8 @@ package com.palantir.gradle.jdks;
 
 import com.google.common.collect.Sets;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
+import com.palantir.platform.GradleOperatingSystem;
+import com.palantir.platform.OperatingSystem;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,6 +48,9 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     public static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
     public static final String GRADLE_JDKS_SETUP_SCRIPT = "gradle-jdks-setup.sh";
     public static final String GRADLE_JDKS_FUNCTIONS_SCRIPT = "gradle-jdks-functions.sh";
+
+    @Nested
+    protected abstract GradleOperatingSystem getOperatingSystem();
 
     @Input
     @Option(
@@ -92,6 +96,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     @TaskAction
     public final void action() {
+        OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
         Path gradleJdksDir = gradleDirectory().dir("jdks").getAsFile().toPath();
         Path gradleJdksSetupJar =
                 gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile().toPath();
@@ -126,7 +131,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                             + " `gradle-sls-docker` related plugins, see https://pl.ntr/2v1 to fix.");
         }
 
-        Set<String> configuredJavaMajorVersions = GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(gradleJdksDir);
+        Set<String> configuredJavaMajorVersions =
+                GradleJdksConfigsUtils.getConfiguredJavaMajorVersions(gradleJdksDir, os);
         Set<String> unexpectedConfiguredJavaVersions = Sets.difference(
                 configuredJavaMajorVersions,
                 getJavaVersionToJdkDistros().get().keySet().stream()
@@ -140,10 +146,10 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         }
 
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();
-        String os = CurrentOs.get().toString();
+        String osString = os.toString();
         String arch = CurrentArch.get().toString();
         Path expectedJdkDir =
-                gradleJdksDir.resolve(gradleJdkDaemonVersion).resolve(os).resolve(arch);
+                gradleJdksDir.resolve(gradleJdkDaemonVersion).resolve(osString).resolve(arch);
         if (!Files.exists(expectedJdkDir)) {
             throw new RuntimeException(String.format(
                     "Gradle daemon JDK version is `%s` but no JDK configured for that version. Please ensure that you"

@@ -24,27 +24,30 @@ import com.palantir.gradle.ideaconfiguration.IdeaConfigurationPlugin;
 import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
+import com.palantir.platform.GradleOperatingSystem;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.gradle.util.GradleVersion;
 
-public final class ToolchainsPlugin implements Plugin<Project> {
+public abstract class ToolchainsPlugin implements Plugin<Project> {
 
-    private static final Logger logger = Logging.getLogger(ToolchainsPlugin.class);
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
 
+    @Nested
+    protected abstract GradleOperatingSystem getOperatingSystem();
+
     @Override
-    public void apply(Project rootProject) {
+    public final void apply(Project rootProject) {
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(
+                getOperatingSystem().getOperatingSystem().get(),
                 rootProject.getProjectDir().toPath())) {
             throw new RuntimeException(
                     "Cannot apply `com.palantir.jdks.settings` without enabling palantir.jdk.setup.enabled");

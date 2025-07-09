@@ -18,8 +18,7 @@ package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -122,8 +121,7 @@ public final class GradleJdksConfigsUtils {
         }
     }
 
-    public static Set<String> getConfiguredJavaMajorVersions(Path gradleJdksLocalDirectory) {
-        Os os = CurrentOs.get();
+    public static Set<String> getConfiguredJavaMajorVersions(Path gradleJdksLocalDirectory, OperatingSystem os) {
         Arch arch = CurrentArch.get();
         try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
             return stream.filter(path -> path.resolve(os.toString())

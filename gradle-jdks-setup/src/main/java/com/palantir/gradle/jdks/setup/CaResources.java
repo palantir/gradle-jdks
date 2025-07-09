@@ -17,8 +17,7 @@
 package com.palantir.gradle.jdks.setup;
 
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
-import com.palantir.gradle.jdks.setup.common.CurrentOs;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -189,7 +188,7 @@ public final class CaResources {
     }
 
     private Optional<byte[]> systemCertificates() {
-        Os os = CurrentOs.get();
+        OperatingSystem os = OperatingSystem.get();
         switch (os) {
             case MACOS:
                 return Optional.of(macosSystemCertificates());

@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.gradle.jdks.JdkPath.Extension;
 import com.palantir.gradle.jdks.setup.common.Arch;
-import com.palantir.gradle.jdks.setup.common.Os;
+import com.palantir.platform.OperatingSystem;
 import org.junit.jupiter.api.Test;
 
 class GraalVmCeDistributionTest {
@@ -30,7 +30,7 @@ class GraalVmCeDistributionTest {
         GraalVmCeDistribution distribution = new GraalVmCeDistribution();
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.AARCH64)
-                .os(Os.LINUX_GLIBC)
+                .os(OperatingSystem.LINUX_GLIBC)
                 .version("23.0.2")
                 .build());
         assertThat(path.filename()).isEqualTo("jdk-23.0.2/graalvm-community-jdk-23.0.2_linux-aarch64_bin");
@@ -42,7 +42,7 @@ class GraalVmCeDistributionTest {
         GraalVmCeDistribution distribution = new GraalVmCeDistribution();
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.AARCH64)
-                .os(Os.MACOS)
+                .os(OperatingSystem.MACOS)
                 .version("23.0.2")
                 .build());
         assertThat(path.filename()).isEqualTo("jdk-23.0.2/graalvm-community-jdk-23.0.2_macos-aarch64_bin");
@@ -54,7 +54,7 @@ class GraalVmCeDistributionTest {
         GraalVmCeDistribution distribution = new GraalVmCeDistribution();
         JdkPath path = distribution.path(JdkRelease.builder()
                 .arch(Arch.X86_64)
-                .os(Os.WINDOWS)
+                .os(OperatingSystem.WINDOWS)
                 .version("23.0.2")
                 .build());
         assertThat(path.filename()).isEqualTo("jdk-23.0.2/graalvm-community-jdk-23.0.2_windows-x64_bin");
