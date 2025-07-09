@@ -1,4 +1,4 @@
-type:
+type: improvement
 improvement:
   description: Switch to gradle-utils' `GradleOperatingSystem` to be configuration cache friendly
   links:
