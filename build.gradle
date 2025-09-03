@@ -18,6 +18,7 @@ buildscript {
         classpath 'com.palantir.gradle.shadow-jar:gradle-shadow-jar:3.1.0'
         classpath 'com.palantir.baseline:gradle-baseline-java:6.5.0'
         classpath 'com.palantir.gradle.gitversion:gradle-git-version:4.0.0'
+        classpath 'com.palantir.gradle.guide:gradle-guide:1.13.0'
         classpath 'com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.5.0'
         classpath 'com.gradle.publish:plugin-publish-plugin:1.3.1'
     }
@@ -25,6 +26,7 @@ buildscript {
 
 apply plugin: 'com.palantir.external-publish'
 apply plugin: 'com.palantir.git-version'
+apply plugin: 'com.palantir.gradle-guide'
 apply plugin: 'com.palantir.jdks'
 apply plugin: 'com.palantir.consistent-versions'
 apply plugin: 'com.palantir.baseline'
