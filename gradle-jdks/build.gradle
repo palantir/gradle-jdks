@@ -39,9 +39,12 @@ dependencies {
     testImplementation project(':gradle-jdks-test-common')
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'com.palantir.gradle.plugintesting:gradle-plugin-testing-junit'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 gradlePlugin {
@@ -75,6 +78,10 @@ tasks.withType(Test) {
     environment(Map.of("PROJECT_VERSION", project.version))
     systemProperty 'ignoreDeprecations', 'true'
     dependsOn project(':gradle-jdks-settings').tasks.withType(PluginUnderTestMetadata.class)
+}
+
+tasks.withType(Test) {
+    useJUnitPlatform()
 }
 
 tasks.withType(ProcessResources.class).configureEach {
