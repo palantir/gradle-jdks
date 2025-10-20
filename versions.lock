@@ -14,7 +14,7 @@ com.google.errorprone:error_prone_annotations:2.41.0 (3 constraints: ae1fec50)
 
 com.google.guava:failureaccess:1.0.3 (2 constraints: f3154f13)
 
-com.google.guava:guava:33.5.0-jre (8 constraints: bfa3d999)
+com.google.guava:guava:33.5.0-jre (8 constraints: c0a3889a)
 
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 constraints: bd17c918)
 
@@ -122,11 +122,13 @@ org.slf4j:slf4j-api:1.7.36 (4 constraints: 4b4a7558)
 
 cglib:cglib-nodep:3.2.2 (1 constraints: 490ded24)
 
-com.netflix.nebula:nebula-test:10.6.2 (1 constraints: 3b053b3b)
+com.netflix.nebula:nebula-test:10.6.2 (2 constraints: d61de72d)
+
+com.palantir.gradle.plugintesting:configuration-cache-spec:1.1.1 (1 constraints: 0505f435)
 
 com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:1.1.1 (1 constraints: 0505f435)
 
-com.palantir.gradle.plugintesting:plugin-testing-core:0.5.0 (1 constraints: 0705fa35)
+com.palantir.gradle.plugintesting:plugin-testing-core:1.1.1 (1 constraints: 0505f435)
 
 junit:junit:4.13.2 (1 constraints: 1b0e1d4c)
 
@@ -138,7 +140,7 @@ org.apiguardian:apiguardian-api:1.1.2 (6 constraints: 5366ce6e)
 
 org.assertj:assertj-core:3.27.3 (2 constraints: 1e1f428f)
 
-org.codehaus.groovy:groovy:3.0.12 (2 constraints: 781b1f9d)
+org.codehaus.groovy:groovy:3.0.24 (3 constraints: 133429dd)
 
 org.hamcrest:hamcrest:2.2 (1 constraints: d20cdc04)
 
@@ -150,11 +152,11 @@ org.junit:junit-bom:5.13.4 (1 constraints: 3f054e3b)
 
 org.junit.jupiter:junit-jupiter:5.13.4 (2 constraints: 820e2572)
 
-org.junit.jupiter:junit-jupiter-api:5.13.4 (6 constraints: 136238ed)
+org.junit.jupiter:junit-jupiter-api:5.13.4 (7 constraints: d17830ea)
 
 org.junit.jupiter:junit-jupiter-engine:5.13.4 (2 constraints: 7d17a564)
 
-org.junit.jupiter:junit-jupiter-params:5.13.4 (2 constraints: 7d17a564)
+org.junit.jupiter:junit-jupiter-params:5.13.4 (3 constraints: 3b2e71aa)
 
 org.junit.platform:junit-platform-commons:1.13.4 (3 constraints: 782ad891)
 
@@ -170,6 +172,6 @@ org.objenesis:objenesis:3.3 (2 constraints: 9b17f557)
 
 org.opentest4j:opentest4j:1.3.0 (2 constraints: cf209249)
 
-org.spockframework:spock-core:2.3-groovy-3.0 (2 constraints: 922109a6)
+org.spockframework:spock-core:2.3-groovy-3.0 (3 constraints: 2c3deb38)
 
 org.spockframework:spock-junit4:2.3-groovy-3.0 (1 constraints: 7a1000b0)
