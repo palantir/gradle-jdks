@@ -124,11 +124,11 @@ cglib:cglib-nodep:3.2.2 (1 constraints: 490ded24)
 
 com.netflix.nebula:nebula-test:10.6.2 (2 constraints: d61de72d)
 
-com.palantir.gradle.plugintesting:configuration-cache-spec:1.1.1 (1 constraints: 0505f435)
+com.palantir.gradle.plugintesting:configuration-cache-spec:0.13.0 (1 constraints: 36052c3b)
 
-com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:1.1.1 (1 constraints: 0505f435)
+com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.13.0 (1 constraints: 36052c3b)
 
-com.palantir.gradle.plugintesting:plugin-testing-core:1.1.1 (1 constraints: 0505f435)
+com.palantir.gradle.plugintesting:plugin-testing-core:0.13.0 (1 constraints: 36052c3b)
 
 junit:junit:4.13.2 (1 constraints: 1b0e1d4c)
 
