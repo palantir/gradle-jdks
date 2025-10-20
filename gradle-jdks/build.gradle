@@ -81,10 +81,6 @@ tasks.withType(Test) {
     dependsOn project(':gradle-jdks-settings').tasks.withType(PluginUnderTestMetadata.class)
 }
 
-tasks.withType(Test) {
-    useJUnitPlatform()
-}
-
 tasks.withType(ProcessResources.class).configureEach {
     from(project(':gradle-jdks-setup').tasks.named('fatJar')) {
         rename { 'gradle-jdks-setup.jar' }

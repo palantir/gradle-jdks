@@ -16,7 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
@@ -25,74 +25,74 @@ import com.palantir.gradle.testing.project.RootProject;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-class PalantirCaPluginIntegrationTest {
+public class PalantirCaPluginIntegrationTest {
 
     @Test
-    void canAddCaCertsToAJdk(GradleInvoker gradle, RootProject rootProject) {
-        rootProject
-                .buildGradle()
-                .append(
-                        """
-            // Can't do strict as open source CI does not have the Palantir CA
-            plugins {
-                id 'com.palantir.jdks.palantir-ca'
-            }
+    void canAddCaCertsToJdk(GradleInvoker gradle, RootProject project) {
+        // Configure build.gradle
+        project.buildGradle()
+                .append("""
+                        plugins {
+                            id 'com.palantir.jdks.palantir-ca'
+                        }
+                        
+                        jdks {
+                            jdk(11) {
+                                distribution = 'azul-zulu'
+                                jdkVersion = '11.54.25-11.0.14.1'
+                            }
+                            
+                            jdkStorageLocation = layout.buildDirectory.dir('jdks')
+                        }
+                        
+                        javaVersions {
+                            libraryTarget = 11
+                        }
+                        
+                        apply plugin: 'java-library'
+                        
+                        task printCaTruststoreAliases(type: JavaExec) {
+                            classpath = sourceSets.main.runtimeClasspath
+                            mainClass = 'foo.OutputCaCerts'
+                            logging.captureStandardOutput LogLevel.LIFECYCLE
+                            logging.captureStandardError LogLevel.LIFECYCLE
+                        }
+                        """);
 
-            jdks {
-                jdk(11) {
-                    distribution = 'azul-zulu'
-                    jdkVersion = '11.54.25-11.0.14.1'
-                }
-
-                jdkStorageLocation = layout.buildDirectory.dir('jdks')
-            }
-
-            javaVersions {
-                libraryTarget = 11
-            }
-
-            apply plugin: 'java-library'
-
-            task printCaTruststoreAliases(type: JavaExec) {
-                classpath = sourceSets.main.runtimeClasspath
-                mainClass = 'foo.OutputCaCerts'
-                logging.captureStandardOutput LogLevel.LIFECYCLE
-                logging.captureStandardError LogLevel.LIFECYCLE
-            }
-        """);
-
-        rootProject
-                .mainSourceSet()
+        // Create Java class
+        project.mainSourceSet()
                 .java()
-                .writeClass(
-                        """
-            package foo;
+                .writeClass("""
+                        package foo;
+                        
+                        import java.io.File;
+                        import java.security.KeyStore;
+                        import java.security.cert.X509Certificate;
+                        
+                        public final class OutputCaCerts {
+                            public static void main(String... args) throws Exception {
+                                KeyStore keyStore = KeyStore.getInstance(
+                                        new File(System.getProperty("java.home"), "lib/security/cacerts"),
+                                        "changeit".toCharArray());
+                                X509Certificate palantirCert = ((X509Certificate) keyStore.getCertificate("Palantir3rdGenRootCa"));
+                        
+                                if (palantirCert != null) {
+                                    System.out.println(palantirCert.getSerialNumber());
+                                }
+                            }
+                        }
+                        """);
 
-            import java.io.File;
-            import java.security.KeyStore;
-            import java.security.cert.X509Certificate;
-
-            public final class OutputCaCerts {
-                public static void main(String... args) throws Exception {
-                    KeyStore keyStore = KeyStore.getInstance(
-                            new File(System.getProperty("java.home"), "lib/security/cacerts"),
-                            "changeit".toCharArray());
-                    X509Certificate palantirCert = ((X509Certificate) keyStore.getCertificate("Palantir3rdGenRootCa"));
-
-                    if (palantirCert != null) {
-                        System.out.println(palantirCert.getSerialNumber());
-                    }
-                }
-            }
-        """);
-
+        // Run task
         InvocationResult result = gradle.withArgs("printCaTruststoreAliases").buildsSuccessfully();
-
+        
+        // Check output
+        String stdout = result.output();
         String palantir3rdGenCaSerial = "18126334688741185161";
-
+        
         // Open source CI does not have the Palantir CA
         if (System.getenv("CI") == null) {
-            assertTrue(result.output().contains(palantir3rdGenCaSerial));
+            assertThat(stdout).contains(palantir3rdGenCaSerial);
         }
     }
 }
