@@ -132,7 +132,7 @@ net.bytebuddy:byte-buddy:1.15.11 (2 constraints: f116e566)
 
 net.bytebuddy:byte-buddy-agent:1.15.11 (1 constraints: 730bb5e9)
 
-org.apiguardian:apiguardian-api:1.1.2 (6 constraints: 5366ce6e)
+org.apiguardian:apiguardian-api:1.1.2 (5 constraints: 105480ac)
 
 org.assertj:assertj-core:3.27.3 (1 constraints: 4105513b)
 
@@ -152,9 +152,7 @@ org.junit.jupiter:junit-jupiter-params:5.11.4 (1 constraints: 380e044a)
 
 org.junit.platform:junit-platform-commons:1.11.4 (2 constraints: 35212184)
 
-org.junit.platform:junit-platform-engine:1.11.4 (3 constraints: 823019a2)
-
-org.junit.platform:junit-platform-launcher:1.11.4 (1 constraints: 3905303b)
+org.junit.platform:junit-platform-engine:1.11.4 (2 constraints: 0c1ef863)
 
 org.mockito:mockito-core:5.15.2 (2 constraints: 36145587)
 
