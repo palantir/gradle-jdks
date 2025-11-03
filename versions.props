@@ -16,7 +16,6 @@ org.ow2.asm:asm = 9.7.1
 com.palantir.gradle.failure-reports:* = 1.9.0
 com.palantir.gradle.idea-configuration:gradle-idea-configuration = 0.3.0
 
-
 # dependency-upgrader:OFF
 com.palantir.baseline:* = 5.53.0
 # dependency-upgrader:ON
