@@ -42,6 +42,7 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
+    testImplementation 'com.palantir.gradle.plugintesting:gradle-plugin-testing-junit'
 }
 
 gradlePlugin {
