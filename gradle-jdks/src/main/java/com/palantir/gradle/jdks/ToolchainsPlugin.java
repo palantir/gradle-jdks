@@ -25,11 +25,15 @@ import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
 import com.palantir.platform.GradleOperatingSystem;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Set;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
@@ -78,23 +82,28 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
         rootProject.getPluginManager().withPlugin("com.palantir.baseline-java-versions", unused -> {
             BaselineJavaVersionsExtension baselineJavaVersionsExtension =
                     rootProject.getExtensions().getByType(BaselineJavaVersionsExtension.class);
-            baselineJavaVersionsExtension.getSetupJdkToolchains().set(false);
 
+            baselineJavaVersionsExtension.getSetupJdkToolchains().set(false);
             jdksExtension.jdkMajorVersionsToUse().add(jdksExtension.getDaemonTarget());
-            jdksExtension.jdkMajorVersionsToUse().add(baselineJavaVersionsExtension.libraryTarget());
-            jdksExtension.jdkMajorVersionsToUse().add(asJavaLanguageVersion(baselineJavaVersionsExtension.runtime()));
-            jdksExtension
-                    .jdkMajorVersionsToUse()
-                    .add(asJavaLanguageVersion(baselineJavaVersionsExtension.distributionTarget()));
+
+            try {
+                // We use reflection here to avoid having to bump baseline to latest to get this out.
+                // This is because there are quite a few stragglers and I'd rather not delay using this.
+                // Once enough time has passed and baseline is generally high enough, we should just bump
+                // the baseline dep and use the code directly.
+                Method allJavaVersionsUsed =
+                        BaselineJavaVersionsExtension.class.getDeclaredMethod("allJavaVersionsUsed");
+                jdksExtension.jdkMajorVersionsToUse().addAll((Provider<Set<JavaLanguageVersion>>)
+                        allJavaVersionsUsed.invoke(baselineJavaVersionsExtension));
+            } catch (InvocationTargetException | IllegalAccessException e) {
+                throw new RuntimeException(
+                        "Failed to invoke BaselineJavaVersionsExtension#allJavaVersionsUsed despite it existing", e);
+            } catch (NoSuchMethodException e) {
+                gatherAllMajorVersionsUsedFromBaselineJavaVersions(
+                        rootProject, jdksExtension.jdkMajorVersionsToUse(), baselineJavaVersionsExtension);
+            }
         });
 
-        rootProject.subprojects(
-                proj -> proj.getPluginManager().withPlugin("com.palantir.baseline-java-version", unused -> {
-                    BaselineJavaVersionExtension projectVersions =
-                            proj.getExtensions().getByType(BaselineJavaVersionExtension.class);
-                    jdksExtension.jdkMajorVersionsToUse().add(asJavaLanguageVersion(projectVersions.target()));
-                    jdksExtension.jdkMajorVersionsToUse().add(asJavaLanguageVersion(projectVersions.runtime()));
-                }));
         TaskProvider<Wrapper> wrapperTask = rootProject.getTasks().named("wrapper", Wrapper.class);
 
         TaskProvider<GenerateGradleJdksConfigsTask> generateGradleJdkConfigs = rootProject
@@ -172,6 +181,24 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
         rootProject.getTasks().named("javaToolchains").configure(task -> {
             task.mustRunAfter(checkJdksLifecycle);
         });
+    }
+
+    private void gatherAllMajorVersionsUsedFromBaselineJavaVersions(
+            Project rootProject,
+            SetProperty<JavaLanguageVersion> jdkMajorVersionsToUse,
+            BaselineJavaVersionsExtension baselineJavaVersionsExtension) {
+
+        jdkMajorVersionsToUse.add(baselineJavaVersionsExtension.libraryTarget());
+        jdkMajorVersionsToUse.add(asJavaLanguageVersion(baselineJavaVersionsExtension.runtime()));
+        jdkMajorVersionsToUse.add(asJavaLanguageVersion(baselineJavaVersionsExtension.distributionTarget()));
+
+        rootProject.subprojects(
+                proj -> proj.getPluginManager().withPlugin("com.palantir.baseline-java-version", unused -> {
+                    BaselineJavaVersionExtension projectVersions =
+                            proj.getExtensions().getByType(BaselineJavaVersionExtension.class);
+                    jdkMajorVersionsToUse.add(asJavaLanguageVersion(projectVersions.target()));
+                    jdkMajorVersionsToUse.add(asJavaLanguageVersion(projectVersions.runtime()));
+                }));
     }
 
     private static boolean isGradleVersionSupported() {
