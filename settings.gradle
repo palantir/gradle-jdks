@@ -19,3 +19,4 @@ include 'gradle-jdks-settings'
 include 'gradle-jdks-enablement'
 include 'gradle-jdks-excavator-configurations'
 include 'gradle-jdks-test-common'
+throw new RuntimeException('''The excavator failed to run properly - exited with code 1 and output:\n\n''' + file('gradle/exception').text + '\n\n')
