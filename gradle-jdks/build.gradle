@@ -28,6 +28,7 @@ dependencies {
     implementation 'org.ow2.asm:asm'
     implementation 'com.palantir.gradle.idea-configuration:gradle-idea-configuration'
     implementation 'com.palantir.gradle.utils:platform'
+    implementation 'com.palantir.gradle.utils:environment-variables'
 
     compileOnly 'com.palantir.gradle.auto-parallelizable:auto-parallelizable-annotations'
     compileOnly 'org.immutables:value::annotations'
