@@ -67,6 +67,12 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     }
 
     @Input
+    @Option(
+            option = "onlyForCurrentOsArch",
+            description = "Generates the configuration directories only for the current Os & Arch.")
+    public abstract Property<Boolean> getIncludeOnlyCurrentOsArch();
+
+    @Input
     public abstract ListProperty<String> getIncludeJavaMajorVersions();
 
     @Nested
@@ -77,12 +83,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     @Input
     public abstract MapProperty<String, String> getCaCerts();
-
-    @Input
-    @Option(
-            option = "onlyForCurrentOsArch",
-            description = "Generates the configuration directories only for the current Os & Arch.")
-    public abstract Property<Boolean> getIncludeOnlyCurrentOsArch();
 
     abstract Directory gradleDirectory();
 
