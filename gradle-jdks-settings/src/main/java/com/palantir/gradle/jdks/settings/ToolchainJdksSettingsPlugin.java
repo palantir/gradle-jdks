@@ -44,10 +44,12 @@ import org.gradle.api.internal.provider.DefaultProviderFactory;
 import org.gradle.api.internal.provider.DefaultValueSourceProviderFactory;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.Nested;
 import org.gradle.initialization.DefaultSettings;
 import org.gradle.util.GradleVersion;
+
 /**
  * A plugin that changes the Gradle JDK properties (via reflection) to point to the local toolchains configured via the
  * Gradle JDK Setup.
@@ -66,10 +68,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
     @Override
     public final void apply(Settings settings) {
         OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
-        Path toolchainsInstallationDir = Path.of(getEnvironmentVariables()
-                        .envVarOrFromTestingProperty("GRADLE_USER_HOME")
-                        .get())
-                .resolve("gradle-jdks");
+        Path toolchainsInstallationDir = getToolchainInstallationDir();
 
         Path rootProjectDir = settings.getRootDir().toPath();
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(os, rootProjectDir)) {
@@ -218,6 +217,15 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
             throw new RuntimeException(
                     String.format("Failed to read gradle jdk configuration file %s", gradleJdkConfigurationPath), e);
         }
+    }
+
+    private Path getToolchainInstallationDir() {
+        Provider<String> gradleUserHomeEnv = getEnvironmentVariables().envVarOrFromTestingProperty("GRADLE_USER_HOME");
+        return Path.of(
+                        gradleUserHomeEnv.isPresent()
+                                ? gradleUserHomeEnv.get()
+                                : (System.getProperty("user.home") + "/.gradle"))
+                .resolve("gradle-jdks");
     }
 
     private static boolean isGradleVersionSupported() {
