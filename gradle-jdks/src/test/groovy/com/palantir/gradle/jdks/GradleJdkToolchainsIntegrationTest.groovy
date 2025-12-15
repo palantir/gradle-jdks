@@ -114,15 +114,6 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         setupJdksHardcodedVersions()
         applyApplicationPlugin()
 
-        // language=Groovy
-        buildFile << """
-            java {
-                toolchain {
-                    languageVersion = JavaLanguageVersion.of(17)
-                }
-            }
-        """.stripIndent(true)
-
         when:
         file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
         runTasksSuccessfully("generateGradleJdkConfigs", "--onlyForCurrentOsArch")
