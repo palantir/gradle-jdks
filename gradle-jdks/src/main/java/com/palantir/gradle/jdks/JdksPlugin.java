@@ -50,6 +50,7 @@ public abstract class JdksPlugin implements Plugin<Project> {
     }
 
     public static JdksExtension extension(Project rootProject, JdkDistributions jdkDistributions) {
+        @SuppressWarnings("for-rollout:GradleTypesAsFields")
         JdksExtension jdksExtension = rootProject.getExtensions().create("jdks", JdksExtension.class);
         jdksExtension
                 .getJdkStorageLocation()

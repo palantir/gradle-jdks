@@ -48,6 +48,7 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
 
+    @SuppressWarnings("for-rollout:TaskDependsOn")
     @Override
     public final void apply(Project rootProject) {
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(
@@ -137,6 +138,7 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
             task.getCaCerts().putAll(jdksExtension.getCaCerts());
         });
 
+        @SuppressWarnings("for-rollout:TaskDependsOn")
         TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
                 .getTasks()
                 .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {

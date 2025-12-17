@@ -95,7 +95,6 @@ public final class CommandRunner {
         }
     }
 
-    @SuppressWarnings("for-rollout:PreferSafeLoggableExceptions")
     public static void processStream(InputStream inputStream, Consumer<String> logFunction) {
         try (BufferedReader bufferedReader =
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
