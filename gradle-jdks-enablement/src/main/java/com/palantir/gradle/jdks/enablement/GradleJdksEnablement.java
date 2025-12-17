@@ -37,7 +37,6 @@ public final class GradleJdksEnablement {
         return !operatingSystem.equals(OperatingSystem.WINDOWS) && isGradleJdkPropertyEnabled(projectDir);
     }
 
-    @SuppressWarnings("for-rollout:PreferSafeLoggableExceptions")
     private static boolean isGradleJdkPropertyEnabled(Path projectDir) {
         File gradlePropsFile = projectDir.resolve("gradle.properties").toFile();
         if (!gradlePropsFile.exists()) {
