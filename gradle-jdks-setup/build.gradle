@@ -24,8 +24,10 @@ tasks.register('fatJar', Jar) {
 }
 
 tasks.withType(JavaCompile) {
+    options.errorprone.disable 'PreferSafeLoggableExceptions', 'StringSplitter'
+
     // Disable StreamFlatMapOptional due to Java 11
-    options.errorprone.disable 'PreferSafeLoggableExceptions', 'StringSplitter', 'StreamFlatMapOptional'
+    options.errorprone.disable 'StreamFlatMapOptional'
 }
 
 // DO NOT UPDATE! This needs to be kept as low as possible, such that it is compatible with all the jdk versions the
