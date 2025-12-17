@@ -24,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -240,7 +241,7 @@ public final class CaResources {
                     try {
                         return Files.readString(caCertificatePath);
                     } catch (IOException e) {
-                        throw new RuntimeException("Failed to read CA certs from " + caCertificatePath, e);
+                        throw new UncheckedIOException("Failed to read CA certs from " + caCertificatePath, e);
                     }
                 })
                 .collect(Collectors.joining("\n"))

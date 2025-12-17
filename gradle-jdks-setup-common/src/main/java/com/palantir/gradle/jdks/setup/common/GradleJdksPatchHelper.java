@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks.setup.common;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -76,7 +77,7 @@ public final class GradleJdksPatchHelper {
             return Stream.concat(Files.readAllLines(filePath).stream(), maybeExtraLine)
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            throw new RuntimeException("Unable to read the gradlew patch file", e);
+            throw new UncheckedIOException("Unable to read the gradlew patch file", e);
         }
     }
 
@@ -86,7 +87,7 @@ public final class GradleJdksPatchHelper {
         try {
             Files.writeString(outputPath, getContentWithPatch(initialLines, patchLines, insertIndex));
         } catch (IOException e) {
-            throw new RuntimeException("Unable to write file", e);
+            throw new UncheckedIOException("Unable to write file", e);
         }
     }
 

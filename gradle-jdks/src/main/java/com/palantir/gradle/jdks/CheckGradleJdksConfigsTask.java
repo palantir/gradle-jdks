@@ -20,6 +20,7 @@ import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,7 +67,7 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
             byte[] actualBytes = Files.readAllBytes(gradleJdkJarFile.toPath());
             checkOrThrow(Arrays.equals(expectedBytes, actualBytes), gradleJdkJarFile.toPath());
         } catch (IOException e) {
-            throw new RuntimeException("An error occurred while checking the gradle jdk setup jar", e);
+            throw new UncheckedIOException("An error occurred while checking the gradle jdk setup jar", e);
         }
     }
 
@@ -85,7 +86,7 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
         try {
             return Files.readString(filePath).trim();
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Unable to read file %s", filePath), e);
+            throw new UncheckedIOException(String.format("Unable to read file %s", filePath), e);
         }
     }
 
@@ -115,7 +116,7 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
             }
             return inputStream.readAllBytes();
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to retrieve resource %s", resource), e);
+            throw new UncheckedIOException(String.format("Failed to retrieve resource %s", resource), e);
         }
     }
 }
