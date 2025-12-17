@@ -27,6 +27,7 @@ tasks.withType(JavaCompile) {
     options.errorprone.disable 'PreferSafeLoggableExceptions', 'StringSplitter'
 
     // Disable StreamFlatMapOptional due to Java 11
+    // Remove when we get to Java 17
     options.errorprone.disable 'StreamFlatMapOptional'
 }
 
