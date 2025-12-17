@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks.setup;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -44,7 +45,7 @@ public final class FileUtils {
         try (Stream<Path> paths = Files.walk(dir)) {
             paths.sorted(Comparator.reverseOrder()).forEach(FileUtils::deleteFile);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to delete directory", e);
+            throw new UncheckedIOException("Failed to delete directory", e);
         }
     }
 
@@ -52,7 +53,7 @@ public final class FileUtils {
         try {
             Files.delete(targetPath);
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to delete path %s", targetPath), e);
+            throw new UncheckedIOException(String.format("Failed to delete path %s", targetPath), e);
         }
     }
 
@@ -78,7 +79,7 @@ public final class FileUtils {
             @Override
             public FileVisitResult postVisitDirectory(Path _dir, IOException exc) throws IOException {
                 if (Optional.ofNullable(exc).isPresent()) {
-                    throw new RuntimeException("Failed to copy directory", exc);
+                    throw new UncheckedIOException("Failed to copy directory", exc);
                 }
                 return FileVisitResult.CONTINUE;
             }
@@ -89,7 +90,7 @@ public final class FileUtils {
         try {
             Files.createDirectories(directoryPath);
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Could not create directory %s", directoryPath), e);
+            throw new UncheckedIOException(String.format("Could not create directory %s", directoryPath), e);
         }
     }
 

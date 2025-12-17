@@ -43,44 +43,27 @@ public final class AmazonCorrettoJdkDistribution implements JdkDistribution {
     }
 
     private static String os(OperatingSystem os) {
-        switch (os) {
-            case MACOS:
-                return "macosx";
-            case LINUX_GLIBC:
-                return "linux";
-            case LINUX_MUSL:
-                return "alpine-linux";
-            case WINDOWS:
-                return "windows";
-        }
-
-        throw new UnsupportedOperationException("Case " + os + " not implemented");
+        return switch (os) {
+            case MACOS -> "macosx";
+            case LINUX_GLIBC -> "linux";
+            case LINUX_MUSL -> "alpine-linux";
+            case WINDOWS -> "windows";
+        };
     }
 
     private static Extension extension(OperatingSystem os) {
-        switch (os) {
-            case MACOS:
-            case LINUX_GLIBC:
-            case LINUX_MUSL:
-                return Extension.TARGZ;
-            case WINDOWS:
-                return Extension.ZIP;
-        }
-
-        throw new UnsupportedOperationException("Case " + os + " not implemented");
+        return switch (os) {
+            case MACOS, LINUX_GLIBC, LINUX_MUSL -> Extension.TARGZ;
+            case WINDOWS -> Extension.ZIP;
+        };
     }
 
     private static String arch(Arch arch) {
-        switch (arch) {
-            case X86:
-                return "i386";
-            case X86_64:
-                return "x64";
-            case AARCH64:
-                return "aarch64";
-        }
-
-        throw new UnsupportedOperationException("Case " + arch + " not implemented");
+        return switch (arch) {
+            case X86 -> "i386";
+            case X86_64 -> "x64";
+            case AARCH64 -> "aarch64";
+        };
     }
 
     private static String windowsDashJdk(OperatingSystem os) {

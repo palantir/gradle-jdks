@@ -26,6 +26,7 @@ import com.palantir.platform.GradleOperatingSystem;
 import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -61,6 +62,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
 
+    @SuppressWarnings("for-rollout:PatternMatchingInstanceof")
     @Override
     public final void apply(Settings settings) {
         OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
@@ -189,7 +191,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     .map(path -> resolveJdkPath(path, installationDirectory))
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            throw new RuntimeException("Unable to list the local JDK installation paths", e);
+            throw new UncheckedIOException("Unable to list the local JDK installation paths", e);
         }
     }
 
@@ -198,7 +200,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
             String localFilename = Files.readString(gradleJdkConfigurationPath).trim();
             return installationDirectory.resolve(localFilename);
         } catch (IOException e) {
-            throw new RuntimeException(
+            throw new UncheckedIOException(
                     String.format("Failed to read gradle jdk configuration file %s", gradleJdkConfigurationPath), e);
         }
     }
@@ -236,7 +238,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         try {
             Files.createDirectories(path);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to create directory", e);
+            throw new UncheckedIOException("Failed to create directory", e);
         }
     }
 

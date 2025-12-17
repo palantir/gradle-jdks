@@ -24,11 +24,13 @@ tasks.register('fatJar', Jar) {
 }
 
 tasks.withType(JavaCompile) {
-    options.errorprone.disable 'PreferSafeLoggableExceptions', 'StringSplitter'
+    // Disable StreamFlatMapOptional due to Java 11
+    options.errorprone.disable 'PreferSafeLoggableExceptions', 'StringSplitter', 'StreamFlatMapOptional'
 }
 
 // DO NOT UPDATE! This needs to be kept as low as possible, such that it is compatible with all the jdk versions the
 // consumers would want to set up with the JDK auto-management workflow (used by ./gradle-jdks-setup.sh and GradleWrapperMain.java classes)
 javaVersion {
     target = 11
+    javaCompiler = 21
 }

@@ -74,43 +74,27 @@ final class AzulZuluJdkDistribution implements JdkDistribution {
     }
 
     private static String os(OperatingSystem os) {
-        switch (os) {
-            case MACOS:
-                return "macosx";
-            case LINUX_GLIBC:
-                return "linux";
-            case LINUX_MUSL:
-                return "linux_musl";
-            case WINDOWS:
-                return "win";
-        }
-
-        throw new UnsupportedOperationException("Case " + os + " not implemented");
+        return switch (os) {
+            case MACOS -> "macosx";
+            case LINUX_GLIBC -> "linux";
+            case LINUX_MUSL -> "linux_musl";
+            case WINDOWS -> "win";
+        };
     }
 
     private static String arch(Arch arch) {
-        switch (arch) {
-            case X86:
-                return "i686";
-            case X86_64:
-                return "x64";
-            case AARCH64:
-                return "aarch64";
-        }
-
-        throw new UnsupportedOperationException("Case " + arch + " not implemented");
+        return switch (arch) {
+            case X86 -> "i686";
+            case X86_64 -> "x64";
+            case AARCH64 -> "aarch64";
+        };
     }
 
     private static Extension extension(OperatingSystem operatingSystem) {
-        switch (operatingSystem) {
-            case LINUX_GLIBC:
-            case LINUX_MUSL:
-                return Extension.TARGZ;
-            case MACOS:
-            case WINDOWS:
-                return Extension.ZIP;
-        }
-        throw new UnsupportedOperationException("Unknown OS: " + operatingSystem);
+        return switch (operatingSystem) {
+            case LINUX_GLIBC, LINUX_MUSL -> Extension.TARGZ;
+            case MACOS, WINDOWS -> Extension.ZIP;
+        };
     }
 
     static ZuluVersionSplit splitCombinedVersion(String combinedVersion) {

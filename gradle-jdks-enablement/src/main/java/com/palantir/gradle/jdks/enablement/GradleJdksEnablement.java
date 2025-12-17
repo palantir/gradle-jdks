@@ -20,6 +20,7 @@ import com.palantir.platform.OperatingSystem;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
@@ -49,7 +50,7 @@ public final class GradleJdksEnablement {
                     .map(Boolean::parseBoolean)
                     .orElse(false);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read gradle.properties file", e);
+            throw new UncheckedIOException("Failed to read gradle.properties file", e);
         }
     }
 

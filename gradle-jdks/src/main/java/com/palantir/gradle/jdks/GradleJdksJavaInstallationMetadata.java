@@ -39,18 +39,24 @@ final class GradleJdksJavaInstallationMetadata {
                     }
 
                     switch (method.getName()) {
-                        case "getLanguageVersion":
+                        case "getLanguageVersion" -> {
                             return javaLanguageVersion;
-                        case "getJavaRuntimeVersion":
+                        }
+                        case "getJavaRuntimeVersion" -> {
                             return javaRuntimeVersion;
-                        case "getJvmVersion":
+                        }
+                        case "getJvmVersion" -> {
                             return jvmVersion;
-                        case "getVendor":
+                        }
+                        case "getVendor" -> {
                             return vendor;
-                        case "getInstallationPath":
+                        }
+                        case "getInstallationPath" -> {
                             return installationPath.get();
-                        case "isCurrentJvm":
+                        }
+                        case "isCurrentJvm" -> {
                             return false;
+                        }
                     }
 
                     throw new UnsupportedOperationException("Unsupported method: " + method);

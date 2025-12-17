@@ -23,6 +23,7 @@ import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -131,7 +132,7 @@ public abstract class GradleWrapperPatcher {
             Preconditions.checkArgument(inputStream != null);
             return IOUtils.readLines(inputStream, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Unable to read the %s patch file", resource), e);
+            throw new UncheckedIOException(String.format("Unable to read the %s patch file", resource), e);
         }
     }
 }

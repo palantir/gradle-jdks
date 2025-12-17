@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -38,6 +39,7 @@ import java.util.stream.Stream;
 
 public final class GradleJdksConfigsUtils {
 
+    @SuppressWarnings("for-rollout:PatternMatchingInstanceof")
     public static Path copyResourceToPath(Path targetDir, String resourceName) {
         try {
             URL installJdksResource =
@@ -51,7 +53,7 @@ public final class GradleJdksConfigsUtils {
             }
             return installationScript;
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to write the %s script", resourceName), e);
+            throw new UncheckedIOException(String.format("Failed to write the %s script", resourceName), e);
         }
     }
 
@@ -64,7 +66,7 @@ public final class GradleJdksConfigsUtils {
                 is.transferTo(os);
             }
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to write the %s script", resourceName), e);
+            throw new UncheckedIOException(String.format("Failed to write the %s script", resourceName), e);
         }
     }
 
@@ -78,7 +80,7 @@ public final class GradleJdksConfigsUtils {
                 inputStream.transferTo(outputStream);
             }
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to write %s to %s", resource, outputFile.toPath()), e);
+            throw new UncheckedIOException(String.format("Failed to write %s to %s", resource, outputFile.toPath()), e);
         }
     }
 
@@ -93,7 +95,7 @@ public final class GradleJdksConfigsUtils {
             String contentWithLineEnding = content + "\n";
             Files.write(pathFile, contentWithLineEnding.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to write configuration file %s", pathFile), e);
+            throw new UncheckedIOException(String.format("Failed to write configuration file %s", pathFile), e);
         }
     }
 
@@ -106,7 +108,7 @@ public final class GradleJdksConfigsUtils {
                     PosixFilePermission.OTHERS_EXECUTE));
             Files.setPosixFilePermissions(path, perms);
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to set execute permissions to path %s", path), e);
+            throw new UncheckedIOException(String.format("Failed to set execute permissions to path %s", path), e);
         }
     }
 
@@ -117,7 +119,7 @@ public final class GradleJdksConfigsUtils {
         try {
             Files.createDirectories(directory);
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to create directory %s", directory), e);
+            throw new UncheckedIOException(String.format("Failed to create directory %s", directory), e);
         }
     }
 
@@ -131,7 +133,7 @@ public final class GradleJdksConfigsUtils {
                     .map(path -> path.getFileName().toString())
                     .collect(Collectors.toSet());
         } catch (IOException e) {
-            throw new RuntimeException("Unable to list the configured gradle/jdks major versions", e);
+            throw new UncheckedIOException("Unable to list the configured gradle/jdks major versions", e);
         }
     }
 
