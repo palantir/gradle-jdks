@@ -122,8 +122,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
             jdkDistros.forEach(jdkDistribution -> {
                 if (!getIncludeOnlyCurrentOsArch().get()
-                        || (getIncludeOnlyCurrentOsArch().get()
-                                && jdkDistribution.getOs().get().equals(os)
+                        || (jdkDistribution.getOs().get().equals(os)
                                 && jdkDistribution.getArch().get().equals(arch))) {
                     Path outputDir = gradleJdksDir
                             .resolve(javaVersion.toString())
