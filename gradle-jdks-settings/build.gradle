@@ -11,7 +11,6 @@ dependencies {
     shadeTransitively project(':gradle-jdks-setup-common')
     shadeTransitively project(':gradle-jdks-enablement')
     shadeTransitively 'com.palantir.gradle.utils:platform'
-    shadeTransitively 'com.palantir.gradle.utils:environment-variables'
 
     testImplementation gradleTestKit()
     testImplementation 'com.netflix.nebula:nebula-test'
