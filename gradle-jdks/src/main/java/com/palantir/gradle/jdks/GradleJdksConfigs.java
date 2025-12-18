@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import com.google.common.collect.Sets;
+import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.platform.GradleOperatingSystem;
 import com.palantir.platform.OperatingSystem;
@@ -66,6 +67,12 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     }
 
     @Input
+    @Option(
+            option = "onlyForCurrentOsArch",
+            description = "Generates the configuration directories only for the current Os & Arch.")
+    public abstract Property<Boolean> getIncludeOnlyCurrentOsArch();
+
+    @Input
     public abstract ListProperty<String> getIncludeJavaMajorVersions();
 
     @Nested
@@ -92,11 +99,13 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     public GradleJdksConfigs() {
         getIncludeAllJdks().convention(false);
+        getIncludeOnlyCurrentOsArch().convention(false);
     }
 
     @TaskAction
     public final void action() {
         OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
+        Arch arch = CurrentArch.get();
         Path gradleJdksDir = gradleDirectory().dir("jdks").getAsFile().toPath();
         Path gradleJdksSetupJar =
                 gradleDirectory().file(GRADLE_JDKS_SETUP_JAR).getAsFile().toPath();
@@ -112,14 +121,18 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         AtomicBoolean jdksDirectoryConfigured = new AtomicBoolean(false);
         getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
             jdkDistros.forEach(jdkDistribution -> {
-                Path outputDir = gradleJdksDir
-                        .resolve(javaVersion.toString())
-                        .resolve(jdkDistribution.getOs().get().uiName())
-                        .resolve(jdkDistribution.getArch().get().uiName());
-                Path downloadUrlPath = outputDir.resolve("download-url");
-                Path localPath = outputDir.resolve("local-path");
-                applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution);
-                jdksDirectoryConfigured.set(true);
+                if (!getIncludeOnlyCurrentOsArch().get()
+                        || (jdkDistribution.getOs().get().equals(os)
+                                && jdkDistribution.getArch().get().equals(arch))) {
+                    Path outputDir = gradleJdksDir
+                            .resolve(javaVersion.toString())
+                            .resolve(jdkDistribution.getOs().get().uiName())
+                            .resolve(jdkDistribution.getArch().get().uiName());
+                    Path downloadUrlPath = outputDir.resolve("download-url");
+                    Path localPath = outputDir.resolve("local-path");
+                    applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution);
+                    jdksDirectoryConfigured.set(true);
+                }
             });
         });
         if (!jdksDirectoryConfigured.get()) {
@@ -147,9 +160,8 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
         String gradleJdkDaemonVersion = getDaemonJavaVersion().get().toString();
         String osString = os.toString();
-        String arch = CurrentArch.get().toString();
         Path expectedJdkDir =
-                gradleJdksDir.resolve(gradleJdkDaemonVersion).resolve(osString).resolve(arch);
+                gradleJdksDir.resolve(gradleJdkDaemonVersion).resolve(osString).resolve(arch.toString());
         if (!Files.exists(expectedJdkDir)) {
             throw new RuntimeException(String.format(
                     "Gradle daemon JDK version is `%s` but no JDK configured for that version. Please ensure that you"
