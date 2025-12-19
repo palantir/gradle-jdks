@@ -38,6 +38,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
@@ -259,13 +261,15 @@ final class GradleJdkToolchainsIntegrationTest {
                 .contains("JDK " + GradleJdkTestUtils.SIMPLIFIED_JDK_17_VERSION)
                 .contains("JDK " + GradleJdkTestUtils.SIMPLIFIED_JDK_21_VERSION);
 
-        //        Matcher matcher = Pattern.compile("Detected by:        (.*)").matcher(result.output());
-        //        while (matcher.find()) {
-        //            String detectedByPattern = matcher.group(1);
-        //            assertThat(detectedByPattern).contains("org.gradle.java.installations.paths");
-        //        }
+        Matcher matcher = Pattern.compile("Detected by:        (.*)").matcher(result.output());
+        while (matcher.find()) {
+            String detectedByPattern = matcher.group(1);
+            assertThat(detectedByPattern).contains("org.gradle.java.installations.paths");
+        }
 
-        InvocationResult gradleHomeOutput = gradle.withArgs("printGradleHome").buildsSuccessfully();
+        ForkedGradleInvoker forkedGradleInvoker = new ForkedGradleInvoker(rootProject.path());
+
+        String gradleHomeOutput = forkedGradleInvoker.runTasksSuccessfully("printGradleHome");
 
         String os = OperatingSystem.get().uiName();
         String arch = CurrentArch.get().uiName();
@@ -275,11 +279,10 @@ final class GradleJdkToolchainsIntegrationTest {
                 .text()
                 .trim();
         // Verify the daemon is using the configured JDK by checking the output contains the JDK directory name
-        System.out.println(gradleHomeOutput.output());
-        assertThat(gradleHomeOutput).output().contains("java.home:");
-        assertThat(gradleHomeOutput).output().contains(daemonJdkFileName.replace("\\", "/"));
+        assertThat(gradleHomeOutput).contains("java.home:");
+        assertThat(gradleHomeOutput).contains(daemonJdkFileName.replace("\\", "/"));
 
-        gradle.withArgs("compileJava").buildsSuccessfully();
+        forkedGradleInvoker.runTasksSuccessfully("compileJava");
 
         File compiledClass = rootProject
                 .buildDir()
@@ -288,16 +291,15 @@ final class GradleJdkToolchainsIntegrationTest {
                 .toFile();
         assertThat(readBytecodeVersion(compiledClass)).isEqualTo(Pair.of(0, JAVA_17_BYTECODE));
 
-        InvocationResult runOutput = gradle.withArgs("run").buildsSuccessfully();
+        String runOutput = forkedGradleInvoker.runTasksSuccessfully("run");
 
         String compileJdkFileName = rootProject
                 .file(String.format("gradle/jdks/17/%s/%s/local-path", os, arch))
                 .text()
                 .trim();
         // Verify the application is using the configured toolchain JDK
-        System.out.println(runOutput.output());
-        assertThat(runOutput).output().contains("Java home:");
-        assertThat(runOutput).output().contains(compileJdkFileName.replace("\\", "/"));
+        assertThat(runOutput).contains("Java home:");
+        assertThat(runOutput).contains(compileJdkFileName.replace("\\", "/"));
     }
 
     @Test
