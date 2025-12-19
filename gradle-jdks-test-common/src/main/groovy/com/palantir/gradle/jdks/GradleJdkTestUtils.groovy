@@ -23,22 +23,22 @@ import java.nio.file.Path
 
 class GradleJdkTestUtils {
 
-    static String GRADLE_7_6_VERSION = "7.6"
-    static String GRADLE_7_6_4_VERSION = "7.6.4"
-    static String GRADLE_8_5_VERSION = "8.5"
-    static String GRADLE_8_8_VERSION = "8.8"
+    public static String GRADLE_7_6_VERSION = "7.6"
+    public static String GRADLE_7_6_4_VERSION = "7.6.4"
+    public static String GRADLE_8_5_VERSION = "8.5"
+    public static String GRADLE_8_8_VERSION = "8.8"
 
-    static String JDK_11_VERSION = "11.54.25-11.0.14.1"
-    static String SIMPLIFIED_JDK_11_VERSION = "11.0.14"
-    static String JDK_17_VERSION = "17.0.3.6.1"
-    static String SIMPLIFIED_JDK_17_VERSION = "17.0.3"
-    static String JDK_21_VERSION = "21.0.2.13.1"
-    static String SIMPLIFIED_JDK_21_VERSION = "21.0.2"
+    public static String JDK_11_VERSION = "11.54.25-11.0.14.1"
+    public static String SIMPLIFIED_JDK_11_VERSION = "11.0.14"
+    public static String JDK_17_VERSION = "17.0.3.6.1"
+    public static String SIMPLIFIED_JDK_17_VERSION = "17.0.3"
+    public static String JDK_21_VERSION = "21.0.2.13.1"
+    public static String SIMPLIFIED_JDK_21_VERSION = "21.0.2"
 
-    static String DAEMON_MAJOR_VERSION_17 = "17"
-    static Pair<String, String> JDK_11 = Pair.of("azul-zulu", JDK_11_VERSION)
-    static Pair<String, String> JDK_17 = Pair.of("amazon-corretto", JDK_17_VERSION)
-    static Pair<String, String> JDK_21 = Pair.of("amazon-corretto", JDK_21_VERSION)
+    public static String DAEMON_MAJOR_VERSION_17 = "17"
+    public static Pair<String, String> JDK_11 = Pair.of("azul-zulu", JDK_11_VERSION)
+    public static Pair<String, String> JDK_17 = Pair.of("amazon-corretto", JDK_17_VERSION)
+    public static Pair<String, String> JDK_21 = Pair.of("amazon-corretto", JDK_21_VERSION)
 
     static applyApplicationPlugin(File buildFile) {
        // language=groovy
