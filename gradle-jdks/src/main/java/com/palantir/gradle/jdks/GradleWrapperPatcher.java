@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.google.common.base.Preconditions;
-import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper;
 import java.io.File;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
+import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -36,42 +36,40 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
 
-@AutoParallelizable
 public abstract class GradleWrapperPatcher {
 
     private static final Logger log = Logging.getLogger(GradleWrapperPatcher.class);
     private static final String COMMENT_BLOCK = "###";
     private static final String SHEBANG = "#!";
 
-    interface Params {
+    public abstract static class GradleWrapperPatcherTask extends DefaultTask {
 
         @InputFile
-        RegularFileProperty getOriginalGradlewScript();
+        public abstract RegularFileProperty getOriginalGradlewScript();
 
         @Input
-        Property<Boolean> getGenerate();
+        public abstract Property<Boolean> getGenerate();
 
         @OutputFile
-        RegularFileProperty getPatchedGradlewScript();
+        public abstract RegularFileProperty getPatchedGradlewScript();
 
         @Internal
-        RegularFileProperty getBuildDir();
-    }
-
-    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {
+        public abstract RegularFileProperty getBuildDir();
 
         public GradleWrapperPatcherTask() {
             getGenerate().convention(false);
         }
-    }
 
-    static void action(Params params) {
-        if (params.getGenerate().get()) {
-            log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
-            patchGradlewContent(params.getOriginalGradlewScript().getAsFile().get(), params.getPatchedGradlewScript());
-        } else {
-            checkContainsPatch(params.getOriginalGradlewScript().get().getAsFile(), "gradlew-patch.sh");
+        @TaskAction
+        public void action() {
+            if (getGenerate().get()) {
+                log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
+                patchGradlewContent(getOriginalGradlewScript().getAsFile().get(), getPatchedGradlewScript());
+            } else {
+                checkContainsPatch(getOriginalGradlewScript().get().getAsFile(), "gradlew-patch.sh");
+            }
         }
     }
 
