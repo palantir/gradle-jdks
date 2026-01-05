@@ -1,0 +1,6 @@
+{
+   "projectName": "gradle-jdks",
+   "testClassName": "PalantirCaPluginIntegrationSpec",
+   "testClassPath": "gradle-jdks/src/test/groovy/com/palantir/gradle/jdks/PalantirCaPluginIntegrationSpec.groovy",
+   "outputClassPath": "gradle-jdks/src/test/java/com/palantir/gradle/jdks/PalantirCaPluginIntegrationTest.java"
+}
