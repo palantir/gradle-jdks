@@ -47,6 +47,7 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
 
+    @SuppressWarnings("for-rollout:TaskDependsOn")
     @Override
     public final void apply(Project rootProject) {
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(

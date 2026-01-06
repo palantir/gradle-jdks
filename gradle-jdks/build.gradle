@@ -82,5 +82,5 @@ tasks.withType(ProcessResources.class).configureEach {
 }
 
 gradleTestUtils {
-    gradleVersions = ['8.14.3']
+    configurationCacheEnabled = true
 }

@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks.setup;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -93,7 +94,7 @@ public final class GradleJdkInstallationSetup {
             gradleProperties.setProperty("java.home", gradleDaemonJavaHome.toString());
             gradleProperties.store(Files.newBufferedWriter(gradleConfigFile, StandardCharsets.UTF_8), null);
         } catch (IOException e) {
-            throw new RuntimeException("Unable to set the java.home value in .gradle/config.properties.", e);
+            throw new UncheckedIOException("Unable to set the java.home value in .gradle/config.properties.", e);
         }
     }
 
@@ -149,7 +150,7 @@ public final class GradleJdkInstallationSetup {
             }
             return true;
         } catch (IOException e) {
-            throw new RuntimeException(
+            throw new UncheckedIOException(
                     String.format(
                             "Failed to copy the JDK installation to path= %s", destinationJdkInstallationDirectory),
                     e);

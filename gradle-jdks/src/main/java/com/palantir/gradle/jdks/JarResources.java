@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -45,7 +46,7 @@ public final class JarResources {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException("Could not extract jar", e);
+            throw new UncheckedIOException("Could not extract jar", e);
         }
     }
 
@@ -54,7 +55,7 @@ public final class JarResources {
                 JarOutputStream jos = new JarOutputStream(fos)) {
             addDirectoryToJar(jos, sourceDir, "");
         } catch (IOException e) {
-            throw new RuntimeException("Failed to create Jar from dir", e);
+            throw new UncheckedIOException("Failed to create Jar from dir", e);
         }
     }
 

@@ -24,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
@@ -151,7 +152,7 @@ public final class JdkManager {
             moveJavaHome(javaHome, diskPath);
             return diskPath;
         } catch (IOException e) {
-            throw new RuntimeException("Locking failed", e);
+            throw new UncheckedIOException("Locking failed", e);
         } finally {
             project.delete(delete -> {
                 delete.delete(temporaryJdkPath.toFile());
@@ -181,19 +182,15 @@ public final class JdkManager {
             // Should be unreachable using REPLACE_EXISTING, however kept around to prevent issues with potential
             // future refactors.
         } catch (IOException e) {
-            throw new RuntimeException("Could not move java home", e);
+            throw new UncheckedIOException("Could not move java home", e);
         }
     }
 
     private FileTree unpackTree(Project project, Extension extension, Path path) {
-        switch (extension) {
-            case ZIP:
-                return project.zipTree(path.toFile());
-            case TARGZ:
-                return project.tarTree(path.toFile());
-        }
-
-        throw new UnsupportedOperationException("Unknown case " + extension);
+        return switch (extension) {
+            case ZIP -> project.zipTree(path.toFile());
+            case TARGZ -> project.tarTree(path.toFile());
+        };
     }
 
     private Path findJavaHome(Path temporaryJdkPath) {
@@ -210,13 +207,14 @@ public final class JdkManager {
                     // JAVA_HOME
                     .getParent();
         } catch (IOException e) {
-            throw new RuntimeException("Failed to find java home in " + temporaryJdkPath, e);
+            throw new UncheckedIOException("Failed to find java home in " + temporaryJdkPath, e);
         }
     }
 
     private void addCaCert(Project project, Path javaHome, String alias, String caCert) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
+        @SuppressWarnings("for-rollout:deprecation")
         ExecResult keytoolResult = project.exec(exec -> {
             exec.setCommandLine(
                     Paths.get("bin", SystemTools.keytool(operatingSystem)).toString(),

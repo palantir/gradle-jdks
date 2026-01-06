@@ -39,41 +39,27 @@ public final class GraalVmCeDistribution implements JdkDistribution {
     }
 
     private static String os(OperatingSystem os) {
-        switch (os) {
-            case MACOS:
-                return "macos";
-            case LINUX_GLIBC:
-            case LINUX_MUSL:
-                return "linux";
-            case WINDOWS:
-                return "windows";
-            default:
-                throw new UnsupportedOperationException("Case " + os + " not implemented");
-        }
+        return switch (os) {
+            case MACOS -> "macos";
+            case LINUX_GLIBC, LINUX_MUSL -> "linux";
+            case WINDOWS -> "windows";
+            default -> throw new UnsupportedOperationException("Case " + os + " not implemented");
+        };
     }
 
     private static String arch(Arch arch) {
-        switch (arch) {
-            case X86:
-            case X86_64:
-                return "x64";
-            case AARCH64:
-                return "aarch64";
-            default:
-                throw new UnsupportedOperationException("Case " + arch + " not implemented");
-        }
+        return switch (arch) {
+            case X86, X86_64 -> "x64";
+            case AARCH64 -> "aarch64";
+            default -> throw new UnsupportedOperationException("Case " + arch + " not implemented");
+        };
     }
 
     private static Extension extension(OperatingSystem operatingSystem) {
-        switch (operatingSystem) {
-            case LINUX_GLIBC:
-            case LINUX_MUSL:
-            case MACOS:
-                return Extension.TARGZ;
-            case WINDOWS:
-                return Extension.ZIP;
-            default:
-                throw new UnsupportedOperationException("Unknown OS: " + operatingSystem);
-        }
+        return switch (operatingSystem) {
+            case LINUX_GLIBC, LINUX_MUSL, MACOS -> Extension.TARGZ;
+            case WINDOWS -> Extension.ZIP;
+            default -> throw new UnsupportedOperationException("Unknown OS: " + operatingSystem);
+        };
     }
 }

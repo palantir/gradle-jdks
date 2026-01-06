@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks
 
+import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.base.Throwables
 import com.palantir.gradle.jdks.setup.common.CurrentArch
 import com.palantir.platform.OperatingSystem
@@ -27,6 +28,7 @@ import java.nio.file.Path
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import java.util.stream.Collectors
+import java.util.stream.Stream
 
 class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
 
@@ -102,6 +104,29 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         String compileJdkFileName = projectDir.toPath().resolve("gradle/jdks/17/${os}/${arch}/local-path").text.trim()
         Path compileJvm = workingDir().resolve("gradle-jdks").resolve(compileJdkFileName).toAbsolutePath()
         runOutput.contains("Java home: ${compileJvm}")
+
+        where:
+        gradleVersionNumber << GRADLE_TEST_VERSIONS
+    }
+
+    def '#gradleVersionNumber: generates only the files for the current arch & os'() {
+        gradleVersion = gradleVersionNumber
+        setupJdksHardcodedVersions()
+        applyApplicationPlugin()
+
+        when:
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        runTasksSuccessfully("generateGradleJdkConfigs", "--onlyForCurrentOsArch")
+
+        then: 'generates directories only for the current Os & Arch'
+        String os = OperatingSystem.get().uiName()
+        String arch = CurrentArch.get().uiName()
+        try (Stream<Path> paths = Files.find(projectDir.toPath().resolve("gradle/jdks"),
+                4,
+                (path, attr) -> path.getFileName().toString().equals("local-path") && attr.isRegularFile())) {
+            assertThat(paths.map{it -> projectDir.toPath().relativize(it).toString()}.collect(Collectors.toSet()))
+                    .isEqualTo(Stream.of("11", "17", "21").map {it -> String.format("gradle/jdks/%s/%s/%s/local-path", it,os, arch) }.collect(Collectors.toSet()))
+        }
 
         where:
         gradleVersionNumber << GRADLE_TEST_VERSIONS

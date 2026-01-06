@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -94,7 +95,6 @@ public final class CommandRunner {
         }
     }
 
-    @SuppressWarnings("for-rollout:PreferSafeLoggableExceptions")
     public static void processStream(InputStream inputStream, Consumer<String> logFunction) {
         try (BufferedReader bufferedReader =
                 new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
@@ -103,7 +103,7 @@ public final class CommandRunner {
                 logFunction.accept(line);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to write inputStream", e);
+            throw new UncheckedIOException("Failed to write inputStream", e);
         }
     }
 

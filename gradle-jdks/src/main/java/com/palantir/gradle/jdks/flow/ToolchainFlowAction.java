@@ -76,8 +76,7 @@ public final class ToolchainFlowAction implements FlowAction<Parameters> {
                         }
                         return Optional.<String>empty();
                     })
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
+                    .<String>mapMulti(Optional::ifPresent)
                     .collect(Collectors.toList());
             String maybeMissingToolchains = missingToolchains.isEmpty()
                     ? "some java versions"
