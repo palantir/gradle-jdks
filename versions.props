@@ -11,7 +11,6 @@ com.palantir.gradle.utils:* = 0.15.0
 com.google.guava:guava = 33.4.0-jre
 commons-io:commons-io = 2.18.0
 org.apache.commons:commons-compress = 1.27.1
-com.palantir.gradle.auto-parallelizable:* = 1.4.0
 org.ow2.asm:asm = 9.7.1
 com.palantir.gradle.failure-reports:* = 1.9.0
 com.palantir.gradle.idea-configuration:gradle-idea-configuration = 0.3.0

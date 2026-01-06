@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.google.common.base.Preconditions;
-import com.palantir.gradle.autoparallelizable.AutoParallelizable;
 import com.palantir.gradle.failurereports.exceptions.ExceptionWithSuggestion;
 import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper;
 import java.io.File;
@@ -29,6 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
+import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -37,48 +37,43 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
 
-@AutoParallelizable
-public abstract class GradleWrapperPatcher {
+public abstract class GradleWrapperPatcher extends DefaultTask {
 
     private static final Logger log = Logging.getLogger(GradleWrapperPatcher.class);
     private static final String COMMENT_BLOCK = "###";
     private static final String SHEBANG = "#!";
 
-    interface Params {
+    @InputFile
+    public abstract RegularFileProperty getOriginalGradlewScript();
 
-        @InputFile
-        RegularFileProperty getOriginalGradlewScript();
+    @Input
+    public abstract Property<Boolean> getGenerate();
 
-        @Input
-        Property<Boolean> getGenerate();
+    @OutputFile
+    public abstract RegularFileProperty getPatchedGradlewScript();
 
-        @OutputFile
-        RegularFileProperty getPatchedGradlewScript();
+    @Internal
+    public abstract RegularFileProperty getBuildDir();
 
-        @Internal
-        RegularFileProperty getBuildDir();
+    public GradleWrapperPatcher() {
+        getGenerate().convention(false);
     }
 
-    public abstract static class GradleWrapperPatcherTask extends GradleWrapperPatcherTaskImpl {
-
-        public GradleWrapperPatcherTask() {
-            getGenerate().convention(false);
-        }
-    }
-
-    static void action(Params params) {
-        if (params.getGenerate().get()) {
+    @TaskAction
+    public final void action() {
+        if (getGenerate().get()) {
             log.lifecycle("Gradle JDK setup is enabled, patching the gradle wrapper files");
-            patchGradlewContent(params.getOriginalGradlewScript().getAsFile().get(), params.getPatchedGradlewScript());
+            patchGradlewContent();
         } else {
-            checkContainsPatch(params.getOriginalGradlewScript().get().getAsFile(), "gradlew-patch.sh");
+            checkContainsPatch();
         }
     }
 
-    private static void checkContainsPatch(File gradlewScript, String patchResource) {
-        List<String> scriptPatchLines = getPatchedLines(gradlewScript);
-        List<String> originalPatchLines = getPatchLines(patchResource);
+    private void checkContainsPatch() {
+        List<String> scriptPatchLines = getPatchedLines();
+        List<String> originalPatchLines = getPatchLines("gradlew-patch.sh");
         if (!scriptPatchLines.equals(originalPatchLines)) {
             throw new ExceptionWithSuggestion(
                     "Gradle Wrapper script is out of date, please run `./gradlew(.bat) wrapperJdkPatcher`",
@@ -86,16 +81,18 @@ public abstract class GradleWrapperPatcher {
         }
     }
 
-    private static void patchGradlewContent(File originalGradlewScript, RegularFileProperty patchedGradlewScript) {
+    private void patchGradlewContent() {
+        File originalGradlewScript = getOriginalGradlewScript().getAsFile().get();
         List<String> initialLines = GradleJdksPatchHelper.readAllLines(originalGradlewScript.toPath());
         List<String> linesNoPatch = GradleJdksPatchHelper.getLinesWithoutPatch(initialLines);
         List<String> patchLines = getPatchLines("gradlew-patch.sh");
         int insertIndex = getGradlewInsertLineIndex(initialLines);
         GradleJdksPatchHelper.writeContentWithPatch(
-                patchedGradlewScript.getAsFile().get().toPath(), linesNoPatch, patchLines, insertIndex);
+                getPatchedGradlewScript().getAsFile().get().toPath(), linesNoPatch, patchLines, insertIndex);
     }
 
-    private static List<String> getPatchedLines(File gradlewFile) {
+    private List<String> getPatchedLines() {
+        File gradlewFile = getOriginalGradlewScript().get().getAsFile();
         List<String> initialLines = GradleJdksPatchHelper.readAllLines(gradlewFile.toPath());
         return GradleJdksPatchHelper.getPatchLineNumbers(initialLines)
                 .map(integerIntegerPair ->
@@ -107,7 +104,7 @@ public abstract class GradleWrapperPatcher {
      * gradlew contains a comment block that explains how it works. We are trying to add the patch block after it.
      * The fallback is adding the patch block directly after the shebang line.
      */
-    private static int getGradlewInsertLineIndex(List<String> lines) {
+    private int getGradlewInsertLineIndex(List<String> lines) {
         // first try to find the line that contains the comment block
         List<Integer> explanationBlock = IntStream.range(0, lines.size())
                 .filter(i -> lines.get(i).startsWith(COMMENT_BLOCK))
@@ -126,7 +123,7 @@ public abstract class GradleWrapperPatcher {
         throw new RuntimeException("Unable to find where to patch the gradlew file, aborting...");
     }
 
-    private static List<String> getPatchLines(String resource) {
+    private List<String> getPatchLines(String resource) {
         try (InputStream inputStream =
                 GradleWrapperPatcher.class.getClassLoader().getResourceAsStream(resource)) {
             Preconditions.checkArgument(inputStream != null);

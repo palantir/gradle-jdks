@@ -21,7 +21,6 @@ import com.palantir.baseline.plugins.javaversions.BaselineJavaVersionsExtension;
 import com.palantir.baseline.plugins.javaversions.ChosenJavaVersion;
 import com.palantir.gradle.ideaconfiguration.IdeaConfigurationExtension;
 import com.palantir.gradle.ideaconfiguration.IdeaConfigurationPlugin;
-import com.palantir.gradle.jdks.GradleWrapperPatcher.GradleWrapperPatcherTask;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
 import com.palantir.platform.GradleOperatingSystem;
@@ -138,20 +137,19 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
             task.getCaCerts().putAll(jdksExtension.getCaCerts());
         });
 
-        @SuppressWarnings("for-rollout:TaskDependsOn")
-        TaskProvider<GradleWrapperPatcherTask> wrapperPatcherTask = rootProject
+        TaskProvider<GradleWrapperPatcher> wrapperPatcherTask = rootProject
                 .getTasks()
-                .register("wrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
+                .register("wrapperJdkPatcher", GradleWrapperPatcher.class, task -> {
                     task.getGenerate().set(true);
                     task.dependsOn(generateGradleJdkConfigs);
                 });
-        TaskProvider<GradleWrapperPatcherTask> checkWrapperPatcherTask = rootProject
+        TaskProvider<GradleWrapperPatcher> checkWrapperPatcherTask = rootProject
                 .getTasks()
-                .register("checkWrapperJdkPatcher", GradleWrapperPatcherTask.class, task -> {
+                .register("checkWrapperJdkPatcher", GradleWrapperPatcher.class, task -> {
                     task.getGenerate().set(false);
                 });
 
-        rootProject.getTasks().withType(GradleWrapperPatcherTask.class).configureEach(task -> {
+        rootProject.getTasks().withType(GradleWrapperPatcher.class).configureEach(task -> {
             task.getOriginalGradlewScript()
                     .fileProvider(rootProject.provider(() -> wrapperTask.get().getScriptFile()));
             task.getBuildDir().set(task.getTemporaryDir());
