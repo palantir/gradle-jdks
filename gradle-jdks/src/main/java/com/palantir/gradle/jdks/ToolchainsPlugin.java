@@ -137,6 +137,7 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
             task.getCaCerts().putAll(jdksExtension.getCaCerts());
         });
 
+        @SuppressWarnings("for-rollout:TaskDependsOn")
         TaskProvider<GradleWrapperPatcher> wrapperPatcherTask = rootProject
                 .getTasks()
                 .register("wrapperJdkPatcher", GradleWrapperPatcher.class, task -> {
