@@ -17,10 +17,14 @@ com.palantir.gradle.failure-reports:* = 1.9.0
 com.palantir.gradle.idea-configuration:gradle-idea-configuration = 0.3.0
 
 # testing dependencies
-com.palantir.gradle.plugintesting:gradle-plugin-testing-junit = 1.1.4
+com.palantir.gradle.plugintesting:gradle-plugin-testing-junit = 1.1.5
 com.palantir.gradle.jdkslatest:gradle-jdks-latest = 0.24.0
 com.palantir.gradle.jdks:gradle-jdks-settings = 0.71.0
 com.palantir.baseline:gradle-baseline-java = 6.87.0
+#com.palantir.gradle.externalpublish:gradle-external-publish-plugin = 1.27.0
+#com.palantir.gradle.shadow-jar:gradle-shadow-jar = 3.5.0
+#com.gradle.publish:plugin-publish-plugin = 2.0.0
+#com.palantir.gradle.consistentversions:gradle-consistent-versions = 3.7.0
 
 # dependency-upgrader:OFF
 com.palantir.baseline:* = 5.53.0

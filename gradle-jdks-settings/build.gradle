@@ -1,9 +1,11 @@
-apply plugin: 'java-gradle-plugin'
-apply plugin: 'groovy'
-apply plugin: 'com.palantir.external-publish-jar'
-apply plugin: 'com.palantir.gradle-plugin-testing'
-apply plugin: 'com.palantir.external-publish-gradle-plugin'
-apply plugin: 'com.palantir.shadow-jar'
+plugins {
+    id 'java-gradle-plugin'
+    id 'groovy'
+    id 'com.palantir.external-publish-jar'
+    id 'com.palantir.gradle-plugin-testing'
+    id 'com.palantir.external-publish-gradle-plugin'
+    id 'com.palantir.shadow-jar'
+}
 
 dependencies {
     // DO NOT ADD directly implementation/api dependencies here. We need to avoid overlapping dependencies between the

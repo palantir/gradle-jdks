@@ -77,26 +77,24 @@ class GradleJdkToolchainsIntegrationTest {
         setupJdksHardcodedVersions(rootProject);
     }
 
-    GradleFile setupJdksHardcodedVersions(RootProject rootProject) {
-        rootProject
-                .settingsGradle()
-                .prepend(
-                        """
-                           buildscript {
-                                repositories {
-                                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                                }
-                                // we need to inject the classpath of the plugin under test manually. The tests call the `./gradlew`
-                                // command directly in the tests (so not using the nebula-test workflow).
-                                dependencies {
-                                    classpath files(%s)
-                                }
-                            }
-                        """,
-                        getBuildPluginClasspathInjector().stream()
-                                .map(file -> String.format("'%s'", file.getAbsolutePath()))
-                                .collect(Collectors.joining(",")));
+    private static GradleFile setupJdksHardcodedVersions(RootProject rootProject) {
+        //        File initFile = rootProject.path().resolve("init.gradle").toFile();
+        //        try {
+        //            initFile.createNewFile();
+        //        } catch (IOException e) {
+        //            throw new UncheckedIOException("Failed to create init.gradlefile", e);
+        //        }
+        //        ClasspathAddingInitScriptBuilder.build(
+        //                initFile,
+        //                getBuildPluginClasspathInjector(Path.of(
+        //
+        // "../gradle-jdks-settings/build/pluginUnderTestMetadata/plugin-under-test-metadata-2.properties")
+        //                        .toAbsolutePath()));
+        //
+        // gradle-jdks-settings is now available via TestKit plugin classpath
+        // (see build.gradle pluginUnderTestMetadata configuration)
+        rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
+
         rootProject.buildGradle().plugins().add("com.palantir.jdks.palantir-ca");
 
         return rootProject.buildGradle().append("""
@@ -121,26 +119,21 @@ class GradleJdkToolchainsIntegrationTest {
             """);
     }
 
-    private static List<File> getBuildPluginClasspathInjector() {
-        return getPluginClasspathInjector(
-                Path.of("../gradle-jdks-settings/build/pluginUnderTestMetadata/plugin-under-test-metadata.properties"));
-    }
-
-    private static List<File> getPluginClasspathInjector(Path path) {
+    private static List<File> getBuildPluginClasspathInjector(Path path) {
         File propertiesFile = path.toFile();
         Properties properties = new Properties();
         try (InputStream inputStream = new FileInputStream(propertiesFile)) {
             properties.load(inputStream);
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to load plugin classpath properties", e);
+            throw new UncheckedIOException(e);
         }
         String classpath = properties.getProperty("implementation-classpath");
-        return Set.of(classpath.split(File.pathSeparator)).stream()
+        return List.of(classpath.split(File.pathSeparator)).stream()
                 .map(File::new)
                 .collect(Collectors.toList());
     }
 
-    GradleFile applyApplicationPlugin(RootProject rootProject) {
+    private static GradleFile applyApplicationPlugin(RootProject rootProject) {
         rootProject.buildGradle().plugins().add("application");
         return rootProject.buildGradle().append("""
             application {
@@ -149,12 +142,12 @@ class GradleJdkToolchainsIntegrationTest {
             """);
     }
 
-    GradleFile applyBaselineJavaVersions(RootProject rootProject) {
+    private static GradleFile applyBaselineJavaVersions(RootProject rootProject) {
         rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
         return rootProject.buildGradle();
     }
 
-    String getMainJavaCode() {
+    private static String getMainJavaCode() {
         return """
             public class Main {
                 public static void main(String[] args) {

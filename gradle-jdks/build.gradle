@@ -1,3 +1,5 @@
+import java.util.concurrent.Callable
+
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'groovy'
 apply plugin: 'java'
@@ -44,10 +46,16 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
     testImplementation 'com.palantir.gradle.plugintesting:gradle-plugin-testing-junit'
+    //testRuntimeOnly files(createClasspathManifest)
 
     gradlePluginForTesting project(':gradle-jdks-settings')
     gradlePluginForTesting 'com.palantir.gradle.jdkslatest:gradle-jdks-latest'
     gradlePluginForTesting 'com.palantir.baseline:gradle-baseline-java'
+    gradlePluginForTesting 'com.palantir.gradle.jdks:gradle-jdks-settings'
+//    gradlePluginForTesting 'com.palantir.gradle.externalpublish:gradle-external-publish-plugin'
+//    gradlePluginForTesting 'com.palantir.gradle.shadow-jar:gradle-shadow-jar'
+//    gradlePluginForTesting 'com.gradle.publish:plugin-publish-plugin'
+//    gradlePluginForTesting 'com.palantir.gradle.consistentversions:gradle-consistent-versions'
 }
 
 gradlePlugin {
@@ -75,7 +83,9 @@ gradlePlugin {
 tasks.withType(JavaCompile).configureEach {
     it.options.errorprone.disable 'JavaxInjectOnAbstractMethod'
     it.options.errorprone.disable 'StrictUnusedVariable'
+    it.options.errorprone.disable 'GradleTestPluginsBlock'
 }
+
 
 tasks.withType(Test) {
     environment(Map.of("PROJECT_VERSION", project.version))
@@ -93,3 +103,67 @@ gradleTestUtils {
     gradleVersions = ['8.14.3']
     configurationCacheEnabled = true
 }
+
+
+//def pluginClasspathRuntimeOnly = configurations.create('pluginClasspathRuntimeOnly')
+//dependencies {
+//    add(pluginClasspathRuntimeOnly.name, project(':gradle-jdks-settings'))
+//}
+//tasks.named('pluginUnderTestMetadata', PluginUnderTestMetadata) {
+//    pluginClasspath.from(pluginClasspathRuntimeOnly)
+//}
+
+evaluationDependsOn(':gradle-jdks-settings')
+evaluationDependsOn(':gradle-jdks-setup-common')
+evaluationDependsOn(':gradle-jdks-enablement')
+//
+//println getExtensions().getByType(GradlePluginDevelopmentExtension.class).pluginSourceSet.getOutput().getFiles()
+//
+tasks.withType(PluginUnderTestMetadata).configureEach {
+    def provider = project.provider(classpathForPlugin(project(':gradle-jdks-settings'), project(':gradle-jdks')))
+    pluginClasspath.setFrom(provider)
+}
+//
+//
+private static Callable<FileCollection> classpathForPlugin(Project settingsProject, Project jdksProject) {
+    return () -> {
+        GradlePluginDevelopmentExtension extension = settingsProject.getExtensions().getByType(GradlePluginDevelopmentExtension.class);
+        SourceSet settingsSourceSet = extension.getPluginSourceSet();
+        Configuration settingsRuntimeClasspath = settingsProject.getConfigurations().getByName(settingsSourceSet.getRuntimeClasspathConfigurationName());
+        ArtifactView settingsView = settingsRuntimeClasspath.getIncoming().artifactView(config ->
+                config.componentFilter(JavaGradlePluginPlugin::excludeGradleApi)
+        );
+
+        GradlePluginDevelopmentExtension extension2 = jdksProject.getExtensions().getByType(GradlePluginDevelopmentExtension.class);
+        SourceSet jdksSourceSet = extension2.getPluginSourceSet();
+        Configuration jdksRuntimeClasspath = jdksProject.getConfigurations().getByName(jdksSourceSet.getRuntimeClasspathConfigurationName());
+        ArtifactView jdksView = jdksRuntimeClasspath.getIncoming().artifactView(config ->
+                config.componentFilter(JavaGradlePluginPlugin::excludeGradleApi)
+        );
+
+        // Get files from view first
+        def settingsViewFiles = settingsView.getFiles()
+        def viewFilePaths = settingsViewFiles.collect { it.absolutePath }.toSet()
+        
+        // Filter view2 to only include files not in view
+        def jdksViewFilesWithNoDuplicates = jdksView.getFiles().findAll { file ->
+            file.absolutePath.startsWith("/Volumes/git/gradle-jdks/") || file.absolutePath.contains("palantir")  || file.absolutePath.contains("palantir") || file.absolutePath.contains("guava") || file.absolutePath.contains("apache")
+            //!viewFilePaths.contains(file.absolutePath)
+        }
+        
+        return settingsProject.getObjects().fileCollection().from(
+                settingsSourceSet.getOutput(),
+                jdksSourceSet.getOutput(),
+                settingsViewFiles,
+                jdksViewFilesWithNoDuplicates,
+        );
+    };
+}
+
+//
+//tasks.withType(PluginUnderTestMetadata).configureEach {
+//    pluginClasspath.setFrom(
+//            rootProject.project(':gradle-jdks-settings').sourceSets.main.output,
+//            rootProject.project(':gradle-jdks').sourceSets.main.output,
+//    )
+//}
