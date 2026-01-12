@@ -20,11 +20,12 @@ import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.a
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper;
+import com.palantir.gradle.testing.assertion.GradlePluginTestAssertions;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
 import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
-import com.palantir.gradle.testing.junit.WithJdkAutomanagement;
 import com.palantir.gradle.testing.project.RootProject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -36,12 +37,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@WithJdkAutomanagement
 @DisabledConfigurationCache
 class GradleJdkPatcherIntegrationTest {
 
     @BeforeEach
     void setup(RootProject rootProject) {
+        rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
+        rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
+        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
         rootProject.buildGradle().plugins().add("com.palantir.jdks.palantir-ca");
 
         rootProject.buildGradle().append("""
@@ -68,16 +71,19 @@ class GradleJdkPatcherIntegrationTest {
 
     @Test
     void successfully_generates_gradle_jdk_setup_files(GradleInvoker gradle, RootProject rootProject) {
-        gradle.withArgs("wrapper").buildsSuccessfully();
-        InvocationResult result = gradle.withArgs("setupJdks").buildsSuccessfully();
-        assertThat(result).task(":wrapperJdkPatcher").succeeded();
-        assertThat(result).task(":generateGradleJdkConfigs").succeeded();
+        InvocationResult wrapperResult = gradle.withArgs("wrapper").buildsSuccessfully();
+        GradlePluginTestAssertions.assertThat(wrapperResult)
+                .task(":wrapperJdkPatcher")
+                .succeeded();
+        GradlePluginTestAssertions.assertThat(wrapperResult)
+                .task(":generateGradleJdkConfigs")
+                .succeeded();
 
         rootProject.file("gradlew").assertThat().content().contains("gradle/gradle-jdks-setup.sh");
         String gradlewContent = rootProject.file("gradlew").text();
-        assertThat(gradlewContent.split("# PALANTIR GRADLE JDK SETUP START").length - 1)
+        assertThat(gradlewContent.split(GradleJdksPatchHelper.PATCH_HEADER).length - 1)
                 .isEqualTo(1);
-        assertThat(gradlewContent.split("# PALANTIR GRADLE JDK SETUP END").length - 1)
+        assertThat(gradlewContent.split(GradleJdksPatchHelper.PATCH_FOOTER).length - 1)
                 .isEqualTo(1);
 
         checkJdksVersions(rootProject, Set.of("11", "17", "21"));
@@ -85,21 +91,16 @@ class GradleJdkPatcherIntegrationTest {
                 .file("gradle/gradle-daemon-jdk-version")
                 .assertThat()
                 .content()
-                .isEqualTo("17");
+                .isEqualTo("17\n");
         rootProject.file("gradle/gradle-jdks-setup.sh").assertThat().exists();
         rootProject.file("gradle/gradle-jdks-functions.sh").assertThat().exists();
-
         rootProject.file("gradle/certs").assertThat().doesNotExist();
 
-        rootProject.file(".gradle/config.properties").assertThat().content().contains("java.home");
-
         InvocationResult checkResult = gradle.withArgs("check").buildsSuccessfully();
-
         assertThat(checkResult).task(":checkGradleJdkConfigs").succeeded();
         assertThat(checkResult).task(":checkWrapperJdkPatcher").succeeded();
 
         InvocationResult secondCheckResult = gradle.withArgs("check").buildsSuccessfully();
-
         assertThat(secondCheckResult).task(":checkGradleJdkConfigs").upToDate();
         assertThat(secondCheckResult).task(":checkWrapperJdkPatcher").upToDate();
     }
@@ -111,12 +112,16 @@ class GradleJdkPatcherIntegrationTest {
                daemonTarget = 24
             }
             """);
-        assertThatThrownBy(() -> gradle.withArgs("setupJdks").buildsSuccessfully())
+        assertThatThrownBy(() -> gradle.withArgs("wrapper").buildsSuccessfully())
                 .hasMessageContaining("Gradle daemon JDK version is `24` but no JDK configured for that version.");
     }
 
     @Test
-    void checkGradleJdkConfigs_fails_if_run_before_setupJdks(GradleInvoker gradle) {
+    void checkGradleJdkConfigs_fails_if_run_before_setupJdks(GradleInvoker gradle, RootProject rootProject) {
+        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "false");
+        gradle.withArgs("wrapper").buildsSuccessfully();
+
+        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
         InvocationResult checkResult = gradle.withArgs("check").buildsWithFailure();
 
         assertThat(checkResult).task(":checkGradleJdkConfigs").failed();

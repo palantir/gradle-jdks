@@ -19,9 +19,9 @@ package com.palantir.gradle.jdks;
 import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.palantir.gradle.testing.assertion.GradlePluginTestAssertions;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
-import com.palantir.gradle.testing.files.gradle.GradleFile;
 import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.junit.WithJdkAutomanagement;
@@ -35,16 +35,15 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@WithJdkAutomanagement
 @DisabledConfigurationCache
 class GradleJdkToolchainsIntegrationTest {
 
@@ -74,30 +73,8 @@ class GradleJdkToolchainsIntegrationTest {
 
     @BeforeEach
     void setup(RootProject rootProject) {
-        setupJdksHardcodedVersions(rootProject);
-    }
-
-    private static GradleFile setupJdksHardcodedVersions(RootProject rootProject) {
-        //        File initFile = rootProject.path().resolve("init.gradle").toFile();
-        //        try {
-        //            initFile.createNewFile();
-        //        } catch (IOException e) {
-        //            throw new UncheckedIOException("Failed to create init.gradlefile", e);
-        //        }
-        //        ClasspathAddingInitScriptBuilder.build(
-        //                initFile,
-        //                getBuildPluginClasspathInjector(Path.of(
-        //
-        // "../gradle-jdks-settings/build/pluginUnderTestMetadata/plugin-under-test-metadata-2.properties")
-        //                        .toAbsolutePath()));
-        //
-        // gradle-jdks-settings is now available via TestKit plugin classpath
-        // (see build.gradle pluginUnderTestMetadata configuration)
-        rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
-
         rootProject.buildGradle().plugins().add("com.palantir.jdks.palantir-ca");
-
-        return rootProject.buildGradle().append("""
+        rootProject.buildGradle().append("""
             jdks {
                jdk(11) {
                   distribution = 'azul-zulu'
@@ -117,34 +94,12 @@ class GradleJdkToolchainsIntegrationTest {
                daemonTarget = 17
             }
             """);
-    }
-
-    private static List<File> getBuildPluginClasspathInjector(Path path) {
-        File propertiesFile = path.toFile();
-        Properties properties = new Properties();
-        try (InputStream inputStream = new FileInputStream(propertiesFile)) {
-            properties.load(inputStream);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        String classpath = properties.getProperty("implementation-classpath");
-        return List.of(classpath.split(File.pathSeparator)).stream()
-                .map(File::new)
-                .collect(Collectors.toList());
-    }
-
-    private static GradleFile applyApplicationPlugin(RootProject rootProject) {
         rootProject.buildGradle().plugins().add("application");
-        return rootProject.buildGradle().append("""
+        rootProject.buildGradle().append("""
             application {
                 mainClass = 'Main'
             }
             """);
-    }
-
-    private static GradleFile applyBaselineJavaVersions(RootProject rootProject) {
-        rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
-        return rootProject.buildGradle();
     }
 
     private static String getMainJavaCode() {
@@ -158,348 +113,331 @@ class GradleJdkToolchainsIntegrationTest {
             """;
     }
 
-    @Test
-    void javaToolchains_correctly_set_up(GradleInvoker gradle, RootProject rootProject) {
-        applyApplicationPlugin(rootProject);
+    @Nested
+    @WithJdkAutomanagement
+    class JavaToolchainsTests {
 
-        rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
-
-        rootProject.buildGradle().append("""
-            java {
-                toolchain {
-                    languageVersion = JavaLanguageVersion.of(17)
+        @Test
+        void javaToolchains_correctly_set_up(GradleInvoker gradle, RootProject rootProject) {
+            rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
+            rootProject.buildGradle().prepend("""
+                java {
+                    toolchain {
+                        languageVersion = JavaLanguageVersion.of(17)
+                    }
                 }
-            }
 
-            tasks.register("printGradleHome") {
-                doLast {
-                    println "java.home: " + System.getProperty("java.home")
+                tasks.register("printGradleHome") {
+                    doLast {
+                        println "java.home: " + System.getProperty("java.home")
+                    }
                 }
-            }
-            """);
+                """);
 
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
+            InvocationResult result = gradle.withArgs("javaToolchains").buildsSuccessfully();
 
-        InvocationResult result = gradle.withArgs("wrapper", "setupJdks").buildsSuccessfully();
+            assertThat(result)
+                    .output()
+                    .contains("Auto-detection:     Disabled")
+                    .contains("Auto-download:      Disabled")
+                    .contains("JDK 11.0.14")
+                    .contains("JDK 17.0.3")
+                    .contains("JDK 21.0.2");
 
-        assertThat(result)
-                .output()
-                .contains("Auto-detection:     Disabled")
-                .contains("Auto-download:      Disabled")
-                .contains("JDK 11.0.14")
-                .contains("JDK 17.0.3")
-                .contains("JDK 21.0.2");
+            // Check that output contains expected detection pattern
+            assertThat(result).output().contains("org.gradle.java.installations.paths");
 
-        // Check that output contains expected detection pattern
-        assertThat(result).output().contains("org.gradle.java.installations.paths");
+            InvocationResult gradleHomeResult =
+                    gradle.withArgs("printGradleHome").buildsSuccessfully();
 
-        InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
+            assertThat(gradleHomeResult).output().contains("java.home:");
 
-        assertThat(gradleHomeResult).output().contains("java.home:");
+            gradle.withArgs("compileJava").buildsSuccessfully();
 
-        gradle.withArgs("compileJava").buildsSuccessfully();
+            Path compiledClass = rootProject.buildDir().path().resolve("classes/java/main/Main.class");
+            assertThat(readBytecodeVersion(compiledClass.toFile())).isEqualTo(Pair.of(0, JAVA_17_BYTECODE));
 
-        Path compiledClass = rootProject.buildDir().path().resolve("classes/java/main/Main.class");
-        assertThat(readBytecodeVersion(compiledClass.toFile())).isEqualTo(Pair.of(0, JAVA_17_BYTECODE));
+            InvocationResult runResult = gradle.withArgs("run").buildsSuccessfully();
 
-        InvocationResult runResult = gradle.withArgs("run").buildsSuccessfully();
-
-        assertThat(runResult).output().contains("Java home:");
-    }
-
-    @Test
-    void generates_only_the_files_for_the_current_arch_os(GradleInvoker gradle, RootProject rootProject) {
-        applyApplicationPlugin(rootProject);
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
-
-        gradle.withArgs("generateGradleJdkConfigs", "--onlyForCurrentOsArch").buildsSuccessfully();
-
-        try (java.util.stream.Stream<Path> paths = Files.find(
-                rootProject.buildDir().path().resolve("gradle/jdks"),
-                4,
-                (path, attr) -> path.getFileName().toString().equals("local-path") && attr.isRegularFile())) {
-            Set<String> foundPaths = paths.map(path ->
-                            rootProject.buildDir().path().relativize(path).toString())
-                    .collect(Collectors.toSet());
-            // We expect paths for versions 11, 17, 21 for current OS/arch
-            assertThat(foundPaths).hasSize(3);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            assertThat(runResult).output().contains("Java home:");
         }
-    }
 
-    @Test
-    void javaToolchains_correctly_set_up_with_baseline_java(
-            GradleInvoker gradle, RootProject rootProject, SubProject subprojectLib21, SubProject subprojectLib11) {
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
-
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
-        rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
-
-        rootProject.buildGradle().append("""
-            javaVersions {
-                libraryTarget = '11'
-                distributionTarget = '17_PREVIEW'
-            }
-
-            tasks.register("printGradleHome") {
-                doLast {
-                    println "java.home: " + System.getProperty("java.home")
+        @Test
+        void only_jdkVersionsToUse_jdks_are_generated(GradleInvoker gradle, RootProject rootProject) {
+            rootProject.buildGradle().plugins().add("application");
+            rootProject.buildGradle().append("""
+                application {
+                    mainClass = 'Main'
                 }
-            }
-            """);
+                """);
 
-        subprojectLib21.buildGradle().plugins().add("java-library");
-        subprojectLib21.buildGradle().append("""
-            javaVersion {
-               target = 21
-            }
-            """);
-        subprojectLib21.mainSourceSet().java().writeClass(getMainJavaCode());
+            rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
 
-        subprojectLib11.buildGradle().plugins().add("java-library");
-        subprojectLib11.buildGradle().append("""
-            javaVersion {
-                library()
-            }
-            """);
-        subprojectLib11.mainSourceSet().java().writeClass(getMainJavaCode());
-
-        InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
-
-        assertThat(gradleHomeResult).output().contains("java.home:");
-
-        try (java.util.stream.Stream<Path> paths =
-                Files.list(rootProject.buildDir().path().resolve("gradle/jdks"))) {
-            Set<String> versions =
-                    paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
-            assertThat(versions).isEqualTo(Set.of("11", "17", "21"));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-
-        gradle.withArgs("compileJava", "--info").buildsSuccessfully();
-
-        Path compiledClass = rootProject.buildDir().path().resolve("classes/java/main/Main.class");
-        assertThat(readBytecodeVersion(compiledClass.toFile()))
-                .isEqualTo(Pair.of(ENABLE_PREVIEW_BYTECODE, JAVA_17_BYTECODE));
-
-        Path subproject11Class = subprojectLib11.buildDir().path().resolve("classes/java/main/Main.class");
-        assertThat(readBytecodeVersion(subproject11Class.toFile())).isEqualTo(Pair.of(0, JAVA_11_BYTECODE));
-
-        Path subproject21Class = subprojectLib21.buildDir().path().resolve("classes/java/main/Main.class");
-        assertThat(readBytecodeVersion(subproject21Class.toFile())).isEqualTo(Pair.of(0, JAVA_21_BYTECODE));
-    }
-
-    @Test
-    void graal_jdks_are_generated(GradleInvoker gradle, RootProject rootProject) {
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
-
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
-        rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
-
-        rootProject.buildGradle().append("""
-            javaVersions {
-                libraryTarget = '23'
-            }
-
-            jdks {
-                jdk(23) {
-                    distribution = 'graalvm-ce'
-                    jdkVersion = '23.0.1'
+            rootProject.buildGradle().append("""
+                jdks {
+                    jdkMajorVersionsToUse = ["17", "21"]
                 }
+                """);
+
+            gradle.withArgs("setupJdks").buildsSuccessfully();
+
+            try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
+                Set<String> versions =
+                        paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
+                assertThat(versions).isEqualTo(Set.of("17", "21"));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            """);
-
-        gradle.withArgs("wrapper").buildsSuccessfully();
-
-        try (java.util.stream.Stream<Path> paths =
-                Files.list(rootProject.buildDir().path().resolve("gradle/jdks"))) {
-            Set<String> versions =
-                    paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
-            assertThat(versions).isEqualTo(Set.of("17", "23"));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-
-        gradle.withArgs("compileJava", "--info").buildsSuccessfully();
-
-        Path compiledClass = rootProject.buildDir().path().resolve("classes/java/main/Main.class");
-        assertThat(readBytecodeVersion(compiledClass.toFile())).isEqualTo(Pair.of(0, JAVA_23_BYTECODE));
-    }
-
-    @Test
-    void only_generates_daemon_jdk(GradleInvoker gradle, RootProject rootProject) {
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
-
-        rootProject.buildGradle().append("""
-            jdks {
-                daemonJdkOnly()
-            }
-            """);
-
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
-        rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
-
-        gradle.withArgs("wrapper").buildsSuccessfully();
-
-        try (java.util.stream.Stream<Path> paths =
-                Files.list(rootProject.buildDir().path().resolve("gradle/jdks"))) {
-            boolean allMatch = paths.allMatch(path -> path.endsWith("17"));
-            assertThat(allMatch).isTrue();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 
-    @Test
-    void can_bump_java_major_version_when_baseline_java_is_applied(GradleInvoker gradle, RootProject rootProject) {
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
+    @Nested
+    @WithJdkAutomanagement
+    class BaselineJavaVersionsTests {
 
-        rootProject.buildGradle().append("""
-            javaVersions {
-                libraryTarget = '11'
+        @BeforeEach
+        void setup(RootProject rootProject) {
+            rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
+            rootProject.buildGradle().plugins().add("application");
+            rootProject.buildGradle().append("""
+                application {
+                    mainClass = 'Main'
+                }
+                """);
+        }
+
+        @Test
+        void javaToolchains_correctly_set_up_with_baseline_java(
+                GradleInvoker gradle, RootProject rootProject, SubProject subprojectLib21, SubProject subprojectLib11) {
+            rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
+
+            rootProject.buildGradle().append("""
+                javaVersions {
+                    libraryTarget = '11'
+                    distributionTarget = '17_PREVIEW'
+                }
+
+                tasks.register("printGradleHome") {
+                    doLast {
+                        println "java.home: " + System.getProperty("java.home")
+                    }
+                }
+                """);
+
+            subprojectLib21.buildGradle().plugins().add("java-library");
+            subprojectLib21.buildGradle().append("""
+                javaVersion {
+                   target = 21
+                }
+                """);
+            subprojectLib21.mainSourceSet().java().writeClass(getMainJavaCode());
+
+            subprojectLib11.buildGradle().plugins().add("java-library");
+            subprojectLib11.buildGradle().append("""
+                javaVersion {
+                    library()
+                }
+                """);
+            subprojectLib11.mainSourceSet().java().writeClass(getMainJavaCode());
+
+            InvocationResult gradleHomeResult =
+                    gradle.withArgs("printGradleHome").buildsSuccessfully();
+
+            assertThat(gradleHomeResult).output().contains("java.home:");
+
+            try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
+                Set<String> versions =
+                        paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
+                assertThat(versions).isEqualTo(Set.of("11", "17", "21"));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            """);
 
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
-        rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
+            gradle.withArgs("compileJava").buildsSuccessfully();
 
-        gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
+            Path compiledClass = rootProject.buildDir().path().resolve("classes/java/main/Main.class");
+            assertThat(readBytecodeVersion(compiledClass.toFile()))
+                    .isEqualTo(Pair.of(ENABLE_PREVIEW_BYTECODE, JAVA_17_BYTECODE));
 
-        try (java.util.stream.Stream<Path> paths =
-                Files.list(rootProject.buildDir().path().resolve("gradle/jdks"))) {
-            Set<String> versions =
-                    paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
-            assertThat(versions).isEqualTo(Set.of("11", "17"));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            Path subproject11Class = subprojectLib11.buildDir().path().resolve("classes/java/main/Main.class");
+            assertThat(readBytecodeVersion(subproject11Class.toFile())).isEqualTo(Pair.of(0, JAVA_11_BYTECODE));
+
+            Path subproject21Class = subprojectLib21.buildDir().path().resolve("classes/java/main/Main.class");
+            assertThat(readBytecodeVersion(subproject21Class.toFile())).isEqualTo(Pair.of(0, JAVA_21_BYTECODE));
         }
 
-        gradle.withArgs("generateGradleJdkConfigs", "--includeVersion=11", "--includeVersion=21")
-                .buildsSuccessfully();
+        @Test
+        void graal_jdks_are_generated(GradleInvoker gradle, RootProject rootProject) {
+            rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
 
-        try (java.util.stream.Stream<Path> paths =
-                Files.list(rootProject.buildDir().path().resolve("gradle/jdks"))) {
-            Set<String> versions =
-                    paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
-            assertThat(versions).isEqualTo(Set.of("11", "17", "21"));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            rootProject.buildGradle().append("""
+                javaVersions {
+                    libraryTarget = '23'
+                }
+
+                jdks {
+                    jdk(23) {
+                        distribution = 'graalvm-ce'
+                        jdkVersion = '23.0.1'
+                    }
+                }
+                """);
+
+            gradle.withArgs("wrapper").buildsSuccessfully();
+
+            try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
+                Set<String> versions =
+                        paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
+                assertThat(versions).isEqualTo(Set.of("17", "23"));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            gradle.withArgs("compileJava").buildsSuccessfully();
+
+            Path compiledClass = rootProject.buildDir().path().resolve("classes/java/main/Main.class");
+            assertThat(readBytecodeVersion(compiledClass.toFile())).isEqualTo(Pair.of(0, JAVA_23_BYTECODE));
         }
 
-        InvocationResult failingCheck = gradle.withArgs("check").buildsWithFailure();
+        @Test
+        void only_generates_daemon_jdk(GradleInvoker gradle, RootProject rootProject) {
+            rootProject.buildGradle().append("""
+                jdks {
+                    daemonJdkOnly()
+                }
+                """);
 
-        assertThat(failingCheck).output().contains("Unexpected Java versions configured: [21]");
+            rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
+            rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
 
-        gradle.withArgs("setupJdks", "compileJava").buildsSuccessfully();
+            gradle.withArgs("wrapper").buildsSuccessfully();
 
-        try (java.util.stream.Stream<Path> paths =
-                Files.list(rootProject.buildDir().path().resolve("gradle/jdks"))) {
-            Set<String> versions =
-                    paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
-            assertThat(versions).isEqualTo(Set.of("11", "17"));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
+                boolean allMatch = paths.allMatch(path -> path.endsWith("17"));
+                assertThat(allMatch).isTrue();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
 
-        gradle.withArgs("generateGradleJdkConfigs", "--includeAllJdks").buildsSuccessfully();
+        @Test
+        void only_required_java_versions_are_configured(
+                GradleInvoker gradle, RootProject rootProject, SubProject subprojectLib21) {
+            rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
 
-        try (java.util.stream.Stream<Path> paths =
-                Files.list(rootProject.buildDir().path().resolve("gradle/jdks"))) {
-            Set<String> versions =
-                    paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
-            assertThat(versions).isEqualTo(Set.of("11", "17", "21"));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            rootProject.buildGradle().append("""
+                javaVersions {
+                    libraryTarget = '17'
+                }
+                """);
+
+            subprojectLib21.buildGradle().plugins().add("java-library");
+            subprojectLib21.buildGradle().append("""
+                javaVersion {
+                   target = 17
+                   runtime = 21
+                }
+                """);
+            subprojectLib21.mainSourceSet().java().writeClass(getMainJavaCode());
+
+            gradle.withArgs("wrapper").buildsSuccessfully();
+
+            try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
+                Set<String> versions =
+                        paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
+                assertThat(versions).isEqualTo(Set.of("17", "21"));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        @Test
+        void fails_if_the_jdk_version_is_not_configured(GradleInvoker gradle, RootProject rootProject) {
+            rootProject.buildGradle().append("""
+                javaVersions {
+                    libraryTarget = 15
+                }
+                """);
+            rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
+
+            InvocationResult result = gradle.withArgs("compileJava").buildsWithFailure();
+
+            assertThat(result)
+                    .output()
+                    .contains("Cannot find a Java installation on your machine")
+                    .contains("{languageVersion=15, vendor=any vendor, implementation=vendor-specific,"
+                            + " nativeImageCapable=false}")
+                    .contains("Toolchain auto-provisioning is not enabled.");
         }
     }
 
-    @Test
-    void only_jdkVersionsToUse_jdks_are_generated(GradleInvoker gradle, RootProject rootProject) {
-        applyApplicationPlugin(rootProject);
+    @Nested
+    class GenerateGradleJdkConfigsTest {
 
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
-        rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
+        @Test
+        void can_bump_java_major_version_when_baseline_java_is_applied(GradleInvoker gradle, RootProject rootProject) {
+            rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
+            rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
+            rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
 
-        rootProject.buildGradle().append("""
-            jdks {
-                jdkMajorVersionsToUse = ["17", "21"]
+            rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
+
+            rootProject.buildGradle().append("""
+                javaVersions {
+                    libraryTarget = '11'
+                }
+                """);
+
+            rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
+
+            gradle.withArgs("wrapper", "generateGradleJdkConfigs").buildsSuccessfully();
+
+            try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
+                Set<String> versions =
+                        paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
+                assertThat(versions).isEqualTo(Set.of("11", "17"));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            """);
 
-        gradle.withArgs("setupJdks").buildsSuccessfully();
+            gradle.withArgs("generateGradleJdkConfigs", "--includeVersion=11", "--includeVersion=21")
+                    .buildsSuccessfully();
 
-        try (java.util.stream.Stream<Path> paths =
-                Files.list(rootProject.buildDir().path().resolve("gradle/jdks"))) {
-            Set<String> versions =
-                    paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
-            assertThat(versions).isEqualTo(Set.of("17", "21"));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
+                Set<String> versions =
+                        paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
+                assertThat(versions).isEqualTo(Set.of("11", "17", "21"));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            InvocationResult failingCheck = gradle.withArgs("check").buildsWithFailure();
+
+            GradlePluginTestAssertions.assertThat(failingCheck)
+                    .output()
+                    .contains("Unexpected Java versions configured: [21]");
+
+            gradle.withArgs("setupJdks", "-x", "runJavaToolchains", "compileJava")
+                    .buildsSuccessfully();
+
+            try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
+                Set<String> versions =
+                        paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
+                assertThat(versions).isEqualTo(Set.of("11", "17"));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            gradle.withArgs("generateGradleJdkConfigs", "--includeAllJdks").buildsSuccessfully();
+
+            try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
+                Set<String> versions =
+                        paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
+                assertThat(versions).isEqualTo(Set.of("11", "17", "21"));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
-    }
-
-    @Test
-    void only_required_java_versions_are_configured(
-            GradleInvoker gradle, RootProject rootProject, SubProject subprojectLib21) {
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
-
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
-        rootProject.mainSourceSet().java().writeClass(java17PreviewCode);
-
-        rootProject.buildGradle().append("""
-            javaVersions {
-                libraryTarget = '17'
-            }
-            """);
-
-        subprojectLib21.buildGradle().plugins().add("java-library");
-        subprojectLib21.buildGradle().append("""
-            javaVersion {
-               target = 17
-               runtime = 21
-            }
-            """);
-        subprojectLib21.mainSourceSet().java().writeClass(getMainJavaCode());
-
-        gradle.withArgs("wrapper").buildsSuccessfully();
-
-        try (java.util.stream.Stream<Path> paths =
-                Files.list(rootProject.buildDir().path().resolve("gradle/jdks"))) {
-            Set<String> versions =
-                    paths.map(path -> path.getFileName().toString()).collect(Collectors.toSet());
-            assertThat(versions).isEqualTo(Set.of("17", "21"));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    @Test
-    void fails_if_the_jdk_version_is_not_configured(GradleInvoker gradle, RootProject rootProject) {
-        applyBaselineJavaVersions(rootProject);
-
-        rootProject.buildGradle().append("""
-            javaVersions {
-                libraryTarget = 15
-            }
-            """);
-        rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
-
-        gradle.withArgs("wrapper").buildsSuccessfully();
-
-        InvocationResult result = gradle.withArgs("compileJava").buildsWithFailure();
-
-        assertThat(result)
-                .output()
-                .contains("No compatible toolchains found")
-                .containsAnyOf("languageVersion=15", "No matching toolchains found");
     }
 
     // See http://illegalargumentexception.blogspot.com/2009/07/java-finding-class-versions.html

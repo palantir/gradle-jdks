@@ -23,35 +23,15 @@ import com.palantir.gradle.testing.execution.InvocationResult;
 import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
 @DisabledConfigurationCache
 final class JdksExtensionProjectTest {
 
-    @BeforeEach
-    void setup(RootProject rootProject) {
-        rootProject.buildGradle().append("""
-            import com.palantir.gradle.jdks.*
-
-            buildscript {
-                repositories {
-                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                }
-
-                dependencies {
-                    classpath "com.palantir.gradle.utils:platform:0.13.0"
-                }
-            }
-
-            extensions.create('jdks', JdksExtension)
-            """);
-    }
-
     @Test
     void correctly_handles_multi_level_version_overrides(GradleInvoker gradle, RootProject rootProject) {
+        rootProject.buildGradle().plugins().add("com.palantir.jdks");
         rootProject.buildGradle().append("""
             import com.palantir.gradle.jdks.setup.common.Arch
             import com.palantir.platform.OperatingSystem

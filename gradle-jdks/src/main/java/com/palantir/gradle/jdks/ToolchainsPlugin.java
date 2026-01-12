@@ -173,11 +173,27 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
                 .named(LifecycleBasePlugin.CHECK_TASK_NAME)
                 .configure(check -> check.dependsOn(checkJdksLifecycle));
 
+        TaskProvider<RunJavaToolchainsTask> runJavaToolchains = rootProject
+                .getTasks()
+                .register("runJavaToolchains", RunJavaToolchainsTask.class, runJavaToolchainsTask -> {
+                    runJavaToolchainsTask.setDescription("Runs javaToolchains.");
+                    runJavaToolchainsTask.setGroup(GRADLE_JDK_GROUP);
+                    runJavaToolchainsTask
+                            .getGradlewScript()
+                            .set(wrapperPatcherTask.get().getPatchedGradlewScript());
+                });
+
         rootProject.getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");
             setupJdksTask.setGroup(GRADLE_JDK_GROUP);
-            setupJdksTask.getGradlewScript().set(wrapperPatcherTask.get().getPatchedGradlewScript());
-            setupJdksTask.dependsOn(generateGradleJdkConfigs, wrapperPatcherTask);
+            setupJdksTask
+                    .getGradleJdksSetupScript()
+                    .set(generateGradleJdkConfigs
+                            .get()
+                            .getOutputGradleDirectory()
+                            .file("gradle-jdks-setup.sh"));
+            setupJdksTask.dependsOn(generateGradleJdkConfigs);
+            setupJdksTask.finalizedBy(runJavaToolchains);
         });
 
         rootProject.getTasks().named("javaToolchains").configure(task -> {

@@ -26,12 +26,8 @@ import org.gradle.api.Project;
 import org.gradle.api.flow.FlowProviders;
 import org.gradle.api.flow.FlowScope;
 import org.gradle.api.tasks.Nested;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class ToolchainFailureFlowActionsPlugin implements Plugin<Project> {
-
-    private static final Logger log = LoggerFactory.getLogger(ToolchainFailureFlowActionsPlugin.class);
 
     @Inject
     protected abstract FlowScope getFlowScope();

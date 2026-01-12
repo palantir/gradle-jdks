@@ -60,7 +60,7 @@ com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions:1.9.0 (2 c
 
 com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.7.0 (3 constraints: 352c523f)
 
-com.palantir.gradle.utils:environment-variables:0.21.0 (2 constraints: 142f0f67)
+com.palantir.gradle.utils:environment-variables:0.21.0 (3 constraints: 4b34934d)
 
 com.palantir.gradle.utils:exec:0.21.0 (1 constraints: 2e0f5e76)
 

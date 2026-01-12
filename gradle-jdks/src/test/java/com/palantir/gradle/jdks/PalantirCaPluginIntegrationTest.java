@@ -33,7 +33,11 @@ class PalantirCaPluginIntegrationTest {
     @BeforeEach
     void setup(RootProject project) {
         // Can't do strict as open source CI does not have the Palantir CA
-        project.buildGradle().plugins().add("com.palantir.jdks.palantir-ca").add("java-library");
+        project.buildGradle()
+                .plugins()
+                .add("com.palantir.jdks")
+                .add("com.palantir.jdks.palantir-ca")
+                .add("java-library");
 
         project.buildGradle().append("""
             jdks {
