@@ -59,7 +59,7 @@ checkUnusedConstraints.enabled = false
 
 
 javaVersions {
-    javaCompiler = 21
+    javaCompiler = 25
     libraryTarget = 17
 }
 
