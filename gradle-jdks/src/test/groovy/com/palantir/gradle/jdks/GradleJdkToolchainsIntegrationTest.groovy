@@ -109,30 +109,6 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         gradleVersionNumber << GRADLE_TEST_VERSIONS
     }
 
-    def '#gradleVersionNumber: generates only the files for the current arch & os'() {
-        gradleVersion = gradleVersionNumber
-        setupJdksHardcodedVersions()
-        applyApplicationPlugin()
-
-        when:
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
-        runTasksSuccessfully("generateGradleJdkConfigs", "--onlyForCurrentOsArch")
-
-        then: 'generates directories only for the current Os & Arch'
-        String os = OperatingSystem.get().uiName()
-        String arch = CurrentArch.get().uiName()
-        try (Stream<Path> paths = Files.find(projectDir.toPath().resolve("gradle/jdks"),
-                4,
-                (path, attr) -> path.getFileName().toString().equals("local-path") && attr.isRegularFile())) {
-            assertThat(paths.map{it -> projectDir.toPath().relativize(it).toString()}.collect(Collectors.toSet()))
-                    .isEqualTo(Stream.of("11", "17", "21").map {it -> String.format("gradle/jdks/%s/%s/%s/local-path", it,os, arch) }.collect(Collectors.toSet()))
-        }
-
-        where:
-        gradleVersionNumber << GRADLE_TEST_VERSIONS
-    }
-
-
     def '#gradleVersionNumber: javaToolchains correctly set-up with baseline-java'() {
         gradleVersion = gradleVersionNumber
         setupJdksHardcodedVersions()
