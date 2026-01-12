@@ -67,12 +67,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     }
 
     @Input
-    @Option(
-            option = "onlyForCurrentOsArch",
-            description = "Generates the configuration directories only for the current Os & Arch.")
-    public abstract Property<Boolean> getIncludeOnlyCurrentOsArch();
-
-    @Input
     public abstract ListProperty<String> getIncludeJavaMajorVersions();
 
     @Nested
@@ -99,7 +93,6 @@ public abstract class GradleJdksConfigs extends DefaultTask {
 
     public GradleJdksConfigs() {
         getIncludeAllJdks().convention(false);
-        getIncludeOnlyCurrentOsArch().convention(false);
     }
 
     @TaskAction
@@ -121,18 +114,14 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         AtomicBoolean jdksDirectoryConfigured = new AtomicBoolean(false);
         getJavaVersionToJdkDistros().get().forEach((javaVersion, jdkDistros) -> {
             jdkDistros.forEach(jdkDistribution -> {
-                if (!getIncludeOnlyCurrentOsArch().get()
-                        || (jdkDistribution.getOs().get().equals(os)
-                                && jdkDistribution.getArch().get().equals(arch))) {
-                    Path outputDir = gradleJdksDir
-                            .resolve(javaVersion.toString())
-                            .resolve(jdkDistribution.getOs().get().uiName())
-                            .resolve(jdkDistribution.getArch().get().uiName());
-                    Path downloadUrlPath = outputDir.resolve("download-url");
-                    Path localPath = outputDir.resolve("local-path");
-                    applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution);
-                    jdksDirectoryConfigured.set(true);
-                }
+                Path outputDir = gradleJdksDir
+                        .resolve(javaVersion.toString())
+                        .resolve(jdkDistribution.getOs().get().uiName())
+                        .resolve(jdkDistribution.getArch().get().uiName());
+                Path downloadUrlPath = outputDir.resolve("download-url");
+                Path localPath = outputDir.resolve("local-path");
+                applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution);
+                jdksDirectoryConfigured.set(true);
             });
         });
         if (!jdksDirectoryConfigured.get()) {
