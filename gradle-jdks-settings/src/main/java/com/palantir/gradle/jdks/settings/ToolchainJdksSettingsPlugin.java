@@ -27,11 +27,9 @@ import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -41,18 +39,17 @@ import java.util.stream.Stream;
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.properties.GradleProperties;
-import org.gradle.api.internal.provider.DefaultProviderFactory;
-import org.gradle.api.internal.provider.DefaultValueSourceProviderFactory;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.Nested;
 import org.gradle.initialization.DefaultSettings;
+import org.gradle.jvm.toolchain.internal.ToolchainConfiguration;
 import org.gradle.util.GradleVersion;
 
 /**
  * A plugin that changes the Gradle JDK properties (via reflection) to point to the local toolchains configured via the
  * Gradle JDK Setup.
+ *
  * @see <a href=/Volumes/git/gradle-jdks/gradle-jdks-setup/README.md>Gradle JDK Readme</a>
  */
 public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
@@ -86,37 +83,16 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }
-        // Forces the installation of the configured jdks if they are not installed. Fixes the case when a user doesn't
-        // have the Intellij plugin installed and some jdks are missing.
-        getOrInstallJdkPaths(rootProjectDir, gradleJdksLocalDirectory, os);
-        ProviderFactory providerFactory =
-                ((DefaultSettings) settings).getServices().get(ProviderFactory.class);
-        if (!(providerFactory instanceof DefaultProviderFactory)) {
-            throw new RuntimeException(String.format(
-                    "Expected providerFactory to be of type '%s' but was '%s'.",
-                    ProviderFactory.class.getCanonicalName(),
-                    providerFactory.getClass().getCanonicalName()));
-        }
-        DefaultProviderFactory defaultProviderFactory = (DefaultProviderFactory) providerFactory;
-        try {
-            Field valueSourceProviderFactory =
-                    DefaultProviderFactory.class.getDeclaredField("valueSourceProviderFactory");
-            valueSourceProviderFactory.setAccessible(true);
 
-            DefaultValueSourceProviderFactory defaultValueSourceProviderFactory =
-                    (DefaultValueSourceProviderFactory) valueSourceProviderFactory.get(defaultProviderFactory);
-            Field field = DefaultValueSourceProviderFactory.class.getDeclaredField("gradleProperties");
-            field.setAccessible(true);
-            GradleProperties originalGradleProperties = (GradleProperties) field.get(defaultValueSourceProviderFactory);
-            GradleProperties ourGradleProperties = (GradleProperties) Proxy.newProxyInstance(
-                    GradleProperties.class.getClassLoader(),
-                    new Class[] {GradleProperties.class},
-                    new GradlePropertiesInvocationHandler(
-                            rootProjectDir, gradleJdksLocalDirectory, originalGradleProperties, os));
-            field.set(defaultValueSourceProviderFactory, ourGradleProperties);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to update the Gradle JDK properties using reflection", e);
+
+        if (GradleVersion.current().compareTo(GradleVersion.version("8.8")) < 0) {
+            throw new RuntimeException("greater gradle version required");
         }
+        ToolchainConfiguration toolchainConfiguration =
+                ((DefaultSettings) settings).getServices().get(ToolchainConfiguration.class);
+        toolchainConfiguration.setInstallationsFromPaths(getOrInstallJdkPaths(rootProjectDir, gradleJdksLocalDirectory, os).stream().map(path -> path.toAbsolutePath().toString()).toList());
+        toolchainConfiguration.setAutoDetectEnabled(false);
+        toolchainConfiguration.setDownloadEnabled(false);
     }
 
     private static class GradlePropertiesInvocationHandler implements InvocationHandler {
@@ -213,7 +189,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
 
     private static boolean isGradleVersionSupported() {
         return GradleVersion.current()
-                        .compareTo(GradleVersion.version(GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION))
+                .compareTo(GradleVersion.version(GradleJdksEnablement.MINIMUM_SUPPORTED_GRADLE_VERSION))
                 >= 0;
     }
 
