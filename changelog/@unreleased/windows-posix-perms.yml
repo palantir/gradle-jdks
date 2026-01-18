@@ -1,2 +1,0 @@
-type: fix
-description: Avoid UnsupportedOperationException when setting POSIX permissions on non-POSIX filesystems.
