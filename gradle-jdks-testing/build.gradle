@@ -7,4 +7,7 @@ dependencies {
     implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
     implementation 'org.slf4j:slf4j-api'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
 }
