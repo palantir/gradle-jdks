@@ -23,8 +23,7 @@ import com.palantir.gradle.testing.junit.GradleInvokerDecoratorFactory;
  * Factory that creates {@link JdkAutomanagementDecorator} instances from
  * {@link WithJdkAutomanagement} annotations.
  */
-public final class JdkAutomanagementDecoratorFactory
-        implements GradleInvokerDecoratorFactory<WithJdkAutomanagement> {
+public final class JdkAutomanagementDecoratorFactory implements GradleInvokerDecoratorFactory<WithJdkAutomanagement> {
 
     @Override
     public GradleInvokerDecorator create(WithJdkAutomanagement _annotation) {
