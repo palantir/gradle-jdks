@@ -16,8 +16,8 @@
 
 package com.palantir.gradle.jdks.testing;
 
-import com.palantir.gradle.testing.execution.GradleInvokerDecorator;
-import com.palantir.gradle.testing.execution.GradleInvokerDecoratorFactory;
+import com.palantir.gradle.testing.junit.GradleInvokerDecorator;
+import com.palantir.gradle.testing.junit.GradleInvokerDecoratorFactory;
 
 /**
  * Factory that creates {@link JdkAutomanagementDecorator} instances from

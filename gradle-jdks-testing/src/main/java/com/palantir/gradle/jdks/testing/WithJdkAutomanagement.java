@@ -16,7 +16,7 @@
 
 package com.palantir.gradle.jdks.testing;
 
-import com.palantir.gradle.testing.execution.RegistersGradleInvokerDecorator;
+import com.palantir.gradle.testing.junit.RegistersGradleInvokerDecorator;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

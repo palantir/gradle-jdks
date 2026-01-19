@@ -18,9 +18,9 @@ package com.palantir.gradle.jdks.testing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.palantir.gradle.testing.execution.DecoratorContext;
 import com.palantir.gradle.testing.execution.GradleInvoker;
-import com.palantir.gradle.testing.execution.RegistersGradleInvokerDecorator;
+import com.palantir.gradle.testing.junit.DecoratorContext;
+import com.palantir.gradle.testing.junit.RegistersGradleInvokerDecorator;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 

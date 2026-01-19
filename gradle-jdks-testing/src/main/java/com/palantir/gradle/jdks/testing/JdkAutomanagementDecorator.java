@@ -16,9 +16,9 @@
 
 package com.palantir.gradle.jdks.testing;
 
-import com.palantir.gradle.testing.execution.DecoratorContext;
 import com.palantir.gradle.testing.execution.GradleInvoker;
-import com.palantir.gradle.testing.execution.GradleInvokerDecorator;
+import com.palantir.gradle.testing.junit.DecoratorContext;
+import com.palantir.gradle.testing.junit.GradleInvokerDecorator;
 
 /**
  * Decorator that enables JDK automanagement for Gradle invocations.
