@@ -35,11 +35,16 @@ dependencies {
     testImplementation gradleTestKit()
     testImplementation project(':gradle-jdks-settings')
     testImplementation project(':gradle-jdks-test-common')
+    testImplementation project(':gradle-jdks-testing')
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
+
+    gradlePluginForTesting 'com.palantir.gradle.jdks:gradle-jdks'
+    gradlePluginForTesting 'com.palantir.gradle.jdkslatest:gradle-jdks-latest'
+    gradlePluginForTesting 'com.palantir.gradle.jdks:gradle-jdks-settings'
 }
 
 gradlePlugin {

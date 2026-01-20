@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.junit.DecoratorContext;
 import com.palantir.gradle.testing.junit.RegistersGradleInvokerDecorator;
+import com.palantir.gradle.testing.project.RootProject;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
@@ -45,11 +46,12 @@ class WithJdkAutomanagementTests {
         assertThat(factory.create(annotation)).isInstanceOf(JdkAutomanagementDecorator.class);
     }
 
+    @SuppressWarnings("RestrictedApi")
     @Test
     void decorator_wraps_invoker_with_jdk_invoker() {
         JdkAutomanagementDecorator decorator = new JdkAutomanagementDecorator();
         GradleInvoker mockDelegate = _args -> null;
-        DecoratorContext context = new DecoratorContext(Path.of("/tmp/test"), null, null);
+        DecoratorContext context = new DecoratorContext(new RootProject(Path.of("/tmp/test")), null, null);
 
         GradleInvoker result = decorator.decorate(context, mockDelegate);
 

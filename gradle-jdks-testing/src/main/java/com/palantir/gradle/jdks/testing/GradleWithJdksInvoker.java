@@ -47,17 +47,15 @@ final class GradleWithJdksInvoker implements GradleInvoker {
     private final GradleInvoker delegate;
     private final RootProject rootProject;
 
-    @SuppressWarnings("RestrictedApi") // Decorator needs to create RootProject from path
-    GradleWithJdksInvoker(Path rootProjectDir, GradleInvoker delegate) {
-        this.rootProject = new RootProject(rootProjectDir);
+    GradleWithJdksInvoker(RootProject rootProject, GradleInvoker delegate) {
+        this.rootProject = rootProject;
         this.delegate = delegate;
+        setupRootProject(rootProject);
     }
 
     @Override
     public GradleInvocation withArgs(String... args) {
-        setupRootProject(rootProject);
         GradleInvocation setupJdkManagement = delegate.withArgs("wrapper", "setupJdks");
-
         return new GradleWithJdksInvocation(setupJdkManagement, () -> getInvokerWithToolchainsConfigured(args));
     }
 

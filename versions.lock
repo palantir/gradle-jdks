@@ -6,7 +6,7 @@ com.fasterxml.jackson.core:jackson-annotations:2.20 (3 constraints: 35263d8e)
 
 com.fasterxml.jackson.core:jackson-core:2.20.1 (1 constraints: 85123121)
 
-com.fasterxml.jackson.core:jackson-databind:2.20.1 (1 constraints: 3705343b)
+com.fasterxml.jackson.core:jackson-databind:2.20.1 (2 constraints: 0a1ae910)
 
 com.github.ben-manes.caffeine:caffeine:3.2.0 (2 constraints: cb165a2b)
 
@@ -30,11 +30,11 @@ com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions:1.9.0 (2 c
 
 com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.3.0 (1 constraints: 0505f435)
 
-com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:999 (1 constraints: c104512c)
+com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.48.0-10-gf7b6b3f.dirty (1 constraints: ea0a9ec8)
 
 com.palantir.gradle.utils:lazily-configured-mapping:0.15.0 (2 constraints: f116383a)
 
-com.palantir.gradle.utils:platform:0.15.0 (1 constraints: 3805323b)
+com.palantir.gradle.utils:platform:0.15.0 (2 constraints: 0d1a2111)
 
 com.palantir.javaformat:gradle-palantir-java-format:1.1.0 (1 constraints: bb11f8f4)
 
@@ -138,11 +138,13 @@ cglib:cglib-nodep:3.2.2 (1 constraints: 490ded24)
 
 com.netflix.nebula:nebula-test:10.6.2 (2 constraints: d61de72d)
 
-com.palantir.gradle.plugintesting:configuration-cache-spec:999 (1 constraints: c104512c)
+com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.24.0 (1 constraints: 3805333b)
 
-com.palantir.gradle.plugintesting:discover-tests-cli:999 (1 constraints: c104512c)
+com.palantir.gradle.plugintesting:configuration-cache-spec:0.48.0-10-gf7b6b3f.dirty (1 constraints: ea0a9ec8)
 
-com.palantir.gradle.plugintesting:plugin-testing-core:999 (1 constraints: c104512c)
+com.palantir.gradle.plugintesting:discover-tests-cli:0.48.0-10-gf7b6b3f.dirty (1 constraints: ea0a9ec8)
+
+com.palantir.gradle.plugintesting:plugin-testing-core:0.48.0-10-gf7b6b3f.dirty (1 constraints: ea0a9ec8)
 
 info.picocli:picocli:4.7.7 (1 constraints: 2816dcdd)
 

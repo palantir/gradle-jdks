@@ -34,6 +34,6 @@ public final class JdkAutomanagementDecorator implements GradleInvokerDecorator 
 
     @Override
     public GradleInvoker decorate(DecoratorContext context, GradleInvoker delegate) {
-        return new GradleWithJdksInvoker(context.rootProjectDir(), delegate);
+        return new GradleWithJdksInvoker(context.rootProject(), delegate);
     }
 }
