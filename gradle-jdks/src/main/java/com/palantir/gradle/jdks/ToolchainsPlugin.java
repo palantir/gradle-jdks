@@ -175,8 +175,15 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
         rootProject.getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");
             setupJdksTask.setGroup(GRADLE_JDK_GROUP);
-            setupJdksTask.getGradlewScript().set(wrapperPatcherTask.get().getPatchedGradlewScript());
-            setupJdksTask.dependsOn(generateGradleJdkConfigs, wrapperPatcherTask);
+            setupJdksTask
+                    .getGradleJdksSetupScript()
+                    .fileProvider(generateGradleJdkConfigs.map(task -> task.getOutputGradleDirectory()
+                            .file("gradle-jdks-setup.sh")
+                            .get()
+                            .getAsFile()));
+            setupJdksTask.getGradlewScript().fileProvider(wrapperPatcherTask.map(task -> task.getPatchedGradlewScript()
+                    .get()
+                    .getAsFile()));
         });
 
         rootProject.getTasks().named("javaToolchains").configure(task -> {

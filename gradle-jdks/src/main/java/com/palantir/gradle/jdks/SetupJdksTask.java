@@ -16,11 +16,14 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.utils.environmentvariables.EnvironmentVariables;
 import com.palantir.platform.GradleOperatingSystem;
 import com.palantir.platform.OperatingSystem;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.Consumer;
 import javax.inject.Inject;
 import org.apache.tools.ant.util.TeeOutputStream;
 import org.gradle.api.DefaultTask;
@@ -42,6 +45,9 @@ public abstract class SetupJdksTask extends DefaultTask {
     private static final Logger logger = Logging.getLogger(SetupJdksTask.class);
 
     @InputFile
+    public abstract RegularFileProperty getGradleJdksSetupScript();
+
+    @InputFile
     public abstract RegularFileProperty getGradlewScript();
 
     @Inject
@@ -50,12 +56,49 @@ public abstract class SetupJdksTask extends DefaultTask {
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
 
+    @Nested
+    abstract EnvironmentVariables getEnvironment();
+
     @TaskAction
     public final void exec() {
         if (getOperatingSystem().getOperatingSystem().get().equals(OperatingSystem.WINDOWS)) {
             logger.debug("Windows gradleJdk setup is not yet supported.");
             return;
         }
+        runCommandWithFailureHandling(
+                List.of(getGradleJdksSetupScript().get().getAsFile().getAbsolutePath()), output -> {
+                    throw new RuntimeException(String.format("The Gradle JDK setup has failed. Error: %s", output));
+                });
+
+        // Running ./gradlew is not compatible with @GradlePluginTests
+        boolean shouldRunGradlew = getEnvironment()
+                .envVarOrFromTestingProperty("palantir.gradle.plugin.tests")
+                .map(value -> !Boolean.parseBoolean(value))
+                .orElse(true)
+                .get();
+
+        if (!shouldRunGradlew) {
+            logger.warn("Skipping `./gradlew javaToolchains` run because running `./gradlew` is not compatible with"
+                    + " @GradlePluginTests.");
+            return;
+        }
+
+        runCommandWithFailureHandling(
+                List.of(getGradlewScript().get().getAsFile().getAbsolutePath(), "-q", "javaToolchains", "--stacktrace"),
+                output -> {
+                    if (output.contains("UnsupportedClassVersionError")) {
+                        throw new RuntimeException(
+                                "The Gradle JDK setup has failed. The Gradle Daemon major version might be"
+                                        + " incorrectly set. Update the Gradle JDK major version using"
+                                        + " `jdks.daemonTargetVersion` in your `build.gradle` and the"
+                                        + " `gradle/gradle-daemon-jdk-version` entry");
+                    }
+                    throw new RuntimeException(String.format(
+                            "Failed to run javaToolchains after setting up the JDK setup. Error: %s", output));
+                });
+    }
+
+    private void runCommandWithFailureHandling(List<String> command, Consumer<String> errorHandler) {
         ByteArrayOutputStream inMemoryOutput = new ByteArrayOutputStream();
         OutputStream logOutput = new TeeOutputStream(System.out, inMemoryOutput);
 
@@ -63,18 +106,10 @@ public abstract class SetupJdksTask extends DefaultTask {
             execSpec.setIgnoreExitValue(true);
             execSpec.setStandardOutput(logOutput);
             execSpec.setErrorOutput(logOutput);
-            execSpec.commandLine(getGradlewScript().get().getAsFile().toPath(), "-q", "javaToolchains", "--stacktrace");
+            execSpec.commandLine(command);
         });
-
         if (execResult.getExitValue() != 0) {
-            String output = inMemoryOutput.toString(StandardCharsets.UTF_8);
-            if (output.contains("UnsupportedClassVersionError")) {
-                throw new RuntimeException(
-                        "The Gradle JDK setup has failed. The Gradle Daemon major version might be incorrectly set."
-                                + " Update the Gradle JDK major version using `jdks.daemonTargetVersion` in your"
-                                + " `build.gradle` and the `gradle/gradle-daemon-jdk-version` entry");
-            }
-            throw new RuntimeException(String.format("The Gradle JDK setup has failed. Error: %s", output));
+            errorHandler.accept(inMemoryOutput.toString(StandardCharsets.UTF_8));
         }
     }
 }

@@ -32,6 +32,8 @@ com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.3.0 (1 constr
 
 com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.48.0-10-gf7b6b3f.dirty (1 constraints: ea0a9ec8)
 
+com.palantir.gradle.utils:environment-variables:0.15.0 (1 constraints: 3805323b)
+
 com.palantir.gradle.utils:lazily-configured-mapping:0.15.0 (2 constraints: f116383a)
 
 com.palantir.gradle.utils:platform:0.15.0 (2 constraints: 0d1a2111)

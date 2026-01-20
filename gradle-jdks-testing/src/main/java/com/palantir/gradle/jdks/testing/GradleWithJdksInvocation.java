@@ -55,7 +55,7 @@ record GradleWithJdksInvocation(GradleInvocation setupInvocation, Callable<Gradl
         try {
             setupInvocation.buildsSuccessfully();
         } catch (Exception e) {
-            throw new JdkSetupFailureException("Failed to set up JDK automanagement", e);
+            throw new JdkSetupFailureException(e);
         }
     }
 }
