@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.ImmutableList;
+import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.jdks.testing.JdkSetupFailureException;
 import com.palantir.gradle.jdks.testing.WithJdkAutomanagement;
 import com.palantir.gradle.testing.execution.GradleInvoker;
@@ -27,9 +28,7 @@ import com.palantir.gradle.testing.execution.InvocationResult;
 import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -53,8 +52,9 @@ public class GradleWithJdksTest {
                 }
             }
             """);
-        String expectedGradleJdksDir =
-                getGradleJdksDirectory("amazon-corretto-21.0.9.10.1").toString();
+        String expectedGradleJdksDir = GradleJdksDirectories.getToolchainInstallationDir()
+                .resolve("amazon-corretto-21.0.9.10.1")
+                .toString();
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
         result.assertThat().output().contains("Auto-detection:     Disabled");
         result.assertThat().output().contains("Auto-download:      Disabled");
@@ -102,12 +102,5 @@ public class GradleWithJdksTest {
         assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsSuccessfully())
                 .isInstanceOf(JdkSetupFailureException.class)
                 .hasMessageContaining("Gradle daemon JDK version is `24` but no JDK configured for that version.");
-    }
-
-    private static Path getGradleJdksDirectory(String localJdkPath) {
-        return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
-                        .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
-                .resolve("gradle-jdks")
-                .resolve(localJdkPath);
     }
 }

@@ -18,7 +18,9 @@ package com.palantir.gradle.jdks.testing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.GradleInvoker;
+import com.palantir.gradle.testing.execution.GradleVersion;
 import com.palantir.gradle.testing.junit.DecoratorContext;
 import com.palantir.gradle.testing.junit.RegistersGradleInvokerDecorator;
 import com.palantir.gradle.testing.project.RootProject;
@@ -50,11 +52,20 @@ class WithJdkAutomanagementTests {
     @Test
     void decorator_wraps_invoker_with_jdk_invoker() {
         JdkAutomanagementDecorator decorator = new JdkAutomanagementDecorator();
-        GradleInvoker mockDelegate = _args -> null;
+        GradleInvoker mockDelegate = new GradleInvoker() {
+            @Override
+            public GradleVersion gradleVersion() {
+                return null;
+            }
+
+            @Override
+            public GradleInvocation withArgs(String... _args) {
+                return null;
+            }
+        };
         DecoratorContext context = new DecoratorContext(new RootProject(Path.of("/tmp/test")), null, null);
 
         GradleInvoker result = decorator.decorate(context, mockDelegate);
-
         assertThat(result).isInstanceOf(GradleWithJdksInvoker.class);
     }
 

@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks.testing;
 
 import com.google.common.collect.ImmutableList;
+import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.GradleVersion;
@@ -27,7 +28,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -87,12 +87,15 @@ final class GradleWithJdksInvoker implements GradleInvoker {
                     (path, _attr) -> path.getFileName().toString().equals("local-path"))) {
                 String localPath = stream.findFirst()
                         .map(GradleWithJdksInvoker::readLocalPath)
-                        .orElseThrow(() -> new RuntimeException(
-                                String.format("Failed to find the JDK local path for majorVersion %s", majorVersion)));
-                return getGradleJdksDirectory(localPath);
+                        .orElseThrow(() -> new JdkSetupFailureException(String.format(
+                                "Failed to set up JDK automanagement: failed to find the JDK local path for"
+                                        + " majorVersion %s",
+                                majorVersion)));
+                return GradleJdksDirectories.getToolchainInstallationDir().resolve(localPath);
             }
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to retrieve the gradle daemon jdk path", e);
+            throw new JdkSetupFailureException(
+                    "Failed to set up JDK automanagement: failed to retrieve the gradle daemon jdk path", e);
         }
     }
 
@@ -102,13 +105,6 @@ final class GradleWithJdksInvoker implements GradleInvoker {
         } catch (IOException e) {
             throw new UncheckedIOException(String.format("Failed to read the path %s", path), e);
         }
-    }
-
-    private static Path getGradleJdksDirectory(String localJdkPath) {
-        return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
-                        .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
-                .resolve("gradle-jdks")
-                .resolve(localJdkPath);
     }
 
     private static void setupRootProject(RootProject rootProject) {

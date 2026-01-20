@@ -3,6 +3,7 @@ apply plugin: 'com.palantir.external-publish-jar'
 dependencies {
     api 'com.palantir.gradle.plugintesting:gradle-plugin-testing-junit'
 
+    implementation project(':gradle-jdks-setup-common')
     implementation 'com.palantir.gradle.utils:platform'
     implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'

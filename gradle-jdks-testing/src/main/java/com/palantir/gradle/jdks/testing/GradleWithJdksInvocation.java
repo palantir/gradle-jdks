@@ -19,16 +19,12 @@ package com.palantir.gradle.jdks.testing;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.InvocationResult;
 import java.util.concurrent.Callable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A GradleInvocation that runs JDK setup before executing the actual build.
  */
 record GradleWithJdksInvocation(GradleInvocation setupInvocation, Callable<GradleInvocation> tasksInvocation)
         implements GradleInvocation {
-
-    private static final Logger log = LoggerFactory.getLogger(GradleWithJdksInvocation.class);
 
     @Override
     public InvocationResult buildsSuccessfully() {
@@ -51,7 +47,6 @@ record GradleWithJdksInvocation(GradleInvocation setupInvocation, Callable<Gradl
     }
 
     private void setupJdkAutomanagement() {
-        log.info("Setting up JDK automanagement...");
         try {
             setupInvocation.buildsSuccessfully();
         } catch (Exception e) {

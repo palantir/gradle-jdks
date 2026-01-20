@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2025 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2026 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,18 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.testing;
+package com.palantir.gradle.jdks.setup.common;
 
-/**
- * Exception thrown when JDK automanagement setup fails.
- */
-public final class JdkSetupFailureException extends RuntimeException {
+import java.nio.file.Path;
+import java.util.Optional;
 
-    public JdkSetupFailureException(Throwable cause) {
-        super(cause);
+public class GradleJdksDirectories {
+
+    public static Path getToolchainInstallationDir() {
+        return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
+                        .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
+                .resolve("gradle-jdks");
     }
 
-    public JdkSetupFailureException(String message) {
-        super(message);
-    }
-
-    public JdkSetupFailureException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    private GradleJdksDirectories() {}
 }
