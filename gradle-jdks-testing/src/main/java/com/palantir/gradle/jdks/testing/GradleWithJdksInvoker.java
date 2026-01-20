@@ -19,6 +19,7 @@ package com.palantir.gradle.jdks.testing;
 import com.google.common.collect.ImmutableList;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.GradleInvoker;
+import com.palantir.gradle.testing.execution.GradleVersion;
 import com.palantir.gradle.testing.project.RootProject;
 import com.palantir.platform.Architecture;
 import com.palantir.platform.OperatingSystem;
@@ -51,6 +52,11 @@ final class GradleWithJdksInvoker implements GradleInvoker {
         this.rootProject = rootProject;
         this.delegate = delegate;
         setupRootProject(rootProject);
+    }
+
+    @Override
+    public GradleVersion gradleVersion() {
+        return delegate.gradleVersion();
     }
 
     @Override
