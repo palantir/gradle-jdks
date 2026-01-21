@@ -19,7 +19,7 @@ package com.palantir.gradle.jdks.testing;
 /**
  * Exception thrown when JDK automanagement setup fails.
  */
-public final class JdkSetupFailureException extends RuntimeException {
+final class JdkSetupFailureException extends RuntimeException {
 
     public JdkSetupFailureException(Throwable cause) {
         super(cause);

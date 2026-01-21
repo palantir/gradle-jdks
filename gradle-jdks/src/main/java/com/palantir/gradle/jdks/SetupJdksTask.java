@@ -32,6 +32,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
@@ -47,6 +48,7 @@ public abstract class SetupJdksTask extends DefaultTask {
     @InputFile
     public abstract RegularFileProperty getGradleJdksSetupScript();
 
+    @Optional
     @InputFile
     public abstract RegularFileProperty getGradlewScript();
 
@@ -70,16 +72,10 @@ public abstract class SetupJdksTask extends DefaultTask {
                     throw new RuntimeException(String.format("The Gradle JDK setup has failed. Error: %s", output));
                 });
 
-        // Running ./gradlew is not compatible with @GradlePluginTests
-        boolean shouldRunGradlew = getEnvironment()
-                .envVarOrFromTestingProperty("palantir.gradle.plugin.tests")
-                .map(value -> !Boolean.parseBoolean(value))
-                .orElse(true)
-                .get();
-
-        if (!shouldRunGradlew) {
-            logger.warn("Skipping `./gradlew javaToolchains` run because running `./gradlew` is not compatible with"
-                    + " @GradlePluginTests.");
+        if (!getGradlewScript().isPresent()) {
+            logger.warn(
+                    "Skipping `./gradlew javaToolchains` run because getGradlewScript() is not set. This can happen if"
+                            + " we are running inside GradlePluginTests framework");
             return;
         }
 

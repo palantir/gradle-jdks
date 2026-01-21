@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.ImmutableList;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
-import com.palantir.gradle.jdks.testing.JdkSetupFailureException;
 import com.palantir.gradle.jdks.testing.WithJdkAutomanagement;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
@@ -100,7 +99,6 @@ public class GradleWithJdksTest {
             }
             """);
         assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsSuccessfully())
-                .isInstanceOf(JdkSetupFailureException.class)
                 .hasMessageContaining("Gradle daemon JDK version is `24` but no JDK configured for that version.");
     }
 }

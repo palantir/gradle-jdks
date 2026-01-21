@@ -61,7 +61,7 @@ final class GradleWithJdksInvoker implements GradleInvoker {
 
     @Override
     public GradleInvocation withArgs(String... args) {
-        GradleInvocation setupJdkManagement = delegate.withArgs("wrapper", "setupJdks");
+        GradleInvocation setupJdkManagement = delegate.withArgs("setupJdks");
         return new GradleWithJdksInvocation(setupJdkManagement, () -> getInvokerWithToolchainsConfigured(args));
     }
 
