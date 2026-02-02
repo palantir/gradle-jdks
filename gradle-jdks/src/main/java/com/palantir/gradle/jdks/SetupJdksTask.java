@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.utils.environmentvariables.EnvironmentVariables;
 import com.palantir.platform.GradleOperatingSystem;
 import com.palantir.platform.OperatingSystem;
 import java.io.ByteArrayOutputStream;
@@ -57,9 +56,6 @@ public abstract class SetupJdksTask extends DefaultTask {
 
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
-
-    @Nested
-    abstract EnvironmentVariables getEnvironment();
 
     @TaskAction
     public final void exec() {

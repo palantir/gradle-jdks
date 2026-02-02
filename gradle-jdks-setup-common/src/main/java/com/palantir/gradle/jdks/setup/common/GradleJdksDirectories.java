@@ -19,7 +19,7 @@ package com.palantir.gradle.jdks.setup.common;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class GradleJdksDirectories {
+public final class GradleJdksDirectories {
 
     public static Path getToolchainInstallationDir() {
         return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))

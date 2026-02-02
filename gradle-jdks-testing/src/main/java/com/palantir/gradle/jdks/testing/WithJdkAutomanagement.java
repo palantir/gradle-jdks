@@ -52,5 +52,5 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-@RegistersGradleInvokerDecorator(JdkAutomanagementDecoratorFactory.class)
+@RegistersGradleInvokerDecorator(JdkAutomanagementDecorator.class)
 public @interface WithJdkAutomanagement {}

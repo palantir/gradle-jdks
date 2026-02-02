@@ -185,12 +185,7 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
                             .get()
                             .getAsFile()));
 
-            boolean shouldRunGradlew = environmentVariables
-                    .envVarOrFromTestingProperty("palantir.gradle.plugin.tests")
-                    .map(value -> !Boolean.parseBoolean(value))
-                    .orElse(true)
-                    .get();
-            if (shouldRunGradlew) {
+            if (!environmentVariables.isInTestMode().get()) {
                 setupJdksTask
                         .getGradlewScript()
                         .fileProvider(wrapperPatcherTask.map(
