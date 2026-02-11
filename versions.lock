@@ -30,17 +30,17 @@ com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions:1.9.0 (2 c
 
 com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.3.0 (1 constraints: 0505f435)
 
-com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:999.999.9999 (1 constraints: ac068560)
+com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.54.0 (1 constraints: 3b053f3b)
 
-com.palantir.gradle.utils:environment-variables:0.21.0-50-ga891426 (1 constraints: fa07c48b)
+com.palantir.gradle.utils:environment-variables:0.22.0 (1 constraints: 36052d3b)
 
-com.palantir.gradle.utils:exec:0.21.0-50-ga891426 (1 constraints: f311b33e)
+com.palantir.gradle.utils:exec:0.22.0 (1 constraints: 2f0f6176)
 
-com.palantir.gradle.utils:lazily-configured-mapping:0.21.0-50-ga891426 (2 constraints: b3197f17)
+com.palantir.gradle.utils:lazily-configured-mapping:0.22.0 (2 constraints: ef16cd39)
 
-com.palantir.gradle.utils:platform:0.21.0-50-ga891426 (2 constraints: cf1c7804)
+com.palantir.gradle.utils:platform:0.22.0 (2 constraints: 0b1aa610)
 
-com.palantir.gradle.utils:providers:0.21.0-50-ga891426 (1 constraints: 33101de5)
+com.palantir.gradle.utils:providers:0.22.0 (1 constraints: 6f0dda31)
 
 com.palantir.javaformat:gradle-palantir-java-format:1.1.0 (1 constraints: bb11f8f4)
 
@@ -146,11 +146,11 @@ com.netflix.nebula:nebula-test:10.6.2 (2 constraints: d61de72d)
 
 com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.24.0 (1 constraints: 3805333b)
 
-com.palantir.gradle.plugintesting:configuration-cache-spec:999.999.9999 (1 constraints: ac068560)
+com.palantir.gradle.plugintesting:configuration-cache-spec:0.54.0 (1 constraints: 3b053f3b)
 
-com.palantir.gradle.plugintesting:discover-tests-cli:999.999.9999 (1 constraints: ac068560)
+com.palantir.gradle.plugintesting:discover-tests-cli:0.54.0 (1 constraints: 3b053f3b)
 
-com.palantir.gradle.plugintesting:plugin-testing-core:999.999.9999 (1 constraints: ac068560)
+com.palantir.gradle.plugintesting:plugin-testing-core:0.54.0 (1 constraints: 3b053f3b)
 
 info.picocli:picocli:4.7.7 (1 constraints: 2816dcdd)
 

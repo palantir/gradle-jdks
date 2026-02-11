@@ -16,10 +16,10 @@
 
 package com.palantir.gradle.jdks.testing;
 
-import com.google.common.collect.ImmutableList;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.GradleInvoker;
+import com.palantir.gradle.testing.execution.Options;
 import com.palantir.gradle.testing.project.RootProject;
 import com.palantir.platform.Architecture;
 import com.palantir.platform.OperatingSystem;
@@ -28,6 +28,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
  * A GradleInvoker that sets up JDK automanagement before running builds.
@@ -46,26 +47,32 @@ final class GradleWithJdksInvoker implements GradleInvoker {
 
     private final GradleInvoker delegate;
     private final RootProject rootProject;
+    private final ExtensionContext extensionContext;
 
-    GradleWithJdksInvoker(RootProject rootProject, GradleInvoker delegate) {
+    GradleWithJdksInvoker(ExtensionContext extensionContext, RootProject rootProject, GradleInvoker delegate) {
+        this.extensionContext = extensionContext;
         this.rootProject = rootProject;
         this.delegate = delegate;
-        setupRootProject(rootProject);
     }
 
     @Override
-    public GradleInvocation withArgs(String... args) {
-        GradleInvocation setupJdkManagement = delegate.withArgs("setupJdks");
-        return new GradleWithJdksInvocation(setupJdkManagement, () -> getInvokerWithToolchainsConfigured(args));
+    public GradleInvocation with(Options options) {
+        setupOrCheckRootProject(rootProject);
+        if (!GradleWithJdksStore.hasRunJdksSetup(extensionContext)) {
+            GradleInvocation setupJdkManagement = delegate.withArgs("setupJdks");
+            return new GradleWithJdksInvocation(
+                    setupJdkManagement,
+                    () -> getInvokerWithToolchainsConfigured(options),
+                    () -> GradleWithJdksStore.setHasRun(extensionContext));
+        } else {
+            return getInvokerWithToolchainsConfigured(options);
+        }
     }
 
-    private GradleInvocation getInvokerWithToolchainsConfigured(String... args) {
-        String[] withJavaHome = ImmutableList.<String>builder()
-                .add(args)
-                .add(String.format("-Dorg.gradle.java.home=%s", getGradleJavaHome(rootProject.path())))
-                .build()
-                .toArray(String[]::new);
-        return delegate.withArgs(withJavaHome);
+    private GradleInvocation getInvokerWithToolchainsConfigured(Options options) {
+        return delegate.with(options.asBuilder()
+                .addArgs(String.format("-Dorg.gradle.java.home=%s", getGradleJavaHome(rootProject.path())))
+                .build());
     }
 
     @SuppressWarnings("checkstyle:NestedTryDepth")
@@ -73,7 +80,6 @@ final class GradleWithJdksInvoker implements GradleInvoker {
         try {
             String majorVersion = Files.readString(rootProjectDir.resolve("gradle/gradle-daemon-jdk-version"))
                     .trim();
-
             try (Stream<Path> stream = Files.find(
                     rootProjectDir.resolve(
                             String.format("gradle/jdks/%s/%s/%s", majorVersion, OS.uiName(), ARCH.uiName())),
@@ -101,7 +107,7 @@ final class GradleWithJdksInvoker implements GradleInvoker {
         }
     }
 
-    private static void setupRootProject(RootProject rootProject) {
+    private static void setupOrCheckRootProject(RootProject rootProject) {
         rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
         rootProject.buildGradle().plugins().add("java");
         rootProject.buildGradle().plugins().add("com.palantir.jdks");

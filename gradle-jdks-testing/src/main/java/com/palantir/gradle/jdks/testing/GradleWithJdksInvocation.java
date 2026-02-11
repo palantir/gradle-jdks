@@ -19,11 +19,14 @@ package com.palantir.gradle.jdks.testing;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.InvocationResult;
 import java.util.concurrent.Callable;
+import org.gradle.testkit.runner.UnexpectedBuildFailure;
+import org.gradle.testkit.runner.UnexpectedBuildSuccess;
 
 /**
  * A GradleInvocation that runs JDK setup before executing the actual build.
  */
-record GradleWithJdksInvocation(GradleInvocation setupInvocation, Callable<GradleInvocation> tasksInvocation)
+record GradleWithJdksInvocation(
+        GradleInvocation setupInvocation, Callable<GradleInvocation> tasksInvocation, Runnable markSetupComplete)
         implements GradleInvocation {
 
     @Override
@@ -31,8 +34,10 @@ record GradleWithJdksInvocation(GradleInvocation setupInvocation, Callable<Gradl
         setupJdkAutomanagement();
         try {
             return tasksInvocation.call().buildsSuccessfully();
+        } catch (UnexpectedBuildFailure e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to run the gradle invoker", e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -41,14 +46,17 @@ record GradleWithJdksInvocation(GradleInvocation setupInvocation, Callable<Gradl
         setupJdkAutomanagement();
         try {
             return tasksInvocation.call().buildsWithFailure();
+        } catch (UnexpectedBuildSuccess e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to run the gradle invoker", e);
+            throw new RuntimeException(e);
         }
     }
 
     private void setupJdkAutomanagement() {
         try {
             setupInvocation.buildsSuccessfully();
+            markSetupComplete.run();
         } catch (Exception e) {
             throw new JdkSetupFailureException(e);
         }
