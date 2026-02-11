@@ -21,15 +21,15 @@ package com.palantir.gradle.jdks.testing;
  */
 final class JdkSetupFailureException extends RuntimeException {
 
-    public JdkSetupFailureException(Throwable cause) {
+    JdkSetupFailureException(Throwable cause) {
         super(cause);
     }
 
-    public JdkSetupFailureException(String message) {
+    JdkSetupFailureException(String message) {
         super(message);
     }
 
-    public JdkSetupFailureException(String message, Throwable cause) {
+    JdkSetupFailureException(String message, Throwable cause) {
         super(message, cause);
     }
 }
