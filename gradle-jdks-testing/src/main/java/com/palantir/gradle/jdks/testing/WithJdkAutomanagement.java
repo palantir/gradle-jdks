@@ -25,14 +25,6 @@ import java.lang.annotation.Target;
 /**
  * Annotation that enables JDK automanagement for Gradle plugin tests.
  *
- * <p>When applied to a test class or method, this annotation automatically:
- * <ol>
- *   <li>Adds the required plugins: {@code com.palantir.jdks} and {@code com.palantir.jdks.settings}</li>
- *   <li>Enables Gradle JDK Automanagement by setting {@code palantir.jdk.setup.enabled=true}</li>
- *   <li>Runs {@code setupJdks} to download and configure JDKs before the test build</li>
- *   <li>Configures the Gradle daemon to use the appropriate JDK</li>
- * </ol>
- *
  * <p>Example usage:
  * <pre>{@code
  * @GradlePluginTests

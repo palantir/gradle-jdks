@@ -24,13 +24,6 @@ import java.util.List;
 
 /**
  * Decorator that enables JDK automanagement for Gradle invocations.
- *
- * <p>When applied, this decorator wraps invocations to:
- * <ol>
- *   <li>Set up the JDK plugins and properties in the test project</li>
- *   <li>Run {@code setupJdks} to download and configure JDKs</li>
- *   <li>Configure the Gradle daemon to use the appropriate JDK</li>
- * </ol>
  */
 public final class JdkAutomanagementDecorator implements GradleInvokerDecorator<Annotation> {
 
