@@ -34,7 +34,7 @@ com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.54.0 (1 constrai
 
 com.palantir.gradle.utils:environment-variables:0.23.0 (1 constraints: 3705303b)
 
-com.palantir.gradle.utils:exec:0.23.0 (1 constraints: 300f6476)
+com.palantir.gradle.utils:exec:0.23.0 (2 constraints: 6614eb96)
 
 com.palantir.gradle.utils:lazily-configured-mapping:0.23.0 (2 constraints: f016033a)
 

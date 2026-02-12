@@ -22,6 +22,7 @@ dependencies {
     }
     implementation 'com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions'
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'
+    implementation 'com.palantir.gradle.utils:exec'
     implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
     implementation 'org.apache.commons:commons-compress'
@@ -90,3 +91,4 @@ tasks.withType(ProcessResources.class).configureEach {
 gradleTestUtils {
     configurationCacheEnabled = true
 }
+
