@@ -108,7 +108,7 @@ final class GradleWithJdksInvoker implements GradleInvoker {
     }
 
     private static void setupOrCheckRootProject(RootProject rootProject) {
-        rootProject.gradlePropertiesFile().appendProperty("palantir.jdk.setup.enabled", "true");
+        rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
         rootProject.buildGradle().plugins().add("java");
         rootProject.buildGradle().plugins().add("com.palantir.jdks");
         rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
