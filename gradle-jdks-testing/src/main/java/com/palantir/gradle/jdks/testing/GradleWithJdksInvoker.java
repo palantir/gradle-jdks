@@ -62,6 +62,7 @@ final class GradleWithJdksInvoker implements GradleInvoker {
             GradleInvocation setupJdkManagement = delegate.withArgs("setupJdks");
             return new GradleWithJdksInvocation(
                     setupJdkManagement,
+                    // java.home is not available until setupJdkManagement has run
                     () -> getInvokerWithToolchainsConfigured(options),
                     () -> GradleWithJdksStore.setHasRun(extensionContext));
         } else {
