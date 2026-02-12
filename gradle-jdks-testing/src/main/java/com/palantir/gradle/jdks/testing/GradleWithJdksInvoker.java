@@ -75,27 +75,27 @@ final class GradleWithJdksInvoker implements GradleInvoker {
                 .build());
     }
 
-    @SuppressWarnings("checkstyle:NestedTryDepth")
     private static Path getGradleJavaHome(Path rootProjectDir) {
         try {
             String majorVersion = Files.readString(rootProjectDir.resolve("gradle/gradle-daemon-jdk-version"))
                     .trim();
-            try (Stream<Path> stream = Files.find(
-                    rootProjectDir.resolve(
-                            String.format("gradle/jdks/%s/%s/%s", majorVersion, OS.uiName(), ARCH.uiName())),
-                    1,
-                    (path, _attr) -> path.getFileName().toString().equals("local-path"))) {
-                String localPath = stream.findFirst()
-                        .map(GradleWithJdksInvoker::readLocalPath)
-                        .orElseThrow(() -> new JdkSetupFailureException(String.format(
-                                "Failed to set up JDK automanagement: failed to find the JDK local path for"
-                                        + " majorVersion %s",
-                                majorVersion)));
-                return GradleJdksDirectories.getToolchainInstallationDir().resolve(localPath);
-            }
+            Path jdkDirectory = rootProjectDir.resolve(
+                    String.format("gradle/jdks/%s/%s/%s", majorVersion, OS.uiName(), ARCH.uiName()));
+            String localPath = findLocalPathFile(jdkDirectory, majorVersion);
+            return GradleJdksDirectories.getToolchainInstallationDir().resolve(localPath);
         } catch (IOException e) {
             throw new JdkSetupFailureException(
                     "Failed to set up JDK automanagement: failed to retrieve the gradle daemon jdk path", e);
+        }
+    }
+
+    private static String findLocalPathFile(Path jdkDirectory, String majorVersion) throws IOException {
+        try (Stream<Path> stream = Files.find(
+                jdkDirectory, 1, (path, _attr) -> path.getFileName().toString().equals("local-path"))) {
+            return stream.findFirst()
+                    .map(GradleWithJdksInvoker::readLocalPath)
+                    .orElseThrow(() -> new JdkSetupFailureException(
+                            String.format("Failed to find JDK local-path file for majorVersion %s", majorVersion)));
         }
     }
 
