@@ -19,16 +19,15 @@ package com.palantir.gradle.jdks.testing;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.junit.DecoratorContext;
 import com.palantir.gradle.testing.junit.GradleInvokerDecorator;
-import java.lang.annotation.Annotation;
 import java.util.List;
 
 /**
  * Decorator that enables JDK automanagement for Gradle invocations.
  */
-public final class JdkAutomanagementDecorator implements GradleInvokerDecorator<Annotation> {
+public final class JdkAutomanagementDecorator implements GradleInvokerDecorator<WithJdkAutomanagement> {
 
     @Override
-    public GradleInvoker decorate(DecoratorContext context, GradleInvoker delegate, List<Annotation> _annotations) {
+    public GradleInvoker decorate(DecoratorContext context, GradleInvoker delegate, List<WithJdkAutomanagement> _annotations) {
         return new GradleWithJdksInvoker(context.extensionContext(), context.rootProject(), delegate);
     }
 }
