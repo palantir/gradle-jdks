@@ -57,7 +57,6 @@ allprojects {
 // `Error during resolution of the dependency graph of configuration configuration ':gradle-jdks-settings:unshadedCopy'`
 checkUnusedConstraints.enabled = false
 
-
 javaVersions {
     javaCompiler = 25
     libraryTarget = 17

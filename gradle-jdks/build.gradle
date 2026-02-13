@@ -22,12 +22,14 @@ dependencies {
     }
     implementation 'com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions'
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'
+    implementation 'com.palantir.gradle.utils:exec'
     implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
     implementation 'org.apache.commons:commons-compress'
     implementation 'org.ow2.asm:asm'
     implementation 'com.palantir.gradle.idea-configuration:gradle-idea-configuration'
     implementation 'com.palantir.gradle.utils:platform'
+    implementation 'com.palantir.gradle.utils:environment-variables'
 
     compileOnly 'org.immutables:value::annotations'
     annotationProcessor 'org.immutables:value'
@@ -35,11 +37,16 @@ dependencies {
     testImplementation gradleTestKit()
     testImplementation project(':gradle-jdks-settings')
     testImplementation project(':gradle-jdks-test-common')
+    testImplementation project(':gradle-jdks-testing')
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
+
+    gradlePluginForTesting 'com.palantir.gradle.jdks:gradle-jdks'
+    gradlePluginForTesting 'com.palantir.gradle.jdkslatest:gradle-jdks-latest'
+    gradlePluginForTesting 'com.palantir.gradle.jdks:gradle-jdks-settings'
 }
 
 gradlePlugin {
@@ -84,3 +91,4 @@ tasks.withType(ProcessResources.class).configureEach {
 gradleTestUtils {
     configurationCacheEnabled = true
 }
+

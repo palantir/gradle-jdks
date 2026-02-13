@@ -1,0 +1,15 @@
+apply plugin: 'com.palantir.external-publish-jar'
+
+dependencies {
+    api 'com.palantir.gradle.plugintesting:gradle-plugin-testing-junit'
+    implementation gradleTestKit()
+
+    implementation project(':gradle-jdks-setup-common')
+    implementation 'com.palantir.gradle.utils:platform'
+    implementation 'com.google.guava:guava'
+    implementation 'commons-io:commons-io'
+    implementation 'org.slf4j:slf4j-api'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+}

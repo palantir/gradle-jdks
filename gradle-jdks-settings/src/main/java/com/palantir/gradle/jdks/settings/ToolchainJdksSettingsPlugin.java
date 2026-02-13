@@ -22,6 +22,7 @@ import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CommandRunner;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
+import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.platform.GradleOperatingSystem;
 import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
@@ -35,7 +36,6 @@ import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.gradle.api.Plugin;
@@ -183,7 +183,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
     }
 
     private static List<Path> getConfiguredJdkPaths(Path gradleJdksLocalDirectory, OperatingSystem os) {
-        Path installationDirectory = getToolchainInstallationDir();
+        Path installationDirectory = GradleJdksDirectories.getToolchainInstallationDir();
         Arch arch = CurrentArch.get();
         try (Stream<Path> stream = Files.list(gradleJdksLocalDirectory).filter(Files::isDirectory)) {
             return stream.map(path ->
@@ -203,12 +203,6 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
             throw new UncheckedIOException(
                     String.format("Failed to read gradle jdk configuration file %s", gradleJdkConfigurationPath), e);
         }
-    }
-
-    private static Path getToolchainInstallationDir() {
-        return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
-                        .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
-                .resolve("gradle-jdks");
     }
 
     private static boolean isGradleVersionSupported() {

@@ -21,6 +21,8 @@ import com.palantir.platform.OperatingSystem;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.Consumer;
 import javax.inject.Inject;
 import org.apache.tools.ant.util.TeeOutputStream;
 import org.gradle.api.DefaultTask;
@@ -29,6 +31,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
@@ -41,6 +44,10 @@ public abstract class SetupJdksTask extends DefaultTask {
 
     private static final Logger logger = Logging.getLogger(SetupJdksTask.class);
 
+    @InputFile
+    public abstract RegularFileProperty getGradleJdksSetupScript();
+
+    @Optional
     @InputFile
     public abstract RegularFileProperty getGradlewScript();
 
@@ -56,6 +63,34 @@ public abstract class SetupJdksTask extends DefaultTask {
             logger.debug("Windows gradleJdk setup is not yet supported.");
             return;
         }
+        runCommandWithFailureHandling(
+                List.of(getGradleJdksSetupScript().get().getAsFile().getAbsolutePath()), output -> {
+                    throw new RuntimeException(String.format("The Gradle JDK setup has failed. Error: %s", output));
+                });
+
+        if (!getGradlewScript().isPresent()) {
+            logger.warn(
+                    "Skipping `./gradlew javaToolchains` run because getGradlewScript() is not set. This can happen if"
+                            + " we are running inside GradlePluginTests framework");
+            return;
+        }
+
+        runCommandWithFailureHandling(
+                List.of(getGradlewScript().get().getAsFile().getAbsolutePath(), "-q", "javaToolchains", "--stacktrace"),
+                output -> {
+                    if (output.contains("UnsupportedClassVersionError")) {
+                        throw new RuntimeException(
+                                "The Gradle JDK setup has failed. The Gradle Daemon major version might be"
+                                        + " incorrectly set. Update the Gradle JDK major version using"
+                                        + " `jdks.daemonTargetVersion` in your `build.gradle` and the"
+                                        + " `gradle/gradle-daemon-jdk-version` entry");
+                    }
+                    throw new RuntimeException(String.format(
+                            "Failed to run javaToolchains after setting up the JDK setup. Error: %s", output));
+                });
+    }
+
+    private void runCommandWithFailureHandling(List<String> command, Consumer<String> errorHandler) {
         ByteArrayOutputStream inMemoryOutput = new ByteArrayOutputStream();
         OutputStream logOutput = new TeeOutputStream(System.out, inMemoryOutput);
 
@@ -63,18 +98,10 @@ public abstract class SetupJdksTask extends DefaultTask {
             execSpec.setIgnoreExitValue(true);
             execSpec.setStandardOutput(logOutput);
             execSpec.setErrorOutput(logOutput);
-            execSpec.commandLine(getGradlewScript().get().getAsFile().toPath(), "-q", "javaToolchains", "--stacktrace");
+            execSpec.commandLine(command);
         });
-
         if (execResult.getExitValue() != 0) {
-            String output = inMemoryOutput.toString(StandardCharsets.UTF_8);
-            if (output.contains("UnsupportedClassVersionError")) {
-                throw new RuntimeException(
-                        "The Gradle JDK setup has failed. The Gradle Daemon major version might be incorrectly set."
-                                + " Update the Gradle JDK major version using `jdks.daemonTargetVersion` in your"
-                                + " `build.gradle` and the `gradle/gradle-daemon-jdk-version` entry");
-            }
-            throw new RuntimeException(String.format("The Gradle JDK setup has failed. Error: %s", output));
+            errorHandler.accept(inMemoryOutput.toString(StandardCharsets.UTF_8));
         }
     }
 }

@@ -23,6 +23,7 @@ import com.palantir.gradle.ideaconfiguration.IdeaConfigurationExtension;
 import com.palantir.gradle.ideaconfiguration.IdeaConfigurationPlugin;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
+import com.palantir.gradle.utils.environmentvariables.EnvironmentVariables;
 import com.palantir.platform.GradleOperatingSystem;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -172,11 +173,24 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
                 .named(LifecycleBasePlugin.CHECK_TASK_NAME)
                 .configure(check -> check.dependsOn(checkJdksLifecycle));
 
+        EnvironmentVariables environmentVariables = rootProject.getObjects().newInstance(EnvironmentVariables.class);
+
         rootProject.getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");
             setupJdksTask.setGroup(GRADLE_JDK_GROUP);
-            setupJdksTask.getGradlewScript().set(wrapperPatcherTask.get().getPatchedGradlewScript());
-            setupJdksTask.dependsOn(generateGradleJdkConfigs, wrapperPatcherTask);
+            setupJdksTask
+                    .getGradleJdksSetupScript()
+                    .fileProvider(generateGradleJdkConfigs.map(task -> task.getOutputGradleDirectory()
+                            .file("gradle-jdks-setup.sh")
+                            .get()
+                            .getAsFile()));
+
+            if (!environmentVariables.isInTestMode().get()) {
+                setupJdksTask
+                        .getGradlewScript()
+                        .fileProvider(wrapperPatcherTask.map(
+                                task -> task.getPatchedGradlewScript().get().getAsFile()));
+            }
         });
 
         rootProject.getTasks().named("javaToolchains").configure(task -> {
