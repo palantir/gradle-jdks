@@ -1,18 +1,18 @@
 com.fasterxml.jackson.*:* = 2.21.0
 com.fasterxml.jackson.core:jackson-annotations = 2.21
 com.github.ben-manes.caffeine:caffeine = 3.2.0
-org.immutables:* = 2.10.1
+org.immutables:* = 2.12.1
 com.netflix.nebula:nebula-test = 10.6.2
-org.junit.jupiter:* = 5.11.4
-org.assertj:assertj-core = 3.27.3
-org.junit.platform:* = 1.11.4
-org.mockito:* = 5.15.2
+org.junit.jupiter:* = 6.0.2
+org.assertj:assertj-core = 3.27.7
+org.junit.platform:* = 6.0.2
+org.mockito:* = 5.21.0
 com.palantir.gradle.utils:* = 0.23.0
-com.google.guava:guava = 33.4.0-jre
-commons-io:commons-io = 2.18.0
+com.google.guava:guava = 33.5.0-jre
+commons-io:commons-io = 2.21.0
 org.slf4j:* = 2.0.16
-org.apache.commons:commons-compress = 1.27.1
-org.ow2.asm:asm = 9.7.1
+org.apache.commons:commons-compress = 1.28.0
+org.ow2.asm:asm = 9.9.1
 com.palantir.gradle.failure-reports:* = 1.9.0
 com.palantir.gradle.idea-configuration:gradle-idea-configuration = 0.3.0
 
@@ -21,10 +21,10 @@ com.palantir.baseline:* = 5.53.0
 # dependency-upgrader:ON
 
 # test dependencies
-com.palantir.gradle.jdks:* = 0.71.0
-com.palantir.gradle.jdkslatest:* = 0.24.0
+com.palantir.gradle.jdks:* = 0.74.0
+com.palantir.gradle.jdkslatest:* = 0.26.0
 
 # conflict resolution
 com.google.code.findbugs:jsr305 = 3.0.2
 com.google.errorprone:error_prone_annotations = 2.11.0
-org.checkerframework:checker-qual = 3.49.0
+org.checkerframework:checker-qual = 3.53.1
