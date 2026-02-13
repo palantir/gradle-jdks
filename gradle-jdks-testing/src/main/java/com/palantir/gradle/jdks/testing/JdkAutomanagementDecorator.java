@@ -27,7 +27,8 @@ import java.util.List;
 public final class JdkAutomanagementDecorator implements GradleInvokerDecorator<WithJdkAutomanagement> {
 
     @Override
-    public GradleInvoker decorate(DecoratorContext context, GradleInvoker delegate, List<WithJdkAutomanagement> _annotations) {
+    public GradleInvoker decorate(
+            DecoratorContext context, GradleInvoker delegate, List<WithJdkAutomanagement> _annotations) {
         return new GradleWithJdksInvoker(context.extensionContext(), context.rootProject(), delegate);
     }
 }
