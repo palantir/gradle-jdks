@@ -108,8 +108,15 @@ public class GradleWithJdksTest {
                 }
             }
             """);
+
         assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsSuccessfully())
                 .hasMessageContaining("Gradle daemon JDK version is `24` but no JDK configured for that version.");
+
+        InvocationResult result = invoker.withArgs("javaToolchains").buildsWithFailure();
+        result.assertThat()
+                .output()
+                .contains("Gradle daemon JDK version is `24` but no JDK configured for that version.");
+        result.assertThat().task("javaToolchains").notOnTaskGraph();
     }
 
     private static void assertJavaToolchainsMatch(GradleInvoker invoker, Predicate<? super String> predicate) {
