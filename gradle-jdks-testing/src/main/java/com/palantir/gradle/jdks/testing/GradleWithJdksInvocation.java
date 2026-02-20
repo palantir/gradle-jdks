@@ -31,12 +31,11 @@ record GradleWithJdksInvocation(
     @Override
     public InvocationResult buildsSuccessfully() {
         try {
-            setupInvocation.buildsSuccessfully();
+            setupJdkAutoManagement();
         } catch (UnexpectedBuildFailure e) {
             throw new JdkSetupFailureException(e);
         }
 
-        markSetupComplete.run();
         try {
             return tasksInvocation.call().buildsSuccessfully();
         } catch (Exception e) {
@@ -47,9 +46,7 @@ record GradleWithJdksInvocation(
     @Override
     public InvocationResult buildsWithFailure() {
         try {
-            setupInvocation.buildsSuccessfully();
-            // script configuration exception
-            markSetupComplete.run();
+            setupJdkAutoManagement();
         } catch (UnexpectedBuildFailure e) {
             return setupInvocation.buildsWithFailure();
         }
@@ -59,5 +56,10 @@ record GradleWithJdksInvocation(
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void setupJdkAutoManagement() {
+        setupInvocation.buildsSuccessfully();
+        markSetupComplete.run();
     }
 }
