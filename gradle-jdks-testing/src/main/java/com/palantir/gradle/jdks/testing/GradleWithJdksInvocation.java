@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks.testing;
 
+import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.InvocationResult;
 import java.util.concurrent.Callable;
@@ -25,41 +26,64 @@ import org.gradle.testkit.runner.UnexpectedBuildFailure;
  * A GradleInvocation that runs JDK setup before executing the actual build.
  */
 record GradleWithJdksInvocation(
-        GradleInvocation setupInvocation, Callable<GradleInvocation> tasksInvocation, Runnable markSetupComplete)
+        GradleInvocation setupInvocation,
+        Callable<GradleInvocation> javaToolchainsInvocation,
+        Callable<GradleInvocation> tasksInvocation,
+        Runnable markSetupComplete)
         implements GradleInvocation {
 
     @Override
     public InvocationResult buildsSuccessfully() {
         try {
-            setupJdkAutoManagement();
+            setupInvocation.buildsSuccessfully();
+            try {
+                // we expect this call to be successful if `setupInvocation` was successful.
+                javaToolchainsInvocation.call().buildsSuccessfully();
+            } catch (Exception e) {
+                throw new JdkSetupFailureException(e);
+            }
+            markSetupComplete.run();
         } catch (UnexpectedBuildFailure e) {
-            throw new JdkSetupFailureException(e);
+            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")) {
+                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
+            }
+            throw e;
         }
 
-        try {
-            return tasksInvocation.call().buildsSuccessfully();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return runSuccessfully(tasksInvocation);
     }
 
     @Override
     public InvocationResult buildsWithFailure() {
         try {
-            setupJdkAutoManagement();
+            setupInvocation.buildsSuccessfully();
+            try {
+                // we expect this call to be successful if `setupInvocation` was successful.
+                javaToolchainsInvocation.call().buildsSuccessfully();
+            } catch (Exception e) {
+                return runWithFailure(javaToolchainsInvocation);
+            }
+            markSetupComplete.run();
         } catch (UnexpectedBuildFailure e) {
             return setupInvocation.buildsWithFailure();
         }
 
+        return runWithFailure(tasksInvocation);
+    }
+
+    private InvocationResult runWithFailure(Callable<GradleInvocation> invocation) {
         try {
-            return tasksInvocation.call().buildsWithFailure();
+            return invocation.call().buildsWithFailure();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void setupJdkAutoManagement() {
-        setupInvocation.buildsSuccessfully();
-        markSetupComplete.run();
+    private InvocationResult runSuccessfully(Callable<GradleInvocation> invocation) {
+        try {
+            return invocation.call().buildsSuccessfully();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

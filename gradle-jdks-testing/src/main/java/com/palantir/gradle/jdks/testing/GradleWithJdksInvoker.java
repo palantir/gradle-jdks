@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks.testing;
 
+import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.GradleInvoker;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * <ol>
  *   <li>Configures the test project with JDK plugins and properties</li>
  *   <li>Runs {@code setupJdks} to download and configure JDKs</li>
+ *   <li>Runs {@code javaToolchains} to make sure JDKs are properly configured</li>
  *   <li>Runs the actual build with the appropriate JDK configured</li>
  * </ol>
  */
@@ -63,7 +66,11 @@ final class GradleWithJdksInvoker implements GradleInvoker {
             return new GradleWithJdksInvocation(
                     setupJdkManagement,
                     // java.home is not available until setupJdkManagement has run
+                    // make sure `javaToolchains` runs to confirm that the JDKs are properly configured
+                    () -> getToolchainsTaskCall(options),
+                    // runs the actual build with the appropriate JDKs configured
                     () -> getInvokerWithToolchainsConfigured(options),
+                    // mark the jdksSetup as run
                     () -> GradleWithJdksStore.setHasRun(extensionContext));
         } else {
             return getInvokerWithToolchainsConfigured(options);
@@ -73,6 +80,14 @@ final class GradleWithJdksInvoker implements GradleInvoker {
     private GradleInvocation getInvokerWithToolchainsConfigured(Options options) {
         return delegate.with(options.asBuilder()
                 .addArgs(String.format("-Dorg.gradle.java.home=%s", getGradleJavaHome(rootProject.path())))
+                .build());
+    }
+
+    private GradleInvocation getToolchainsTaskCall(Options options) {
+        return delegate.with(options.asBuilder()
+                .args(List.of(
+                        String.format("-Dorg.gradle.java.home=%s", getGradleJavaHome(rootProject.path())),
+                        "javaToolchains"))
                 .build());
     }
 

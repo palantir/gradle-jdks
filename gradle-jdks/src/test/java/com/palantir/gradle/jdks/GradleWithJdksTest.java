@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.ImmutableList;
+import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.jdks.testing.WithJdkAutomanagement;
 import com.palantir.gradle.testing.execution.GradleInvoker;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.gradle.testkit.runner.UnexpectedBuildFailure;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -110,6 +112,7 @@ public class GradleWithJdksTest {
             """);
 
         assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsSuccessfully())
+                .isInstanceOf(JdkSetupFailureException.class)
                 .hasMessageContaining("Gradle daemon JDK version is `24` but no JDK configured for that version.");
 
         InvocationResult result = invoker.withArgs("javaToolchains").buildsWithFailure();
@@ -117,6 +120,48 @@ public class GradleWithJdksTest {
                 .output()
                 .contains("Gradle daemon JDK version is `24` but no JDK configured for that version.");
         result.assertThat().task("javaToolchains").notOnTaskGraph();
+    }
+
+    @Test
+    void fails_for_script_errors(GradleInvoker invoker, RootProject rootProject) {
+        rootProject.buildGradle().append("""
+            throw new RuntimeException("my error")
+            """);
+
+        assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsSuccessfully())
+                .isInstanceOf(UnexpectedBuildFailure.class)
+                .hasMessageContaining("my error");
+
+        InvocationResult result = invoker.withArgs("javaToolchains").buildsWithFailure();
+        result.assertThat().output().contains("my error");
+    }
+
+    @Test
+    void fails_for_invalid_libraryTarget(GradleInvoker invoker, RootProject rootProject) {
+        rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
+        rootProject.buildGradle().plugins().add("com.palantir.jdks.latest");
+        rootProject.buildGradle().append("""
+            javaVersions {
+                libraryTarget = '21'
+            }
+
+            jdks {
+                daemonTarget = 7
+            }
+            """);
+
+        rootProject.sourceSet("main").java().writeClass("""
+                class HelloWorld() {}
+            """);
+
+        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsSuccessfully())
+                .isInstanceOf(JdkSetupFailureException.class)
+                .hasMessageContaining("Gradle daemon JDK version is `7` but no JDK configured for that version.");
+
+        InvocationResult result = invoker.withArgs("compileJava").buildsWithFailure();
+        result.assertThat()
+                .output()
+                .contains("Gradle daemon JDK version is `7` but no JDK configured for that version.");
     }
 
     private static void assertJavaToolchainsMatch(GradleInvoker invoker, Predicate<? super String> predicate) {

@@ -17,6 +17,7 @@
 package com.palantir.gradle.jdks;
 
 import com.google.common.collect.Sets;
+import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.platform.GradleOperatingSystem;
@@ -125,7 +126,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
             });
         });
         if (!jdksDirectoryConfigured.get()) {
-            throw new RuntimeException(
+            throw new JdkSetupFailureException(
                     "No JDKs were configured for the gradle setup. Please run `./gradlew setupJdks` to generate the"
                             + " JDKs and ensure that you have configured JDKs properly for gradle-jdks as per"
                             + " the readme: https://github.com/palantir/gradle-jdks#usage."
@@ -141,7 +142,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                         .map(JavaLanguageVersion::toString)
                         .collect(Collectors.toSet()));
         if (!unexpectedConfiguredJavaVersions.isEmpty()) {
-            throw new RuntimeException(String.format(
+            throw new JdkSetupFailureException(String.format(
                     "Unexpected Java versions configured: %s. Please run `./gradlew setupJdks` to regenerate the used"
                             + " JDKS.",
                     unexpectedConfiguredJavaVersions));
@@ -152,7 +153,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
         Path expectedJdkDir =
                 gradleJdksDir.resolve(gradleJdkDaemonVersion).resolve(osString).resolve(arch.toString());
         if (!Files.exists(expectedJdkDir)) {
-            throw new RuntimeException(String.format(
+            throw new JdkSetupFailureException(String.format(
                     "Gradle daemon JDK version is `%s` but no JDK configured for that version. Please ensure that you"
                             + " have configured JDKs properly for gradle-jdks as per the readme:"
                             + " https://github.com/palantir/gradle-jdks#usage and the gradle daemon version specified "

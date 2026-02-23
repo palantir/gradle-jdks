@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2025 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2026 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks.testing;
+package com.palantir.gradle.jdks.setup;
 
 /**
  * Exception thrown when JDK automanagement setup fails.
  */
-final class JdkSetupFailureException extends RuntimeException {
+public final class JdkSetupFailureException extends RuntimeException {
 
-    JdkSetupFailureException(Throwable cause) {
+    public JdkSetupFailureException(Throwable cause) {
         super(cause);
     }
 
-    JdkSetupFailureException(String message) {
+    public JdkSetupFailureException(String message) {
         super(message);
     }
 
-    JdkSetupFailureException(String message, Throwable cause) {
+    public JdkSetupFailureException(String message, Throwable cause) {
         super(message, cause);
     }
 }
