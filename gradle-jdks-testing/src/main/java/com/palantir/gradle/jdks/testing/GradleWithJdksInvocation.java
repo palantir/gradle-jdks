@@ -36,19 +36,19 @@ record GradleWithJdksInvocation(
     public InvocationResult buildsSuccessfully() {
         try {
             setupInvocation.buildsSuccessfully();
-            try {
-                // we expect this call to be successful if `setupInvocation` was successful.
-                javaToolchainsInvocation.call().buildsSuccessfully();
-            } catch (Exception e) {
-                throw new JdkSetupFailureException(e);
-            }
-            markSetupComplete.run();
         } catch (UnexpectedBuildFailure e) {
             if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")) {
                 throw new JdkSetupFailureException(e.getBuildResult().getOutput());
             }
             throw e;
         }
+        try {
+            // we expect this call to be successful if `setupInvocation` was successful.
+            javaToolchainsInvocation.call().buildsSuccessfully();
+        } catch (Exception e) {
+            throw new JdkSetupFailureException(e);
+        }
+        markSetupComplete.run();
 
         return runSuccessfully(tasksInvocation);
     }
@@ -57,31 +57,33 @@ record GradleWithJdksInvocation(
     public InvocationResult buildsWithFailure() {
         try {
             setupInvocation.buildsSuccessfully();
-            try {
-                // we expect this call to be successful if `setupInvocation` was successful.
-                javaToolchainsInvocation.call().buildsSuccessfully();
-            } catch (Exception e) {
-                return runWithFailure(javaToolchainsInvocation);
-            }
-            markSetupComplete.run();
         } catch (UnexpectedBuildFailure e) {
             return setupInvocation.buildsWithFailure();
         }
+        try {
+            // we expect this call to be successful if `setupInvocation` was successful.
+            javaToolchainsInvocation.call().buildsSuccessfully();
+        } catch (Exception e) {
+            return runWithFailure(javaToolchainsInvocation);
+        }
+        markSetupComplete.run();
 
         return runWithFailure(tasksInvocation);
     }
 
     private InvocationResult runWithFailure(Callable<GradleInvocation> invocation) {
-        try {
-            return invocation.call().buildsWithFailure();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return call(invocation).buildsWithFailure();
     }
 
     private InvocationResult runSuccessfully(Callable<GradleInvocation> invocation) {
+        return call(invocation).buildsSuccessfully();
+    }
+
+    private static GradleInvocation call(Callable<GradleInvocation> invocation) {
         try {
-            return invocation.call().buildsSuccessfully();
+            return invocation.call();
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
