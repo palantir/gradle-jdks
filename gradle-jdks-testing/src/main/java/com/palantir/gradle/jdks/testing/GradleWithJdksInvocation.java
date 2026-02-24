@@ -42,8 +42,12 @@ record GradleWithJdksInvocation(
             }
             throw e;
         }
-        // we expect this call to be successful if `setupInvocation` was successful.
-        javaToolchainsInvocation.get().buildsSuccessfully();
+        try {
+            // we expect this call to be successful if `setupInvocation` was successful.
+            javaToolchainsInvocation.get().buildsSuccessfully();
+        } catch (UnexpectedBuildFailure e) {
+            throw new JdkSetupFailureException(e.getBuildResult().getOutput());
+        }
         markSetupComplete.run();
 
         return tasksInvocation.get().buildsSuccessfully();
