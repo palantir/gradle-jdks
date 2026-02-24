@@ -33,14 +33,13 @@ record GradleWithJdksInvocation(
     public InvocationResult buildsSuccessfully() {
         try {
             setupInvocation.buildsSuccessfully();
+            markSetupComplete.run();
         } catch (UnexpectedBuildFailure e) {
             if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")) {
                 throw new JdkSetupFailureException(e.getBuildResult().getOutput());
             }
             throw e;
         }
-        markSetupComplete.run();
-
         return tasksInvocation.get().buildsSuccessfully();
     }
 
@@ -48,14 +47,13 @@ record GradleWithJdksInvocation(
     public InvocationResult buildsWithFailure() {
         try {
             setupInvocation.buildsSuccessfully();
+            markSetupComplete.run();
         } catch (UnexpectedBuildFailure e) {
             if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")) {
                 throw new JdkSetupFailureException(e.getBuildResult().getOutput());
             }
             return InvocationResult.from(e);
         }
-        markSetupComplete.run();
-
         return tasksInvocation.get().buildsWithFailure();
     }
 }
