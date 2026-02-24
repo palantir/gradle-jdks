@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -66,9 +65,6 @@ final class GradleWithJdksInvoker implements GradleInvoker {
             return new GradleWithJdksInvocation(
                     setupJdkManagement,
                     // java.home is not available until setupJdkManagement has run
-                    // make sure `javaToolchains` runs to confirm that the JDKs are properly configured
-                    () -> getToolchainsTaskCall(options),
-                    // runs the actual build with the appropriate JDKs configured
                     () -> getInvokerWithToolchainsConfigured(options),
                     // mark the jdksSetup as run
                     () -> GradleWithJdksStore.setHasRun(extensionContext));
@@ -80,14 +76,6 @@ final class GradleWithJdksInvoker implements GradleInvoker {
     private GradleInvocation getInvokerWithToolchainsConfigured(Options options) {
         return delegate.with(options.asBuilder()
                 .addArgs(String.format("-Dorg.gradle.java.home=%s", getGradleJavaHome(rootProject.path())))
-                .build());
-    }
-
-    private GradleInvocation getToolchainsTaskCall(Options options) {
-        return delegate.with(options.asBuilder()
-                .args(List.of(
-                        String.format("-Dorg.gradle.java.home=%s", getGradleJavaHome(rootProject.path())),
-                        "javaToolchains"))
                 .build());
     }
 

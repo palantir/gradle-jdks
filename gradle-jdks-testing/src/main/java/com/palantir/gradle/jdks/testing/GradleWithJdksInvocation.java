@@ -26,10 +26,7 @@ import org.gradle.testkit.runner.UnexpectedBuildFailure;
  * A GradleInvocation that runs JDK setup before executing the actual build.
  */
 record GradleWithJdksInvocation(
-        GradleInvocation setupInvocation,
-        Supplier<GradleInvocation> javaToolchainsInvocation,
-        Supplier<GradleInvocation> tasksInvocation,
-        Runnable markSetupComplete)
+        GradleInvocation setupInvocation, Supplier<GradleInvocation> tasksInvocation, Runnable markSetupComplete)
         implements GradleInvocation {
 
     @Override
@@ -42,12 +39,6 @@ record GradleWithJdksInvocation(
             }
             throw e;
         }
-        try {
-            // we expect this call to be successful if `setupInvocation` was successful.
-            javaToolchainsInvocation.get().buildsSuccessfully();
-        } catch (UnexpectedBuildFailure e) {
-            throw new JdkSetupFailureException(e.getBuildResult().getOutput());
-        }
         markSetupComplete.run();
 
         return tasksInvocation.get().buildsSuccessfully();
@@ -58,12 +49,9 @@ record GradleWithJdksInvocation(
         try {
             setupInvocation.buildsSuccessfully();
         } catch (UnexpectedBuildFailure e) {
-            return InvocationResult.from(e);
-        }
-        try {
-            // we expect this call to be successful if `setupInvocation` was successful.
-            javaToolchainsInvocation.get().buildsSuccessfully();
-        } catch (UnexpectedBuildFailure e) {
+            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")) {
+                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
+            }
             return InvocationResult.from(e);
         }
         markSetupComplete.run();

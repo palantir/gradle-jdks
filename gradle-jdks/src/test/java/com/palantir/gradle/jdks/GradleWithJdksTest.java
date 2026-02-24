@@ -115,11 +115,9 @@ public class GradleWithJdksTest {
                 .isInstanceOf(JdkSetupFailureException.class)
                 .hasMessageContaining("Gradle daemon JDK version is `24` but no JDK configured for that version.");
 
-        InvocationResult result = invoker.withArgs("javaToolchains").buildsWithFailure();
-        result.assertThat()
-                .output()
-                .contains("Gradle daemon JDK version is `24` but no JDK configured for that version.");
-        result.assertThat().task("javaToolchains").notOnTaskGraph();
+        assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsWithFailure())
+                .isInstanceOf(JdkSetupFailureException.class)
+                .hasMessageContaining("Gradle daemon JDK version is `24` but no JDK configured for that version.");
     }
 
     @Test
@@ -128,11 +126,15 @@ public class GradleWithJdksTest {
             throw new RuntimeException("my error")
             """);
 
-        assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsSuccessfully())
+        rootProject.sourceSet("main").java().writeClass("""
+            class HelloWorld {}
+            """);
+
+        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsSuccessfully())
                 .isInstanceOf(UnexpectedBuildFailure.class)
                 .hasMessageContaining("my error");
 
-        InvocationResult result = invoker.withArgs("javaToolchains").buildsWithFailure();
+        InvocationResult result = invoker.withArgs("compileJava").buildsWithFailure();
         result.assertThat().output().contains("my error");
     }
 
@@ -151,11 +153,35 @@ public class GradleWithJdksTest {
             """);
 
         rootProject.sourceSet("main").java().writeClass("""
-                class HelloWorld() {}
+            class HelloWorld() {}
             """);
 
         assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsSuccessfully())
                 .isInstanceOf(JdkSetupFailureException.class)
+                .hasMessageContaining("Gradle daemon JDK version is `7` but no JDK configured for that version.");
+
+        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsWithFailure())
+                .isInstanceOf(JdkSetupFailureException.class)
+                .hasMessageContaining("Gradle daemon JDK version is `7` but no JDK configured for that version.");
+    }
+
+    @Test
+    void fails(RootProject rootProject, GradleInvoker invoker) {
+        rootProject.buildGradle().plugins().add("com.palantir.jdks.latest");
+        rootProject.buildGradle().append("""
+                java {
+                    toolchain {
+                        languageVersion = JavaLanguageVersion.of(999) // Non-existent version
+                    }
+                }
+
+            jdks {
+                daemonTarget = 21
+            }
+            """);
+
+        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsSuccessfully())
+                .isInstanceOf(UnexpectedBuildFailure.class)
                 .hasMessageContaining("Gradle daemon JDK version is `7` but no JDK configured for that version.");
 
         InvocationResult result = invoker.withArgs("compileJava").buildsWithFailure();
