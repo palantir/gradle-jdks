@@ -19,7 +19,7 @@ package com.palantir.gradle.jdks.testing;
 import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.InvocationResult;
-import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 import org.gradle.testkit.runner.UnexpectedBuildFailure;
 
 /**
@@ -27,8 +27,8 @@ import org.gradle.testkit.runner.UnexpectedBuildFailure;
  */
 record GradleWithJdksInvocation(
         GradleInvocation setupInvocation,
-        Callable<GradleInvocation> javaToolchainsInvocation,
-        Callable<GradleInvocation> tasksInvocation,
+        Supplier<GradleInvocation> javaToolchainsInvocation,
+        Supplier<GradleInvocation> tasksInvocation,
         Runnable markSetupComplete)
         implements GradleInvocation {
 
@@ -42,15 +42,11 @@ record GradleWithJdksInvocation(
             }
             throw e;
         }
-        try {
-            // we expect this call to be successful if `setupInvocation` was successful.
-            javaToolchainsInvocation.call().buildsSuccessfully();
-        } catch (Exception e) {
-            throw new JdkSetupFailureException(e);
-        }
+        // we expect this call to be successful if `setupInvocation` was successful.
+        javaToolchainsInvocation.get().buildsSuccessfully();
         markSetupComplete.run();
 
-        return runSuccessfully(tasksInvocation);
+        return tasksInvocation.get().buildsSuccessfully();
     }
 
     @Override
@@ -62,32 +58,12 @@ record GradleWithJdksInvocation(
         }
         try {
             // we expect this call to be successful if `setupInvocation` was successful.
-            javaToolchainsInvocation.call().buildsSuccessfully();
+            javaToolchainsInvocation.get().buildsSuccessfully();
         } catch (UnexpectedBuildFailure e) {
             return InvocationResult.from(e);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
         markSetupComplete.run();
 
-        return runWithFailure(tasksInvocation);
-    }
-
-    private InvocationResult runWithFailure(Callable<GradleInvocation> invocation) {
-        return call(invocation).buildsWithFailure();
-    }
-
-    private InvocationResult runSuccessfully(Callable<GradleInvocation> invocation) {
-        return call(invocation).buildsSuccessfully();
-    }
-
-    private static GradleInvocation call(Callable<GradleInvocation> invocation) {
-        try {
-            return invocation.call();
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return tasksInvocation.get().buildsWithFailure();
     }
 }
