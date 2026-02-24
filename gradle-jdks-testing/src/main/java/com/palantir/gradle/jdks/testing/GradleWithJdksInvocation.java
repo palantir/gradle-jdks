@@ -58,13 +58,15 @@ record GradleWithJdksInvocation(
         try {
             setupInvocation.buildsSuccessfully();
         } catch (UnexpectedBuildFailure e) {
-            return setupInvocation.buildsWithFailure();
+            return InvocationResult.from(e);
         }
         try {
             // we expect this call to be successful if `setupInvocation` was successful.
             javaToolchainsInvocation.call().buildsSuccessfully();
+        } catch (UnexpectedBuildFailure e) {
+            return InvocationResult.from(e);
         } catch (Exception e) {
-            return runWithFailure(javaToolchainsInvocation);
+            throw new RuntimeException(e);
         }
         markSetupComplete.run();
 
