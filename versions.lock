@@ -4,13 +4,13 @@ aopalliance:aopalliance:1.0 (1 constraints: 170a83ac)
 
 com.fasterxml.jackson.core:jackson-annotations:2.21 (3 constraints: d0258a42)
 
-com.fasterxml.jackson.core:jackson-core:2.21.0 (1 constraints: 85123321)
+com.fasterxml.jackson.core:jackson-core:2.21.1 (1 constraints: 86123421)
 
-com.fasterxml.jackson.core:jackson-databind:2.21.0 (2 constraints: 0b1aec10)
+com.fasterxml.jackson.core:jackson-databind:2.21.1 (2 constraints: 0c1a2811)
 
 com.github.ben-manes.caffeine:caffeine:3.2.0 (2 constraints: cb165a2b)
 
-com.google.errorprone:error_prone_annotations:2.41.0 (3 constraints: ae1fec50)
+com.google.errorprone:error_prone_annotations:2.47.0 (3 constraints: b71fda53)
 
 com.google.guava:failureaccess:1.0.3 (2 constraints: f3154f13)
 
@@ -30,7 +30,7 @@ com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions:1.9.0 (2 c
 
 com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.3.0 (1 constraints: 0505f435)
 
-com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.59.0 (1 constraints: 40054e3b)
+com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.60.0 (1 constraints: 3805373b)
 
 com.palantir.gradle.utils:environment-variables:0.23.0 (1 constraints: 3705303b)
 
@@ -122,7 +122,7 @@ org.immutables:serial:2.12.1 (1 constraints: 3805363b)
 
 org.immutables:value:2.12.1 (1 constraints: 3805363b)
 
-org.jetbrains:annotations:26.0.2 (1 constraints: d9190fdf)
+org.jetbrains:annotations:26.1.0 (1 constraints: d81910df)
 
 org.jspecify:jspecify:1.0.0 (8 constraints: 4980dcf3)
 
@@ -146,11 +146,11 @@ com.netflix.nebula:nebula-test:10.6.2 (2 constraints: d61de72d)
 
 com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.26.0 (1 constraints: 3a05393b)
 
-com.palantir.gradle.plugintesting:configuration-cache-spec:0.59.0 (1 constraints: 40054e3b)
+com.palantir.gradle.plugintesting:configuration-cache-spec:0.60.0 (1 constraints: 3805373b)
 
-com.palantir.gradle.plugintesting:discover-tests-cli:0.59.0 (1 constraints: 40054e3b)
+com.palantir.gradle.plugintesting:discover-tests-cli:0.60.0 (1 constraints: 3805373b)
 
-com.palantir.gradle.plugintesting:plugin-testing-core:0.59.0 (1 constraints: 40054e3b)
+com.palantir.gradle.plugintesting:plugin-testing-core:0.60.0 (1 constraints: 3805373b)
 
 info.picocli:picocli:4.7.7 (1 constraints: 2816dcdd)
 

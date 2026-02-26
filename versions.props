@@ -1,4 +1,4 @@
-com.fasterxml.jackson.*:* = 2.21.0
+com.fasterxml.jackson.*:* = 2.21.1
 com.fasterxml.jackson.core:jackson-annotations = 2.21
 com.github.ben-manes.caffeine:caffeine = 3.2.0
 org.immutables:* = 2.12.1
@@ -26,5 +26,5 @@ com.palantir.gradle.jdkslatest:* = 0.26.0
 
 # conflict resolution
 com.google.code.findbugs:jsr305 = 3.0.2
-com.google.errorprone:error_prone_annotations = 2.11.0
+com.google.errorprone:error_prone_annotations = 2.47.0
 org.checkerframework:checker-qual = 3.53.1
