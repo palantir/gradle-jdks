@@ -14,45 +14,48 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks
+package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.plugintesting.GradleTestVersions
-import nebula.test.IntegrationSpec
-import nebula.test.functional.ExecutionResult
-import spock.lang.Unroll
+import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.assertThat;
 
-@Unroll
-class JdksPluginIntegrationSpec extends IntegrationSpec {
-    private static final List<String> GRADLE_VERSIONS = GradleTestVersions.getGradleVersionsForTests()
+import com.palantir.gradle.testing.execution.GradleInvoker;
+import com.palantir.gradle.testing.execution.InvocationResult;
+import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
+import com.palantir.gradle.testing.junit.GradlePluginTests;
+import com.palantir.gradle.testing.project.RootProject;
+import com.palantir.gradle.testing.project.SubProject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-    def setup() {
-        // language=gradle
-        buildFile << '''
-            apply plugin: 'com.palantir.jdks'
-            
-            jdks {                
+@GradlePluginTests
+@DisabledConfigurationCache("gradle-jdks plugin is not compatible with configuration cache")
+class JdksPluginIntegrationTest {
+
+    @BeforeEach
+    @SuppressWarnings("OrphanedFormatString")
+    void setup(RootProject rootProject, SubProject subproject) {
+        rootProject.buildGradle().plugins().add("com.palantir.jdks");
+        rootProject.buildGradle().append("""
+            jdks {
                 jdkStorageLocation = layout.buildDirectory.dir('jdks')
             }
-            
+
             javaVersions {
                 libraryTarget = 11
             }
-        '''.stripIndent(true)
+            """);
 
-        // language=gradle
-        def subprojectDir = addSubproject 'subproject', '''
-            apply plugin: 'java-library'
-            
+        subproject.buildGradle().plugins().add("java-library");
+        subproject.buildGradle().append("""
             task printJavaVersion(type: JavaExec) {
                 classpath = sourceSets.main.runtimeClasspath
                 mainClass = 'foo.PrintJavaVersion'
                 logging.captureStandardOutput LogLevel.LIFECYCLE
                 logging.captureStandardError LogLevel.LIFECYCLE
             }
-        '''.stripIndent(true)
+            """);
 
-        // language=java
-        writeJavaSourceFile '''
+        subproject.mainSourceSet().java().writeClass("""
             package foo;
 
             public final class PrintJavaVersion {
@@ -63,92 +66,79 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
                             System.getProperty("java.vendor"));
                 }
             }
-        '''.stripIndent(true), subprojectDir
+            """);
     }
 
-    def '#gradleVersionNumber: can download + run an Azul Zulu JDK'() {
-        gradleVersion = gradleVersionNumber
-
-        // language=gradle
-        buildFile << '''
-            jdks {                
-                jdk(11) {
-                    distribution = 'azul-zulu'
-                    jdkVersion = '11.54.25-11.0.14.1'    
-                }
-            }
-        '''.stripIndent(true)
-
-        when:
-        def stdout = runTasksSuccessfully('printJavaVersion').standardOutput
-
-        then:
-        stdout.contains 'version: 11.0.14.1, vendor: Azul Systems, Inc.'
-
-        where:
-        gradleVersionNumber << GRADLE_VERSIONS
-    }
-
-    def '#gradleVersionNumber: can download + run an Amazon Corretto JDK'() {
-        gradleVersion = gradleVersionNumber
-
-        // language=gradle
-        buildFile << '''
-            jdks {                
-                jdk(11) {
-                    distribution = 'amazon-corretto'
-                    jdkVersion = '11.0.16.9.1'    
-                }
-            }
-        '''.stripIndent(true)
-
-        when:
-        def stdout = runTasksSuccessfully('printJavaVersion').standardOutput
-
-        then:
-        stdout.contains 'version: 11.0.16.1, vendor: Amazon.com Inc.'
-
-        where:
-        gradleVersionNumber << GRADLE_VERSIONS
-    }
-
-    def '#gradleVersionNumber: can download + run on GraalVM Community Edition JDK'() {
-        gradleVersion = gradleVersionNumber
-
-        // language=gradle
-        buildFile << '''
-            jdks {                
-                jdk(11) {
-                    distribution = 'graalvm-ce'
-                    jdkVersion = '23.0.1'    
-                }
-            }
-        '''.stripIndent(true)
-
-        when:
-        def stdout = runTasksSuccessfully('printJavaVersion').standardOutput
-
-        then:
-        stdout.contains 'version: 23.0.1, vendor: GraalVM Community'
-
-        where:
-        gradleVersionNumber << GRADLE_VERSIONS
-    }
-
-    def '#gradleVersionNumber: can add ca certs to a JDK'() {
-        gradleVersion = gradleVersionNumber
-
-        def amazonRootCa1Serial = '143266978916655856878034712317230054538369994'
-
-        // language=gradle
-        buildFile << '''
+    @Test
+    void can_download_and_run_an_azul_zulu_jdk(GradleInvoker gradle, RootProject rootProject) {
+        rootProject.buildGradle().append("""
             jdks {
                 jdk(11) {
                     distribution = 'azul-zulu'
-                    jdkVersion = '11.54.25-11.0.14.1'    
+                    jdkVersion = '11.54.25-11.0.14.1'
                 }
-            
-                caCerts.put 'Our_Amazon_CA_Cert_1', """
+            }
+            """);
+
+        InvocationResult result = gradle.withArgs("printJavaVersion").buildsSuccessfully();
+
+        assertThat(result)
+                .output()
+                .as("Azul Zulu JDK version and vendor")
+                .contains("version: 11.0.14.1, vendor: Azul Systems, Inc.");
+    }
+
+    @Test
+    void can_download_and_run_an_amazon_corretto_jdk(GradleInvoker gradle, RootProject rootProject) {
+        rootProject.buildGradle().append("""
+            jdks {
+                jdk(11) {
+                    distribution = 'amazon-corretto'
+                    jdkVersion = '11.0.16.9.1'
+                }
+            }
+            """);
+
+        InvocationResult result = gradle.withArgs("printJavaVersion").buildsSuccessfully();
+
+        assertThat(result)
+                .output()
+                .as("Amazon Corretto JDK version and vendor")
+                .contains("version: 11.0.16.1, vendor: Amazon.com Inc.");
+    }
+
+    @Test
+    void can_download_and_run_on_graalvm_community_edition_jdk(GradleInvoker gradle, RootProject rootProject) {
+        rootProject.buildGradle().append("""
+            jdks {
+                jdk(11) {
+                    distribution = 'graalvm-ce'
+                    jdkVersion = '23.0.1'
+                }
+            }
+            """);
+
+        InvocationResult result = gradle.withArgs("printJavaVersion").buildsSuccessfully();
+
+        assertThat(result)
+                .output()
+                .as("GraalVM CE JDK version and vendor")
+                .contains("version: 23.0.1, vendor: GraalVM Community");
+    }
+
+    @Test
+    void can_add_ca_certs_to_a_jdk(GradleInvoker gradle, RootProject rootProject) {
+        String amazonRootCa1Serial = "143266978916655856878034712317230054538369994";
+
+        rootProject.buildGradle().plugins().add("java-library");
+        rootProject.buildGradle().append("""
+            jdks {
+                jdk(11) {
+                    distribution = 'azul-zulu'
+                    jdkVersion = '11.54.25-11.0.14.1'
+                }
+
+                caCerts.put 'Our_Amazon_CA_Cert_1', '''
                     -----BEGIN CERTIFICATE-----
                     MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF
                     ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6
@@ -169,10 +159,8 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
                     5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy
                     rqXRfboQnoZsG4q5WTP468SQvvG5
                     -----END CERTIFICATE-----
-                """.stripIndent(true)
+                '''.stripIndent(true)
             }
-            
-            apply plugin: 'java-library'
 
             task printCaTruststoreAliases(type: JavaExec) {
                 classpath = sourceSets.main.runtimeClasspath
@@ -180,61 +168,39 @@ class JdksPluginIntegrationSpec extends IntegrationSpec {
                 logging.captureStandardOutput LogLevel.LIFECYCLE
                 logging.captureStandardError LogLevel.LIFECYCLE
             }
-        '''.stripIndent(true)
+            """);
 
-        // language=java
-        writeJavaSourceFile '''
+        rootProject.mainSourceSet().java().writeClass("""
             package foo;
 
             import java.io.File;
             import java.security.KeyStore;
             import java.security.cert.X509Certificate;
-            
+
             public final class OutputCaCerts {
                 public static void main(String... args) throws Exception {
                     KeyStore keyStore = KeyStore.getInstance(
                             new File(System.getProperty("java.home"), "lib/security/cacerts"),
                             "changeit".toCharArray());
                     System.out.println(
-                            ((X509Certificate) keyStore.getCertificate("our_amazon_ca_cert_1")).getSerialNumber());
+                            ((X509Certificate) keyStore.getCertificate("our_amazon_ca_cert_1"))
+                                    .getSerialNumber());
                 }
             }
-        '''.stripIndent(true)
+            """);
 
-        when:
+        InvocationResult result = gradle.withArgs("printCaTruststoreAliases").buildsSuccessfully();
 
-        def stdout = runTasksSuccessfully('printCaTruststoreAliases').standardOutput
-
-        then:
-        stdout.contains amazonRootCa1Serial
-
-        where:
-        gradleVersionNumber << GRADLE_VERSIONS
+        assertThat(result).output().as("CA cert serial number in truststore").contains(amazonRootCa1Serial);
     }
 
-    def '#gradleVersionNumber: throws exception if there is no JDK defined for a particular jdk major version'() {
-        gradleVersion = gradleVersionNumber
+    @Test
+    void throws_exception_if_there_is_no_jdk_defined_for_a_particular_jdk_major_version(GradleInvoker gradle) {
+        InvocationResult result = gradle.withArgs("printJavaVersion").buildsWithFailure();
 
-        when:
-        def error = runTasksWithFailure('printJavaVersion').failure.cause.cause.message
-
-        then:
-        error.contains "Could not find a JDK with major version 11 in project ':subproject'"
-
-        where:
-        gradleVersionNumber << GRADLE_VERSIONS
-    }
-
-    @Override
-    ExecutionResult runTasksSuccessfully(String... tasks) {
-        def result = super.runTasks(tasks)
-
-        if (result.failure) {
-            println result.standardOutput
-            println result.standardError
-            result.rethrowFailure()
-        }
-
-        return result
+        assertThat(result)
+                .output()
+                .as("error about missing JDK for major version 11")
+                .contains("Could not find a JDK with major version 11 in project ':subproject'");
     }
 }
