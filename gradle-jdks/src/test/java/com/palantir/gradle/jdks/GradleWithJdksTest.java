@@ -139,34 +139,7 @@ public class GradleWithJdksTest {
     }
 
     @Test
-    void fails_for_invalid_libraryTarget(GradleInvoker invoker, RootProject rootProject) {
-        rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
-        rootProject.buildGradle().plugins().add("com.palantir.jdks.latest");
-        rootProject.buildGradle().append("""
-            javaVersions {
-                libraryTarget = '21'
-            }
-
-            jdks {
-                daemonTarget = 7
-            }
-            """);
-
-        rootProject.sourceSet("main").java().writeClass("""
-            class HelloWorld() {}
-            """);
-
-        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsSuccessfully())
-                .isInstanceOf(JdkSetupFailureException.class)
-                .hasMessageContaining("Gradle daemon JDK version is `7` but no JDK configured for that version.");
-
-        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsWithFailure())
-                .isInstanceOf(JdkSetupFailureException.class)
-                .hasMessageContaining("Gradle daemon JDK version is `7` but no JDK configured for that version.");
-    }
-
-    @Test
-    void fails(RootProject rootProject, GradleInvoker invoker) {
+    void fails_for_missing_jdks(RootProject rootProject, GradleInvoker invoker) {
         rootProject.buildGradle().plugins().add("com.palantir.jdks.latest");
         rootProject.buildGradle().append("""
                 java {
@@ -180,14 +153,15 @@ public class GradleWithJdksTest {
             }
             """);
 
-        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsSuccessfully())
-                .isInstanceOf(UnexpectedBuildFailure.class)
-                .hasMessageContaining("Gradle daemon JDK version is `7` but no JDK configured for that version.");
+        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsWithFailure())
+                .isInstanceOf(JdkSetupFailureException.class)
+                .hasMessageContaining(
+                        "Gradle JDK Auto-management is enabled but the java versions=[999] are not configured");
 
-        InvocationResult result = invoker.withArgs("compileJava").buildsWithFailure();
-        result.assertThat()
-                .output()
-                .contains("Gradle daemon JDK version is `7` but no JDK configured for that version.");
+        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsSuccessfully())
+                .isInstanceOf(JdkSetupFailureException.class)
+                .hasMessageContaining(
+                        "Gradle JDK Auto-management is enabled but the java versions=[999] are not configured");
     }
 
     private static void assertJavaToolchainsMatch(GradleInvoker invoker, Predicate<? super String> predicate) {

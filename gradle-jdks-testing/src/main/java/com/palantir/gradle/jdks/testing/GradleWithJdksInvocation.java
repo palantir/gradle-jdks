@@ -33,27 +33,43 @@ record GradleWithJdksInvocation(
     public InvocationResult buildsSuccessfully() {
         try {
             setupInvocation.buildsSuccessfully();
-            markSetupComplete.run();
         } catch (UnexpectedBuildFailure e) {
-            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")) {
+            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")
+                    || e.getMessage().contains("ToolchainProvisioningException:")) {
                 throw new JdkSetupFailureException(e.getBuildResult().getOutput());
             }
             throw e;
         }
-        return tasksInvocation.get().buildsSuccessfully();
+        try {
+            InvocationResult result = tasksInvocation.get().buildsSuccessfully();
+            // only mark the setup complete if no JDK related error is thrown
+            markSetupComplete.run();
+            return result;
+        } catch (UnexpectedBuildFailure e) {
+            if (e.getMessage().contains("ToolchainProvisioningException:")) {
+                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
+            }
+            throw e;
+        }
     }
 
     @Override
     public InvocationResult buildsWithFailure() {
         try {
             setupInvocation.buildsSuccessfully();
-            markSetupComplete.run();
         } catch (UnexpectedBuildFailure e) {
-            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")) {
+            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")
+                    || e.getMessage().contains("ToolchainProvisioningException:")) {
                 throw new JdkSetupFailureException(e.getBuildResult().getOutput());
             }
             return InvocationResult.from(e);
         }
-        return tasksInvocation.get().buildsWithFailure();
+        InvocationResult result = tasksInvocation.get().buildsWithFailure();
+        if (result.output().contains("ToolchainProvisioningException:")) {
+            throw new JdkSetupFailureException(result.output());
+        }
+        // only mark the setup complete if no JDK related error is thrown
+        markSetupComplete.run();
+        return result;
     }
 }
