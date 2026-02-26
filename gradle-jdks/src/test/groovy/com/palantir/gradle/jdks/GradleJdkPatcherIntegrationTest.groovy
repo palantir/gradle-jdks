@@ -32,15 +32,19 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
     @TempDir
     Path workingDir
 
-    def '#gradleVersionNumber: successfully generates Gradle JDK setup files'() {
-        setupJdksHardcodedVersions()
-        gradleVersion = gradleVersionNumber
-        runTasksSuccessfully("wrapper")
+    private void enableGradleJdks() {
         file('gradle.properties') << '''\
             palantir.jdk.setup.enabled=true
             org.gradle.java.installations.auto-detect=false
             org.gradle.java.installations.auto-download=false
         '''.stripIndent(true)
+    }
+
+    def '#gradleVersionNumber: successfully generates Gradle JDK setup files'() {
+        setupJdksHardcodedVersions()
+        gradleVersion = gradleVersionNumber
+        runTasksSuccessfully("wrapper")
+        enableGradleJdks()
 
         when: 'running setupJdks'
         def result = runTasksSuccessfully("setupJdks")
@@ -91,11 +95,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
 
     def '#gradleVersionNumber: fails if Gradle JDK configuration is wrong'() {
         setupJdksHardcodedVersions('15')
-        file('gradle.properties') << '''\
-            palantir.jdk.setup.enabled=true
-            org.gradle.java.installations.auto-detect=false
-            org.gradle.java.installations.auto-download=false
-        '''.stripIndent(true)
+        enableGradleJdks()
         gradleVersion = gradleVersionNumber
 
         when: 'running setupJdks'
@@ -120,11 +120,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
             }
         """.stripIndent(true)
         runTasksSuccessfully("wrapper")
-        file('gradle.properties') << '''\
-            palantir.jdk.setup.enabled=true
-            org.gradle.java.installations.auto-detect=false
-            org.gradle.java.installations.auto-download=false
-        '''.stripIndent(true)
+        enableGradleJdks()
 
 
         when: 'running setupJdks'
@@ -143,11 +139,7 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         setupJdksHardcodedVersions()
         gradleVersion = gradleVersionNumber
         runTasksSuccessfully("wrapper")
-        file('gradle.properties') << '''\
-            palantir.jdk.setup.enabled=true
-            org.gradle.java.installations.auto-detect=false
-            org.gradle.java.installations.auto-download=false
-        '''.stripIndent(true)
+        enableGradleJdks()
 
         when: 'running check'
         def checkResult = runTasksWithFailure("check")

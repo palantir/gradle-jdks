@@ -140,6 +140,41 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
         result.wasExecuted("ensureGradleJdkProperties")
     }
 
+    def 'task depending on setupJdks also bypasses auto-detect validation'() {
+        setup:
+        gradleVersion = GradleJdkTestUtils.GRADLE_8_8_VERSION
+        GradleJdkTestUtils.applyJdksPlugins(settingsFile, buildFile)
+
+        // language=groovy
+        buildFile << """
+            jdks {
+               jdk(17) {
+                  distribution = JDK_17_DISTRO
+                  jdkVersion = JDK_17_VERSION
+               }
+
+                daemonTarget = '17'
+            }
+
+            tasks.register('mySetup') {
+                dependsOn 'setupJdks'
+            }
+        """.replace("JDK_17_DISTRO", GradleJdkTestUtils.quoted(GradleJdkTestUtils.JDK_17.getLeft()))
+                .replace("JDK_17_VERSION", GradleJdkTestUtils.quoted(GradleJdkTestUtils.JDK_17.getRight()))
+                .stripIndent(true)
+
+        // Set up enabled but WITHOUT auto-detect/auto-download properties.
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        runTasksSuccessfully("wrapper")
+
+        when: 'running a task that transitively depends on setupJdks'
+        def result = runTasksSuccessfully("mySetup")
+
+        then: 'the bypass still works because setupJdks is in the task graph'
+        result.wasExecuted("setupJdks")
+        result.wasExecuted("mySetup")
+    }
+
     def 'fails when auto-detect is not disabled in gradle.properties'() {
         setup:
         gradleVersion = GradleJdkTestUtils.GRADLE_8_8_VERSION

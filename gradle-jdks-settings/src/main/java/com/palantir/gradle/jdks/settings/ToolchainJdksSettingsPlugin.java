@@ -79,14 +79,18 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }
-        // Validate that auto-detect and auto-download are disabled, unless we're running setupJdks
-        // which will write these properties itself.
-        boolean isRunningSetupJdks = settings.getStartParameter().getTaskNames().stream()
-                .anyMatch(task -> task.equals("setupJdks") || task.endsWith(":setupJdks"));
-        if (!isRunningSetupJdks) {
-            validateGradleProperty(settings, "org.gradle.java.installations.auto-detect", "false");
-            validateGradleProperty(settings, "org.gradle.java.installations.auto-download", "false");
-        }
+        // Validate that auto-detect and auto-download are disabled, unless setupJdks is in the
+        // task graph (which will write these properties itself). We use taskGraph.whenReady rather
+        // than checking getStartParameter().getTaskNames() so that the bypass also works when
+        // setupJdks is a transitive dependency of the requested task.
+        settings.getGradle().getTaskGraph().whenReady(taskGraph -> {
+            boolean hasSetupJdks = taskGraph.getAllTasks().stream()
+                    .anyMatch(task -> task.getName().equals("setupJdks"));
+            if (!hasSetupJdks) {
+                validateGradleProperty(settings, "org.gradle.java.installations.auto-detect", "false");
+                validateGradleProperty(settings, "org.gradle.java.installations.auto-download", "false");
+            }
+        });
 
         // Forces the installation of the configured jdks if they are not installed. Fixes the case when a user doesn't
         // have the Intellij plugin installed and some jdks are missing.
