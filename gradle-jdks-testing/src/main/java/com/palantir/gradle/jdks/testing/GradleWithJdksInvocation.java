@@ -16,43 +16,60 @@
 
 package com.palantir.gradle.jdks.testing;
 
+import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.InvocationResult;
-import java.util.concurrent.Callable;
+import java.util.function.Supplier;
+import org.gradle.testkit.runner.UnexpectedBuildFailure;
 
 /**
  * A GradleInvocation that runs JDK setup before executing the actual build.
  */
 record GradleWithJdksInvocation(
-        GradleInvocation setupInvocation, Callable<GradleInvocation> tasksInvocation, Runnable markSetupComplete)
+        GradleInvocation setupInvocation, Supplier<GradleInvocation> tasksInvocation, Runnable markSetupComplete)
         implements GradleInvocation {
 
     @Override
     public InvocationResult buildsSuccessfully() {
-        setupJdkAutomanagement();
         try {
-            return tasksInvocation.call().buildsSuccessfully();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            setupInvocation.buildsSuccessfully();
+        } catch (UnexpectedBuildFailure e) {
+            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")
+                    || e.getMessage().contains("ToolchainProvisioningException:")) {
+                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
+            }
+            throw e;
+        }
+        try {
+            InvocationResult result = tasksInvocation.get().buildsSuccessfully();
+            // only mark the setup complete if no JDK related error is thrown
+            markSetupComplete.run();
+            return result;
+        } catch (UnexpectedBuildFailure e) {
+            if (e.getMessage().contains("ToolchainProvisioningException:")) {
+                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
+            }
+            throw e;
         }
     }
 
     @Override
     public InvocationResult buildsWithFailure() {
-        setupJdkAutomanagement();
-        try {
-            return tasksInvocation.call().buildsWithFailure();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void setupJdkAutomanagement() {
         try {
             setupInvocation.buildsSuccessfully();
-            markSetupComplete.run();
-        } catch (Exception e) {
-            throw new JdkSetupFailureException(e);
+        } catch (UnexpectedBuildFailure e) {
+            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")
+                    || e.getMessage().contains("ToolchainProvisioningException:")) {
+                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
+            }
+            return InvocationResult.from(e);
         }
+        InvocationResult result = tasksInvocation.get().buildsWithFailure();
+        if (result.output().contains("ToolchainProvisioningException:")) {
+            throw new JdkSetupFailureException(result.output());
+        }
+        // only mark the setup complete if no JDK related error is thrown
+        markSetupComplete.run();
+        return result;
     }
 }

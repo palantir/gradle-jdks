@@ -4,6 +4,7 @@ dependencies {
     api 'com.palantir.gradle.plugintesting:gradle-plugin-testing-junit'
     implementation gradleTestKit()
 
+    implementation project(':gradle-jdks-setup')
     implementation project(':gradle-jdks-setup-common')
     implementation 'com.palantir.gradle.utils:platform'
     implementation 'com.google.guava:guava'
