@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.platform.GradleOperatingSystem;
 import com.palantir.platform.OperatingSystem;
 import java.io.ByteArrayOutputStream;
@@ -51,11 +52,6 @@ public abstract class SetupJdksTask extends DefaultTask {
     @InputFile
     public abstract RegularFileProperty getGradlewScript();
 
-    // Wired from EnsureGradlePropertiesTask's output to create a task dependency via providers
-    @Optional
-    @InputFile
-    public abstract RegularFileProperty getGradlePropertiesFile();
-
     @Inject
     protected abstract ExecOperations getExecOperations();
 
@@ -84,13 +80,13 @@ public abstract class SetupJdksTask extends DefaultTask {
                 List.of(getGradlewScript().get().getAsFile().getAbsolutePath(), "-q", "javaToolchains", "--stacktrace"),
                 output -> {
                     if (output.contains("UnsupportedClassVersionError")) {
-                        throw new RuntimeException(
+                        throw new JdkSetupFailureException(
                                 "The Gradle JDK setup has failed. The Gradle Daemon major version might be"
                                         + " incorrectly set. Update the Gradle JDK major version using"
                                         + " `jdks.daemonTargetVersion` in your `build.gradle` and the"
                                         + " `gradle/gradle-daemon-jdk-version` entry");
                     }
-                    throw new RuntimeException(String.format(
+                    throw new JdkSetupFailureException(String.format(
                             "Failed to run javaToolchains after setting up the JDK setup. Error: %s", output));
                 });
     }
