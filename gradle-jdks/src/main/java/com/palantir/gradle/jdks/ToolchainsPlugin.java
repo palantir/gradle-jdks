@@ -172,11 +172,32 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
                 .named(LifecycleBasePlugin.CHECK_TASK_NAME)
                 .configure(check -> check.dependsOn(checkJdksLifecycle));
 
+        registerSetupJdksTasks(rootProject, generateGradleJdkConfigs, wrapperPatcherTask, checkJdksLifecycle);
+    }
+
+    private static void registerSetupJdksTasks(
+            Project rootProject,
+            TaskProvider<GenerateGradleJdksConfigsTask> generateGradleJdkConfigs,
+            TaskProvider<GradleWrapperPatcher> wrapperPatcherTask,
+            TaskProvider<Task> checkJdksLifecycle) {
         EnvironmentVariables environmentVariables = rootProject.getObjects().newInstance(EnvironmentVariables.class);
+
+        TaskProvider<EnsureGradlePropertiesTask> ensureGradleProperties = rootProject
+                .getTasks()
+                .register("ensureGradleJdkProperties", EnsureGradlePropertiesTask.class, task -> {
+                    task.setDescription(
+                            "Ensures gradle.properties has auto-detect and auto-download disabled for gradle-jdks.");
+                    task.setGroup(GRADLE_JDK_GROUP);
+                    task.getGradlePropertiesFile()
+                            .set(rootProject.getLayout().getProjectDirectory().file("gradle.properties"));
+                });
 
         rootProject.getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");
             setupJdksTask.setGroup(GRADLE_JDK_GROUP);
+            setupJdksTask
+                    .getGradlePropertiesFile()
+                    .set(ensureGradleProperties.flatMap(EnsureGradlePropertiesTask::getGradlePropertiesFile));
             setupJdksTask
                     .getGradleJdksSetupScript()
                     .fileProvider(generateGradleJdkConfigs.map(task -> task.getOutputGradleDirectory()

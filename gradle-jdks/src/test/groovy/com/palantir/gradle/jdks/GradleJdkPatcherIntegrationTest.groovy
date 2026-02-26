@@ -36,7 +36,11 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         setupJdksHardcodedVersions()
         gradleVersion = gradleVersionNumber
         runTasksSuccessfully("wrapper")
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
 
         when: 'running setupJdks'
         def result = runTasksSuccessfully("setupJdks")
@@ -87,7 +91,11 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
 
     def '#gradleVersionNumber: fails if Gradle JDK configuration is wrong'() {
         setupJdksHardcodedVersions('15')
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         gradleVersion = gradleVersionNumber
 
         when: 'running setupJdks'
@@ -112,7 +120,11 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
             }
         """.stripIndent(true)
         runTasksSuccessfully("wrapper")
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
 
 
         when: 'running setupJdks'
@@ -131,7 +143,11 @@ class GradleJdkPatcherIntegrationTest extends GradleJdkIntegrationSpec {
         setupJdksHardcodedVersions()
         gradleVersion = gradleVersionNumber
         runTasksSuccessfully("wrapper")
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
 
         when: 'running check'
         def checkResult = runTasksWithFailure("check")

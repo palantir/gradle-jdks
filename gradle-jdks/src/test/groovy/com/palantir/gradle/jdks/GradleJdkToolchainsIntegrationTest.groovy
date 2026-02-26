@@ -65,7 +65,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         runTasksSuccessfully("wrapper")
 
         when:
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         def result = runTasksSuccessfully("setupJdks")
 
         then: 'the only discovered jdk versions are coming from gradle.properties'
@@ -115,7 +119,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         applyBaselineJavaVersions()
         applyApplicationPlugin()
 
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         file('src/main/java/Main.java') << java17PreviewCode
 
         // language=Groovy
@@ -192,7 +200,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         applyBaselineJavaVersions()
         applyApplicationPlugin()
 
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         file('src/main/java/Main.java') << java17PreviewCode
 
         // language=Groovy
@@ -243,7 +255,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
             }
         """.stripIndent(true)
 
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         file('src/main/java/Main.java') << java17PreviewCode
 
         when:
@@ -271,7 +287,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
             }
         """.stripIndent(true)
 
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         file('src/main/java/Main.java') << getMainJavaCode()
         runTasksSuccessfully('wrapper')
 
@@ -322,7 +342,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         setupJdksHardcodedVersions()
         applyApplicationPlugin()
 
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         file('src/main/java/Main.java') << java17PreviewCode
         runTasksSuccessfully('wrapper')
 
@@ -350,7 +374,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
         applyBaselineJavaVersions()
         applyApplicationPlugin()
 
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         file('src/main/java/Main.java') << java17PreviewCode
 
         // language=Groovy
@@ -394,7 +422,11 @@ class GradleJdkToolchainsIntegrationTest extends GradleJdkIntegrationSpec {
             }
         '''.stripIndent(true)
         writeHelloWorld(projectDir)
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         // generate the ./gradlew task
         runTasksSuccessfully("wrapper")
 

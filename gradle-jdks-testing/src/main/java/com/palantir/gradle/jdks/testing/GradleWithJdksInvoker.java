@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks.testing;
 
-import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.GradleInvoker;
@@ -38,7 +37,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * <ol>
  *   <li>Configures the test project with JDK plugins and properties</li>
  *   <li>Runs {@code setupJdks} to download and configure JDKs</li>
- *   <li>Runs {@code javaToolchains} to make sure JDKs are properly configured</li>
  *   <li>Runs the actual build with the appropriate JDK configured</li>
  * </ol>
  */
@@ -66,7 +64,6 @@ final class GradleWithJdksInvoker implements GradleInvoker {
                     setupJdkManagement,
                     // java.home is not available until setupJdkManagement has run
                     () -> getInvokerWithToolchainsConfigured(options),
-                    // mark the jdksSetup as run
                     () -> GradleWithJdksStore.setHasRun(extensionContext));
         } else {
             return getInvokerWithToolchainsConfigured(options);
@@ -113,6 +110,8 @@ final class GradleWithJdksInvoker implements GradleInvoker {
 
     private static void setupOrCheckRootProject(RootProject rootProject) {
         rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
+        rootProject.gradlePropertiesFile().setProperty("org.gradle.java.installations.auto-detect", "false");
+        rootProject.gradlePropertiesFile().setProperty("org.gradle.java.installations.auto-download", "false");
         rootProject.buildGradle().plugins().add("java");
         rootProject.buildGradle().plugins().add("com.palantir.jdks");
         rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");

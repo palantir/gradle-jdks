@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.ImmutableList;
-import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.jdks.testing.WithJdkAutomanagement;
 import com.palantir.gradle.testing.execution.GradleInvoker;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.gradle.testkit.runner.UnexpectedBuildFailure;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -110,58 +108,8 @@ public class GradleWithJdksTest {
                 }
             }
             """);
-
         assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsSuccessfully())
-                .isInstanceOf(JdkSetupFailureException.class)
                 .hasMessageContaining("Gradle daemon JDK version is `24` but no JDK configured for that version.");
-
-        assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsWithFailure())
-                .isInstanceOf(JdkSetupFailureException.class)
-                .hasMessageContaining("Gradle daemon JDK version is `24` but no JDK configured for that version.");
-    }
-
-    @Test
-    void fails_for_script_errors(GradleInvoker invoker, RootProject rootProject) {
-        rootProject.buildGradle().append("""
-            throw new RuntimeException("my error")
-            """);
-
-        rootProject.sourceSet("main").java().writeClass("""
-            class HelloWorld {}
-            """);
-
-        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsSuccessfully())
-                .isInstanceOf(UnexpectedBuildFailure.class)
-                .hasMessageContaining("my error");
-
-        InvocationResult result = invoker.withArgs("compileJava").buildsWithFailure();
-        result.assertThat().output().contains("my error");
-    }
-
-    @Test
-    void fails_for_missing_jdks(RootProject rootProject, GradleInvoker invoker) {
-        rootProject.buildGradle().plugins().add("com.palantir.jdks.latest");
-        rootProject.buildGradle().append("""
-                java {
-                    toolchain {
-                        languageVersion = JavaLanguageVersion.of(999) // Non-existent version
-                    }
-                }
-
-            jdks {
-                daemonTarget = 21
-            }
-            """);
-
-        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsWithFailure())
-                .isInstanceOf(JdkSetupFailureException.class)
-                .hasMessageContaining(
-                        "Gradle JDK Auto-management is enabled but the java versions=[999] are not configured");
-
-        assertThatThrownBy(() -> invoker.withArgs("compileJava").buildsSuccessfully())
-                .isInstanceOf(JdkSetupFailureException.class)
-                .hasMessageContaining(
-                        "Gradle JDK Auto-management is enabled but the java versions=[999] are not configured");
     }
 
     private static void assertJavaToolchainsMatch(GradleInvoker invoker, Predicate<? super String> predicate) {

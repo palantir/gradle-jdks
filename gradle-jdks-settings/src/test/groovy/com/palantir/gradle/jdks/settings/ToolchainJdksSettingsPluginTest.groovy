@@ -49,7 +49,11 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
                 .stripIndent(true)
 
         when:
-        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        file('gradle.properties') << '''\
+            palantir.jdk.setup.enabled=true
+            org.gradle.java.installations.auto-detect=false
+            org.gradle.java.installations.auto-download=false
+        '''.stripIndent(true)
         runTasksSuccessfully("generateGradleJdkConfigs")
 
         then: 'only gradle configuration files are generated, no jdks are installed'
@@ -102,6 +106,36 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
                 GradleJdkTestUtils.GRADLE_8_5_VERSION,
                 GradleJdkTestUtils.GRADLE_8_8_VERSION
         ]
+    }
+
+    def 'fails when auto-detect is not disabled in gradle.properties'() {
+        setup:
+        gradleVersion = GradleJdkTestUtils.GRADLE_8_8_VERSION
+        GradleJdkTestUtils.applyJdksPlugins(settingsFile, buildFile)
+
+        // language=groovy
+        buildFile << """
+            jdks {
+               jdk(17) {
+                  distribution = JDK_17_DISTRO
+                  jdkVersion = JDK_17_VERSION
+               }
+
+                daemonTarget = '17'
+            }
+        """.replace("JDK_17_DISTRO", GradleJdkTestUtils.quoted(GradleJdkTestUtils.JDK_17.getLeft()))
+                .replace("JDK_17_VERSION", GradleJdkTestUtils.quoted(GradleJdkTestUtils.JDK_17.getRight()))
+                .stripIndent(true)
+
+        // Set up enabled but without auto-detect/auto-download properties
+        file('gradle.properties') << 'palantir.jdk.setup.enabled=true'
+        runTasksSuccessfully("generateGradleJdkConfigs")
+
+        when:
+        def result = runTasksWithFailure("javaToolchains")
+
+        then:
+        result.standardError.contains("gradle-jdks requires org.gradle.java.installations.auto-detect=false")
     }
 
 }
