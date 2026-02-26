@@ -28,11 +28,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache("gradle-jdks plugin is not compatible with configuration cache")
+@DisabledConfigurationCache
 class JdksPluginIntegrationTest {
 
     @BeforeEach
-    @SuppressWarnings("OrphanedFormatString")
     void setup(RootProject rootProject, SubProject subproject) {
         rootProject.buildGradle().plugins().add("com.palantir.jdks");
         rootProject.buildGradle().append("""
@@ -82,10 +81,7 @@ class JdksPluginIntegrationTest {
 
         InvocationResult result = gradle.withArgs("printJavaVersion").buildsSuccessfully();
 
-        assertThat(result)
-                .output()
-                .as("Azul Zulu JDK version and vendor")
-                .contains("version: 11.0.14.1, vendor: Azul Systems, Inc.");
+        assertThat(result).output().contains("version: 11.0.14.1, vendor: Azul Systems, Inc.");
     }
 
     @Test
@@ -101,10 +97,7 @@ class JdksPluginIntegrationTest {
 
         InvocationResult result = gradle.withArgs("printJavaVersion").buildsSuccessfully();
 
-        assertThat(result)
-                .output()
-                .as("Amazon Corretto JDK version and vendor")
-                .contains("version: 11.0.16.1, vendor: Amazon.com Inc.");
+        assertThat(result).output().contains("version: 11.0.16.1, vendor: Amazon.com Inc.");
     }
 
     @Test
@@ -120,10 +113,7 @@ class JdksPluginIntegrationTest {
 
         InvocationResult result = gradle.withArgs("printJavaVersion").buildsSuccessfully();
 
-        assertThat(result)
-                .output()
-                .as("GraalVM CE JDK version and vendor")
-                .contains("version: 23.0.1, vendor: GraalVM Community");
+        assertThat(result).output().contains("version: 23.0.1, vendor: GraalVM Community");
     }
 
     @Test
@@ -198,9 +188,6 @@ class JdksPluginIntegrationTest {
     void throws_exception_if_there_is_no_jdk_defined_for_a_particular_jdk_major_version(GradleInvoker gradle) {
         InvocationResult result = gradle.withArgs("printJavaVersion").buildsWithFailure();
 
-        assertThat(result)
-                .output()
-                .as("error about missing JDK for major version 11")
-                .contains("Could not find a JDK with major version 11 in project ':subproject'");
+        assertThat(result).output().contains("Could not find a JDK with major version 11 in project ':subproject'");
     }
 }
