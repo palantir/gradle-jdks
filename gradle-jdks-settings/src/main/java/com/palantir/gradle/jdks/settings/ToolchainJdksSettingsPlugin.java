@@ -86,10 +86,11 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         settings.getGradle().getTaskGraph().whenReady(taskGraph -> {
             boolean hasSetupJdks = taskGraph.getAllTasks().stream()
                     .anyMatch(task -> task.getName().equals("setupJdks"));
-            if (!hasSetupJdks) {
-                validateGradleProperty(settings, "org.gradle.java.installations.auto-detect", "false");
-                validateGradleProperty(settings, "org.gradle.java.installations.auto-download", "false");
+            if (hasSetupJdks) {
+                return;
             }
+            validateGradleProperty(settings, "org.gradle.java.installations.auto-detect", "false");
+            validateGradleProperty(settings, "org.gradle.java.installations.auto-download", "false");
         });
 
         // Forces the installation of the configured jdks if they are not installed. Fixes the case when a user doesn't
