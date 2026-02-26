@@ -14,37 +14,39 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks
+package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.plugintesting.GradleTestVersions
-import nebula.test.IntegrationSpec
-import nebula.test.functional.ExecutionResult
-import spock.lang.Unroll
+import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.assertThat;
 
-@Unroll
-class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
+import com.palantir.gradle.testing.execution.GradleInvoker;
+import com.palantir.gradle.testing.execution.InvocationResult;
+import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
+import com.palantir.gradle.testing.junit.GradlePluginTests;
+import com.palantir.gradle.testing.project.RootProject;
+import org.junit.jupiter.api.Test;
 
-    def '#gradleVersionNumber: can add ca certs to a JDK'() {
-        gradleVersion = gradleVersionNumber
-        // language=gradle
-        buildFile << '''
-            // Can't do strict as open source CI does not have the Palantir CA
-            apply plugin: 'com.palantir.jdks.palantir-ca'
-    
+@GradlePluginTests
+@DisabledConfigurationCache("gradle-jdks is not compatible atm with CC")
+class PalantirCaPluginIntegrationTest {
+
+    @Test
+    void can_add_ca_certs_to_a_jdk(GradleInvoker gradle, RootProject rootProject) {
+        // Can't do strict as open source CI does not have the Palantir CA
+        rootProject.buildGradle().plugins().add("com.palantir.jdks.palantir-ca").add("java-library");
+
+        rootProject.buildGradle().append("""
             jdks {
                 jdk(11) {
                     distribution = 'azul-zulu'
                     jdkVersion = '11.54.25-11.0.14.1'
                 }
-    
+
                 jdkStorageLocation = layout.buildDirectory.dir('jdks')
             }
-    
+
             javaVersions {
                 libraryTarget = 11
             }
-            
-            apply plugin: 'java-library'
 
             task printCaTruststoreAliases(type: JavaExec) {
                 classpath = sourceSets.main.runtimeClasspath
@@ -52,16 +54,15 @@ class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
                 logging.captureStandardOutput LogLevel.LIFECYCLE
                 logging.captureStandardError LogLevel.LIFECYCLE
             }
-        '''.stripIndent(true)
+            """);
 
-        // language=java
-        writeJavaSourceFile '''
+        rootProject.mainSourceSet().java().writeClass("""
             package foo;
 
             import java.io.File;
             import java.security.KeyStore;
             import java.security.cert.X509Certificate;
-            
+
             public final class OutputCaCerts {
                 public static void main(String... args) throws Exception {
                     KeyStore keyStore = KeyStore.getInstance(
@@ -74,34 +75,21 @@ class PalantirCaPluginIntegrationSpec extends IntegrationSpec {
                     }
                 }
             }
-        '''.stripIndent(true)
+            """);
 
-        when:
+        InvocationResult result = gradle.withArgs("printCaTruststoreAliases").buildsSuccessfully();
 
-        def stdout = runTasksSuccessfully('printCaTruststoreAliases').standardOutput
+        String palantir3rdGenCaSerial = "18126334688741185161";
 
-        def palantir3rdGenCaSerial = '18126334688741185161'
-
-        then:
         // Open source CI does not have the Palantir CA
         if (System.getenv("CI") == null) {
-            assert stdout.contains(palantir3rdGenCaSerial)
+            assertThat(result)
+                    .output()
+                    .as("Palantir 3rd gen CA serial number is present in the truststore")
+                    .contains(palantir3rdGenCaSerial);
         }
-        
-        where:
-        gradleVersionNumber << GradleTestVersions.getGradleVersionsForTests()
     }
 
-    @Override
-    ExecutionResult runTasksSuccessfully(String... tasks) {
-        def result = super.runTasks(tasks)
-
-        if (result.failure) {
-            println result.standardOutput
-            println result.standardError
-            result.rethrowFailure()
-        }
-
-        return result
-    }
+    // NOTE: The original Groovy test overrode runTasksSuccessfully to print stdout/stderr on failure.
+    // The new framework's buildsSuccessfully() already forwards output, so no override is needed.
 }
