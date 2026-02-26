@@ -26,7 +26,7 @@ import com.palantir.gradle.testing.project.RootProject;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache("gradle-jdks is not compatible atm with CC")
+@DisabledConfigurationCache
 class PalantirCaPluginIntegrationTest {
 
     @Test
@@ -89,7 +89,4 @@ class PalantirCaPluginIntegrationTest {
                     .contains(palantir3rdGenCaSerial);
         }
     }
-
-    // NOTE: The original Groovy test overrode runTasksSuccessfully to print stdout/stderr on failure.
-    // The new framework's buildsSuccessfully() already forwards output, so no override is needed.
 }
