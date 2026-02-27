@@ -87,19 +87,21 @@ public abstract class BaselineJavaJdksPlugin implements Plugin<Project> {
         JdkDistributionName jdkDistributionName =
                 jdkExtension.getDistributionName().get();
 
-        Provider<Directory> installationPath = project.getLayout().dir(project.provider(() -> jdkManager
-                .jdk(
-                        project,
-                        JdkSpec.builder()
-                                .distributionName(jdkDistributionName)
-                                .release(JdkRelease.builder()
-                                        .version(version)
-                                        .os(os)
-                                        .arch(currentArch)
+        Provider<Directory> installationPath = project.getLayout()
+                .dir(project.provider(() -> jdkManager
+                        .jdk(
+                                project,
+                                JdkSpec.builder()
+                                        .distributionName(jdkDistributionName)
+                                        .release(JdkRelease.builder()
+                                                .version(version)
+                                                .os(os)
+                                                .arch(currentArch)
+                                                .build())
+                                        .caCerts(CaCerts.from(
+                                                jdksExtension.getCaCerts().get()))
                                         .build())
-                                .caCerts(CaCerts.from(jdksExtension.getCaCerts().get()))
-                                .build())
-                .toFile()));
+                        .toFile()));
 
         return GradleJdksJavaInstallationMetadata.create(
                 javaLanguageVersion, version, version, jdkDistributionName.uiName(), installationPath);
