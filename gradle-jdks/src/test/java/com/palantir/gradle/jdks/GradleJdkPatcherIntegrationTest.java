@@ -51,12 +51,16 @@ class GradleJdkPatcherIntegrationTest {
     private static final Pair<String, String> JDK_17 = Pair.of("amazon-corretto", "17.0.3.6.1");
     private static final Pair<String, String> JDK_21 = Pair.of("amazon-corretto", "21.0.2.13.1");
 
+    @BeforeEach
+    void setup(RootProject rootProject) {
+        rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
+    }
+
     @Nested
     class WithConfiguredJdks {
 
         @BeforeEach
         void setup(RootProject rootProject) {
-            rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks.palantir-ca");
             setupJdksHardcodedVersions(rootProject, DAEMON_MAJOR_VERSION_17);
         }
 
@@ -151,7 +155,6 @@ class GradleJdkPatcherIntegrationTest {
         void check_gradle_jdk_configs_fails_if_run_before_setup_jdks(GradleInvoker gradle, RootProject rootProject) {
             gradle.withArgs("wrapper").buildsSuccessfully();
             rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
-            rootProject.buildGradle().plugins().add("com.palantir.jdks").add("java");
             rootProject.buildGradle().append("""
                 jdks {
                     daemonTarget = 21
@@ -168,7 +171,6 @@ class GradleJdkPatcherIntegrationTest {
 
     @Test
     void fails_if_no_jdks_were_configured(GradleInvoker gradle, RootProject rootProject) {
-        rootProject.buildGradle().plugins().add("com.palantir.jdks");
         rootProject.buildGradle().append("""
             jdks {
                 daemonTarget = 11
@@ -186,7 +188,6 @@ class GradleJdkPatcherIntegrationTest {
 
     @Test
     void no_gradle_wrapper_patch_if_jdk_setup_not_enabled(GradleInvoker gradle, RootProject rootProject) {
-        rootProject.buildGradle().plugins().add("com.palantir.jdks");
         InvocationResult output = gradle.withArgs("wrapper").buildsSuccessfully();
 
         assertThat(output).task(":wrapperJdkPatcher").notOnTaskGraph();
