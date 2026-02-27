@@ -1,6 +1,6 @@
 com.fasterxml.jackson.*:* = 2.21.1
 com.fasterxml.jackson.core:jackson-annotations = 2.21
-com.github.ben-manes.caffeine:caffeine = 3.2.0
+com.github.ben-manes.caffeine:caffeine = 3.2.3
 org.immutables:* = 2.12.1
 com.netflix.nebula:nebula-test = 10.6.2
 org.junit.jupiter:* = 6.0.3
