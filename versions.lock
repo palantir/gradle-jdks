@@ -30,7 +30,7 @@ com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions:1.9.0 (2 c
 
 com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.3.0 (1 constraints: 0505f435)
 
-com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.60.0 (1 constraints: 3805373b)
+com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.61.0 (1 constraints: 39053a3b)
 
 com.palantir.gradle.utils:environment-variables:0.23.0 (1 constraints: 3705303b)
 
@@ -146,11 +146,11 @@ com.netflix.nebula:nebula-test:10.6.2 (2 constraints: d61de72d)
 
 com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.26.0 (1 constraints: 3a05393b)
 
-com.palantir.gradle.plugintesting:configuration-cache-spec:0.60.0 (1 constraints: 3805373b)
+com.palantir.gradle.plugintesting:configuration-cache-spec:0.61.0 (1 constraints: 39053a3b)
 
-com.palantir.gradle.plugintesting:discover-tests-cli:0.60.0 (1 constraints: 3805373b)
+com.palantir.gradle.plugintesting:discover-tests-cli:0.61.0 (1 constraints: 39053a3b)
 
-com.palantir.gradle.plugintesting:plugin-testing-core:0.60.0 (1 constraints: 3805373b)
+com.palantir.gradle.plugintesting:plugin-testing-core:0.61.0 (1 constraints: 39053a3b)
 
 info.picocli:picocli:4.7.7 (1 constraints: 2816dcdd)
 
@@ -176,9 +176,9 @@ org.junit.platform:junit-platform-engine:6.0.3 (4 constraints: 37391bbe)
 
 org.junit.platform:junit-platform-launcher:6.0.3 (3 constraints: 6a24e9f5)
 
-org.mockito:mockito-core:5.21.0 (2 constraints: 2c146a86)
+org.mockito:mockito-core:5.22.0 (2 constraints: 2e149b86)
 
-org.mockito:mockito-junit-jupiter:5.21.0 (1 constraints: 3a05483b)
+org.mockito:mockito-junit-jupiter:5.22.0 (1 constraints: 3b054b3b)
 
 org.objenesis:objenesis:3.3 (2 constraints: 9b17f557)
 

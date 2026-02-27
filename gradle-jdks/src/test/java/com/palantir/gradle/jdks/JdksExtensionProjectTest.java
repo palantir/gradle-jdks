@@ -14,38 +14,28 @@
  * limitations under the License.
  */
 
-package com.palantir.gradle.jdks
+package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.plugintesting.GradleTestVersions
-import nebula.test.IntegrationSpec
-import spock.lang.Unroll
+import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.assertThat;
 
-@Unroll
-final class JdksExtensionProjectSpec extends IntegrationSpec {
-    def setup() {
-        // language=Gradle
-        buildFile << '''
-            import com.palantir.gradle.jdks.*
-            
-            buildscript {
-                repositories {
-                    mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                    gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
-                }
+import com.palantir.gradle.testing.execution.GradleInvoker;
+import com.palantir.gradle.testing.execution.InvocationResult;
+import com.palantir.gradle.testing.junit.GradlePluginTests;
+import com.palantir.gradle.testing.project.RootProject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-                dependencies {
-                    classpath "com.palantir.gradle.utils:platform:0.13.0"
-                }
-            }
+@GradlePluginTests
+final class JdksExtensionProjectTest {
 
-            extensions.create('jdks', JdksExtension)
-        '''.stripIndent(true)
+    @BeforeEach
+    void setup(RootProject rootProject) {
+        rootProject.buildGradle().plugins().add("com.palantir.jdks");
     }
 
-    def '#gradleVersionNumber: correctly handles multi level version overrides'() {
-        gradleVersion = gradleVersionNumber
-        // language=Gradle
-        buildFile << '''
+    @Test
+    void correctly_handles_multi_level_version_overrides(GradleInvoker gradle, RootProject rootProject) {
+        rootProject.buildGradle().append("""
             import com.palantir.gradle.jdks.setup.common.Arch
             import com.palantir.platform.OperatingSystem
 
@@ -53,35 +43,32 @@ final class JdksExtensionProjectSpec extends IntegrationSpec {
                 jdk(11) {
                     distribution = 'amazon-corretto'
                     jdkVersion = '11.1'
-                    
+
                     os('linux-glibc') {
                         jdkVersion = '11.2'
-                        
+
                         arch('x86-64') {
                             jdkVersion = '11.3'
                         }
                     }
                 }
             }
-            
+
             def jdkVersionFor = { os, arch ->
                 jdks.jdkFor(JavaLanguageVersion.of(11), project).get().jdkFor(os).jdkFor(arch).jdkVersion.get()
             }
-            
+
             println('jdkVersion macos aarch64: ' + jdkVersionFor(OperatingSystem.MACOS, Arch.AARCH64))
             println('jdkVersion linux-glibc aarch64: ' + jdkVersionFor(OperatingSystem.LINUX_GLIBC, Arch.AARCH64))
             println('jdkVersion linux-glibc x64: ' + jdkVersionFor(OperatingSystem.LINUX_GLIBC, Arch.X86_64))
-        '''.stripIndent(true)
+            """);
 
-        when:
-        def stdout = runTasksSuccessfully('help').standardOutput
+        InvocationResult result = gradle.withArgs("help").buildsSuccessfully();
 
-        then:
-        stdout.contains('jdkVersion macos aarch64: 11.1')
-        stdout.contains('jdkVersion linux-glibc aarch64: 11.2')
-        stdout.contains('jdkVersion linux-glibc x64: 11.3')
-        
-        where:
-        gradleVersionNumber << GradleTestVersions.getGradleVersionsForTests()
+        assertThat(result)
+                .output()
+                .contains("jdkVersion macos aarch64: 11.1")
+                .contains("jdkVersion linux-glibc aarch64: 11.2")
+                .contains("jdkVersion linux-glibc x64: 11.3");
     }
 }

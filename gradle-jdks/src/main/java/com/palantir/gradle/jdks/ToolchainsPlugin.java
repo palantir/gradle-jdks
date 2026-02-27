@@ -228,8 +228,8 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
         jdkMajorVersionsToUse.add(asJavaLanguageVersion(baselineJavaVersionsExtension.runtime()));
         jdkMajorVersionsToUse.add(asJavaLanguageVersion(baselineJavaVersionsExtension.distributionTarget()));
 
-        rootProject.subprojects(
-                proj -> proj.getPluginManager().withPlugin("com.palantir.baseline-java-version", unused -> {
+        rootProject.subprojects(proj -> proj.getPluginManager()
+                .withPlugin("com.palantir.baseline-java-version", unused -> {
                     BaselineJavaVersionExtension projectVersions =
                             proj.getExtensions().getByType(BaselineJavaVersionExtension.class);
                     jdkMajorVersionsToUse.add(asJavaLanguageVersion(projectVersions.target()));
