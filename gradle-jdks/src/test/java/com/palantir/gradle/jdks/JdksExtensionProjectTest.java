@@ -20,23 +20,17 @@ import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.a
 
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
-import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache("Test uses println during configuration phase to verify extension behavior")
 final class JdksExtensionProjectTest {
 
     @BeforeEach
     void setup(RootProject rootProject) {
-        rootProject.buildGradle().append("""
-            import com.palantir.gradle.jdks.*
-
-            extensions.create('jdks', JdksExtension)
-            """);
+        rootProject.buildGradle().plugins().add("com.palantir.jdks");
     }
 
     @Test
