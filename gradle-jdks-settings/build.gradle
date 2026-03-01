@@ -16,6 +16,8 @@ dependencies {
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.apache.commons:commons-compress'
     testImplementation project(':gradle-jdks-test-common')
+
+    gradlePluginForTesting 'com.palantir.gradle.jdks:gradle-jdks'
 }
 
 gradlePlugin {
