@@ -48,7 +48,7 @@ class ToolchainJdksSettingsPluginTest {
     private static final String ARCH = CurrentArch.get().uiName();
 
     @BeforeEach
-    void setup() {
+    void before() {
         FileUtils.delete(GradleJdksDirectories.getToolchainInstallationDir());
     }
 
