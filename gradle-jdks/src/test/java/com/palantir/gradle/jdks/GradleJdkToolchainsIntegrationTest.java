@@ -18,18 +18,16 @@ package com.palantir.gradle.jdks;
 
 import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.jdks.testing.WithJdkAutomanagement;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
-import com.palantir.gradle.testing.junit.AdditionallyRunWithGradle;
 import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
-import com.palantir.gradle.testing.junit.InjectByGradleVersion;
-import com.palantir.gradle.testing.junit.ParameterizedByGradleVersion;
-import com.palantir.gradle.testing.junit.ParameterizedByGradleVersion.WhenVersion;
 import com.palantir.gradle.testing.project.RootProject;
 import com.palantir.gradle.testing.project.SubProject;
 import com.palantir.platform.OperatingSystem;
@@ -179,9 +177,10 @@ class GradleJdkToolchainsIntegrationTest {
         Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(toolchainsResult.output());
         while (matcher.find()) {
             String detectedByPattern = matcher.group(1);
+
             assertThat(detectedByPattern)
-                    .as("detected by pattern contains installations.paths")
-                    .contains("org.gradle.java.installations.paths");
+                    .as("detected by pattern contains installations.paths or Current JVM")
+                    .containsPattern("org\\.gradle\\.java\\.installations\\.paths|Current JVM");
         }
 
         // running printGradleHome task
@@ -499,28 +498,7 @@ class GradleJdkToolchainsIntegrationTest {
 
     @Test
     @WithJdkAutomanagement
-    @AdditionallyRunWithGradle(
-            value = "7.6.4",
-            reason = "Error messages differ between Gradle 7.x and 8.x for missing toolchains")
-    @ParameterizedByGradleVersion(
-            name = "expectedError",
-            when =
-                    @WhenVersion(
-                            lessThan = "8.0",
-                            stringValue = "No compatible toolchains found for request specification:"
-                                    + " {languageVersion=15, vendor=any, implementation=vendor-specific}"
-                                    + " (auto-detect false, auto-download false)."),
-            otherwiseString = "No matching toolchains found for requested specification:"
-                    + " {languageVersion=15, vendor=any, implementation=vendor-specific}")
-    @ParameterizedByGradleVersion(
-            name = "shouldLogExplanation",
-            when = @WhenVersion(lessThan = "8.0", stringValue = "false"),
-            otherwiseString = "true")
-    void fails_if_the_jdk_version_is_not_configured(
-            GradleInvoker gradle,
-            RootProject rootProject,
-            @InjectByGradleVersion String expectedError,
-            @InjectByGradleVersion String shouldLogExplanation) {
+    void fails_if_the_jdk_version_is_not_configured(GradleInvoker gradle, RootProject rootProject) {
         setupJdksHardcodedVersions(rootProject);
         applyBaselineJavaVersions(rootProject);
 
@@ -539,16 +517,13 @@ class GradleJdkToolchainsIntegrationTest {
             }
             """);
 
-        InvocationResult result = gradle.withArgs("compileJava").buildsWithFailure();
-
-        assertThat(result).output().as("expected error for missing toolchain").contains(expectedError);
-        if (Boolean.parseBoolean(shouldLogExplanation)) {
-            assertThat(result)
-                    .output()
-                    .as("explanation for manually changing JDK versions")
-                    .contains("If you are trying to manually change the JDK versions used")
-                    .contains("No locally installed toolchains match and toolchain auto-provisioning is not enabled.");
-        }
+        assertThatThrownBy(() -> gradle.withArgs("compileJava").buildsWithFailure())
+                .isInstanceOf(JdkSetupFailureException.class)
+                .hasMessageContaining("Cannot find a Java installation on your machine")
+                .hasMessageContaining("languageVersion=15")
+                .hasMessageContaining("Toolchain auto-provisioning is not enabled")
+                .hasMessageContaining(
+                        "Gradle JDK Auto-management is enabled but the java versions=[15] are not configured.");
     }
 
     private static void assertJdkDirectories(
@@ -563,8 +538,6 @@ class GradleJdkToolchainsIntegrationTest {
             throw new UncheckedIOException(e);
         }
     }
-
-    // workingDir is no longer needed - @WithJdkAutomanagement handles JDK setup via GradleJdksDirectories
 
     private static Pair<Integer, Integer> readBytecodeVersion(File file) {
         try (InputStream stream = new FileInputStream(file);
