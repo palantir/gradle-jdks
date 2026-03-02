@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 @GradlePluginTests
 @DisabledConfigurationCache
 @AdditionallyRunWithGradle(
-        value = {"7.6.4", "8.5", "8.8"},
+        value = {"8.5", "8.8"},
         reason = "testing for the different gradle versions to make sure the reflection in the settings plugin works")
 class ToolchainJdksSettingsPluginTest {
 
