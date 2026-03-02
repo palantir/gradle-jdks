@@ -66,6 +66,31 @@ class GradleJdkToolchainsIntegrationTest {
     private static final String SIMPLIFIED_JDK_17_VERSION = "17.0.3";
     private static final String SIMPLIFIED_JDK_21_VERSION = "21.0.2";
 
+    private static final String JAVA_CODE = """
+        public class Main {
+            public static void main(String[] args) {
+                String javaHome = System.getProperty("java.home");
+                System.out.println("Java home: " + javaHome);
+            }
+        }
+        """;
+    private static final String JAVA_17_PREVIEW_CODE = """
+        public class Main {
+            sealed interface MyUnion {
+                record Foo(int number) implements MyUnion {}
+            }
+
+            public static void main(String[] args) {
+                MyUnion myUnion = new MyUnion.Foo(1234);
+                switch (myUnion) {
+                    case MyUnion.Foo foo -> System.out.println("Java 17 pattern matching switch: " + foo.number);
+                }
+                String javaHome = System.getProperty("java.home");
+                System.out.println("Java home: " + javaHome);
+            }
+        }
+        """;
+
     @BeforeEach
     void setup(RootProject rootProject) {
         rootProject.buildGradle().plugins().add("java");
@@ -113,7 +138,7 @@ class GradleJdkToolchainsIntegrationTest {
 
     @Test
     void java_toolchains_correctly_set_up(GradleInvoker gradle, RootProject rootProject) {
-        rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
+        rootProject.mainSourceSet().java().writeClass(JAVA_CODE);
 
         rootProject.buildGradle().append("""
             java {
@@ -201,7 +226,7 @@ class GradleJdkToolchainsIntegrationTest {
                 target = 21
             }
             """);
-        subprojectLib21.mainSourceSet().java().writeClass(getMainJavaCode());
+        subprojectLib21.mainSourceSet().java().writeClass(JAVA_CODE);
 
         SubProject subprojectLib11 = rootProject.subproject("subproject-lib-11");
         subprojectLib11.buildGradle().plugins().add("java-library");
@@ -210,7 +235,7 @@ class GradleJdkToolchainsIntegrationTest {
                 library()
             }
             """);
-        subprojectLib11.mainSourceSet().java().writeClass(getMainJavaCode());
+        subprojectLib11.mainSourceSet().java().writeClass(JAVA_CODE);
 
         InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
         String os = OperatingSystem.get().uiName();
@@ -380,7 +405,7 @@ class GradleJdkToolchainsIntegrationTest {
                 runtime = 21
             }
             """);
-        subprojectLib21.mainSourceSet().java().writeClass(getMainJavaCode());
+        subprojectLib21.mainSourceSet().java().writeClass(JAVA_CODE);
 
         gradle.withArgs().buildsSuccessfully();
         assertThatJdkDirectories(rootProject)
@@ -429,33 +454,5 @@ class GradleJdkToolchainsIntegrationTest {
         } catch (IOException e) {
             throw new UncheckedIOException(String.format("Failed to read bytecode version from %s", file), e);
         }
-    }
-
-    private static final String JAVA_17_PREVIEW_CODE = """
-        public class Main {
-            sealed interface MyUnion {
-                record Foo(int number) implements MyUnion {}
-            }
-
-            public static void main(String[] args) {
-                MyUnion myUnion = new MyUnion.Foo(1234);
-                switch (myUnion) {
-                    case MyUnion.Foo foo -> System.out.println("Java 17 pattern matching switch: " + foo.number);
-                }
-                String javaHome = System.getProperty("java.home");
-                System.out.println("Java home: " + javaHome);
-            }
-        }
-        """;
-
-    private static String getMainJavaCode() {
-        return """
-            public class Main {
-                public static void main(String[] args) {
-                    String javaHome = System.getProperty("java.home");
-                    System.out.println("Java home: " + javaHome);
-                }
-            }
-            """;
     }
 }
