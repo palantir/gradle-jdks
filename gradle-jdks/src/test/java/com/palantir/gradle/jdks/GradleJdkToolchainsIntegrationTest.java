@@ -71,8 +71,7 @@ class GradleJdkToolchainsIntegrationTest {
 
     @BeforeEach
     void setup(RootProject rootProject) {
-        rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
-        rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks").add("com.palantir.jdks.palantir-ca");
+        rootProject.buildGradle().plugins().add("java");
         rootProject
                 .buildGradle()
                 .append(
