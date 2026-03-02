@@ -21,7 +21,6 @@ import com.palantir.gradle.jdks.setup.FileUtils;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.testing.execution.GradleInvoker;
-import com.palantir.gradle.testing.execution.InvocationResult;
 import com.palantir.gradle.testing.junit.AdditionallyRunWithGradle;
 import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
@@ -81,7 +80,7 @@ class ToolchainJdksSettingsPluginTest {
                 .doesNotExist();
 
         rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
-        invoker.withArgs()
+        invoker.withArgs("javaToolchains")
                 .buildsSuccessfully()
                 .assertThat()
                 .output()
@@ -98,10 +97,9 @@ class ToolchainJdksSettingsPluginTest {
         String newJdkPath =
                 String.format("amazon-corretto-%s", UUID.randomUUID().toString().substring(0, 8));
         Files.writeString(jdk17LocalPath, newJdkPath + "\n");
-        InvocationResult resultAfterJdkChange =
-                invoker.withArgs("javaToolchains").buildsSuccessfully();
 
-        resultAfterJdkChange
+        invoker.withArgs("javaToolchains")
+                .buildsSuccessfully()
                 .assertThat()
                 .output()
                 .as("jdk setup message after path change")
