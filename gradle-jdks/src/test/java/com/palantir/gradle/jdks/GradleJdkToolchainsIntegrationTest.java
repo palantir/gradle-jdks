@@ -232,7 +232,7 @@ class GradleJdkToolchainsIntegrationTest {
 
         assertJdkDirectories(rootProject, Set.of("11", "17", "21"), "generates directories for all jdk versions");
 
-        gradle.withArgs("compileJava", "--info").buildsSuccessfully();
+        gradle.withArgs("compileJava").buildsSuccessfully();
 
         File compiledClass = rootProject
                 .buildDir()
@@ -281,11 +281,9 @@ class GradleJdkToolchainsIntegrationTest {
             }
             """);
 
-        gradle.withArgs("wrapper").buildsSuccessfully();
+        gradle.withArgs("compileJava").buildsSuccessfully();
         assertJdkDirectories(
                 rootProject, Set.of(DAEMON_MAJOR_VERSION_17, "23"), "generates directories for all used jdk versions");
-
-        gradle.withArgs("compileJava", "--info").buildsSuccessfully();
 
         File compiledClass = rootProject
                 .buildDir()
@@ -306,7 +304,6 @@ class GradleJdkToolchainsIntegrationTest {
             """);
 
         gradle.withArgs().buildsSuccessfully();
-
         assertJdkDirectories(rootProject, Set.of(DAEMON_MAJOR_VERSION_17), "only gradle daemon jdk is generated");
     }
 
@@ -424,13 +421,13 @@ class GradleJdkToolchainsIntegrationTest {
                 DataInputStream dis = new DataInputStream(stream)) {
             int magic = dis.readInt();
             if (magic != BYTECODE_IDENTIFIER) {
-                throw new IllegalArgumentException("File " + file + " does not appear to be java bytecode");
+                throw new IllegalArgumentException(String.format("File %s does not appear to be java bytecode", file));
             }
             int minorBytecodeVersion = dis.readUnsignedShort();
             int majorBytecodeVersion = dis.readUnsignedShort();
             return Pair.of(minorBytecodeVersion, majorBytecodeVersion);
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read bytecode version from " + file, e);
+            throw new UncheckedIOException(String.format("Failed to read bytecode version from %s", file), e);
         }
     }
 
