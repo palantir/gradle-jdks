@@ -45,10 +45,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
 @DisabledConfigurationCache
+@WithJdkAutomanagement
 class GradleJdkToolchainsIntegrationTest {
 
     private static final int JAVA_11_BYTECODE = 55;
@@ -67,7 +69,8 @@ class GradleJdkToolchainsIntegrationTest {
     private static final String SIMPLIFIED_JDK_17_VERSION = "17.0.3";
     private static final String SIMPLIFIED_JDK_21_VERSION = "21.0.2";
 
-    private static void setupJdksHardcodedVersions(RootProject rootProject) {
+    @BeforeEach
+    void setup(RootProject rootProject) {
         rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
         rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks").add("com.palantir.jdks.palantir-ca");
         rootProject
@@ -97,62 +100,11 @@ class GradleJdkToolchainsIntegrationTest {
                         JDK_21.getLeft(),
                         JDK_21.getRight(),
                         DAEMON_MAJOR_VERSION_17);
-    }
 
-    private static void applyApplicationPlugin(RootProject rootProject) {
         rootProject.buildGradle().plugins().add("application");
         rootProject.buildGradle().append("""
             application {
                 mainClass = 'Main'
-            }
-            """);
-    }
-
-    private static void applyBaselineJavaVersions(RootProject rootProject) {
-        rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
-    }
-
-    private static final String JAVA_17_PREVIEW_CODE = """
-        public class Main {
-            sealed interface MyUnion {
-                record Foo(int number) implements MyUnion {}
-            }
-
-            public static void main(String[] args) {
-                MyUnion myUnion = new MyUnion.Foo(1234);
-                switch (myUnion) {
-                    case MyUnion.Foo foo -> System.out.println("Java 17 pattern matching switch: " + foo.number);
-                }
-                String javaHome = System.getProperty("java.home");
-                System.out.println("Java home: " + javaHome);
-            }
-        }
-        """;
-
-    private static String getMainJavaCode() {
-        return """
-            public class Main {
-                public static void main(String[] args) {
-                    String javaHome = System.getProperty("java.home");
-                    System.out.println("Java home: " + javaHome);
-                }
-            }
-            """;
-    }
-
-    @Test
-    @WithJdkAutomanagement
-    void java_toolchains_correctly_set_up(GradleInvoker gradle, RootProject rootProject) {
-        setupJdksHardcodedVersions(rootProject);
-        applyApplicationPlugin(rootProject);
-
-        rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
-
-        rootProject.buildGradle().append("""
-            java {
-                toolchain {
-                    languageVersion = JavaLanguageVersion.of(17)
-                }
             }
 
             tasks.register("printGradleHome") {
@@ -161,10 +113,21 @@ class GradleJdkToolchainsIntegrationTest {
                 }
             }
             """);
+    }
 
-        // the only discovered jdk versions are coming from gradle.properties
+    @Test
+    void java_toolchains_correctly_set_up(GradleInvoker gradle, RootProject rootProject) {
+        rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
+
+        rootProject.buildGradle().append("""
+            java {
+                toolchain {
+                    languageVersion = JavaLanguageVersion.of(17)
+                }
+            }
+            """);
+
         InvocationResult toolchainsResult = gradle.withArgs("javaToolchains").buildsSuccessfully();
-
         assertThat(toolchainsResult)
                 .output()
                 .as("the only discovered jdk versions are coming from gradle.properties")
@@ -177,16 +140,13 @@ class GradleJdkToolchainsIntegrationTest {
         Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(toolchainsResult.output());
         while (matcher.find()) {
             String detectedByPattern = matcher.group(1);
-
             assertThat(detectedByPattern)
                     .as("detected by pattern contains installations.paths or Current JVM")
                     .containsPattern("org\\.gradle\\.java\\.installations\\.paths|Current JVM");
         }
 
-        // running printGradleHome task
         InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
 
-        // java home is set to our jdk configured version
         String os = OperatingSystem.get().uiName();
         String arch = CurrentArch.get().uiName();
         String daemonJdkFileName = rootProject
@@ -201,10 +161,7 @@ class GradleJdkToolchainsIntegrationTest {
                 .as("java home is set to the daemon jdk configured version")
                 .contains("java.home: " + daemonJvm);
 
-        // running compileJava task
         gradle.withArgs("compileJava").buildsSuccessfully();
-
-        // the project is compiled with the configured toolchain (17)
         File compiledClass = rootProject
                 .buildDir()
                 .path()
@@ -214,10 +171,7 @@ class GradleJdkToolchainsIntegrationTest {
                 .as("the project is compiled with the configured toolchain (17)")
                 .isEqualTo(Pair.of(0, JAVA_17_BYTECODE));
 
-        // running run task
         InvocationResult runResult = gradle.withArgs("run").buildsSuccessfully();
-
-        // the application is run with the configured toolchain (17)
         String compileJdkFileName = rootProject
                 .file(String.format("gradle/jdks/17/%s/%s/local-path", os, arch))
                 .text()
@@ -232,11 +186,8 @@ class GradleJdkToolchainsIntegrationTest {
     }
 
     @Test
-    @WithJdkAutomanagement
     void java_toolchains_correctly_set_up_with_baseline_java(GradleInvoker gradle, RootProject rootProject) {
-        setupJdksHardcodedVersions(rootProject);
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
+        rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
 
         rootProject.mainSourceSet().java().writeClass(JAVA_17_PREVIEW_CODE);
 
@@ -244,12 +195,6 @@ class GradleJdkToolchainsIntegrationTest {
             javaVersions {
                 libraryTarget = '11'
                 distributionTarget = '17_PREVIEW'
-            }
-
-            tasks.register("printGradleHome") {
-                doLast {
-                    println "java.home: " + System.getProperty("java.home")
-                }
             }
             """);
 
@@ -271,10 +216,7 @@ class GradleJdkToolchainsIntegrationTest {
             """);
         subprojectLib11.mainSourceSet().java().writeClass(getMainJavaCode());
 
-        // running printGradleHome task
         InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
-
-        // java home is set to our jdk configured version
         String os = OperatingSystem.get().uiName();
         String arch = CurrentArch.get().uiName();
         String daemonJdkFileName = rootProject
@@ -289,13 +231,10 @@ class GradleJdkToolchainsIntegrationTest {
                 .as("java home is set to the daemon jdk configured version")
                 .contains("java.home: " + daemonJvm);
 
-        // generates directories for all jdk versions
         assertJdkDirectories(rootProject, Set.of("11", "17", "21"), "generates directories for all jdk versions");
 
-        // compiling projects
         gradle.withArgs("compileJava", "--info").buildsSuccessfully();
 
-        // the main project is compiled with `distributionTarget` version
         File compiledClass = rootProject
                 .buildDir()
                 .path()
@@ -305,7 +244,6 @@ class GradleJdkToolchainsIntegrationTest {
                 .as("the main project is compiled with distributionTarget version")
                 .isEqualTo(Pair.of(ENABLE_PREVIEW_BYTECODE, JAVA_17_BYTECODE));
 
-        // the library is compiled with `libraryTarget` version
         File subproject11Class = subprojectLib11
                 .buildDir()
                 .path()
@@ -315,7 +253,6 @@ class GradleJdkToolchainsIntegrationTest {
                 .as("the library is compiled with libraryTarget version")
                 .isEqualTo(Pair.of(0, JAVA_11_BYTECODE));
 
-        // the project is compiled with the overridden `target` version
         File subproject21Class = subprojectLib21
                 .buildDir()
                 .path()
@@ -327,11 +264,8 @@ class GradleJdkToolchainsIntegrationTest {
     }
 
     @Test
-    @WithJdkAutomanagement
     void graal_jdks_are_generated(GradleInvoker gradle, RootProject rootProject) {
-        setupJdksHardcodedVersions(rootProject);
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
+        rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
 
         rootProject.mainSourceSet().java().writeClass(JAVA_17_PREVIEW_CODE);
 
@@ -348,18 +282,12 @@ class GradleJdkToolchainsIntegrationTest {
             }
             """);
 
-        // running wrapper task
         gradle.withArgs("wrapper").buildsSuccessfully();
-
-        // generates directories for all used jdk versions
-        // only the daemonTarget and graal JDK versions are used
         assertJdkDirectories(
                 rootProject, Set.of(DAEMON_MAJOR_VERSION_17, "23"), "generates directories for all used jdk versions");
 
-        // compiling projects
         gradle.withArgs("compileJava", "--info").buildsSuccessfully();
 
-        // the main project is compiled with `distributionTarget` version
         File compiledClass = rootProject
                 .buildDir()
                 .path()
@@ -372,36 +300,20 @@ class GradleJdkToolchainsIntegrationTest {
 
     @Test
     void only_generates_daemon_jdk(GradleInvoker gradle, RootProject rootProject) {
-        setupJdksHardcodedVersions(rootProject);
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
-
         rootProject.buildGradle().append("""
             jdks {
                 daemonJdkOnly()
             }
             """);
 
-        rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
-        rootProject.mainSourceSet().java().writeClass(JAVA_17_PREVIEW_CODE);
+        gradle.withArgs().buildsSuccessfully();
 
-        gradle.withArgs("wrapper").buildsSuccessfully();
-
-        // only gradle daemon jdk is generated
-        try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
-            assertThat(paths.map(path -> path.getFileName().toString()).toList())
-                    .as("only gradle daemon jdk is generated")
-                    .allMatch(dir -> dir.equals(DAEMON_MAJOR_VERSION_17));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        assertJdkDirectories(rootProject, Set.of(DAEMON_MAJOR_VERSION_17), "only gradle daemon jdk is generated");
     }
 
     @Test
     void can_bump_java_major_version_when_baseline_java_is_applied(GradleInvoker gradle, RootProject rootProject) {
-        setupJdksHardcodedVersions(rootProject);
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
+        rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
 
         rootProject.buildGradle().append("""
             javaVersions {
@@ -409,50 +321,29 @@ class GradleJdkToolchainsIntegrationTest {
             }
             """);
 
-        rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
-        rootProject.mainSourceSet().java().writeClass(getMainJavaCode());
-        gradle.withArgs("wrapper").buildsSuccessfully();
-
         gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
-
-        // generates directories for jdk version == 11, 17
         assertJdkDirectories(rootProject, Set.of("11", "17"), "generates directories for jdk version == 11, 17");
 
         gradle.withArgs("generateGradleJdkConfigs", "--includeVersion=11", "--includeVersion=21")
                 .buildsSuccessfully();
-
-        // generates directories for jdk versions == 11, 17, 21
         assertJdkDirectories(
                 rootProject, Set.of("11", "17", "21"), "generates directories for jdk versions == 11, 17, 21");
 
         InvocationResult failingCheck = gradle.withArgs("check").buildsWithFailure();
-
-        // the check will fail because we have too many jdk files
         assertThat(failingCheck)
                 .output()
                 .as("the check will fail because we have too many jdk files")
                 .contains("Unexpected Java versions configured: [21]");
 
         gradle.withArgs("setupJdks", "compileJava").buildsSuccessfully();
-
-        // the extra directory was deleted
         assertJdkDirectories(rootProject, Set.of("11", DAEMON_MAJOR_VERSION_17), "the extra directory was deleted");
 
         gradle.withArgs("generateGradleJdkConfigs", "--includeAllJdks").buildsSuccessfully();
-
-        // generates directories for all jdk versions
         assertJdkDirectories(rootProject, Set.of("11", "17", "21"), "generates directories for all jdk versions");
     }
 
     @Test
     void only_jdk_versions_to_use_jdks_are_generated(GradleInvoker gradle, RootProject rootProject) {
-        setupJdksHardcodedVersions(rootProject);
-        applyApplicationPlugin(rootProject);
-
-        rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
-        rootProject.mainSourceSet().java().writeClass(JAVA_17_PREVIEW_CODE);
-        gradle.withArgs("wrapper").buildsSuccessfully();
-
         rootProject.buildGradle().append("""
             jdks {
                 jdkMajorVersionsToUse = ["17", "21"]
@@ -460,18 +351,12 @@ class GradleJdkToolchainsIntegrationTest {
             """);
 
         gradle.withArgs("setupJdks").buildsSuccessfully();
-
-        // only jdkVersionsToUse files are generated
         assertJdkDirectories(rootProject, Set.of("17", "21"), "only jdkVersionsToUse files are generated");
     }
 
     @Test
     void only_required_java_versions_are_configured(GradleInvoker gradle, RootProject rootProject) {
-        setupJdksHardcodedVersions(rootProject);
-        applyBaselineJavaVersions(rootProject);
-        applyApplicationPlugin(rootProject);
-
-        rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
+        rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
         rootProject.mainSourceSet().java().writeClass(JAVA_17_PREVIEW_CODE);
 
         rootProject.buildGradle().append("""
@@ -490,17 +375,13 @@ class GradleJdkToolchainsIntegrationTest {
             """);
         subprojectLib21.mainSourceSet().java().writeClass(getMainJavaCode());
 
-        gradle.withArgs("wrapper").buildsSuccessfully();
-
-        // generates directories for all jdk versions
+        gradle.withArgs().buildsSuccessfully();
         assertJdkDirectories(rootProject, Set.of("17", "21"), "generates directories for all jdk versions");
     }
 
     @Test
-    @WithJdkAutomanagement
     void fails_if_the_jdk_version_is_not_configured(GradleInvoker gradle, RootProject rootProject) {
-        setupJdksHardcodedVersions(rootProject);
-        applyBaselineJavaVersions(rootProject);
+        rootProject.buildGradle().plugins().add("com.palantir.baseline-java-versions");
 
         rootProject.buildGradle().append("""
             javaVersions {
@@ -552,5 +433,33 @@ class GradleJdkToolchainsIntegrationTest {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read bytecode version from " + file, e);
         }
+    }
+
+    private static final String JAVA_17_PREVIEW_CODE = """
+        public class Main {
+            sealed interface MyUnion {
+                record Foo(int number) implements MyUnion {}
+            }
+
+            public static void main(String[] args) {
+                MyUnion myUnion = new MyUnion.Foo(1234);
+                switch (myUnion) {
+                    case MyUnion.Foo foo -> System.out.println("Java 17 pattern matching switch: " + foo.number);
+                }
+                String javaHome = System.getProperty("java.home");
+                System.out.println("Java home: " + javaHome);
+            }
+        }
+        """;
+
+    private static String getMainJavaCode() {
+        return """
+            public class Main {
+                public static void main(String[] args) {
+                    String javaHome = System.getProperty("java.home");
+                    System.out.println("Java home: " + javaHome);
+                }
+            }
+            """;
     }
 }
