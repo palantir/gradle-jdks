@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import static com.palantir.gradle.jdks.JdkDirectoriesAssert.assertThatJdkDirectories;
 import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,13 +38,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -230,7 +227,9 @@ class GradleJdkToolchainsIntegrationTest {
                 .as("java home is set to the daemon jdk configured version")
                 .contains("java.home: " + daemonJvm);
 
-        assertJdkDirectories(rootProject, Set.of("11", "17", "21"), "generates directories for all jdk versions");
+        assertThatJdkDirectories(rootProject)
+                .as("generates directories for all jdk versions")
+                .containsExactJdks(11, 17, 21);
 
         gradle.withArgs("compileJava").buildsSuccessfully();
 
@@ -282,8 +281,9 @@ class GradleJdkToolchainsIntegrationTest {
             """);
 
         gradle.withArgs("compileJava").buildsSuccessfully();
-        assertJdkDirectories(
-                rootProject, Set.of(DAEMON_MAJOR_VERSION_17, "23"), "generates directories for all used jdk versions");
+        assertThatJdkDirectories(rootProject)
+                .as("generates directories for all used jdk versions")
+                .containsExactJdks(17, 23);
 
         File compiledClass = rootProject
                 .buildDir()
@@ -304,7 +304,9 @@ class GradleJdkToolchainsIntegrationTest {
             """);
 
         gradle.withArgs().buildsSuccessfully();
-        assertJdkDirectories(rootProject, Set.of(DAEMON_MAJOR_VERSION_17), "only gradle daemon jdk is generated");
+        assertThatJdkDirectories(rootProject)
+                .as("only gradle daemon jdk is generated")
+                .containsExactJdks(17);
     }
 
     @Test
@@ -318,12 +320,15 @@ class GradleJdkToolchainsIntegrationTest {
             """);
 
         gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
-        assertJdkDirectories(rootProject, Set.of("11", "17"), "generates directories for jdk version == 11, 17");
+        assertThatJdkDirectories(rootProject)
+                .as("generates directories for jdk version == 11, 17")
+                .containsExactJdks(11, 17);
 
         gradle.withArgs("generateGradleJdkConfigs", "--includeVersion=11", "--includeVersion=21")
                 .buildsSuccessfully();
-        assertJdkDirectories(
-                rootProject, Set.of("11", "17", "21"), "generates directories for jdk versions == 11, 17, 21");
+        assertThatJdkDirectories(rootProject)
+                .as("generates directories for jdk versions == 11, 17, 21")
+                .containsExactJdks(11, 17, 21);
 
         InvocationResult failingCheck = gradle.withArgs("check").buildsWithFailure();
         assertThat(failingCheck)
@@ -332,10 +337,14 @@ class GradleJdkToolchainsIntegrationTest {
                 .contains("Unexpected Java versions configured: [21]");
 
         gradle.withArgs("setupJdks", "compileJava").buildsSuccessfully();
-        assertJdkDirectories(rootProject, Set.of("11", DAEMON_MAJOR_VERSION_17), "the extra directory was deleted");
+        assertThatJdkDirectories(rootProject)
+                .as("the extra directory was deleted")
+                .containsExactJdks(11, 17);
 
         gradle.withArgs("generateGradleJdkConfigs", "--includeAllJdks").buildsSuccessfully();
-        assertJdkDirectories(rootProject, Set.of("11", "17", "21"), "generates directories for all jdk versions");
+        assertThatJdkDirectories(rootProject)
+                .as("generates directories for all jdk versions")
+                .containsExactJdks(11, 17, 21);
     }
 
     @Test
@@ -347,7 +356,9 @@ class GradleJdkToolchainsIntegrationTest {
             """);
 
         gradle.withArgs("setupJdks").buildsSuccessfully();
-        assertJdkDirectories(rootProject, Set.of("17", "21"), "only jdkVersionsToUse files are generated");
+        assertThatJdkDirectories(rootProject)
+                .as("only jdkVersionsToUse files are generated")
+                .containsExactJdks(17, 21);
     }
 
     @Test
@@ -372,7 +383,9 @@ class GradleJdkToolchainsIntegrationTest {
         subprojectLib21.mainSourceSet().java().writeClass(getMainJavaCode());
 
         gradle.withArgs().buildsSuccessfully();
-        assertJdkDirectories(rootProject, Set.of("17", "21"), "generates directories for all jdk versions");
+        assertThatJdkDirectories(rootProject)
+                .as("generates directories for all jdk versions")
+                .containsExactJdks(17, 21);
     }
 
     @Test
@@ -401,19 +414,6 @@ class GradleJdkToolchainsIntegrationTest {
                 .hasMessageContaining("Toolchain auto-provisioning is not enabled")
                 .hasMessageContaining(
                         "Gradle JDK Auto-management is enabled but the java versions=[15] are not configured.");
-    }
-
-    private static void assertJdkDirectories(
-            RootProject rootProject, Set<String> expectedVersions, String description) {
-        try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
-            assertThat(paths.filter(Files::isDirectory)
-                            .map(path -> path.getFileName().toString())
-                            .collect(Collectors.toSet()))
-                    .as(description)
-                    .isEqualTo(expectedVersions);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     private static Pair<Integer, Integer> readBytecodeVersion(File file) {

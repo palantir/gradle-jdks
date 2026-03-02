@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import static com.palantir.gradle.jdks.JdkDirectoriesAssert.assertThatJdkDirectories;
 import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -29,15 +30,7 @@ import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
 import com.palantir.platform.OperatingSystem;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -112,7 +105,7 @@ class GradleJdkPatcherIntegrationTest {
                     .as("gradlew has exactly one patch footer")
                     .containsOnlyOnce(GradleJdksPatchHelper.PATCH_FOOTER);
 
-            checkJdksVersions(rootProject, Set.of("11", "17", "21"));
+            checkJdksVersions(rootProject, 11, 17, 21);
 
             rootProject
                     .file("gradle/gradle-daemon-jdk-version")
@@ -199,20 +192,14 @@ class GradleJdkPatcherIntegrationTest {
                 .doesNotContain("gradle-jdks-setup.sh");
     }
 
-    private static void checkJdksVersions(RootProject rootProject, Set<String> versions) {
-        try (Stream<Path> paths = Files.list(rootProject.path().resolve("gradle/jdks"))) {
-            Assertions.assertThat(paths.filter(Files::isDirectory)
-                            .map(path -> path.getFileName().toString())
-                            .collect(Collectors.toSet()))
-                    .as("JDK version directories match expected versions")
-                    .isEqualTo(versions);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    private static void checkJdksVersions(RootProject rootProject, int... versions) {
+        assertThatJdkDirectories(rootProject)
+                .as("JDK version directories match expected versions")
+                .containsExactJdks(versions);
 
         String osName = OperatingSystem.get().uiName();
         String archName = CurrentArch.get().uiName();
-        versions.stream().findFirst().ifPresent(version -> {
+        for (int version : versions) {
             rootProject
                     .file("gradle/jdks/" + version + "/" + osName + "/" + archName + "/download-url")
                     .assertThat()
@@ -223,6 +210,6 @@ class GradleJdkPatcherIntegrationTest {
                     .assertThat()
                     .as("local-path file exists for version " + version)
                     .exists();
-        });
+        }
     }
 }
