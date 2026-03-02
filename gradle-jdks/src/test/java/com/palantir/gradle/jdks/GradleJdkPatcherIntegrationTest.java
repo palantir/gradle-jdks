@@ -18,6 +18,7 @@ package com.palantir.gradle.jdks;
 
 import static com.palantir.gradle.jdks.JdkDirectoriesAssert.assertThatJdkDirectories;
 import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
@@ -105,7 +106,17 @@ class GradleJdkPatcherIntegrationTest {
                     .as("gradlew has exactly one patch footer")
                     .containsOnlyOnce(GradleJdksPatchHelper.PATCH_FOOTER);
 
-            checkJdksVersions(rootProject, 11, 17, 21);
+            assertThatJdkDirectories(rootProject)
+                    .as("JDK version directories match expected versions")
+                    .containsExactJdks(11, 17, 21)
+                    .allSatisfy(jdk -> {
+                        assertThat(jdk.platformPath(OperatingSystem.get(), CurrentArch.get())
+                                        .resolve("download-url"))
+                                .exists();
+                        assertThat(jdk.platformPath(OperatingSystem.get(), CurrentArch.get())
+                                        .resolve("local-path"))
+                                .exists();
+                    });
 
             rootProject
                     .file("gradle/gradle-daemon-jdk-version")
@@ -190,26 +201,5 @@ class GradleJdkPatcherIntegrationTest {
                 .content()
                 .as("gradlew does not contain reference to setup script")
                 .doesNotContain("gradle-jdks-setup.sh");
-    }
-
-    private static void checkJdksVersions(RootProject rootProject, int... versions) {
-        assertThatJdkDirectories(rootProject)
-                .as("JDK version directories match expected versions")
-                .containsExactJdks(versions);
-
-        String osName = OperatingSystem.get().uiName();
-        String archName = CurrentArch.get().uiName();
-        for (int version : versions) {
-            rootProject
-                    .file("gradle/jdks/" + version + "/" + osName + "/" + archName + "/download-url")
-                    .assertThat()
-                    .as("download-url file exists for version " + version)
-                    .exists();
-            rootProject
-                    .file("gradle/jdks/" + version + "/" + osName + "/" + archName + "/local-path")
-                    .assertThat()
-                    .as("local-path file exists for version " + version)
-                    .exists();
-        }
     }
 }

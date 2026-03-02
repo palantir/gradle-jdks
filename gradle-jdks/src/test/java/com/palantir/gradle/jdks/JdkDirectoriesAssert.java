@@ -16,23 +16,36 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.common.Arch;
 import com.palantir.gradle.testing.project.RootProject;
+import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.assertj.core.api.AbstractObjectAssert;
+import org.assertj.core.api.AbstractListAssert;
+import org.assertj.core.api.ObjectAssert;
 
 final class JdkDirectoriesAssert
-        extends AbstractObjectAssert<JdkDirectoriesAssert, Set<JdkDirectoriesAssert.JdkDirectory>> {
+        extends AbstractListAssert<
+                JdkDirectoriesAssert,
+                List<JdkDirectoriesAssert.JdkDirectory>,
+                JdkDirectoriesAssert.JdkDirectory,
+                ObjectAssert<JdkDirectoriesAssert.JdkDirectory>> {
 
-    record JdkDirectory(String version, Path path) {}
+    record JdkDirectory(String version, Path path) {
+        Path platformPath(OperatingSystem os, Arch arch) {
+            return path.resolve(os.uiName()).resolve(arch.uiName());
+        }
+    }
 
-    private JdkDirectoriesAssert(Set<JdkDirectory> actual) {
+    private JdkDirectoriesAssert(List<JdkDirectory> actual) {
         super(actual, JdkDirectoriesAssert.class);
     }
 
@@ -42,9 +55,9 @@ final class JdkDirectoriesAssert
 
     static JdkDirectoriesAssert assertThatJdkDirectories(Path jdksRoot) {
         try (Stream<Path> paths = Files.list(jdksRoot)) {
-            Set<JdkDirectory> directories = paths.filter(Files::isDirectory)
+            List<JdkDirectory> directories = paths.filter(Files::isDirectory)
                     .map(path -> new JdkDirectory(path.getFileName().toString(), path))
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toList());
             return new JdkDirectoriesAssert(directories);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -74,5 +87,17 @@ final class JdkDirectoriesAssert
                     "Expected JDK directories to contain versions %s but found directories: %s", expected, actual);
         }
         return this;
+    }
+
+    @Override
+    protected ObjectAssert<JdkDirectory> toAssert(JdkDirectory value, String description) {
+        return new ObjectAssert<>(value).as(description);
+    }
+
+    @Override
+    protected JdkDirectoriesAssert newAbstractIterableAssert(Iterable<? extends JdkDirectory> iterable) {
+        List<JdkDirectory> list = new ArrayList<>();
+        iterable.forEach(list::add);
+        return new JdkDirectoriesAssert(list);
     }
 }
