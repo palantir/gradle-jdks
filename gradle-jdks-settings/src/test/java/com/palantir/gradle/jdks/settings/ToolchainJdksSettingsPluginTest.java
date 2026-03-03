@@ -53,7 +53,7 @@ class ToolchainJdksSettingsPluginTest {
     }
 
     @Test
-    void non_existing_jdks_are_installed_by_the_settings_plugin(GradleInvoker invoker, RootProject rootProject)
+    void non_existing_jdks_are_installed_by_the_settings_plugin(GradleInvoker gradle, RootProject rootProject)
             throws IOException {
         rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
         rootProject.buildGradle().append("""
@@ -68,7 +68,7 @@ class ToolchainJdksSettingsPluginTest {
             """, JDK_17_DISTRIBUTION, JDK_17_VERSION);
 
         rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
-        invoker.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
+        gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
 
         Path jdk17LocalPath = rootProject.path().resolve(String.format("gradle/jdks/17/%s/%s/local-path", OS, ARCH));
         String originalJdk17LocalPath = Files.readString(jdk17LocalPath).trim();
@@ -80,7 +80,7 @@ class ToolchainJdksSettingsPluginTest {
                 .doesNotExist();
 
         rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
-        invoker.withArgs("javaToolchains")
+        gradle.withArgs("javaToolchains")
                 .buildsSuccessfully()
                 .assertThat()
                 .output()
@@ -98,7 +98,7 @@ class ToolchainJdksSettingsPluginTest {
                 String.format("amazon-corretto-%s", UUID.randomUUID().toString().substring(0, 8));
         Files.writeString(jdk17LocalPath, newJdkPath + "\n");
 
-        invoker.withArgs("javaToolchains")
+        gradle.withArgs("javaToolchains")
                 .buildsSuccessfully()
                 .assertThat()
                 .output()
