@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks.testing;
 
 import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
-import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.Options;
@@ -28,6 +27,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -86,11 +86,17 @@ final class GradleWithJdksInvoker implements GradleInvoker {
             Path jdkDirectory = rootProjectDir.resolve(
                     String.format("gradle/jdks/%s/%s/%s", majorVersion, OS.uiName(), ARCH.uiName()));
             String localPath = findLocalPathFile(jdkDirectory, majorVersion);
-            return GradleJdksDirectories.getToolchainInstallationDir().resolve(localPath);
+            return getToolchainInstallationDir().resolve(localPath);
         } catch (IOException e) {
             throw new JdkSetupFailureException(
                     "Failed to set up JDK automanagement: failed to retrieve the gradle daemon jdk path", e);
         }
+    }
+
+    public static Path getToolchainInstallationDir() {
+        return Path.of(Optional.ofNullable(System.getenv("GRADLE_USER_HOME"))
+                        .orElseGet(() -> System.getProperty("user.home") + "/.gradle"))
+                .resolve("gradle-jdks");
     }
 
     private static String findLocalPathFile(Path jdkDirectory, String majorVersion) throws IOException {

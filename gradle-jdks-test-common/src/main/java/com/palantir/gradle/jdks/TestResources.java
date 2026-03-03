@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -70,12 +69,6 @@ public class TestResources {
 
         public String toFileName() {
             return String.format("%s-%s", distribution, version);
-        }
-
-        public String toFilePath() {
-            return GradleJdksDirectories.getToolchainInstallationDir()
-                    .resolve(toFileName())
-                    .toString();
         }
     }
 

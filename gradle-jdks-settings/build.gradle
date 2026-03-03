@@ -55,12 +55,6 @@ publishing.publications {
     }
 }
 
-// Changing the location where the gradle jdks are installed such that the settings plugin can run the
-// gradle-jdks-setup.sh configuration script to install the missing jdks.
-tasks.withType(Test) {
-    environment("GRADLE_USER_HOME", "/tmp/gradleJdksSettingsTest/.gradle")
-}
-
 gradleTestUtils {
     configurationCacheEnabled = true
 }

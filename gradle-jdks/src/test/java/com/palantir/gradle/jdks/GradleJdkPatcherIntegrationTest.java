@@ -21,6 +21,7 @@ import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.a
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.palantir.gradle.jdks.TestResources;
 import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.GradleJdksPatchHelper;

@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.palantir.gradle.jdks.TestResources.Jdk;
 import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
-import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.jdks.testing.WithJdkAutomanagement;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
@@ -39,7 +38,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -127,8 +125,8 @@ class GradleJdkToolchainsIntegrationTest {
                 .contains("Auto-download:      Disabled");
         assertThat(TestResources.getDiscoveredLocations(toolchainsResult.output()))
                 .allMatch(discoveredPath -> TestResources.HARDCODED_JDKS.jdks().stream()
-                        .map(Jdk::toFilePath)
-                        .anyMatch(discoveredPath::startsWith));
+                        .map(Jdk::toFileName)
+                        .anyMatch(discoveredPath::contains));
 
         assertThat(TestResources.getDetectedBy(toolchainsResult.output()))
                 .as("detected by pattern contains installations.paths or Current JVM")
@@ -142,13 +140,10 @@ class GradleJdkToolchainsIntegrationTest {
                 .file(String.format("gradle/jdks/%s/%s/%s/local-path", DAEMON_MAJOR_VERSION_17, os, arch))
                 .text()
                 .trim();
-        Path daemonJvm = GradleJdksDirectories.getToolchainInstallationDir()
-                .resolve(daemonJdkFileName)
-                .toAbsolutePath();
         assertThat(gradleHomeResult)
                 .output()
                 .as("java home is set to the daemon jdk configured version")
-                .contains("java.home: " + daemonJvm);
+                .matches(String.format("java.home:\\s+(.*)%s", daemonJdkFileName));
 
         gradle.withArgs("compileJava").buildsSuccessfully();
         File compiledClass = rootProject
@@ -165,13 +160,10 @@ class GradleJdkToolchainsIntegrationTest {
                 .file(String.format("gradle/jdks/17/%s/%s/local-path", os, arch))
                 .text()
                 .trim();
-        Path compileJvm = GradleJdksDirectories.getToolchainInstallationDir()
-                .resolve(compileJdkFileName)
-                .toAbsolutePath();
         assertThat(runResult)
                 .output()
                 .as("the application is run with the configured toolchain (17)")
-                .contains("Java home: " + compileJvm);
+                .contains(String.format("Java home::\\s+(.*)%s", compileJdkFileName));
     }
 
     @Test
@@ -212,13 +204,10 @@ class GradleJdkToolchainsIntegrationTest {
                 .file(String.format("gradle/jdks/%s/%s/%s/local-path", DAEMON_MAJOR_VERSION_17, os, arch))
                 .text()
                 .trim();
-        Path daemonJvm = GradleJdksDirectories.getToolchainInstallationDir()
-                .resolve(daemonJdkFileName)
-                .toAbsolutePath();
         assertThat(gradleHomeResult)
                 .output()
                 .as("java home is set to the daemon jdk configured version")
-                .contains("java.home: " + daemonJvm);
+                .contains("java.home: " + daemonJdkFileName);
 
         assertThatJdkDirectories(rootProject)
                 .as("generates directories for all jdk versions")
