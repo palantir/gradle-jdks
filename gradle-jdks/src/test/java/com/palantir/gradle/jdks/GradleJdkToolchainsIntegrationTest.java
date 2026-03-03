@@ -143,7 +143,7 @@ class GradleJdkToolchainsIntegrationTest {
         assertThat(gradleHomeResult)
                 .output()
                 .as("java home is set to the daemon jdk configured version")
-                .matches(String.format("java.home:\\s+(.*)%s", daemonJdkFileName));
+                .containsPattern(String.format("java.home:\\s+(.*)%s", daemonJdkFileName));
 
         gradle.withArgs("compileJava").buildsSuccessfully();
         File compiledClass = rootProject
@@ -163,7 +163,7 @@ class GradleJdkToolchainsIntegrationTest {
         assertThat(runResult)
                 .output()
                 .as("the application is run with the configured toolchain (17)")
-                .contains(String.format("Java home::\\s+(.*)%s", compileJdkFileName));
+                .containsPattern(String.format("Java home:\\s+(.*)%s", compileJdkFileName));
     }
 
     @Test
@@ -207,7 +207,7 @@ class GradleJdkToolchainsIntegrationTest {
         assertThat(gradleHomeResult)
                 .output()
                 .as("java home is set to the daemon jdk configured version")
-                .contains("java.home: " + daemonJdkFileName);
+                .containsPattern(String.format("java.home:\\s+(.*)%s", daemonJdkFileName));
 
         assertThatJdkDirectories(rootProject)
                 .as("generates directories for all jdk versions")

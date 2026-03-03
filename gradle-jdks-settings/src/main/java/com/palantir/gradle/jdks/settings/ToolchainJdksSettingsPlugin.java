@@ -228,7 +228,8 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         createDirectories(buildDirectory);
         ProcessBuilder processBuilder =
                 new ProcessBuilder().command("./gradle/gradle-jdks-setup.sh").directory(rootProjectDir.toFile());
-        // Pass GRADLE_USER_HOME environment variable to ensure the setup script uses Gradle's calculated user home directory
+        // Pass GRADLE_USER_HOME environment variable to ensure the setup script uses Gradle's calculated user home
+        // directory
         processBuilder
                 .environment()
                 .put("GRADLE_USER_HOME", gradleUserHome.toAbsolutePath().toString());
