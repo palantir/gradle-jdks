@@ -125,20 +125,12 @@ class GradleJdkToolchainsIntegrationTest {
                 .as("the only discovered jdk versions are coming from gradle.properties")
                 .contains("Auto-detection:     Disabled")
                 .contains("Auto-download:      Disabled");
-        assertThat(TestResources.LOCATION_PATTERN
-                        .matcher(toolchainsResult.output())
-                        .results()
-                        .map(matchResult ->
-                                Path.of(matchResult.group(1)).getFileName().toString())
-                        .toList())
+        assertThat(TestResources.getDiscoveredLocations(toolchainsResult.output()))
                 .containsExactlyInAnyOrderElementsOf(TestResources.HARDCODED_JDKS.jdks().stream()
-                        .map(Jdk::toString)
+                        .map(Jdk::toFilePath)
                         .toList());
 
-        assertThat(TestResources.DETECTED_BY
-                        .matcher(toolchainsResult.output())
-                        .results()
-                        .map(matchResult -> matchResult.group(1)))
+        assertThat(TestResources.getDetectedBy(toolchainsResult.output()))
                 .as("detected by pattern contains installations.paths or Current JVM")
                 .allMatch(a -> a.matches("Gradle property 'org\\.gradle\\.java\\.installations\\.paths'|Current JVM"));
 

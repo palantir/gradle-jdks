@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
-import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.jdks.testing.WithJdkAutomanagement;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
@@ -39,15 +38,10 @@ import org.junit.jupiter.api.Test;
 @WithJdkAutomanagement
 public class GradleWithJdksTest {
 
-    private static final Path expectedGradleJdks21Dir =
-            GradleJdksDirectories.getToolchainInstallationDir().resolve(TestResources.JDK_21.toString());
-    private static final Path expectedGradleJdks17Dir =
-            GradleJdksDirectories.getToolchainInstallationDir().resolve(TestResources.JDK_17.toString());
-
     @Test
     void javaToolchains_are_correctly_set(GradleInvoker invoker, RootProject rootProject) {
         addJdks21Setup(rootProject);
-        assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(expectedGradleJdks21Dir.toString()));
+        assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(TestResources.JDK_21.toFilePath()));
 
         updateJdksAndCheckSetupJdks(invoker, rootProject);
     }
@@ -58,7 +52,7 @@ public class GradleWithJdksTest {
         @BeforeEach
         void setup(GradleInvoker invoker, RootProject rootProject) {
             addJdks21Setup(rootProject);
-            assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(expectedGradleJdks21Dir.toString()));
+            assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(TestResources.JDK_21.toFilePath()));
         }
 
         @Test
@@ -82,11 +76,7 @@ public class GradleWithJdksTest {
             """);
 
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
-        assertThat(TestResources.LANGUAGE_VERSION_PATTERN
-                        .matcher(result.output())
-                        .results()
-                        .map(matchResult -> matchResult.group(1)))
-                .contains("11", "21");
+        assertThat(TestResources.getLanguageVersions(result.output())).containsExactlyInAnyOrder(11, 21);
     }
 
     @Test
@@ -151,16 +141,11 @@ public class GradleWithJdksTest {
                         "Gradle JDK Auto-management is enabled but the java versions=[999] are not configured");
     }
 
-    private static void assertJavaToolchainsMatch(GradleInvoker invoker, Predicate<? super String> predicate) {
+    private static void assertJavaToolchainsMatch(GradleInvoker invoker, Predicate<? super Path> predicate) {
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
         result.assertThat().output().contains("Auto-detection:     Disabled");
         result.assertThat().output().contains("Auto-download:      Disabled");
-        assertThat(TestResources.LOCATION_PATTERN
-                        .matcher(result.output())
-                        .results()
-                        .map(matchResult -> matchResult.group(1))
-                        .toList())
-                .allMatch(predicate);
+        assertThat(TestResources.getDiscoveredLocations(result.output())).allMatch(predicate);
     }
 
     private static void addJdks21Setup(RootProject rootProject) {
@@ -179,7 +164,7 @@ public class GradleWithJdksTest {
                 %s
             }
             """, TestResources.JDK_17.toJdkExtension());
-        assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(expectedGradleJdks21Dir.toString()));
+        assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(TestResources.JDK_21.toFilePath()));
 
         // The gradle jdks files are out of date
         invoker.withArgs("checkGradleJdks")
@@ -193,7 +178,7 @@ public class GradleWithJdksTest {
 
         assertJavaToolchainsMatch(
                 invoker,
-                toolchain -> toolchain.startsWith(expectedGradleJdks21Dir.toString())
-                        || toolchain.startsWith(expectedGradleJdks17Dir.toString()));
+                toolchain -> toolchain.startsWith(TestResources.JDK_21.toFilePath())
+                        || toolchain.startsWith(TestResources.JDK_17.toFilePath()));
     }
 }

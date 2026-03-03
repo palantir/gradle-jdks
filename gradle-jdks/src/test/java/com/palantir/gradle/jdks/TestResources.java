@@ -16,15 +16,41 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class TestResources {
 
-    public static final Pattern LOCATION_PATTERN = Pattern.compile("Location:\\s+(.*)");
-    public static final Pattern LANGUAGE_VERSION_PATTERN = Pattern.compile(" Language Version:\\s+(\\d+)");
-    public static final Pattern DETECTED_BY = Pattern.compile("Detected by:\\s+(.*)");
+    private static final Pattern LOCATION_PATTERN = Pattern.compile("Location:\\s+(.*)");
+    private static final Pattern LANGUAGE_VERSION_PATTERN = Pattern.compile(" Language Version:\\s+(\\d+)");
+    private static final Pattern DETECTED_BY = Pattern.compile("Detected by:\\s+(.*)");
+
+    public static List<Path> getDiscoveredLocations(String output) {
+        return LOCATION_PATTERN
+                .matcher(output)
+                .results()
+                .map(result -> Path.of(result.group(1)))
+                .toList();
+    }
+
+    public static List<Integer> getLanguageVersions(String output) {
+        return LANGUAGE_VERSION_PATTERN
+                .matcher(output)
+                .results()
+                .map(result -> Integer.parseInt(result.group(1)))
+                .toList();
+    }
+
+    public static List<String> getDetectedBy(String output) {
+        return DETECTED_BY
+                .matcher(output)
+                .results()
+                .map(result -> result.group(1))
+                .toList();
+    }
 
     public static final Jdk JDK_11 = new Jdk("azul-zulu", "11.54.25-11.0.14.1");
     public static final Jdk JDK_17 = new Jdk("amazon-corretto", "17.0.3.6.1");
@@ -43,8 +69,12 @@ public class TestResources {
                 """, majorVersion, distribution, version);
         }
 
-        public String toString() {
+        public String toFileName() {
             return String.format("%s-%s", distribution, version);
+        }
+
+        public Path toFilePath() {
+            return GradleJdksDirectories.getToolchainInstallationDir().resolve(toFileName());
         }
     }
 
