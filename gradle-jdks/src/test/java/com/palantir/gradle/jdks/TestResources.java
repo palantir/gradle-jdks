@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -28,11 +27,11 @@ public class TestResources {
     private static final Pattern LANGUAGE_VERSION_PATTERN = Pattern.compile(" Language Version:\\s+(\\d+)");
     private static final Pattern DETECTED_BY = Pattern.compile("Detected by:\\s+(.*)");
 
-    public static List<Path> getDiscoveredLocations(String output) {
+    public static List<String> getDiscoveredLocations(String output) {
         return LOCATION_PATTERN
                 .matcher(output)
                 .results()
-                .map(result -> Path.of(result.group(1)))
+                .map(result -> result.group(1))
                 .toList();
     }
 
@@ -73,8 +72,10 @@ public class TestResources {
             return String.format("%s-%s", distribution, version);
         }
 
-        public Path toFilePath() {
-            return GradleJdksDirectories.getToolchainInstallationDir().resolve(toFileName());
+        public String toFilePath() {
+            return GradleJdksDirectories.getToolchainInstallationDir()
+                    .resolve(toFileName())
+                    .toString();
         }
     }
 

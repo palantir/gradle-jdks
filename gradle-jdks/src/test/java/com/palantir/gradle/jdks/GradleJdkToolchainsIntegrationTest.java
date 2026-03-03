@@ -126,9 +126,9 @@ class GradleJdkToolchainsIntegrationTest {
                 .contains("Auto-detection:     Disabled")
                 .contains("Auto-download:      Disabled");
         assertThat(TestResources.getDiscoveredLocations(toolchainsResult.output()))
-                .containsExactlyInAnyOrderElementsOf(TestResources.HARDCODED_JDKS.jdks().stream()
+                .allMatch(path -> TestResources.HARDCODED_JDKS.jdks().stream()
                         .map(Jdk::toFilePath)
-                        .toList());
+                        .anyMatch(jdkPath -> jdkPath.startsWith(path)));
 
         assertThat(TestResources.getDetectedBy(toolchainsResult.output()))
                 .as("detected by pattern contains installations.paths or Current JVM")

@@ -26,7 +26,6 @@ import com.palantir.gradle.testing.execution.InvocationResult;
 import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
-import java.nio.file.Path;
 import java.util.function.Predicate;
 import org.gradle.testkit.runner.UnexpectedBuildFailure;
 import org.junit.jupiter.api.BeforeEach;
@@ -141,7 +140,7 @@ public class GradleWithJdksTest {
                         "Gradle JDK Auto-management is enabled but the java versions=[999] are not configured");
     }
 
-    private static void assertJavaToolchainsMatch(GradleInvoker invoker, Predicate<? super Path> predicate) {
+    private static void assertJavaToolchainsMatch(GradleInvoker invoker, Predicate<? super String> predicate) {
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
         result.assertThat().output().contains("Auto-detection:     Disabled");
         result.assertThat().output().contains("Auto-download:      Disabled");
