@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache
+@DisabledConfigurationCache("initial migration")
 class JdksPluginIntegrationTest {
 
     @SuppressWarnings("for-rollout:OrphanedFormatString")
