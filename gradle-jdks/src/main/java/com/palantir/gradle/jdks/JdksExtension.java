@@ -140,6 +140,7 @@ public abstract class JdksExtension {
         });
     }
 
+    @SuppressWarnings("for-rollout:FormatStringShouldUsePlaceholders")
     public final JdkDistributionExtension jdkDistributionFor(JdkDistributionName jdkDistributionName) {
         return jdkDistributions
                 .get(jdkDistributionName, null)
