@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache("gradle-jdks is not compatible atm with CC")
+@DisabledConfigurationCache("initial-rollout")
 @WithJdkAutomanagement
 public class GradleWithJdksTest {
 

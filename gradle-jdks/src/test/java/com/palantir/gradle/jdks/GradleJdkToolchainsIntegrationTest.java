@@ -44,7 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache
+@DisabledConfigurationCache("initial-rollout")
 @WithJdkAutomanagement
 class GradleJdkToolchainsIntegrationTest {
 

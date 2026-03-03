@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache
+@DisabledConfigurationCache("initial-rollout")
 class GradleJdkPatcherIntegrationTest {
 
     @BeforeEach

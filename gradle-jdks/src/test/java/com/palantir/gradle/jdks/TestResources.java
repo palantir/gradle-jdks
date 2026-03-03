@@ -23,6 +23,12 @@ import java.util.stream.Collectors;
 
 public class TestResources {
 
+    public static final Jdk JDK_11 = new Jdk("azul-zulu", "11.54.25-11.0.14.1");
+    public static final Jdk JDK_17 = new Jdk("amazon-corretto", "17.0.3.6.1");
+    public static final Jdk JDK_21 = new Jdk("amazon-corretto", "21.0.2.13.1");
+    public static final Jdk GRAALVM_3 = new Jdk("graalvm-ce", "23.0.1");
+    public static final Jdks HARDCODED_JDKS = new Jdks(List.of(JDK_11, JDK_17, JDK_21));
+
     private static final Pattern LOCATION_PATTERN = Pattern.compile("Location:\\s+(.*)");
     private static final Pattern LANGUAGE_VERSION_PATTERN = Pattern.compile(" Language Version:\\s+(\\d+)");
     private static final Pattern DETECTED_BY = Pattern.compile("Detected by:\\s+(.*)");
@@ -50,12 +56,6 @@ public class TestResources {
                 .map(result -> result.group(1))
                 .toList();
     }
-
-    public static final Jdk JDK_11 = new Jdk("azul-zulu", "11.54.25-11.0.14.1");
-    public static final Jdk JDK_17 = new Jdk("amazon-corretto", "17.0.3.6.1");
-    public static final Jdk JDK_21 = new Jdk("amazon-corretto", "21.0.2.13.1");
-    public static final Jdk GRAALVM_3 = new Jdk("graalvm-ce", "23.0.1");
-    public static final Jdks HARDCODED_JDKS = new Jdks(List.of(JDK_11, JDK_17, JDK_21));
 
     public record Jdk(String distribution, String version) {
         public String toJdkExtension() {
