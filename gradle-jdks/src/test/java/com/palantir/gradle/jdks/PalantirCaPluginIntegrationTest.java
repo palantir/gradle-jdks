@@ -26,7 +26,7 @@ import com.palantir.gradle.testing.project.RootProject;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache
+@DisabledConfigurationCache("initial migration")
 class PalantirCaPluginIntegrationTest {
 
     @Test
