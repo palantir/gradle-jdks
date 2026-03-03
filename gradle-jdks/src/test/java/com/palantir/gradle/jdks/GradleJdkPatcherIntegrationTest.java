@@ -31,7 +31,6 @@ import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
 import com.palantir.platform.OperatingSystem;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,11 +38,6 @@ import org.junit.jupiter.api.Test;
 @GradlePluginTests
 @DisabledConfigurationCache
 class GradleJdkPatcherIntegrationTest {
-
-    private static final String DAEMON_MAJOR_VERSION_17 = "17";
-    private static final Pair<String, String> JDK_11 = Pair.of("azul-zulu", "11.54.25-11.0.14.1");
-    private static final Pair<String, String> JDK_17 = Pair.of("amazon-corretto", "17.0.3.6.1");
-    private static final Pair<String, String> JDK_21 = Pair.of("amazon-corretto", "21.0.2.13.1");
 
     @BeforeEach
     void setup(RootProject rootProject) {
@@ -55,37 +49,12 @@ class GradleJdkPatcherIntegrationTest {
 
         @BeforeEach
         void setup(RootProject rootProject) {
-            setupJdksHardcodedVersions(rootProject, DAEMON_MAJOR_VERSION_17);
-        }
-
-        private static void setupJdksHardcodedVersions(RootProject rootProject, String daemonTarget) {
-            rootProject
-                    .buildGradle()
-                    .append(
-                            """
-                            jdks {
-                                jdk(11) {
-                                    distribution = '%s'
-                                    jdkVersion = '%s'
-                                }
-                                jdk(17) {
-                                    distribution = '%s'
-                                    jdkVersion = '%s'
-                                }
-                                jdk(21) {
-                                    distribution = '%s'
-                                    jdkVersion = '%s'
-                                }
-                                daemonTarget = %s
-                            }
-                            """,
-                            JDK_11.getLeft(),
-                            JDK_11.getRight(),
-                            JDK_17.getLeft(),
-                            JDK_17.getRight(),
-                            JDK_21.getLeft(),
-                            JDK_21.getRight(),
-                            daemonTarget);
+            rootProject.buildGradle().append("""
+                jdks {
+                    %s
+                    daemonTarget = 17
+                }
+                """, TestResources.HARDCODED_JDKS.toJdksExtension());
         }
 
         @Test
@@ -122,7 +91,7 @@ class GradleJdkPatcherIntegrationTest {
                     .file("gradle/gradle-daemon-jdk-version")
                     .assertThat()
                     .content()
-                    .contains(DAEMON_MAJOR_VERSION_17)
+                    .contains("17")
                     .as("daemon JDK version matches expected");
 
             rootProject.file("gradle/gradle-jdks-setup.sh").assertThat().isExecutable();

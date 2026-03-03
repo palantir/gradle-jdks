@@ -19,7 +19,6 @@ package com.palantir.gradle.jdks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.google.common.collect.ImmutableList;
 import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.jdks.testing.WithJdkAutomanagement;
@@ -29,10 +28,7 @@ import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.gradle.testkit.runner.UnexpectedBuildFailure;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -43,14 +39,10 @@ import org.junit.jupiter.api.Test;
 @WithJdkAutomanagement
 public class GradleWithJdksTest {
 
-    private static final Pattern locationPattern = Pattern.compile("Location:\\s+(.*)");
-    private static final Pattern languageVersionPattern = Pattern.compile(" Language Version:\\s+(\\d+)");
-    private static final String java21Version = "21.0.9.10.1";
-    private static final String java17Version = "17.0.17.10.1";
-    private static final Path expectedGradleJdks21Dir = GradleJdksDirectories.getToolchainInstallationDir()
-            .resolve(String.format("amazon-corretto-%s", java21Version));
-    private static final Path expectedGradleJdks17Dir = GradleJdksDirectories.getToolchainInstallationDir()
-            .resolve(String.format("amazon-corretto-%s", java17Version));
+    private static final Path expectedGradleJdks21Dir =
+            GradleJdksDirectories.getToolchainInstallationDir().resolve(TestResources.JDK_21.toString());
+    private static final Path expectedGradleJdks17Dir =
+            GradleJdksDirectories.getToolchainInstallationDir().resolve(TestResources.JDK_17.toString());
 
     @Test
     void javaToolchains_are_correctly_set(GradleInvoker invoker, RootProject rootProject) {
@@ -90,13 +82,11 @@ public class GradleWithJdksTest {
             """);
 
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
-        Matcher matcher = languageVersionPattern.matcher(result.output());
-        ImmutableList.Builder<String> versionsBuilder = ImmutableList.builder();
-        while (matcher.find()) {
-            versionsBuilder.add(matcher.group(1));
-        }
-        List<String> versions = versionsBuilder.build();
-        assertThat(versions).contains("11", "21");
+        assertThat(TestResources.LANGUAGE_VERSION_PATTERN
+                        .matcher(result.output())
+                        .results()
+                        .map(matchResult -> matchResult.group(1)))
+                .contains("11", "21");
     }
 
     @Test
@@ -104,12 +94,9 @@ public class GradleWithJdksTest {
         rootProject.buildGradle().append("""
             jdks {
                 daemonTarget = 24
-                jdk(21) {
-                    distribution = 'amazon-corretto'
-                    jdkVersion = '21.0.9.10.1'
-                }
+                %s
             }
-            """);
+            """, TestResources.JDK_21.toJdkExtension());
 
         assertThatThrownBy(() -> invoker.withArgs("javaToolchains").buildsSuccessfully())
                 .isInstanceOf(JdkSetupFailureException.class)
@@ -168,7 +155,7 @@ public class GradleWithJdksTest {
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
         result.assertThat().output().contains("Auto-detection:     Disabled");
         result.assertThat().output().contains("Auto-download:      Disabled");
-        assertThat(locationPattern
+        assertThat(TestResources.LOCATION_PATTERN
                         .matcher(result.output())
                         .results()
                         .map(matchResult -> matchResult.group(1))
@@ -180,24 +167,18 @@ public class GradleWithJdksTest {
         rootProject.buildGradle().append("""
             jdks {
                 daemonTarget = 21
-                jdk(21) {
-                    distribution = 'amazon-corretto'
-                    jdkVersion = '%s'
-                }
+                %s
             }
-            """, java21Version);
+            """, TestResources.JDK_21.toJdkExtension());
     }
 
     private static void updateJdksAndCheckSetupJdks(GradleInvoker invoker, RootProject rootProject) {
         // changing the jdks will not run again `setupJdks`
         rootProject.buildGradle().append("""
             jdks {
-                jdk(17) {
-                    distribution = 'amazon-corretto'
-                    jdkVersion = '%s'
-                }
+                %s
             }
-            """, java17Version);
+            """, TestResources.JDK_17.toJdkExtension());
         assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(expectedGradleJdks21Dir.toString()));
 
         // The gradle jdks files are out of date

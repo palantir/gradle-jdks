@@ -21,6 +21,7 @@ import static com.palantir.gradle.testing.assertion.GradlePluginTestAssertions.a
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.palantir.gradle.jdks.TestResources.Jdk;
 import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
@@ -39,9 +40,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -59,12 +57,6 @@ class GradleJdkToolchainsIntegrationTest {
     private static final int BYTECODE_IDENTIFIER = (int) 0xCAFEBABE;
 
     private static final String DAEMON_MAJOR_VERSION_17 = "17";
-    private static final Pair<String, String> JDK_11 = Pair.of("azul-zulu", "11.54.25-11.0.14.1");
-    private static final Pair<String, String> JDK_17 = Pair.of("amazon-corretto", "17.0.3.6.1");
-    private static final Pair<String, String> JDK_21 = Pair.of("amazon-corretto", "21.0.2.13.1");
-    private static final String SIMPLIFIED_JDK_11_VERSION = "11.0.14";
-    private static final String SIMPLIFIED_JDK_17_VERSION = "17.0.3";
-    private static final String SIMPLIFIED_JDK_21_VERSION = "21.0.2";
 
     private static final String JAVA_CODE = """
         public class Main {
@@ -94,33 +86,12 @@ class GradleJdkToolchainsIntegrationTest {
     @BeforeEach
     void setup(RootProject rootProject) {
         rootProject.buildGradle().plugins().add("java");
-        rootProject
-                .buildGradle()
-                .append(
-                        """
-                        jdks {
-                            jdk(11) {
-                                distribution = '%s'
-                                jdkVersion = '%s'
-                            }
-                            jdk(17) {
-                                distribution = '%s'
-                                jdkVersion = '%s'
-                            }
-                            jdk(21) {
-                                distribution = '%s'
-                                jdkVersion = '%s'
-                            }
-                            daemonTarget = '%s'
-                        }
-                        """,
-                        JDK_11.getLeft(),
-                        JDK_11.getRight(),
-                        JDK_17.getLeft(),
-                        JDK_17.getRight(),
-                        JDK_21.getLeft(),
-                        JDK_21.getRight(),
-                        DAEMON_MAJOR_VERSION_17);
+        rootProject.buildGradle().append("""
+            jdks {
+                %s
+                daemonTarget = '%s'
+            }
+            """, TestResources.HARDCODED_JDKS.toJdksExtension(), DAEMON_MAJOR_VERSION_17);
 
         rootProject.buildGradle().plugins().add("application");
         rootProject.buildGradle().append("""
@@ -153,18 +124,23 @@ class GradleJdkToolchainsIntegrationTest {
                 .output()
                 .as("the only discovered jdk versions are coming from gradle.properties")
                 .contains("Auto-detection:     Disabled")
-                .contains("Auto-download:      Disabled")
-                .contains("JDK " + SIMPLIFIED_JDK_11_VERSION)
-                .contains("JDK " + SIMPLIFIED_JDK_17_VERSION)
-                .contains("JDK " + SIMPLIFIED_JDK_21_VERSION);
+                .contains("Auto-download:      Disabled");
+        assertThat(TestResources.LOCATION_PATTERN
+                        .matcher(toolchainsResult.output())
+                        .results()
+                        .map(matchResult ->
+                                Path.of(matchResult.group(1)).getFileName().toString())
+                        .toList())
+                .containsExactlyInAnyOrderElementsOf(TestResources.HARDCODED_JDKS.jdks().stream()
+                        .map(Jdk::toString)
+                        .toList());
 
-        Matcher matcher = Pattern.compile("Detected by:       (.*)").matcher(toolchainsResult.output());
-        while (matcher.find()) {
-            String detectedByPattern = matcher.group(1);
-            assertThat(detectedByPattern)
-                    .as("detected by pattern contains installations.paths or Current JVM")
-                    .containsPattern("org\\.gradle\\.java\\.installations\\.paths|Current JVM");
-        }
+        assertThat(TestResources.DETECTED_BY
+                        .matcher(toolchainsResult.output())
+                        .results()
+                        .map(matchResult -> matchResult.group(1)))
+                .as("detected by pattern contains installations.paths or Current JVM")
+                .allMatch(a -> a.matches("Gradle property 'org\\.gradle\\.java\\.installations\\.paths'|Current JVM"));
 
         InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
 
@@ -190,7 +166,7 @@ class GradleJdkToolchainsIntegrationTest {
                 .toFile();
         assertThat(readBytecodeVersion(compiledClass))
                 .as("the project is compiled with the configured toolchain (17)")
-                .isEqualTo(Pair.of(0, JAVA_17_BYTECODE));
+                .isEqualTo(new BytecodeVersion(0, JAVA_17_BYTECODE));
 
         InvocationResult runResult = gradle.withArgs("run").buildsSuccessfully();
         String compileJdkFileName = rootProject
@@ -265,7 +241,7 @@ class GradleJdkToolchainsIntegrationTest {
                 .toFile();
         assertThat(readBytecodeVersion(compiledClass))
                 .as("the main project is compiled with distributionTarget version")
-                .isEqualTo(Pair.of(ENABLE_PREVIEW_BYTECODE, JAVA_17_BYTECODE));
+                .isEqualTo(new BytecodeVersion(ENABLE_PREVIEW_BYTECODE, JAVA_17_BYTECODE));
 
         File subproject11Class = subprojectLib11
                 .buildDir()
@@ -274,7 +250,7 @@ class GradleJdkToolchainsIntegrationTest {
                 .toFile();
         assertThat(readBytecodeVersion(subproject11Class))
                 .as("the library is compiled with libraryTarget version")
-                .isEqualTo(Pair.of(0, JAVA_11_BYTECODE));
+                .isEqualTo(new BytecodeVersion(0, JAVA_11_BYTECODE));
 
         File subproject21Class = subprojectLib21
                 .buildDir()
@@ -283,7 +259,7 @@ class GradleJdkToolchainsIntegrationTest {
                 .toFile();
         assertThat(readBytecodeVersion(subproject21Class))
                 .as("the project is compiled with the overridden target version")
-                .isEqualTo(Pair.of(0, JAVA_21_BYTECODE));
+                .isEqualTo(new BytecodeVersion(0, JAVA_21_BYTECODE));
     }
 
     @Test
@@ -298,12 +274,9 @@ class GradleJdkToolchainsIntegrationTest {
             }
 
             jdks {
-                jdk(23) {
-                    distribution = 'graalvm-ce'
-                    jdkVersion = '23.0.1'
-                }
+                %s
             }
-            """);
+            """, TestResources.GRAALVM_3.toJdkExtension());
 
         gradle.withArgs("compileJava").buildsSuccessfully();
         assertThatJdkDirectories(rootProject)
@@ -317,7 +290,7 @@ class GradleJdkToolchainsIntegrationTest {
                 .toFile();
         assertThat(readBytecodeVersion(compiledClass))
                 .as("the main project is compiled with distributionTarget version")
-                .isEqualTo(Pair.of(0, JAVA_23_BYTECODE));
+                .isEqualTo(new BytecodeVersion(0, JAVA_23_BYTECODE));
     }
 
     @Test
@@ -441,7 +414,8 @@ class GradleJdkToolchainsIntegrationTest {
                         "Gradle JDK Auto-management is enabled but the java versions=[15] are not configured.");
     }
 
-    private static Pair<Integer, Integer> readBytecodeVersion(File file) {
+    // See http://illegalargumentexception.blogspot.com/2009/07/java-finding-class-versions.html
+    private static BytecodeVersion readBytecodeVersion(File file) {
         try (InputStream stream = new FileInputStream(file);
                 DataInputStream dis = new DataInputStream(stream)) {
             int magic = dis.readInt();
@@ -450,9 +424,11 @@ class GradleJdkToolchainsIntegrationTest {
             }
             int minorBytecodeVersion = dis.readUnsignedShort();
             int majorBytecodeVersion = dis.readUnsignedShort();
-            return Pair.of(minorBytecodeVersion, majorBytecodeVersion);
+            return new BytecodeVersion(minorBytecodeVersion, majorBytecodeVersion);
         } catch (IOException e) {
             throw new UncheckedIOException(String.format("Failed to read bytecode version from %s", file), e);
         }
     }
+
+    record BytecodeVersion(int minor, int major) {}
 }
