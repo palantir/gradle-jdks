@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache("initial-rollout")
+@DisabledConfigurationCache("initial migration")
 @WithJdkAutomanagement
 public class GradleWithJdksTest {
 
