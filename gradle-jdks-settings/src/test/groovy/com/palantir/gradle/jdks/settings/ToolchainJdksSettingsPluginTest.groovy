@@ -110,7 +110,6 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
 
     def 'setupJdks bypasses auto-detect validation'() {
         setup:
-        gradleVersion = GradleJdkTestUtils.GRADLE_8_8_VERSION
         GradleJdkTestUtils.applyJdksPlugins(settingsFile, buildFile)
 
         // language=groovy
@@ -142,7 +141,6 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
 
     def 'task depending on setupJdks also bypasses auto-detect validation'() {
         setup:
-        gradleVersion = GradleJdkTestUtils.GRADLE_8_8_VERSION
         GradleJdkTestUtils.applyJdksPlugins(settingsFile, buildFile)
 
         // language=groovy
@@ -177,7 +175,6 @@ class ToolchainJdksSettingsPluginTest extends IntegrationSpec {
 
     def 'fails when auto-detect is not disabled in gradle.properties'() {
         setup:
-        gradleVersion = GradleJdkTestUtils.GRADLE_8_8_VERSION
         GradleJdkTestUtils.applyJdksPlugins(settingsFile, buildFile)
 
         // language=groovy
