@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class TestResources {
+public final class TestResources {
 
     public static final Jdk JDK_11 = new Jdk("azul-zulu", "11.54.25-11.0.14.1");
     public static final Jdk JDK_17 = new Jdk("amazon-corretto", "17.0.3.6.1");
