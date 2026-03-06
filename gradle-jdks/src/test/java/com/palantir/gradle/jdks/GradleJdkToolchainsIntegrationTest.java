@@ -297,11 +297,20 @@ class GradleJdkToolchainsIntegrationTest {
                 libraryTarget = '11'
             }
             """);
+        rootProject.buildGradle().append("""
+                println "gradleUserHomeDir" + gradle.getGradleUserHomeDir()
+            """);
 
         gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
         assertThatJdkDirectories(rootProject)
                 .as("generates directories for jdk version == 11, 17")
                 .containsExactJdks(11, 17);
+        assertThat(rootProject.buildDir().path().resolve("installedJdkPaths"))
+                .content()
+                .contains("""
+                    11:(.*)/gradle-jdks/(.*)
+                    17:(.*)/gradle-jdks/(.*)
+                    """);
 
         gradle.withArgs("generateGradleJdkConfigs", "--includeVersion=11", "--includeVersion=21")
                 .buildsSuccessfully();

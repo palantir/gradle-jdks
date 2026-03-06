@@ -45,8 +45,8 @@ class ToolchainJdksSettingsPluginTest {
     private static final String OS = OperatingSystem.get().uiName();
     private static final String ARCH = CurrentArch.get().uiName();
     private static final String TMP_GRADLE_USER_HOME = "/tmp/gradle-jdks-testing";
-    private static final Path GRADLE_JDKS_INSTALLATION_DIR =
-            Path.of(TMP_GRADLE_USER_HOME).resolve("gradle-jdks");
+    private static final Path TMP_GRADLE_USER_HOME_PATH = Path.of("/tmp/gradle-jdks-testing");
+    private static final Path GRADLE_JDKS_INSTALLATION_DIR = TMP_GRADLE_USER_HOME_PATH.resolve("gradle-jdks");
 
     @BeforeEach
     void before() {
@@ -75,6 +75,11 @@ class ToolchainJdksSettingsPluginTest {
         assertThat(originalJdkPath)
                 .as("only gradle configuration files are generated, no jdks are installed")
                 .doesNotExist();
+        assertThat(rootProject.buildDir().path().resolve("installedJdkPaths"))
+                .hasContent(
+                        String.format("""
+                            17:%s/gradle-jdks/%s
+                            """, TMP_GRADLE_USER_HOME_PATH.toRealPath(), TestResources.JDK_17.toFileName()));
 
         rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
         InvocationResult toolchainsResult = gradle.withArgs("javaToolchains").buildsSuccessfully();

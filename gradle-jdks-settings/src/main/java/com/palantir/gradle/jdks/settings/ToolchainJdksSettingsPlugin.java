@@ -70,6 +70,8 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
     @Override
     public final void apply(Settings settings) {
         OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
+        Path gradleUserHomeDir = getGradle().getGradleUserHomeDir().toPath();
+        logger.warn("gradleUserHomeDir {}", gradleUserHomeDir);
 
         Path rootProjectDir = settings.getRootDir().toPath();
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(os, rootProjectDir)) {
@@ -90,7 +92,6 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }
-        Path gradleUserHomeDir = getGradle().getGradleUserHomeDir().toPath();
         // Forces the installation of the configured jdks if they are not installed. Fixes the case when a user doesn't
         // have the Intellij plugin installed and some jdks are missing.
         getOrInstallJdkPaths(rootProjectDir, gradleUserHomeDir, gradleJdksLocalDirectory, os);
