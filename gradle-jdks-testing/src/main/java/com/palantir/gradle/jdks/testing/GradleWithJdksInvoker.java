@@ -17,18 +17,16 @@
 package com.palantir.gradle.jdks.testing;
 
 import com.palantir.gradle.jdks.setup.JdkSetupFailureException;
-import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
 import com.palantir.gradle.testing.execution.GradleInvocation;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.Options;
 import com.palantir.gradle.testing.project.RootProject;
-import com.palantir.platform.Architecture;
-import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Stream;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
@@ -43,9 +41,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * </ol>
  */
 final class GradleWithJdksInvoker implements GradleInvoker {
-
-    private static final Architecture ARCH = Architecture.get();
-    private static final OperatingSystem OS = OperatingSystem.get();
 
     private final GradleInvoker delegate;
     private final RootProject rootProject;
@@ -75,40 +70,34 @@ final class GradleWithJdksInvoker implements GradleInvoker {
 
     private GradleInvocation getInvokerWithToolchainsConfigured(Options options) {
         return delegate.with(options.asBuilder()
-                .addArgs(String.format("-Dorg.gradle.java.home=%s", getGradleJavaHome(rootProject.path())))
+                .addArgs(String.format("-Dorg.gradle.java.home=%s", getGradleJavaHome(rootProject)))
                 .build());
     }
 
-    private static Path getGradleJavaHome(Path rootProjectDir) {
+    private static Path getGradleJavaHome(RootProject rootProject) {
         try {
-            String majorVersion = Files.readString(rootProjectDir.resolve("gradle/gradle-daemon-jdk-version"))
+            String majorVersion = Files.readString(rootProject.path().resolve("gradle/gradle-daemon-jdk-version"))
                     .trim();
-            Path jdkDirectory = rootProjectDir.resolve(
-                    String.format("gradle/jdks/%s/%s/%s", majorVersion, OS.uiName(), ARCH.uiName()));
-            String localPath = findLocalPathFile(jdkDirectory, majorVersion);
-            return GradleJdksDirectories.getToolchainInstallationDir().resolve(localPath);
+            return Files.readAllLines(rootProject.buildDir().path().resolve("installedJdkPaths")).stream()
+                    .map(line -> jdkPathForMajorVersion(line, majorVersion))
+                    .filter(Optional::isPresent)
+                    .mapMulti(Optional<Path>::ifPresent)
+                    .findFirst()
+                    .orElseThrow(() -> new JdkSetupFailureException(
+                            "Failed to set up JDK automanagement: failed to retrieve the gradle daemon" + " jdk path"));
         } catch (IOException e) {
             throw new JdkSetupFailureException(
                     "Failed to set up JDK automanagement: failed to retrieve the gradle daemon jdk path", e);
         }
     }
 
-    private static String findLocalPathFile(Path jdkDirectory, String majorVersion) throws IOException {
-        try (Stream<Path> stream = Files.find(
-                jdkDirectory, 1, (path, _attr) -> path.getFileName().toString().equals("local-path"))) {
-            return stream.findFirst()
-                    .map(GradleWithJdksInvoker::readLocalPath)
-                    .orElseThrow(() -> new JdkSetupFailureException(
-                            String.format("Failed to find JDK local-path file for majorVersion %s", majorVersion)));
+    private static Optional<Path> jdkPathForMajorVersion(String line, String majorVersion) {
+        Matcher matcher =
+                Pattern.compile(String.format("%s:(.*)", majorVersion)).matcher(line);
+        if (matcher.matches()) {
+            return Optional.of(Path.of(matcher.group(1)));
         }
-    }
-
-    private static String readLocalPath(Path path) {
-        try {
-            return Files.readString(path).trim();
-        } catch (IOException e) {
-            throw new UncheckedIOException(String.format("Failed to read the path %s", path), e);
-        }
+        return Optional.empty();
     }
 
     private static void setupOrCheckRootProject(RootProject rootProject) {

@@ -31,6 +31,7 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
 
@@ -50,7 +51,10 @@ public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
 
     @Override
     protected final void applyGradleJdkFileAction(
-            Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistribution) {
+            Path downloadUrlPath,
+            Path localUrlPath,
+            JdkDistributionConfig jdkDistribution,
+            JavaLanguageVersion _javaLanguageVersion) {
         assertFileContent(downloadUrlPath, jdkDistribution.getDownloadUrl().get());
         assertFileContent(localUrlPath, jdkDistribution.getLocalPath().get());
     }

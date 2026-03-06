@@ -16,7 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
-import com.palantir.gradle.jdks.setup.common.GradleJdksDirectories;
+import com.palantir.platform.OperatingSystem;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,23 +59,26 @@ public final class TestResources {
 
     public record Jdk(String distribution, String version) {
         public String toJdkExtension() {
-            String majorVersion = version.substring(0, version.indexOf('.'));
             return String.format("""
                 jdk(%s) {
                     distribution = '%s'
                     jdkVersion = '%s'
                 }
-                """, majorVersion, distribution, version);
+                """, getMajorVersion(), distribution, version);
+        }
+
+        public String getMajorVersion() {
+            return version.substring(0, version.indexOf('.'));
         }
 
         public String toFileName() {
-            return String.format("%s-%s", distribution, version);
-        }
-
-        public String toFilePath() {
-            return GradleJdksDirectories.getToolchainInstallationDir()
-                    .resolve(toFileName())
-                    .toString();
+            String suffix =
+                    switch (OperatingSystem.get()) {
+                        case LINUX_MUSL -> "-musl";
+                        case LINUX_GLIBC -> "-glibc";
+                        case WINDOWS, MACOS -> "";
+                    };
+            return String.format("%s-%s%s", distribution, version, suffix);
         }
     }
 

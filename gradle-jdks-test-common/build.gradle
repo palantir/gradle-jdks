@@ -1,8 +1,7 @@
 apply plugin: 'java'
-apply plugin: 'groovy'
 
 dependencies {
     implementation project(':gradle-jdks-setup-common')
-    implementation gradleTestKit()
+    implementation 'com.palantir.gradle.utils:platform'
     implementation 'org.apache.commons:commons-compress'
 }

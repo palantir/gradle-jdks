@@ -40,7 +40,7 @@ public class GradleWithJdksTest {
     @Test
     void javaToolchains_are_correctly_set(GradleInvoker invoker, RootProject rootProject) {
         addJdks21Setup(rootProject);
-        assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(TestResources.JDK_21.toFilePath()));
+        assertJavaToolchainsMatch(invoker, toolchain -> toolchain.contains(TestResources.JDK_21.toFileName()));
 
         updateJdksAndCheckSetupJdks(invoker, rootProject);
     }
@@ -51,7 +51,7 @@ public class GradleWithJdksTest {
         @BeforeEach
         void setup(GradleInvoker invoker, RootProject rootProject) {
             addJdks21Setup(rootProject);
-            assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(TestResources.JDK_21.toFilePath()));
+            assertJavaToolchainsMatch(invoker, toolchain -> toolchain.contains(TestResources.JDK_21.toFileName()));
         }
 
         @Test
@@ -75,7 +75,9 @@ public class GradleWithJdksTest {
             """);
 
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
-        assertThat(TestResources.getLanguageVersions(result.output())).containsExactlyInAnyOrder(11, 21);
+        assertThat(TestResources.getLanguageVersions(result.output()))
+                .as(String.format("Expected only 2 jDKS (11 and 21) in the javaToolchains output %s", result.output()))
+                .containsExactlyInAnyOrder(11, 21);
     }
 
     @Test
@@ -163,7 +165,7 @@ public class GradleWithJdksTest {
                 %s
             }
             """, TestResources.JDK_17.toJdkExtension());
-        assertJavaToolchainsMatch(invoker, toolchain -> toolchain.startsWith(TestResources.JDK_21.toFilePath()));
+        assertJavaToolchainsMatch(invoker, toolchain -> toolchain.contains(TestResources.JDK_21.toFileName()));
 
         // The gradle jdks files are out of date
         invoker.withArgs("checkGradleJdks")
@@ -177,7 +179,7 @@ public class GradleWithJdksTest {
 
         assertJavaToolchainsMatch(
                 invoker,
-                toolchain -> toolchain.startsWith(TestResources.JDK_21.toFilePath())
-                        || toolchain.startsWith(TestResources.JDK_17.toFilePath()));
+                toolchain -> toolchain.contains(TestResources.JDK_21.toFileName())
+                        || toolchain.contains(TestResources.JDK_17.toFileName()));
     }
 }
