@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -314,12 +315,9 @@ class GradleJdkToolchainsIntegrationTest {
                 .map(result -> result.group(1))
                 .orElseThrow(() -> new RuntimeException("Failed to find gradleUserHomeDir in output"));
 
-        String jdk11Path =
-                String.format("11:%s/gradle-jdks/%s", extractedGradleUserHomeDir, TestResources.JDK_11.toFileName());
-        String jdk17Path =
-                String.format("17:%s/gradle-jdks/%s", extractedGradleUserHomeDir, TestResources.JDK_17.toFileName());
-        String jdk21Path =
-                String.format("21:%s/gradle-jdks/%s", extractedGradleUserHomeDir, TestResources.JDK_21.toFileName());
+        String jdk11Path = getJdkPathFor(extractedGradleUserHomeDir, TestResources.JDK_11);
+        String jdk17Path = getJdkPathFor(extractedGradleUserHomeDir, TestResources.JDK_17);
+        String jdk21Path = getJdkPathFor(extractedGradleUserHomeDir, TestResources.JDK_21);
 
         assertThat(rootProject.buildDir().path().resolve("installedJdkPaths"))
                 .content()
@@ -431,6 +429,7 @@ class GradleJdkToolchainsIntegrationTest {
     }
 
     // See http://illegalargumentexception.blogspot.com/2009/07/java-finding-class-versions.html
+
     private static BytecodeVersion readBytecodeVersion(File file) {
         try (InputStream stream = new FileInputStream(file);
                 DataInputStream dis = new DataInputStream(stream)) {
@@ -447,4 +446,9 @@ class GradleJdkToolchainsIntegrationTest {
     }
 
     record BytecodeVersion(int minor, int major) {}
+
+    private static @NotNull String getJdkPathFor(String extractedGradleUserHomeDir, Jdk jdk) {
+        return String.format(
+                "%s:%s/gradle-jdks/%s", jdk.getMajorVersion(), extractedGradleUserHomeDir, jdk.toFileName());
+    }
 }

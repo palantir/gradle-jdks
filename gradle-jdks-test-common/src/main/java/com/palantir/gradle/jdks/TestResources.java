@@ -58,13 +58,16 @@ public final class TestResources {
 
     public record Jdk(String distribution, String version) {
         public String toJdkExtension() {
-            String majorVersion = version.substring(0, version.indexOf('.'));
             return String.format("""
                 jdk(%s) {
                     distribution = '%s'
                     jdkVersion = '%s'
                 }
-                """, majorVersion, distribution, version);
+                """, getMajorVersion(), distribution, version);
+        }
+
+        public String getMajorVersion() {
+            return version.substring(0, version.indexOf('.'));
         }
 
         public String toFileName() {
