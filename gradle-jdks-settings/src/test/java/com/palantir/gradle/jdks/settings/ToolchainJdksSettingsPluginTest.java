@@ -98,7 +98,8 @@ class ToolchainJdksSettingsPluginTest {
                 .output()
                 .as("jdk setup message after path change")
                 .contains("Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true)"
-                        + " but some jdks were not installed");
+                        + " but some jdks were not installed")
+                .contains(installationDir.resolve(newJdkPath).toString());
         assertThat(installationDir.resolve(newJdkPath))
                 .as("new JDK path was created after jdk path change")
                 .exists();
