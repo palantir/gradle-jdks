@@ -18,8 +18,7 @@ package com.palantir.gradle.jdks.settings;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.gradle.jdks.TestResources;
-import com.palantir.gradle.jdks.settings.TestDecorators.WithCustomGradleUserHome;
-import com.palantir.gradle.jdks.setup.FileUtils;
+import com.palantir.gradle.jdks.settings.TestDecorators.WithGradleUserHomeInBuildDir;
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
@@ -32,7 +31,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
@@ -44,17 +42,9 @@ class ToolchainJdksSettingsPluginTest {
 
     private static final String OS = OperatingSystem.get().uiName();
     private static final String ARCH = CurrentArch.get().uiName();
-    private static final String TMP_GRADLE_USER_HOME = "/tmp/gradle-jdks-testing";
-    private static final Path TMP_GRADLE_USER_HOME_PATH = Path.of("/tmp/gradle-jdks-testing");
-    private static final Path GRADLE_JDKS_INSTALLATION_DIR = TMP_GRADLE_USER_HOME_PATH.resolve("gradle-jdks");
-
-    @BeforeEach
-    void before() {
-        FileUtils.delete(GRADLE_JDKS_INSTALLATION_DIR);
-    }
 
     @Test
-    @WithCustomGradleUserHome(gradleUserHome = TMP_GRADLE_USER_HOME)
+    @WithGradleUserHomeInBuildDir
     void non_existing_jdks_are_installed_by_the_settings_plugin(GradleInvoker gradle, RootProject rootProject)
             throws IOException {
         rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
@@ -68,18 +58,17 @@ class ToolchainJdksSettingsPluginTest {
         rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
         gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
 
+        Path installationDir = rootProject.buildDir().path().resolve("tmp").resolve("gradle-jdks");
         Path jdk17LocalPath = rootProject.path().resolve(String.format("gradle/jdks/17/%s/%s/local-path", OS, ARCH));
         String originalJdk17LocalPath = Files.readString(jdk17LocalPath).trim();
-        Path originalJdkPath =
-                GRADLE_JDKS_INSTALLATION_DIR.resolve(originalJdk17LocalPath).toAbsolutePath();
+        Path originalJdkPath = installationDir.resolve(originalJdk17LocalPath).toAbsolutePath();
         assertThat(originalJdkPath)
                 .as("only gradle configuration files are generated, no jdks are installed")
                 .doesNotExist();
         assertThat(rootProject.buildDir().path().resolve("installedJdkPaths"))
-                .hasContent(
-                        String.format("""
-                            17:%s/gradle-jdks/%s
-                            """, TMP_GRADLE_USER_HOME_PATH.toRealPath(), TestResources.JDK_17.toFileName()));
+                .hasContent(String.format("""
+                    17:%s/%s
+                    """, installationDir, TestResources.JDK_17.toFileName()));
 
         rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
         InvocationResult toolchainsResult = gradle.withArgs("javaToolchains").buildsSuccessfully();
@@ -110,7 +99,7 @@ class ToolchainJdksSettingsPluginTest {
                 .as("jdk setup message after path change")
                 .contains("Gradle JDK setup is enabled (palantir.jdk.setup.enabled is true)"
                         + " but some jdks were not installed");
-        assertThat(GRADLE_JDKS_INSTALLATION_DIR.resolve(newJdkPath))
+        assertThat(installationDir.resolve(newJdkPath))
                 .as("new JDK path was created after jdk path change")
                 .exists();
     }

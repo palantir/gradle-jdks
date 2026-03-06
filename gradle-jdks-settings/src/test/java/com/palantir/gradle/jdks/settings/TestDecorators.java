@@ -30,21 +30,17 @@ public class TestDecorators {
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Retention(RetentionPolicy.RUNTIME)
     @RegistersGradleInvokerDecorator(CustomGradleUserHomeDecorator.class)
-    public @interface WithCustomGradleUserHome {
-        String gradleUserHome();
-    }
+    public @interface WithGradleUserHomeInBuildDir {}
 
     public static final class CustomGradleUserHomeDecorator
-            implements GradleInvokerDecorator<WithCustomGradleUserHome> {
+            implements GradleInvokerDecorator<WithGradleUserHomeInBuildDir> {
 
         @Override
         public GradleInvoker decorate(
-                DecoratorContext _context, GradleInvoker invoker, List<WithCustomGradleUserHome> annotations) {
+                DecoratorContext context, GradleInvoker invoker, List<WithGradleUserHomeInBuildDir> _annotations) {
             return options -> invoker.with(options.asBuilder()
-                    .addAllArgs(annotations.stream()
-                            .map(WithCustomGradleUserHome::gradleUserHome)
-                            .map(value -> String.format("-Dgradle.user.home=%s", value))
-                            .toList())
+                    .customGradleUserHome(
+                            context.rootProject().buildDir().path().resolve("tmp"))
                     .build());
         }
     }
