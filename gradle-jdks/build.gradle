@@ -44,7 +44,6 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
 
-    gradlePluginForTesting 'com.palantir.gradle.jdks:gradle-jdks'
     gradlePluginForTesting 'com.palantir.gradle.jdkslatest:gradle-jdks-latest'
     gradlePluginForTesting project(':gradle-jdks-settings')
 }
