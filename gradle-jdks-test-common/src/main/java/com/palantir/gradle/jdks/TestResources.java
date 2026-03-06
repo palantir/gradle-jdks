@@ -16,6 +16,7 @@
 
 package com.palantir.gradle.jdks;
 
+import com.palantir.platform.OperatingSystem;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -71,7 +72,13 @@ public final class TestResources {
         }
 
         public String toFileName() {
-            return String.format("%s-%s", distribution, version);
+            String suffix =
+                    switch (OperatingSystem.get()) {
+                        case LINUX_MUSL -> "musl";
+                        case LINUX_GLIBC -> "glibc";
+                        case WINDOWS, MACOS -> "";
+                    };
+            return String.format("%s-%s%s", distribution, version, suffix);
         }
     }
 

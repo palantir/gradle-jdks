@@ -2,5 +2,6 @@ apply plugin: 'java'
 
 dependencies {
     implementation project(':gradle-jdks-setup-common')
+    implementation 'com.palantir.gradle.utils:platform'
     implementation 'org.apache.commons:commons-compress'
 }

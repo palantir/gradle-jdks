@@ -75,7 +75,9 @@ public class GradleWithJdksTest {
             """);
 
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
-        assertThat(TestResources.getLanguageVersions(result.output())).containsExactlyInAnyOrder(11, 21);
+        assertThat(TestResources.getLanguageVersions(result.output()))
+                .as(String.format("Expected only 2 jDKS (11 and 21) in the javaToolchains output %s", result.output()))
+                .containsExactlyInAnyOrder(11, 21);
     }
 
     @Test
