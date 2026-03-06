@@ -38,6 +38,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -298,25 +299,42 @@ class GradleJdkToolchainsIntegrationTest {
             }
             """);
         rootProject.buildGradle().append("""
-                println "gradleUserHomeDir" + gradle.getGradleUserHomeDir()
+                println "gradleUserHomeDir: " + gradle.getGradleUserHomeDir()
             """);
 
-        gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
+        String output =
+                gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully().output();
         assertThatJdkDirectories(rootProject)
                 .as("generates directories for jdk version == 11, 17")
                 .containsExactJdks(11, 17);
+        String extractedGradleUserHomeDir = Pattern.compile("(?m)^gradleUserHomeDir:\\s+(.*)$")
+                .matcher(output)
+                .results()
+                .findFirst()
+                .map(result -> result.group(1))
+                .orElseThrow(() -> new RuntimeException("Failed to find gradleUserHomeDir in output"));
+
+        String jdk11Path =
+                String.format("11:%s/gradle-jdks/%s", extractedGradleUserHomeDir, TestResources.JDK_11.toFileName());
+        String jdk17Path =
+                String.format("17:%s/gradle-jdks/%s", extractedGradleUserHomeDir, TestResources.JDK_17.toFileName());
+        String jdk21Path =
+                String.format("21:%s/gradle-jdks/%s", extractedGradleUserHomeDir, TestResources.JDK_21.toFileName());
+
         assertThat(rootProject.buildDir().path().resolve("installedJdkPaths"))
                 .content()
-                .contains("""
-                    11:(.*)/gradle-jdks/(.*)
-                    17:(.*)/gradle-jdks/(.*)
-                    """);
+                .hasLineCount(2)
+                .contains(jdk11Path, jdk17Path);
 
         gradle.withArgs("generateGradleJdkConfigs", "--includeVersion=11", "--includeVersion=21")
                 .buildsSuccessfully();
         assertThatJdkDirectories(rootProject)
                 .as("generates directories for jdk versions == 11, 17, 21")
                 .containsExactJdks(11, 17, 21);
+        assertThat(rootProject.buildDir().path().resolve("installedJdkPaths"))
+                .content()
+                .hasLineCount(3)
+                .contains(jdk11Path, jdk17Path, jdk21Path);
 
         InvocationResult failingCheck = gradle.withArgs("check").buildsWithFailure();
         assertThat(failingCheck)
@@ -328,11 +346,19 @@ class GradleJdkToolchainsIntegrationTest {
         assertThatJdkDirectories(rootProject)
                 .as("the extra directory was deleted")
                 .containsExactJdks(11, 17);
+        assertThat(rootProject.buildDir().path().resolve("installedJdkPaths"))
+                .content()
+                .hasLineCount(2)
+                .contains(jdk11Path, jdk17Path);
 
         gradle.withArgs("generateGradleJdkConfigs", "--includeAllJdks").buildsSuccessfully();
         assertThatJdkDirectories(rootProject)
                 .as("generates directories for all jdk versions")
                 .containsExactJdks(11, 17, 21);
+        assertThat(rootProject.buildDir().path().resolve("installedJdkPaths"))
+                .content()
+                .hasLineCount(3)
+                .contains(jdk11Path, jdk17Path, jdk21Path);
     }
 
     @Test

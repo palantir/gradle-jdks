@@ -71,7 +71,6 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
     public final void apply(Settings settings) {
         OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
         Path gradleUserHomeDir = getGradle().getGradleUserHomeDir().toPath();
-        logger.warn("gradleUserHomeDir {}", gradleUserHomeDir);
 
         Path rootProjectDir = settings.getRootDir().toPath();
         if (!GradleJdksEnablement.isGradleJdkSetupEnabled(os, rootProjectDir)) {

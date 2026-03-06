@@ -62,7 +62,7 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
             Files.writeString(
                     getOutputJdksFile().getAsFile().get().toPath(),
                     "",
-                    StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
                     StandardOpenOption.CREATE);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
