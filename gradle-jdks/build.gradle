@@ -46,7 +46,7 @@ dependencies {
 
     gradlePluginForTesting 'com.palantir.gradle.jdks:gradle-jdks'
     gradlePluginForTesting 'com.palantir.gradle.jdkslatest:gradle-jdks-latest'
-    gradlePluginForTesting 'com.palantir.gradle.jdks:gradle-jdks-settings'
+    gradlePluginForTesting project(':gradle-jdks-settings')
 }
 
 gradlePlugin {
