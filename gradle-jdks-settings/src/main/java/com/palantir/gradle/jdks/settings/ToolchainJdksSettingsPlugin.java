@@ -100,7 +100,8 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
 
         // Forces the installation of the configured jdks if they are not installed. Fixes the case when a user doesn't
         // have the Intellij plugin installed and some jdks are missing.
-        List<Path> installedJdkPaths = getOrInstallJdkPaths(rootProjectDir, gradleUserHomeDir, gradleJdksLocalDirectory, os);
+        List<Path> installedJdkPaths =
+                getOrInstallJdkPaths(rootProjectDir, gradleUserHomeDir, gradleJdksLocalDirectory, os);
 
         JavaInstallationRegistry javaInstallationRegistry =
                 ((DefaultSettings) settings).getGradle().getServices().get(JavaInstallationRegistry.class);

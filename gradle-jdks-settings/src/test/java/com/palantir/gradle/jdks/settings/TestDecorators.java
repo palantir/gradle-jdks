@@ -26,7 +26,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
 
-public class TestDecorators {
+public final class TestDecorators {
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Retention(RetentionPolicy.RUNTIME)
     @RegistersGradleInvokerDecorator(CustomGradleUserHomeDecorator.class)
