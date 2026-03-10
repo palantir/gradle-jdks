@@ -82,7 +82,10 @@ public abstract class GradleJdksConfigs extends DefaultTask {
     abstract Directory gradleDirectory();
 
     protected abstract void applyGradleJdkFileAction(
-            Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistributionConfig);
+            Path downloadUrlPath,
+            Path localUrlPath,
+            JdkDistributionConfig jdkDistributionConfig,
+            JavaLanguageVersion javaVersion);
 
     protected abstract void applyGradleJdkDaemonVersionAction(Path gradleJdkDaemonVersion);
 
@@ -121,7 +124,7 @@ public abstract class GradleJdksConfigs extends DefaultTask {
                         .resolve(jdkDistribution.getArch().get().uiName());
                 Path downloadUrlPath = outputDir.resolve("download-url");
                 Path localPath = outputDir.resolve("local-path");
-                applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution);
+                applyGradleJdkFileAction(downloadUrlPath, localPath, jdkDistribution, javaVersion);
                 jdksDirectoryConfigured.set(true);
             });
         });

@@ -16,6 +16,9 @@ dependencies {
     testImplementation 'com.netflix.nebula:nebula-test'
     testImplementation 'org.apache.commons:commons-compress'
     testImplementation project(':gradle-jdks-test-common')
+    testImplementation project(':gradle-jdks-setup')
+
+    gradlePluginForTesting  project(':gradle-jdks')
 }
 
 gradlePlugin {
@@ -50,14 +53,6 @@ publishing.publications {
             }
         }
     }
-}
-
-// Changing the location where the gradle jdks are installed such that the settings plugin can run the
-// gradle-jdks-setup.sh configuration script to install the missing jdks.
-tasks.withType(Test) {
-    environment("HOME", "/tmp/gradleJdksSettingsTest")
-    systemProperty 'user.home', '/tmp/gradleJdksSettingsTest'
-    dependsOn project(':gradle-jdks').tasks.withType(PluginUnderTestMetadata.class)
 }
 
 gradleTestUtils {

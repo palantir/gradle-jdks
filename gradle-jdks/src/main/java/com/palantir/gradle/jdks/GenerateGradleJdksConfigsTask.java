@@ -17,14 +17,25 @@
 package com.palantir.gradle.jdks;
 
 import com.palantir.gradle.jdks.setup.FileUtils;
+import com.palantir.gradle.jdks.setup.common.CurrentArch;
+import com.palantir.platform.OperatingSystem;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
+import javax.inject.Inject;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.invocation.Gradle;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
 
@@ -32,6 +43,12 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
 
     @OutputDirectory
     public abstract DirectoryProperty getOutputGradleDirectory();
+
+    @OutputFile
+    public abstract RegularFileProperty getOutputJdksFile();
+
+    @Inject
+    public abstract Gradle getGradle();
 
     @Override
     protected final Directory gradleDirectory() {
@@ -41,16 +58,51 @@ public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
     @Override
     protected final void maybePrepareForAction(List<Path> targetPaths) {
         targetPaths.forEach(FileUtils::delete);
+        try {
+            Files.writeString(
+                    getOutputJdksFile().getAsFile().get().toPath(),
+                    "",
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.CREATE);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
     protected final void applyGradleJdkFileAction(
-            Path downloadUrlPath, Path localUrlPath, JdkDistributionConfig jdkDistribution) {
+            Path downloadUrlPath,
+            Path localUrlPath,
+            JdkDistributionConfig jdkDistribution,
+            JavaLanguageVersion javaLanguageVersion) {
         GradleJdksConfigsUtils.createDirectories(downloadUrlPath.getParent());
         GradleJdksConfigsUtils.writeConfigurationFile(
                 downloadUrlPath, jdkDistribution.getDownloadUrl().get());
         GradleJdksConfigsUtils.writeConfigurationFile(
                 localUrlPath, jdkDistribution.getLocalPath().get());
+        if (jdkDistribution.getArch().get().equals(CurrentArch.get())
+                && jdkDistribution.getOs().get().equals(OperatingSystem.get())) {
+            try {
+                Files.writeString(
+                        getOutputJdksFile().getAsFile().get().toPath(),
+                        String.format(
+                                "%s:%s\n",
+                                javaLanguageVersion.asInt(),
+                                getGradle()
+                                        .getGradleUserHomeDir()
+                                        .toPath()
+                                        .resolve("gradle-jdks")
+                                        .resolve(jdkDistribution.getLocalPath().get())
+                                        .toAbsolutePath()),
+                        StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new UncheckedIOException(
+                        String.format(
+                                "Failed to write configuration file %s",
+                                getOutputJdksFile().getAsFile().get().toPath()),
+                        e);
+            }
+        }
     }
 
     @Override

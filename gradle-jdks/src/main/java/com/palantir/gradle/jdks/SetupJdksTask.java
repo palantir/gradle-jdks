@@ -28,6 +28,7 @@ import javax.inject.Inject;
 import org.apache.tools.ant.util.TeeOutputStream;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.invocation.Gradle;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.InputFile;
@@ -54,6 +55,9 @@ public abstract class SetupJdksTask extends DefaultTask {
 
     @Inject
     protected abstract ExecOperations getExecOperations();
+
+    @Inject
+    protected abstract Gradle getGradle();
 
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
@@ -100,7 +104,13 @@ public abstract class SetupJdksTask extends DefaultTask {
             execSpec.setStandardOutput(logOutput);
             execSpec.setErrorOutput(logOutput);
             execSpec.commandLine(command);
+            // Pass GRADLE_USER_HOME environment variable to ensure the setup script uses Gradle's calculated user home
+            // directory
+            execSpec.environment(
+                    "GRADLE_USER_HOME",
+                    getGradle().getGradleUserHomeDir().toPath().toAbsolutePath().toString());
         });
+
         if (execResult.getExitValue() != 0) {
             errorHandler.accept(inMemoryOutput.toString(StandardCharsets.UTF_8));
         }

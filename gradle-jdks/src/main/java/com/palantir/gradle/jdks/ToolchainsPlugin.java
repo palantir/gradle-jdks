@@ -111,6 +111,8 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
                 .register("generateGradleJdkConfigs", GenerateGradleJdksConfigsTask.class, task -> {
                     task.getOutputGradleDirectory()
                             .set(rootProject.getLayout().getProjectDirectory().dir("gradle"));
+                    task.getOutputJdksFile()
+                            .set(rootProject.getLayout().getBuildDirectory().file("installedJdkPaths"));
                 });
         TaskProvider<CheckGradleJdksConfigsTask> checkGradleJdkConfigs = rootProject
                 .getTasks()
