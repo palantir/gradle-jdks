@@ -108,6 +108,28 @@ class ToolchainJdksSettingsPluginTest {
                 .exists();
     }
 
+    @Test
+    void fails_when_auto_detect_is_not_disabled_in_gradle_properties(GradleInvoker gradle, RootProject rootProject) {
+        rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
+        rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
+        rootProject.buildGradle().append("""
+            jdks {
+                %s
+                daemonTarget = '17'
+            }
+            """, TestResources.JDK_17.toJdkExtension());
+
+        // Enable JDK setup but do NOT set auto-detect/auto-download properties
+        rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
+        gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
+
+        gradle.withArgs("javaToolchains")
+                .buildsWithFailure()
+                .assertThat()
+                .output()
+                .contains("gradle-jdks requires org.gradle.java.installations.auto-detect=false");
+    }
+
     @Nested
     class SetupJdksBypass {
 
@@ -155,27 +177,5 @@ class ToolchainJdksSettingsPluginTest {
             result.assertThat().task(":setupJdks").succeeded();
             result.assertThat().task(":mySetup").succeeded();
         }
-    }
-
-    @Test
-    void fails_when_auto_detect_is_not_disabled_in_gradle_properties(GradleInvoker gradle, RootProject rootProject) {
-        rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
-        rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
-        rootProject.buildGradle().append("""
-            jdks {
-                %s
-                daemonTarget = '17'
-            }
-            """, TestResources.JDK_17.toJdkExtension());
-
-        // Enable JDK setup but do NOT set auto-detect/auto-download properties
-        rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
-        gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
-
-        gradle.withArgs("javaToolchains")
-                .buildsWithFailure()
-                .assertThat()
-                .output()
-                .contains("gradle-jdks requires org.gradle.java.installations.auto-detect=false");
     }
 }
