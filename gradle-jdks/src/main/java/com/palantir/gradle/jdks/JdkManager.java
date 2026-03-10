@@ -214,7 +214,6 @@ public final class JdkManager {
     private void addCaCert(Project project, Path javaHome, String alias, String caCert) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
-        @SuppressWarnings("for-rollout:deprecation")
         ExecResult keytoolResult = project.exec(exec -> {
             exec.setCommandLine(
                     Paths.get("bin", SystemTools.keytool(operatingSystem)).toString(),
