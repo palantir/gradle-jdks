@@ -131,8 +131,8 @@ class GradleJdkToolchainsIntegrationTest {
                         .anyMatch(discoveredPath::contains));
 
         assertThat(TestResources.getDetectedBy(toolchainsResult.output()))
-                .as("detected by pattern contains installations.paths or Current JVM")
-                .allMatch(a -> a.matches("Gradle property 'org\\.gradle\\.java\\.installations\\.paths'|Current JVM"));
+                .as("detected by pattern contains gradle-jdks source or Current JVM")
+                .allMatch(a -> a.matches("gradle-jdks: .*|Current JVM"));
 
         InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
 

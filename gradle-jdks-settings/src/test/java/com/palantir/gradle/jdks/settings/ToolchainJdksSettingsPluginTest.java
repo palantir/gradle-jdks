@@ -22,7 +22,6 @@ import com.palantir.gradle.jdks.settings.TestDecorators.WithGradleUserHomeInBuil
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
-import com.palantir.gradle.testing.junit.AdditionallyRunWithGradle;
 import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
@@ -36,9 +35,6 @@ import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
 @DisabledConfigurationCache
-@AdditionallyRunWithGradle(
-        value = {"8.5", "8.8"},
-        reason = "testing for the different gradle versions to make sure the reflection in the settings plugin works")
 class ToolchainJdksSettingsPluginTest {
 
     private static final String OS = OperatingSystem.get().uiName();

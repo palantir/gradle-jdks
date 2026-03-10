@@ -27,7 +27,7 @@ import java.util.Properties;
 
 public final class GradleJdksEnablement {
 
-    public static final String MINIMUM_SUPPORTED_GRADLE_VERSION = "7.6";
+    public static final String MINIMUM_SUPPORTED_GRADLE_VERSION = "8.8";
 
     public static boolean isGradleJdkSetupEnabled(Path projectDir) {
         return isGradleJdkSetupEnabled(OperatingSystem.get(), projectDir);
