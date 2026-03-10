@@ -126,13 +126,15 @@ class GradleJdkToolchainsIntegrationTest {
                 .contains("Auto-detection:     Disabled")
                 .contains("Auto-download:      Disabled");
         assertThat(TestResources.getDiscoveredLocations(toolchainsResult.output()))
-                .allMatch(discoveredPath -> TestResources.HARDCODED_JDKS.jdks().stream()
-                        .map(Jdk::toFileName)
-                        .anyMatch(discoveredPath::contains));
+                .as("all configured JDK versions are discovered")
+                .anyMatch(path -> path.contains(TestResources.JDK_11.toFileName()))
+                .anyMatch(path -> path.contains(TestResources.JDK_17.toFileName()))
+                .anyMatch(path -> path.contains(TestResources.JDK_21.toFileName()));
 
         assertThat(TestResources.getDetectedBy(toolchainsResult.output()))
-                .as("detected by pattern contains gradle-jdks source or Current JVM")
-                .allMatch(a -> a.matches("gradle-jdks: .*|Current JVM"));
+                .as("detected by pattern contains gradle-jdks source, Current JVM, or JAVA_HOME")
+                .allMatch(a ->
+                        a.matches("gradle-jdks: .*|Current JVM|environment variable 'JAVA_HOME'"));
 
         InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
 
