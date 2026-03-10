@@ -24,18 +24,31 @@ import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.platform.GradleOperatingSystem;
 import com.palantir.platform.OperatingSystem;
 import java.util.Optional;
+import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.ArchiveOperations;
 import org.gradle.api.file.Directory;
+import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.process.ExecOperations;
 
 public abstract class BaselineJavaJdksPlugin implements Plugin<Project> {
 
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
+
+    @Inject
+    protected abstract ExecOperations getExecOperations();
+
+    @Inject
+    protected abstract FileSystemOperations getFileSystemOperations();
+
+    @Inject
+    protected abstract ArchiveOperations getArchiveOperations();
 
     @Override
     public final void apply(Project rootProject) {
@@ -51,7 +64,13 @@ public abstract class BaselineJavaJdksPlugin implements Plugin<Project> {
 
         JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
         JdkManager jdkManager = new JdkManager(
-                jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension), os);
+                jdksExtension.getJdkStorageLocation(),
+                jdkDistributions,
+                new JdkDownloaders(jdksExtension),
+                os,
+                getExecOperations(),
+                getFileSystemOperations(),
+                getArchiveOperations());
 
         rootProject
                 .getExtensions()

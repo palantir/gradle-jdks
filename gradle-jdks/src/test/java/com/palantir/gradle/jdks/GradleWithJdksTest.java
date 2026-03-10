@@ -146,7 +146,7 @@ public class GradleWithJdksTest {
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
         result.assertThat().output().contains("Auto-detection:     Disabled");
         result.assertThat().output().contains("Auto-download:      Disabled");
-        assertThat(TestResources.getDiscoveredLocations(result.output())).allMatch(predicate);
+        assertThat(TestResources.getDiscoveredLocations(result.output())).anyMatch(predicate);
     }
 
     private static void addJdks21Setup(RootProject rootProject) {

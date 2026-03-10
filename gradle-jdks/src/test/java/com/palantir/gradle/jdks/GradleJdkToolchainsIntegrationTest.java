@@ -133,8 +133,7 @@ class GradleJdkToolchainsIntegrationTest {
 
         assertThat(TestResources.getDetectedBy(toolchainsResult.output()))
                 .as("detected by pattern contains gradle-jdks source, Current JVM, or JAVA_HOME")
-                .allMatch(a ->
-                        a.matches("gradle-jdks: .*|Current JVM|environment variable 'JAVA_HOME'"));
+                .allMatch(a -> a.matches("gradle-jdks: .*|Current JVM|environment variable 'JAVA_HOME'"));
 
         InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
 
