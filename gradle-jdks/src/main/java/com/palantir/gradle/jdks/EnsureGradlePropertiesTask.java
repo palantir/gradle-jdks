@@ -46,7 +46,7 @@ public abstract class EnsureGradlePropertiesTask extends DefaultTask {
 
     private static String readContent(Path path) {
         try {
-            return Files.exists(path) ? Files.readString(path, StandardCharsets.ISO_8859_1) : "";
+            return Files.exists(path) ? Files.readString(path, StandardCharsets.UTF_8) : "";
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read gradle.properties", e);
         }
@@ -54,7 +54,7 @@ public abstract class EnsureGradlePropertiesTask extends DefaultTask {
 
     private static void writeContent(Path path, String content) {
         try {
-            Files.writeString(path, content, StandardCharsets.ISO_8859_1);
+            Files.writeString(path, content, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write gradle.properties", e);
         }
