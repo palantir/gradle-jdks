@@ -73,7 +73,7 @@ public abstract class JdkManager {
         this.operatingSystem = operatingSystem;
     }
 
-    public Path jdk(Project project, JdkSpec jdkSpec) {
+    public final Path jdk(Project project, JdkSpec jdkSpec) {
         Path diskPath = storageLocation
                 .get()
                 .getAsFile()
