@@ -85,6 +85,13 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }
+        // Always ban installations.paths — it overrides the JDKs configured by gradle-jdks, making
+        // builds behave differently on different machines. No setupJdks bypass needed since
+        // setupJdks doesn't write this property.
+        validateGradlePropertyNotSet(settings, "org.gradle.java.installations.paths");
+        // TODO(gradle-jdks): Also ban org.gradle.java.installations.fromEnv once circle-templates
+        // stops rendering it for java-library-oss and docker-image templates.
+
         // Validate that auto-detect and auto-download are disabled, unless setupJdks is in the
         // task graph (which will write these properties itself). We use taskGraph.whenReady rather
         // than checking getStartParameter().getTaskNames() so that the bypass also works when
@@ -122,6 +129,22 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                             + " Run ./gradlew setupJdks to configure this automatically.",
                     propertyName, expectedValue, actualValue.orElse("<not set>")));
         }
+    }
+
+    /**
+     * Validates that a gradle property is not set. gradle-jdks ensures builds use the exact JDKs specified in the
+     * build configuration — allowing external overrides via properties like {@code installations.paths} would defeat
+     * this by making builds behave differently on different machines.
+     */
+    private static void validateGradlePropertyNotSet(Settings settings, String propertyName) {
+        Optional<String> actualValue = Optional.ofNullable(
+                settings.getProviders().gradleProperty(propertyName).getOrNull());
+        actualValue.ifPresent(value -> {
+            throw new RuntimeException(String.format(
+                    "gradle-jdks does not allow %s to be set, as it would override the JDKs"
+                            + " configured by the plugin. Found '%s'.",
+                    propertyName, value));
+        });
     }
 
     private static List<Path> getOrInstallJdkPaths(

@@ -127,6 +127,16 @@ class ToolchainJdksSettingsPluginTest {
                             + " org.gradle.java.installations.auto-detect=false but found");
         }
 
+        @Test
+        void fails_when_installations_paths_is_set(GradleInvoker gradle, RootProject rootProject) {
+            rootProject.gradlePropertiesFile().setProperty("org.gradle.java.installations.paths", "/some/jdk/path");
+            gradle.withArgs("help")
+                    .buildsWithFailure()
+                    .assertThat()
+                    .output()
+                    .contains("gradle-jdks does not allow org.gradle.java.installations.paths to be set");
+        }
+
         @Nested
         class SetupJdksBypass {
 
