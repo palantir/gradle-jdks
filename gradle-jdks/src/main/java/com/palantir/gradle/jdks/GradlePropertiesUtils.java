@@ -19,6 +19,7 @@ package com.palantir.gradle.jdks;
 import com.google.common.base.Splitter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,19 +46,18 @@ final class GradlePropertiesUtils {
 
         // Replace existing properties with required values
         List<String> updatedLines = lines.stream()
-                .map(line -> {
-                    String lineKey = extractPropertyKey(line);
-                    if (lineKey != null && REQUIRED_PROPERTIES.containsKey(lineKey)) {
-                        return lineKey + "=" + REQUIRED_PROPERTIES.get(lineKey);
-                    }
-                    return line;
-                })
+                .map(line -> extractPropertyKey(line)
+                        .filter(REQUIRED_PROPERTIES::containsKey)
+                        .map(key -> key + "=" + REQUIRED_PROPERTIES.get(key))
+                        .orElse(line))
                 .collect(Collectors.toList());
 
         // Append any properties that aren't already present in the file
         List<String> missingEntries = REQUIRED_PROPERTIES.entrySet().stream()
-                .filter(entry ->
-                        updatedLines.stream().noneMatch(line -> entry.getKey().equals(extractPropertyKey(line))))
+                .filter(entry -> updatedLines.stream()
+                        .noneMatch(line -> extractPropertyKey(line)
+                                .map(entry.getKey()::equals)
+                                .orElse(false)))
                 .map(entry -> entry.getKey() + "=" + entry.getValue())
                 .toList();
 
@@ -70,19 +70,19 @@ final class GradlePropertiesUtils {
     }
 
     /**
-     * Extracts the property key from a line, or returns null if the line is a comment, blank, or not
+     * Extracts the property key from a line, returning empty if the line is a comment, blank, or not
      * a key=value pair.
      */
-    static String extractPropertyKey(String line) {
+    static Optional<String> extractPropertyKey(String line) {
         String trimmed = line.trim();
         if (trimmed.isEmpty() || trimmed.startsWith("#") || trimmed.startsWith("!")) {
-            return null;
+            return Optional.empty();
         }
         int equalsIndex = trimmed.indexOf('=');
         if (equalsIndex < 0) {
-            return null;
+            return Optional.empty();
         }
-        return trimmed.substring(0, equalsIndex).trim();
+        return Optional.of(trimmed.substring(0, equalsIndex).trim());
     }
 
     private GradlePropertiesUtils() {}

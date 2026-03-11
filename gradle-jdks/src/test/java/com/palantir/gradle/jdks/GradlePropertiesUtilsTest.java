@@ -129,37 +129,37 @@ class GradlePropertiesUtilsTest {
 
         @Test
         void extracts_key_from_simple_pair() {
-            assertThat(GradlePropertiesUtils.extractPropertyKey("key=value")).isEqualTo("key");
+            assertThat(GradlePropertiesUtils.extractPropertyKey("key=value")).contains("key");
         }
 
         @Test
         void extracts_key_with_dots() {
             assertThat(GradlePropertiesUtils.extractPropertyKey("org.gradle.java.installations.auto-detect=false"))
-                    .isEqualTo("org.gradle.java.installations.auto-detect");
+                    .contains("org.gradle.java.installations.auto-detect");
         }
 
         @Test
-        void returns_null_for_comment_lines() {
-            assertThat(GradlePropertiesUtils.extractPropertyKey("# comment")).isNull();
-            assertThat(GradlePropertiesUtils.extractPropertyKey("! comment")).isNull();
+        void returns_empty_for_comment_lines() {
+            assertThat(GradlePropertiesUtils.extractPropertyKey("# comment")).isEmpty();
+            assertThat(GradlePropertiesUtils.extractPropertyKey("! comment")).isEmpty();
         }
 
         @Test
-        void returns_null_for_blank_lines() {
-            assertThat(GradlePropertiesUtils.extractPropertyKey("")).isNull();
-            assertThat(GradlePropertiesUtils.extractPropertyKey("   ")).isNull();
+        void returns_empty_for_blank_lines() {
+            assertThat(GradlePropertiesUtils.extractPropertyKey("")).isEmpty();
+            assertThat(GradlePropertiesUtils.extractPropertyKey("   ")).isEmpty();
         }
 
         @Test
-        void returns_null_for_lines_without_equals() {
+        void returns_empty_for_lines_without_equals() {
             assertThat(GradlePropertiesUtils.extractPropertyKey("no-equals-sign"))
-                    .isNull();
+                    .isEmpty();
         }
 
         @Test
         void trims_whitespace_around_key() {
             assertThat(GradlePropertiesUtils.extractPropertyKey("  key  = value"))
-                    .isEqualTo("key");
+                    .contains("key");
         }
     }
 }
