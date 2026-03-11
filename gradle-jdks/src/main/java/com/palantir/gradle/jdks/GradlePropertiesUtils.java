@@ -16,7 +16,6 @@
 
 package com.palantir.gradle.jdks;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import java.util.HashSet;
 import java.util.List;
@@ -60,16 +59,13 @@ final class GradlePropertiesUtils {
                 .collect(Collectors.toList());
 
         // Append any properties that weren't already present
-        List<String> missingEntries = REQUIRED_PROPERTIES.entrySet().stream()
+        Stream<String> missingEntries = REQUIRED_PROPERTIES.entrySet().stream()
                 .filter(entry -> !found.contains(entry.getKey()))
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .toList();
+                .map(entry -> entry.getKey() + "=" + entry.getValue());
 
-        List<String> allLines =
-                Stream.concat(updatedLines.stream(), missingEntries.stream()).toList();
-
-        String result = Joiner.on('\n').join(allLines);
-        if (endsWithNewline || !missingEntries.isEmpty()) {
+        boolean hasNewEntries = found.size() < REQUIRED_PROPERTIES.size();
+        String result = Stream.concat(updatedLines.stream(), missingEntries).collect(Collectors.joining("\n"));
+        if (endsWithNewline || hasNewEntries) {
             result += "\n";
         }
         return result;
