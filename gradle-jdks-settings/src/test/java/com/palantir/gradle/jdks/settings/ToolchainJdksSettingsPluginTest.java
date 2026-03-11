@@ -109,7 +109,7 @@ class ToolchainJdksSettingsPluginTest {
     }
 
     @Nested
-    class AutoDetectValidation {
+    class AutoPropertyValidation {
 
         @BeforeEach
         void setup(GradleInvoker gradle, RootProject rootProject) {
