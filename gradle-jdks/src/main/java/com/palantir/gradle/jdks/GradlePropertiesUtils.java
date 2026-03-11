@@ -18,10 +18,12 @@ package com.palantir.gradle.jdks;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Utility for ensuring required gradle-jdks toolchain properties exist in a properties file. */
 final class GradlePropertiesUtils {
@@ -37,33 +39,37 @@ final class GradlePropertiesUtils {
      */
     static String ensureProperties(String content) {
         boolean endsWithNewline = content.endsWith("\n");
-        List<String> lines = new ArrayList<>(Splitter.on('\n').splitToList(content));
+        List<String> lines = Splitter.on('\n').splitToList(content);
 
         // Splitter produces a trailing empty element when the string ends with the delimiter
         if (endsWithNewline && !lines.isEmpty() && lines.get(lines.size() - 1).isEmpty()) {
-            lines.remove(lines.size() - 1);
+            lines = lines.subList(0, lines.size() - 1);
         }
 
-        Map<String, Boolean> found = new LinkedHashMap<>();
-        REQUIRED_PROPERTIES.keySet().forEach(key -> found.put(key, false));
+        // Replace existing properties with required values, tracking which ones we found
+        Set<String> found = new HashSet<>();
+        List<String> updatedLines = lines.stream()
+                .map(line -> {
+                    String lineKey = extractPropertyKey(line);
+                    if (lineKey != null && REQUIRED_PROPERTIES.containsKey(lineKey)) {
+                        found.add(lineKey);
+                        return lineKey + "=" + REQUIRED_PROPERTIES.get(lineKey);
+                    }
+                    return line;
+                })
+                .collect(Collectors.toList());
 
-        for (int i = 0; i < lines.size(); i++) {
-            String lineKey = extractPropertyKey(lines.get(i));
-            if (lineKey != null && REQUIRED_PROPERTIES.containsKey(lineKey)) {
-                lines.set(i, lineKey + "=" + REQUIRED_PROPERTIES.get(lineKey));
-                found.put(lineKey, true);
-            }
-        }
+        // Append any properties that weren't already present
+        List<String> missingEntries = REQUIRED_PROPERTIES.entrySet().stream()
+                .filter(entry -> !found.contains(entry.getKey()))
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .toList();
 
-        REQUIRED_PROPERTIES.forEach((key, value) -> {
-            if (!found.get(key)) {
-                lines.add(key + "=" + value);
-            }
-        });
+        List<String> allLines =
+                Stream.concat(updatedLines.stream(), missingEntries.stream()).toList();
 
-        boolean appendedNewLines = found.containsValue(false);
-        String result = Joiner.on('\n').join(lines);
-        if (endsWithNewline || appendedNewLines) {
+        String result = Joiner.on('\n').join(allLines);
+        if (endsWithNewline || !missingEntries.isEmpty()) {
             result += "\n";
         }
         return result;
