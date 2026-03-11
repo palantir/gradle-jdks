@@ -24,6 +24,7 @@ dependencies {
     implementation 'com.palantir.gradle.utils:lazily-configured-mapping'
     implementation 'com.palantir.gradle.utils:exec'
     implementation 'com.google.guava:guava'
+    implementation 'one.util:streamex'
     implementation 'commons-io:commons-io'
     implementation 'org.apache.commons:commons-compress'
     implementation 'org.ow2.asm:asm'

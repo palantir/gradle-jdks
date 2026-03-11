@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import one.util.streamex.EntryStream;
 
 /** Utility for ensuring required gradle-jdks toolchain properties exist in a properties file. */
 final class GradlePropertiesUtils {
@@ -53,12 +54,11 @@ final class GradlePropertiesUtils {
                 .collect(Collectors.toList());
 
         // Append any properties that aren't already present in the file
-        List<String> missingEntries = REQUIRED_PROPERTIES.entrySet().stream()
-                .filter(entry -> updatedLines.stream()
-                        .noneMatch(line -> extractPropertyKey(line)
-                                .map(entry.getKey()::equals)
-                                .orElse(false)))
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
+        List<String> missingEntries = EntryStream.of(REQUIRED_PROPERTIES)
+                .filterKeys(key -> updatedLines.stream()
+                        .noneMatch(line ->
+                                extractPropertyKey(line).map(key::equals).orElse(false)))
+                .mapKeyValue((key, value) -> key + "=" + value)
                 .toList();
 
         String result =
