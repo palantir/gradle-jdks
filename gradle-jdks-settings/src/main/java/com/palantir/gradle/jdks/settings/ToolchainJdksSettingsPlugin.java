@@ -85,26 +85,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }
-        // Always ban installations.paths — it overrides the JDKs configured by gradle-jdks, making
-        // builds behave differently on different machines. No setupJdks bypass needed since
-        // setupJdks doesn't write this property.
-        validateGradlePropertyNotSet(settings, "org.gradle.java.installations.paths");
-        // TODO(gradle-jdks): Also ban org.gradle.java.installations.fromEnv once circle-templates
-        // stops rendering it for java-library-oss and docker-image templates.
-
-        // Validate that auto-detect and auto-download are disabled, unless setupJdks is in the
-        // task graph (which will write these properties itself). We use taskGraph.whenReady rather
-        // than checking getStartParameter().getTaskNames() so that the bypass also works when
-        // setupJdks is a transitive dependency of the requested task.
-        settings.getGradle().getTaskGraph().whenReady(taskGraph -> {
-            boolean hasSetupJdks = taskGraph.getAllTasks().stream()
-                    .anyMatch(task -> task.getName().equals("setupJdks"));
-            if (hasSetupJdks) {
-                return;
-            }
-            validateGradleProperty(settings, "org.gradle.java.installations.auto-detect", "false");
-            validateGradleProperty(settings, "org.gradle.java.installations.auto-download", "false");
-        });
+        validateToolchainProperties(settings);
 
         // Forces the installation of the configured jdks if they are not installed. Fixes the case when a user doesn't
         // have the Intellij plugin installed and some jdks are missing.
@@ -117,6 +98,36 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         installedJdkPaths.forEach(jdkPath -> {
             javaInstallationRegistry.addInstallation(
                     InstallationLocation.userDefined(jdkPath.toFile(), "gradle-jdks: " + jdkPath.getFileName()));
+        });
+    }
+
+    /**
+     * Validates that Gradle toolchain properties are configured correctly. The whole point of gradle-jdks is that
+     * builds use the exact JDKs specified in the build configuration. Properties that allow external overrides
+     * (auto-detect, auto-download, installations.paths) would defeat this by making builds behave differently
+     * on different machines.
+     */
+    private static void validateToolchainProperties(Settings settings) {
+        // installations.paths must never be set — it adds externally-specified JDK paths that bypass gradle-jdks.
+        validateGradlePropertyNotSet(settings, "org.gradle.java.installations.paths");
+
+        // TODO(gradle-jdks): Also ban org.gradle.java.installations.fromEnv once circle-templates
+        // stops rendering it for java-library-oss and docker-image templates.
+
+        // auto-detect and auto-download must be false, but we defer validation to whenReady so that
+        // setupJdks (which writes these properties) can bypass it. We use taskGraph.whenReady rather
+        // than checking getStartParameter().getTaskNames() so that the bypass also works when
+        // setupJdks is a transitive dependency of the requested task.
+        settings.getGradle().getTaskGraph().whenReady(taskGraph -> {
+            boolean hasSetupJdks = taskGraph.getAllTasks().stream()
+                    .anyMatch(task -> task.getName().equals("setupJdks"));
+            if (hasSetupJdks) {
+                return;
+            }
+            // auto-detect scans the filesystem for JDK installations, adding non-deterministic candidates.
+            validateGradleProperty(settings, "org.gradle.java.installations.auto-detect", "false");
+            // auto-download lets Gradle download JDKs on its own, bypassing the managed set.
+            validateGradleProperty(settings, "org.gradle.java.installations.auto-download", "false");
         });
     }
 
