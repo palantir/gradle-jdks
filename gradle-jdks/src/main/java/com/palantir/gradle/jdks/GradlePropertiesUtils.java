@@ -23,15 +23,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/** Utility for ensuring required key=value pairs exist in a properties file. */
+/** Utility for ensuring required gradle-jdks toolchain properties exist in a properties file. */
 final class GradlePropertiesUtils {
 
+    private static final Map<String, String> REQUIRED_PROPERTIES = Map.of(
+            "org.gradle.java.installations.auto-detect", "false",
+            "org.gradle.java.installations.auto-download", "false");
+
     /**
-     * Ensures all entries in {@code requiredProperties} are present in the given properties file content,
-     * updating existing values in-place and appending missing ones. Comments, blank lines, and non-key=value
-     * lines are preserved. Trailing newlines are preserved.
+     * Ensures that {@code auto-detect=false} and {@code auto-download=false} are present in the given
+     * properties file content, updating existing values in-place and appending missing ones. Comments,
+     * blank lines, and non-key=value lines are preserved. Trailing newlines are preserved.
      */
-    static String ensureProperties(String content, Map<String, String> requiredProperties) {
+    static String ensureProperties(String content) {
         boolean endsWithNewline = content.endsWith("\n");
         List<String> lines = new ArrayList<>(Arrays.asList(content.split("\n", -1)));
 
@@ -41,17 +45,17 @@ final class GradlePropertiesUtils {
         }
 
         Map<String, Boolean> found = new LinkedHashMap<>();
-        requiredProperties.keySet().forEach(key -> found.put(key, false));
+        REQUIRED_PROPERTIES.keySet().forEach(key -> found.put(key, false));
 
         for (int i = 0; i < lines.size(); i++) {
             String lineKey = extractPropertyKey(lines.get(i));
-            if (lineKey != null && requiredProperties.containsKey(lineKey)) {
-                lines.set(i, lineKey + "=" + requiredProperties.get(lineKey));
+            if (lineKey != null && REQUIRED_PROPERTIES.containsKey(lineKey)) {
+                lines.set(i, lineKey + "=" + REQUIRED_PROPERTIES.get(lineKey));
                 found.put(lineKey, true);
             }
         }
 
-        requiredProperties.forEach((key, value) -> {
+        REQUIRED_PROPERTIES.forEach((key, value) -> {
             if (!found.get(key)) {
                 lines.add(key + "=" + value);
             }

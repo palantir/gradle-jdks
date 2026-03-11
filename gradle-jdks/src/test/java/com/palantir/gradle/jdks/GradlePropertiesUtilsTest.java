@@ -18,22 +18,17 @@ package com.palantir.gradle.jdks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class GradlePropertiesUtilsTest {
-
-    private static final Map<String, String> REQUIRED = Map.of(
-            "org.gradle.java.installations.auto-detect", "false",
-            "org.gradle.java.installations.auto-download", "false");
 
     @Nested
     class EnsureProperties {
 
         @Test
         void appends_missing_properties_to_empty_string() {
-            String result = GradlePropertiesUtils.ensureProperties("", REQUIRED);
+            String result = GradlePropertiesUtils.ensureProperties("");
             assertThat(result)
                     .contains("org.gradle.java.installations.auto-detect=false")
                     .contains("org.gradle.java.installations.auto-download=false");
@@ -43,7 +38,7 @@ class GradlePropertiesUtilsTest {
         void replaces_existing_property_with_wrong_value() {
             String input = "org.gradle.java.installations.auto-detect=true\n"
                     + "org.gradle.java.installations.auto-download=true\n";
-            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result)
                     .isEqualTo("org.gradle.java.installations.auto-detect=false\n"
                             + "org.gradle.java.installations.auto-download=false\n");
@@ -53,14 +48,14 @@ class GradlePropertiesUtilsTest {
         void leaves_correct_values_unchanged() {
             String input = "org.gradle.java.installations.auto-detect=false\n"
                     + "org.gradle.java.installations.auto-download=false\n";
-            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result).isEqualTo(input);
         }
 
         @Test
         void preserves_comments_and_other_properties() {
             String input = "# This is a comment\n" + "some.other.property=value\n" + "\n" + "! another comment style\n";
-            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result)
                     .startsWith("# This is a comment\nsome.other.property=value\n\n! another comment style\n")
                     .contains("org.gradle.java.installations.auto-detect=false")
@@ -74,7 +69,7 @@ class GradlePropertiesUtilsTest {
                     + "middle.prop=b\n"
                     + "org.gradle.java.installations.auto-download=true\n"
                     + "last.prop=c\n";
-            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result)
                     .isEqualTo("first.prop=a\n"
                             + "org.gradle.java.installations.auto-detect=false\n"
@@ -86,7 +81,7 @@ class GradlePropertiesUtilsTest {
         @Test
         void appends_only_missing_properties() {
             String input = "org.gradle.java.installations.auto-detect=false\n";
-            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result)
                     .as("existing property kept in place, missing one appended")
                     .startsWith("org.gradle.java.installations.auto-detect=false\n")
@@ -96,7 +91,7 @@ class GradlePropertiesUtilsTest {
         @Test
         void preserves_trailing_newline() {
             String input = "some.property=value\n";
-            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result).as("output should end with a newline").endsWith("\n");
         }
 
@@ -104,7 +99,7 @@ class GradlePropertiesUtilsTest {
         void preserves_no_trailing_newline_when_input_has_none() {
             String input = "org.gradle.java.installations.auto-detect=false\n"
                     + "org.gradle.java.installations.auto-download=false";
-            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result)
                     .as("output should not add a trailing newline when input had none")
                     .isEqualTo("org.gradle.java.installations.auto-detect=false\n"

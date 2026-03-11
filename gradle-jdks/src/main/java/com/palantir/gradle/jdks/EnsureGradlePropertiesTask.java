@@ -21,7 +21,6 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.OutputFile;
@@ -34,10 +33,6 @@ import org.gradle.api.tasks.TaskAction;
  */
 public abstract class EnsureGradlePropertiesTask extends DefaultTask {
 
-    private static final Map<String, String> REQUIRED_PROPERTIES = Map.of(
-            "org.gradle.java.installations.auto-detect", "false",
-            "org.gradle.java.installations.auto-download", "false");
-
     @OutputFile
     public abstract RegularFileProperty getGradlePropertiesFile();
 
@@ -45,7 +40,7 @@ public abstract class EnsureGradlePropertiesTask extends DefaultTask {
     public final void ensureProperties() {
         Path gradleProperties = getGradlePropertiesFile().get().getAsFile().toPath();
         String content = readContent(gradleProperties);
-        String updated = GradlePropertiesUtils.ensureProperties(content, REQUIRED_PROPERTIES);
+        String updated = GradlePropertiesUtils.ensureProperties(content);
         writeContent(gradleProperties, updated);
     }
 
