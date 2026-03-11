@@ -138,7 +138,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                 settings.getProviders().gradleProperty(propertyName).getOrNull());
         if (!actualValue.map(expectedValue::equals).orElse(false)) {
             throw new RuntimeException(String.format(
-                    "gradle-jdks requires the gradle property %s=%s but found '%s'."
+                    "gradle-jdks requires %s=%s but found '%s'."
                             + " Run ./gradlew setupJdks to configure this automatically.",
                     propertyName, expectedValue, actualValue.orElse("<not set>")));
         }
@@ -153,10 +153,8 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         Optional<String> actualValue = Optional.ofNullable(
                 settings.getProviders().gradleProperty(propertyName).getOrNull());
         actualValue.ifPresent(value -> {
-            throw new RuntimeException(String.format(
-                    "gradle-jdks does not allow %s to be set, as it would override the JDKs"
-                            + " configured by the plugin. Found '%s'.",
-                    propertyName, value));
+            throw new RuntimeException(
+                    String.format("gradle-jdks does not allow %s to be set. Found '%s'.", propertyName, value));
         });
     }
 
