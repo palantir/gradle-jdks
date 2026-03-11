@@ -145,11 +145,6 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         }
     }
 
-    /**
-     * Validates that a gradle property is not set. gradle-jdks ensures builds use the exact JDKs specified in the
-     * build configuration — allowing external overrides via properties like {@code installations.paths} would defeat
-     * this by making builds behave differently on different machines.
-     */
     private static void validateGradlePropertyNotSet(Settings settings, String propertyName) {
         Optional<String> actualValue = Optional.ofNullable(
                 settings.getProviders().gradleProperty(propertyName).getOrNull());
