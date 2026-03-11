@@ -106,6 +106,8 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
      * builds use the exact JDKs specified in the build configuration. Properties that allow external overrides
      * (auto-detect, auto-download, installations.paths) would defeat this by making builds behave differently
      * on different machines.
+     *
+     * @see <a href="https://docs.gradle.org/9.4.0/userguide/toolchains.html">Gradle Toolchains documentation</a>
      */
     private static void validateToolchainProperties(Settings settings) {
         // installations.paths must never be set — it adds externally-specified JDK paths that bypass gradle-jdks.
