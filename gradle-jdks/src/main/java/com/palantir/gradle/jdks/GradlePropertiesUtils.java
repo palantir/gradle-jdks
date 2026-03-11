@@ -16,12 +16,12 @@
 
 package com.palantir.gradle.jdks;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /** Utility for ensuring required gradle-jdks toolchain properties exist in a properties file. */
 final class GradlePropertiesUtils {
@@ -37,9 +37,9 @@ final class GradlePropertiesUtils {
      */
     static String ensureProperties(String content) {
         boolean endsWithNewline = content.endsWith("\n");
-        List<String> lines = new ArrayList<>(Arrays.asList(content.split("\n", -1)));
+        List<String> lines = new ArrayList<>(Splitter.on('\n').splitToList(content));
 
-        // split("...", -1) produces a trailing empty element when the string ends with the delimiter
+        // Splitter produces a trailing empty element when the string ends with the delimiter
         if (endsWithNewline && !lines.isEmpty() && lines.get(lines.size() - 1).isEmpty()) {
             lines.remove(lines.size() - 1);
         }
@@ -62,7 +62,7 @@ final class GradlePropertiesUtils {
         });
 
         boolean appendedNewLines = found.containsValue(false);
-        String result = lines.stream().collect(Collectors.joining("\n"));
+        String result = Joiner.on('\n').join(lines);
         if (endsWithNewline || appendedNewLines) {
             result += "\n";
         }
