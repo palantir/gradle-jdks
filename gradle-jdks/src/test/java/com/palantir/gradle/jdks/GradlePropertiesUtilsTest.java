@@ -18,8 +18,6 @@ package com.palantir.gradle.jdks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,77 +32,83 @@ class GradlePropertiesUtilsTest {
     class EnsureProperties {
 
         @Test
-        void appends_missing_properties_to_empty_list() {
-            List<String> lines = new ArrayList<>();
-            GradlePropertiesUtils.ensureProperties(lines, REQUIRED);
-            assertThat(lines)
-                    .contains(
-                            "org.gradle.java.installations.auto-detect=false",
-                            "org.gradle.java.installations.auto-download=false");
+        void appends_missing_properties_to_empty_string() {
+            String result = GradlePropertiesUtils.ensureProperties("", REQUIRED);
+            assertThat(result)
+                    .contains("org.gradle.java.installations.auto-detect=false")
+                    .contains("org.gradle.java.installations.auto-download=false");
         }
 
         @Test
         void replaces_existing_property_with_wrong_value() {
-            List<String> lines = new ArrayList<>(List.of(
-                    "org.gradle.java.installations.auto-detect=true",
-                    "org.gradle.java.installations.auto-download=true"));
-            GradlePropertiesUtils.ensureProperties(lines, REQUIRED);
-            assertThat(lines)
-                    .containsExactly(
-                            "org.gradle.java.installations.auto-detect=false",
-                            "org.gradle.java.installations.auto-download=false");
+            String input = "org.gradle.java.installations.auto-detect=true\n"
+                    + "org.gradle.java.installations.auto-download=true\n";
+            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            assertThat(result)
+                    .isEqualTo("org.gradle.java.installations.auto-detect=false\n"
+                            + "org.gradle.java.installations.auto-download=false\n");
         }
 
         @Test
         void leaves_correct_values_unchanged() {
-            List<String> lines = new ArrayList<>(List.of(
-                    "org.gradle.java.installations.auto-detect=false",
-                    "org.gradle.java.installations.auto-download=false"));
-            GradlePropertiesUtils.ensureProperties(lines, REQUIRED);
-            assertThat(lines)
-                    .containsExactly(
-                            "org.gradle.java.installations.auto-detect=false",
-                            "org.gradle.java.installations.auto-download=false");
+            String input = "org.gradle.java.installations.auto-detect=false\n"
+                    + "org.gradle.java.installations.auto-download=false\n";
+            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            assertThat(result).isEqualTo(input);
         }
 
         @Test
         void preserves_comments_and_other_properties() {
-            List<String> lines = new ArrayList<>(
-                    List.of("# This is a comment", "some.other.property=value", "", "! another comment style"));
-            GradlePropertiesUtils.ensureProperties(lines, REQUIRED);
-            assertThat(lines)
-                    .startsWith("# This is a comment", "some.other.property=value", "", "! another comment style")
-                    .contains(
-                            "org.gradle.java.installations.auto-detect=false",
-                            "org.gradle.java.installations.auto-download=false");
+            String input = "# This is a comment\n" + "some.other.property=value\n" + "\n" + "! another comment style\n";
+            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            assertThat(result)
+                    .startsWith("# This is a comment\nsome.other.property=value\n\n! another comment style\n")
+                    .contains("org.gradle.java.installations.auto-detect=false")
+                    .contains("org.gradle.java.installations.auto-download=false");
         }
 
         @Test
         void replaces_in_place_preserving_line_order() {
-            List<String> lines = new ArrayList<>(List.of(
-                    "first.prop=a",
-                    "org.gradle.java.installations.auto-detect=true",
-                    "middle.prop=b",
-                    "org.gradle.java.installations.auto-download=true",
-                    "last.prop=c"));
-            GradlePropertiesUtils.ensureProperties(lines, REQUIRED);
-            assertThat(lines)
-                    .containsExactly(
-                            "first.prop=a",
-                            "org.gradle.java.installations.auto-detect=false",
-                            "middle.prop=b",
-                            "org.gradle.java.installations.auto-download=false",
-                            "last.prop=c");
+            String input = "first.prop=a\n"
+                    + "org.gradle.java.installations.auto-detect=true\n"
+                    + "middle.prop=b\n"
+                    + "org.gradle.java.installations.auto-download=true\n"
+                    + "last.prop=c\n";
+            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            assertThat(result)
+                    .isEqualTo("first.prop=a\n"
+                            + "org.gradle.java.installations.auto-detect=false\n"
+                            + "middle.prop=b\n"
+                            + "org.gradle.java.installations.auto-download=false\n"
+                            + "last.prop=c\n");
         }
 
         @Test
         void appends_only_missing_properties() {
-            List<String> lines = new ArrayList<>(List.of("org.gradle.java.installations.auto-detect=false"));
-            GradlePropertiesUtils.ensureProperties(lines, REQUIRED);
-            assertThat(lines)
+            String input = "org.gradle.java.installations.auto-detect=false\n";
+            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            assertThat(result)
                     .as("existing property kept in place, missing one appended")
-                    .startsWith("org.gradle.java.installations.auto-detect=false")
+                    .startsWith("org.gradle.java.installations.auto-detect=false\n")
                     .contains("org.gradle.java.installations.auto-download=false");
+        }
+
+        @Test
+        void preserves_trailing_newline() {
+            String input = "some.property=value\n";
+            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            assertThat(result).as("output should end with a newline").endsWith("\n");
+        }
+
+        @Test
+        void preserves_no_trailing_newline_when_input_has_none() {
+            String input = "org.gradle.java.installations.auto-detect=false\n"
+                    + "org.gradle.java.installations.auto-download=false";
+            String result = GradlePropertiesUtils.ensureProperties(input, REQUIRED);
+            assertThat(result)
+                    .as("output should not add a trailing newline when input had none")
+                    .isEqualTo("org.gradle.java.installations.auto-detect=false\n"
+                            + "org.gradle.java.installations.auto-download=false");
         }
     }
 

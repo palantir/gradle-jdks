@@ -21,8 +21,6 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
@@ -46,24 +44,22 @@ public abstract class EnsureGradlePropertiesTask extends DefaultTask {
     @TaskAction
     public final void ensureProperties() {
         Path gradleProperties = getGradlePropertiesFile().get().getAsFile().toPath();
-        List<String> lines = readLines(gradleProperties);
-        GradlePropertiesUtils.ensureProperties(lines, REQUIRED_PROPERTIES);
-        writeLines(gradleProperties, lines);
+        String content = readContent(gradleProperties);
+        String updated = GradlePropertiesUtils.ensureProperties(content, REQUIRED_PROPERTIES);
+        writeContent(gradleProperties, updated);
     }
 
-    private static List<String> readLines(Path path) {
+    private static String readContent(Path path) {
         try {
-            return Files.exists(path)
-                    ? new ArrayList<>(Files.readAllLines(path, StandardCharsets.ISO_8859_1))
-                    : new ArrayList<>();
+            return Files.exists(path) ? Files.readString(path, StandardCharsets.ISO_8859_1) : "";
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read gradle.properties", e);
         }
     }
 
-    private static void writeLines(Path path, List<String> lines) {
+    private static void writeContent(Path path, String content) {
         try {
-            Files.write(path, lines, StandardCharsets.ISO_8859_1);
+            Files.writeString(path, content, StandardCharsets.ISO_8859_1);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write gradle.properties", e);
         }

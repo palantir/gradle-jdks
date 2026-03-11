@@ -16,18 +16,30 @@
 
 package com.palantir.gradle.jdks;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-/** Utility for ensuring required key=value pairs exist in a list of properties file lines. */
+/** Utility for ensuring required key=value pairs exist in a properties file. */
 final class GradlePropertiesUtils {
 
     /**
-     * Ensures all entries in {@code requiredProperties} are present in {@code lines}, updating existing values
-     * in-place and appending missing ones. Lines that are comments, blank, or not key=value pairs are left untouched.
+     * Ensures all entries in {@code requiredProperties} are present in the given properties file content,
+     * updating existing values in-place and appending missing ones. Comments, blank lines, and non-key=value
+     * lines are preserved. Trailing newlines are preserved.
      */
-    static void ensureProperties(List<String> lines, Map<String, String> requiredProperties) {
+    static String ensureProperties(String content, Map<String, String> requiredProperties) {
+        boolean endsWithNewline = content.endsWith("\n");
+        List<String> lines = new ArrayList<>(Arrays.asList(content.split("\n", -1)));
+
+        // split("...", -1) produces a trailing empty element when the string ends with the delimiter
+        if (endsWithNewline && !lines.isEmpty() && lines.get(lines.size() - 1).isEmpty()) {
+            lines.remove(lines.size() - 1);
+        }
+
         Map<String, Boolean> found = new LinkedHashMap<>();
         requiredProperties.keySet().forEach(key -> found.put(key, false));
 
@@ -44,6 +56,13 @@ final class GradlePropertiesUtils {
                 lines.add(key + "=" + value);
             }
         });
+
+        boolean appendedNewLines = found.containsValue(false);
+        String result = lines.stream().collect(Collectors.joining("\n"));
+        if (endsWithNewline || appendedNewLines) {
+            result += "\n";
+        }
+        return result;
     }
 
     /**
