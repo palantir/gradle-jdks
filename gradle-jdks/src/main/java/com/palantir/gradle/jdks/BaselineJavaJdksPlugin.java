@@ -47,11 +47,11 @@ public abstract class BaselineJavaJdksPlugin implements Plugin<Project> {
 
         rootProject.getPluginManager().apply(BaselineJavaVersions.class);
 
-        JdksExtension jdksExtension = JdksPlugin.extension(rootProject, new JdkDistributions());
-        JdkManager jdkManager = rootProject
-                .getObjects()
-                .newInstance(
-                        JdkManager.class, jdksExtension.getJdkStorageLocation(), new JdkDownloaders(jdksExtension), os);
+        JdkDistributions jdkDistributions = new JdkDistributions();
+
+        JdksExtension jdksExtension = JdksPlugin.extension(rootProject, jdkDistributions);
+        JdkManager jdkManager = new JdkManager(
+                jdksExtension.getJdkStorageLocation(), jdkDistributions, new JdkDownloaders(jdksExtension), os);
 
         rootProject
                 .getExtensions()
