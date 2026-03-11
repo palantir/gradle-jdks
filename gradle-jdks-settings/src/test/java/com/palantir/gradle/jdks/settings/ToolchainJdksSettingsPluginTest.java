@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -40,10 +41,8 @@ class ToolchainJdksSettingsPluginTest {
     private static final String OS = OperatingSystem.get().uiName();
     private static final String ARCH = CurrentArch.get().uiName();
 
-    @Test
-    @WithGradleUserHomeInBuildDir
-    void non_existing_jdks_are_installed_by_the_settings_plugin(GradleInvoker gradle, RootProject rootProject)
-            throws IOException {
+    @BeforeEach
+    void setup(RootProject rootProject) {
         rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
         rootProject.buildGradle().append("""
             jdks {
@@ -51,8 +50,13 @@ class ToolchainJdksSettingsPluginTest {
                 daemonTarget = '17'
             }
             """, TestResources.JDK_17.toJdkExtension());
-
         rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
+    }
+
+    @Test
+    @WithGradleUserHomeInBuildDir
+    void non_existing_jdks_are_installed_by_the_settings_plugin(GradleInvoker gradle, RootProject rootProject)
+            throws IOException {
         gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
 
         Path installationDir = rootProject.buildDir().path().resolve("tmp").resolve("gradle-jdks");
@@ -104,74 +108,47 @@ class ToolchainJdksSettingsPluginTest {
                 .exists();
     }
 
-    @Test
-    void fails_when_auto_detect_is_not_disabled_in_gradle_properties(GradleInvoker gradle, RootProject rootProject) {
-        rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
-        rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
-        rootProject.buildGradle().append("""
-            jdks {
-                %s
-                daemonTarget = '17'
-            }
-            """, TestResources.JDK_17.toJdkExtension());
-
-        // Enable JDK setup but do NOT set auto-detect/auto-download properties
-        rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
-        gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
-
-        gradle.withArgs("javaToolchains")
-                .buildsWithFailure()
-                .assertThat()
-                .output()
-                .contains("gradle-jdks requires org.gradle.java.installations.auto-detect=false");
-    }
-
     @Nested
-    class SetupJdksBypass {
+    class AutoDetectValidation {
 
-        @Test
-        void setupJdks_bypasses_auto_detect_validation(GradleInvoker gradle, RootProject rootProject) {
-            rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
+        @BeforeEach
+        void setup(GradleInvoker gradle, RootProject rootProject) {
             rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
-            rootProject.buildGradle().append("""
-                jdks {
-                    %s
-                    daemonTarget = '17'
-                }
-                """, TestResources.JDK_17.toJdkExtension());
-
-            // Enable JDK setup but do NOT set auto-detect/auto-download properties
-            rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
-            gradle.withArgs("wrapper").buildsSuccessfully();
-
-            InvocationResult result = gradle.withArgs("setupJdks").buildsSuccessfully();
-            result.assertThat().task(":setupJdks").succeeded();
-            result.assertThat().task(":ensureGradleJdkProperties").succeeded();
+            gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
         }
 
         @Test
-        void task_depending_on_setupJdks_also_bypasses_auto_detect_validation(
-                GradleInvoker gradle, RootProject rootProject) {
-            rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
-            rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
-            rootProject.buildGradle().append("""
-                jdks {
-                    %s
-                    daemonTarget = '17'
-                }
+        void fails_when_auto_detect_is_not_disabled_in_gradle_properties(GradleInvoker gradle) {
+            gradle.withArgs("javaToolchains")
+                    .buildsWithFailure()
+                    .assertThat()
+                    .output()
+                    .contains("gradle-jdks requires org.gradle.java.installations.auto-detect=false");
+        }
 
-                tasks.register('mySetup') {
-                    dependsOn 'setupJdks'
-                }
-                """, TestResources.JDK_17.toJdkExtension());
+        @Nested
+        class SetupJdksBypass {
 
-            // Enable JDK setup but do NOT set auto-detect/auto-download properties
-            rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
-            gradle.withArgs("wrapper").buildsSuccessfully();
+            @Test
+            void setupJdks_bypasses_auto_detect_validation(GradleInvoker gradle) {
+                InvocationResult result = gradle.withArgs("setupJdks").buildsSuccessfully();
+                result.assertThat().task(":setupJdks").succeeded();
+                result.assertThat().task(":ensureGradleJdkProperties").succeeded();
+            }
 
-            InvocationResult result = gradle.withArgs("mySetup").buildsSuccessfully();
-            result.assertThat().task(":setupJdks").succeeded();
-            result.assertThat().task(":mySetup").succeeded();
+            @Test
+            void task_depending_on_setupJdks_also_bypasses_auto_detect_validation(
+                    GradleInvoker gradle, RootProject rootProject) {
+                rootProject.buildGradle().append("""
+                    tasks.register('mySetup') {
+                        dependsOn 'setupJdks'
+                    }
+                    """);
+
+                InvocationResult result = gradle.withArgs("mySetup").buildsSuccessfully();
+                result.assertThat().task(":setupJdks").succeeded();
+                result.assertThat().task(":mySetup").succeeded();
+            }
         }
     }
 }
