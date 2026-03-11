@@ -38,27 +38,37 @@ import java.nio.file.StandardOpenOption;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
+import javax.inject.Inject;
 import org.gradle.api.Project;
+import org.gradle.api.file.ArchiveOperations;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DuplicatesStrategy;
+import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.provider.Provider;
+import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
 
-public final class JdkManager {
+public abstract class JdkManager {
 
+    private final JdkDistributions jdkDistributions = new JdkDistributions();
     private final Provider<Directory> storageLocation;
-    private final JdkDistributions jdkDistributions;
     private final JdkDownloaders jdkDownloaders;
     private final OperatingSystem operatingSystem;
 
-    JdkManager(
-            Provider<Directory> storageLocation,
-            JdkDistributions jdkDistributions,
-            JdkDownloaders jdkDownloaders,
-            OperatingSystem operatingSystem) {
+    @Inject
+    protected abstract ExecOperations getExecOperations();
+
+    @Inject
+    protected abstract FileSystemOperations getFileSystemOperations();
+
+    @Inject
+    protected abstract ArchiveOperations getArchiveOperations();
+
+    @Inject
+    public JdkManager(
+            Provider<Directory> storageLocation, JdkDownloaders jdkDownloaders, OperatingSystem operatingSystem) {
         this.storageLocation = storageLocation;
-        this.jdkDistributions = jdkDistributions;
         this.jdkDownloaders = jdkDownloaders;
         this.operatingSystem = operatingSystem;
     }
@@ -122,8 +132,8 @@ public final class JdkManager {
                             jdkSpec.release().version(),
                             jdkSpec.consistentShortHash(),
                             temporaryJdkPath);
-            project.copy(copy -> {
-                copy.from(unpackTree(project, jdkPath.extension(), jdkArchive));
+            getFileSystemOperations().copy(copy -> {
+                copy.from(unpackTree(jdkPath.extension(), jdkArchive));
                 copy.into(temporaryJdkPath);
                 copy.setDuplicatesStrategy(DuplicatesStrategy.WARN);
             });
@@ -138,7 +148,7 @@ public final class JdkManager {
                                 jdkSpec.distributionName(),
                                 jdkSpec.release().version(),
                                 jdkSpec.consistentShortHash());
-                addCaCert(project, javaHome, name, caCertFile);
+                addCaCert(javaHome, name, caCertFile);
             });
 
             project.getLogger()
@@ -154,7 +164,7 @@ public final class JdkManager {
         } catch (IOException e) {
             throw new UncheckedIOException("Locking failed", e);
         } finally {
-            project.delete(delete -> {
+            getFileSystemOperations().delete(delete -> {
                 delete.delete(temporaryJdkPath.toFile());
             });
         }
@@ -186,10 +196,10 @@ public final class JdkManager {
         }
     }
 
-    private FileTree unpackTree(Project project, Extension extension, Path path) {
+    private FileTree unpackTree(Extension extension, Path path) {
         return switch (extension) {
-            case ZIP -> project.zipTree(path.toFile());
-            case TARGZ -> project.tarTree(path.toFile());
+            case ZIP -> getArchiveOperations().zipTree(path.toFile());
+            case TARGZ -> getArchiveOperations().tarTree(path.toFile());
         };
     }
 
@@ -211,11 +221,10 @@ public final class JdkManager {
         }
     }
 
-    private void addCaCert(Project project, Path javaHome, String alias, String caCert) {
+    private void addCaCert(Path javaHome, String alias, String caCert) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
-        @SuppressWarnings("for-rollout:deprecation")
-        ExecResult keytoolResult = project.exec(exec -> {
+        ExecResult keytoolResult = getExecOperations().exec(exec -> {
             exec.setCommandLine(
                     Paths.get("bin", SystemTools.keytool(operatingSystem)).toString(),
                     "-import",
