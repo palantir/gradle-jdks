@@ -117,7 +117,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                 settings.getProviders().gradleProperty(propertyName).getOrNull();
         if (!expectedValue.equals(actualValue)) {
             throw new RuntimeException(String.format(
-                    "gradle-jdks requires %s=%s in gradle.properties but found '%s'."
+                    "gradle-jdks requires %s=%s but found '%s'."
                             + " Run ./gradlew setupJdks to configure this automatically.",
                     propertyName, expectedValue, actualValue == null ? "<not set>" : actualValue));
         }

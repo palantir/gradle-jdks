@@ -123,7 +123,7 @@ class ToolchainJdksSettingsPluginTest {
                     .buildsWithFailure()
                     .assertThat()
                     .output()
-                    .contains("gradle-jdks requires org.gradle.java.installations.auto-detect=false");
+                    .contains("gradle-jdks requires org.gradle.java.installations.auto-detect=false but found");
         }
 
         @Nested
