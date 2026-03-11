@@ -17,10 +17,8 @@
 package com.palantir.gradle.jdks;
 
 import com.google.common.base.Splitter;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,27 +43,27 @@ final class GradlePropertiesUtils {
             lines = lines.subList(0, lines.size() - 1);
         }
 
-        // Replace existing properties with required values, tracking which ones we found
-        Set<String> found = new HashSet<>();
+        // Replace existing properties with required values
         List<String> updatedLines = lines.stream()
                 .map(line -> {
                     String lineKey = extractPropertyKey(line);
                     if (lineKey != null && REQUIRED_PROPERTIES.containsKey(lineKey)) {
-                        found.add(lineKey);
                         return lineKey + "=" + REQUIRED_PROPERTIES.get(lineKey);
                     }
                     return line;
                 })
                 .collect(Collectors.toList());
 
-        // Append any properties that weren't already present
-        Stream<String> missingEntries = REQUIRED_PROPERTIES.entrySet().stream()
-                .filter(entry -> !found.contains(entry.getKey()))
-                .map(entry -> entry.getKey() + "=" + entry.getValue());
+        // Append any properties that aren't already present in the file
+        List<String> missingEntries = REQUIRED_PROPERTIES.entrySet().stream()
+                .filter(entry ->
+                        updatedLines.stream().noneMatch(line -> entry.getKey().equals(extractPropertyKey(line))))
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .toList();
 
-        boolean hasNewEntries = found.size() < REQUIRED_PROPERTIES.size();
-        String result = Stream.concat(updatedLines.stream(), missingEntries).collect(Collectors.joining("\n"));
-        if (endsWithNewline || hasNewEntries) {
+        String result =
+                Stream.concat(updatedLines.stream(), missingEntries.stream()).collect(Collectors.joining("\n"));
+        if (endsWithNewline || !missingEntries.isEmpty()) {
             result += "\n";
         }
         return result;
