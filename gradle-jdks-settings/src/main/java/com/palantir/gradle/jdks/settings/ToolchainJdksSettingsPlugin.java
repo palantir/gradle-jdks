@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -113,13 +114,13 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
     }
 
     private static void validateGradleProperty(Settings settings, String propertyName, String expectedValue) {
-        String actualValue =
-                settings.getProviders().gradleProperty(propertyName).getOrNull();
-        if (!expectedValue.equals(actualValue)) {
+        Optional<String> actualValue = Optional.ofNullable(
+                settings.getProviders().gradleProperty(propertyName).getOrNull());
+        if (!actualValue.map(expectedValue::equals).orElse(false)) {
             throw new RuntimeException(String.format(
                     "gradle-jdks requires the gradle property %s=%s but found '%s'."
                             + " Run ./gradlew setupJdks to configure this automatically.",
-                    propertyName, expectedValue, actualValue == null ? "<not set>" : actualValue));
+                    propertyName, expectedValue, actualValue.orElse("<not set>")));
         }
     }
 
