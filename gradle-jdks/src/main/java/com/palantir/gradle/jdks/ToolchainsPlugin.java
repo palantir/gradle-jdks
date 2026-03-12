@@ -189,6 +189,7 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
         registerSetupJdksTasks(generateGradleJdkConfigs, wrapperPatcherTask, checkJdksLifecycle);
     }
 
+    @SuppressWarnings("TaskDependsOn")
     private void registerSetupJdksTasks(
             TaskProvider<GenerateGradleJdksConfigsTask> generateGradleJdkConfigs,
             TaskProvider<GradleWrapperPatcher> wrapperPatcherTask,
@@ -202,8 +203,7 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
                             .set(getLayout().getProjectDirectory().file("gradle.properties"));
                 });
 
-        @SuppressWarnings("TaskDependsOn")
-        TaskProvider<SetupJdksTask> unused = getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
+        getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");
             setupJdksTask.setGroup(GRADLE_JDK_GROUP);
             setupJdksTask.dependsOn(ensureGradleProperties);
