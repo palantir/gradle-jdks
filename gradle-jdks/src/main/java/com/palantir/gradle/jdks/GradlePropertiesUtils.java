@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import one.util.streamex.EntryStream;
+import one.util.streamex.StreamEx;
 
 /** Utility for ensuring required gradle-jdks toolchain properties exist in a properties file. */
 final class GradlePropertiesUtils {
@@ -55,8 +55,7 @@ final class GradlePropertiesUtils {
                 .mapKeyValue((key, value) -> key + "=" + value)
                 .toList();
 
-        String result =
-                Stream.concat(updatedLines.stream(), missingEntries.stream()).collect(Collectors.joining("\n"));
+        String result = StreamEx.of(updatedLines).append(missingEntries).collect(Collectors.joining("\n"));
 
         if (!missingEntries.isEmpty() && !result.endsWith("\n")) {
             result += "\n";
