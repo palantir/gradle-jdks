@@ -111,6 +111,8 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
      */
     private static void validateToolchainProperties(Settings settings) {
         // installations.paths must never be set — it adds externally-specified JDK paths that bypass gradle-jdks.
+        // This is typically passed via -P rather than gradle.properties (since it requires absolute paths),
+        // so we're unlikely to need to worry about auto-removing it — we just fail with a clear error.
         validateGradlePropertyNotSet(settings, "org.gradle.java.installations.paths");
 
         // TODO(gradle-jdks): Also ban org.gradle.java.installations.fromEnv once circle-templates
