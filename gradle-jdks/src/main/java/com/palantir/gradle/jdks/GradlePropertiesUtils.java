@@ -37,13 +37,7 @@ final class GradlePropertiesUtils {
      * blank lines, and non-key=value lines are preserved. Trailing newlines are preserved.
      */
     static String ensureProperties(String content) {
-        boolean endsWithNewline = content.endsWith("\n");
         List<String> lines = Splitter.on('\n').splitToList(content);
-
-        // Splitter produces a trailing empty element when the string ends with the delimiter
-        if (endsWithNewline && !lines.isEmpty() && lines.get(lines.size() - 1).isEmpty()) {
-            lines = lines.subList(0, lines.size() - 1);
-        }
 
         // Replace existing properties with required values
         List<String> updatedLines = lines.stream()
@@ -51,7 +45,7 @@ final class GradlePropertiesUtils {
                         .filter(REQUIRED_PROPERTIES::containsKey)
                         .map(key -> key + "=" + REQUIRED_PROPERTIES.get(key))
                         .orElse(line))
-                .collect(Collectors.toList());
+                .toList();
 
         // Append any properties that aren't already present in the file
         List<String> missingEntries = EntryStream.of(REQUIRED_PROPERTIES)
@@ -63,7 +57,8 @@ final class GradlePropertiesUtils {
 
         String result =
                 Stream.concat(updatedLines.stream(), missingEntries.stream()).collect(Collectors.joining("\n"));
-        if (endsWithNewline || !missingEntries.isEmpty()) {
+
+        if (!missingEntries.isEmpty() && !result.endsWith("\n")) {
             result += "\n";
         }
         return result;
