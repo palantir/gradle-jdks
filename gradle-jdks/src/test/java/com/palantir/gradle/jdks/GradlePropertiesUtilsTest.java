@@ -99,7 +99,9 @@ class GradlePropertiesUtilsTest {
             String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result)
                     .as("existing property kept in place, missing one appended")
-                    .startsWith("org.gradle.java.installations.auto-detect=false\n")
+                    .startsWith("""
+                        org.gradle.java.installations.auto-detect=false
+                        """)
                     .contains("org.gradle.java.installations.auto-download=false");
         }
 
@@ -114,13 +116,30 @@ class GradlePropertiesUtilsTest {
 
         @Test
         void preserves_no_trailing_newline_when_input_has_none() {
-            // Cannot use text blocks here because they always include a trailing newline
-            String input = "org.gradle.java.installations.auto-detect=false\n"
-                    + "org.gradle.java.installations.auto-download=false";
+            String input = """
+                org.gradle.java.installations.auto-detect=false
+                org.gradle.java.installations.auto-download=false\
+                """;
             String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result)
                     .as("output should not add a trailing newline when input had none")
                     .doesNotEndWith("\n");
+        }
+
+        @Test
+        void adds_trailing_newline_when_appending_missing_property_to_input_without_one() {
+            // If we're already modifying the end of the file by appending a property,
+            // it's fine to also add a trailing newline — text files should generally end in one.
+            String input = """
+                org.gradle.java.installations.auto-detect=false\
+                """;
+            String result = GradlePropertiesUtils.ensureProperties(input);
+            assertThat(result)
+                    .as("appending a property should also add a trailing newline")
+                    .isEqualTo("""
+                        org.gradle.java.installations.auto-detect=false
+                        org.gradle.java.installations.auto-download=false
+                        """);
         }
     }
 
