@@ -124,7 +124,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         // setupJdks is a transitive dependency of the requested task.
         settings.getGradle().getTaskGraph().whenReady(taskGraph -> {
             boolean hasSetupJdks = taskGraph.getAllTasks().stream()
-                    .anyMatch(task -> task.getName().equals("setupJdks"));
+                    .anyMatch(task -> task.getPath().equals(":setupJdks"));
             if (hasSetupJdks) {
                 return;
             }
