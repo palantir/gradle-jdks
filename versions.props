@@ -6,7 +6,7 @@ com.netflix.nebula:nebula-test = 10.6.2
 org.junit.jupiter:* = 6.0.3
 org.assertj:assertj-core = 3.27.7
 org.junit.platform:* = 6.0.3
-org.mockito:* = 5.22.0
+org.mockito:* = 5.23.0
 com.palantir.gradle.utils:* = 0.23.0
 com.google.guava:guava = 33.5.0-jre
 commons-io:commons-io = 2.21.0
@@ -21,7 +21,7 @@ com.palantir.baseline:* = 5.53.0
 # dependency-upgrader:ON
 
 # test dependencies
-com.palantir.gradle.jdks:* = 0.76.0
+com.palantir.gradle.jdks:* = 0.77.0
 com.palantir.gradle.jdkslatest:* = 0.26.0
 
 # conflict resolution
