@@ -103,10 +103,10 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
 
     private void reflectivelySetInstallationLocations(Set<InstallationLocation> installedJdkPaths) {
         // A core tenet in the design of gradle-jdks is the *only* JDKs that Gradle should be able to
-        // access to are those JDKs installed by gradle-jdks. This is very important. If Gradle has access to
+        // access are those JDKs installed by gradle-jdks. This is very important. If Gradle has access to
         // other JDKs on a machine, say a 17 JDK installed by the user, it may use this, the build works
         // on that machine but then *fails* on machine where the user has not manually installed a 17 JDK.
-        // This defeate the purpose of gradle-jdks: JDKs should be entirely managed, no users should have
+        // This defeats the purpose of gradle-jdks: JDKs should be entirely managed, no users should have
         // to manually install JDKs. If the right JDKs are found on one machine, the right JDKs should be
         // installed by gradle-jdks on another machine. Additionally, manually installed JDKs may not have
         // certificates set up properly, or be the exact version we expect.
