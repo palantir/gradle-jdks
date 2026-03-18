@@ -76,8 +76,8 @@ public class GradleWithJdksTest {
 
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
         assertThat(TestResources.getLanguageVersions(result.output()))
-                .as(String.format("Expected only JDKs 11 and 21 in the javaToolchains output %s", result.output()))
-                .containsOnly(11, 21);
+                .as(String.format("Expected only 2 jDKS (11 and 21) in the javaToolchains output %s", result.output()))
+                .containsExactlyInAnyOrder(11, 21);
     }
 
     @Test
@@ -146,7 +146,7 @@ public class GradleWithJdksTest {
         InvocationResult result = invoker.withArgs("javaToolchains").buildsSuccessfully();
         result.assertThat().output().contains("Auto-detection:     Disabled");
         result.assertThat().output().contains("Auto-download:      Disabled");
-        assertThat(TestResources.getDiscoveredLocations(result.output())).anyMatch(predicate);
+        assertThat(TestResources.getDiscoveredLocations(result.output())).allMatch(predicate);
     }
 
     private static void addJdks21Setup(RootProject rootProject) {
