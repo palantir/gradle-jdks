@@ -27,20 +27,23 @@ import com.palantir.platform.OperatingSystem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
+import org.gradle.api.internal.GradleInternal;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.Nested;
-import org.gradle.initialization.DefaultSettings;
+import org.gradle.internal.jvm.inspection.DefaultJavaInstallationRegistry;
 import org.gradle.internal.jvm.inspection.JavaInstallationRegistry;
 import org.gradle.jvm.toolchain.internal.InstallationLocation;
 import org.gradle.util.GradleVersion;
@@ -92,13 +95,61 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         List<Path> installedJdkPaths =
                 getOrInstallJdkPaths(rootProjectDir, gradleUserHomeDir, gradleJdksLocalDirectory, os);
 
-        JavaInstallationRegistry javaInstallationRegistry =
-                ((DefaultSettings) settings).getGradle().getServices().get(JavaInstallationRegistry.class);
+        reflectivelySetInstallationLocations(installedJdkPaths.stream()
+                .map(jdkPath ->
+                        InstallationLocation.userDefined(jdkPath.toFile(), "gradle-jdks: " + jdkPath.getFileName()))
+                .collect(Collectors.toSet()));
+    }
 
-        installedJdkPaths.forEach(jdkPath -> {
-            javaInstallationRegistry.addInstallation(
-                    InstallationLocation.userDefined(jdkPath.toFile(), "gradle-jdks: " + jdkPath.getFileName()));
-        });
+    private void reflectivelySetInstallationLocations(Set<InstallationLocation> installedJdkPaths) {
+        // A core tenet in the design of gradle-jdks is the *only* JDKs that Gradle should be able to
+        // access to are those JDKs installed by gradle-jdks. This is very important. If Gradle has access to
+        // other JDKs on a machine, say a 17 JDK installed by the user, it may use this, the build works
+        // on that machine but then *fails* on machine where the user has not manually installed a 17 JDK.
+        // This defeate the purpose of gradle-jdks: JDKs should be entirely managed, no users should have
+        // to manually install JDKs. If the right JDKs are found on one machine, the right JDKs should be
+        // installed by gradle-jdks on another machine. Additionally, manually installed JDKs may not have
+        // certificates set up properly, or be the exact version we expect.
+
+        // Unfortunately, this necessitates some reflection hackery to enforce. Originally when trying to
+        // support Gradle 9, we were using the JavaInstallationRegistry#addInstallation method to merely
+        // add the JDKs installed by gradle-jdks. However, in Gradle 9 they added a number of new ways
+        // to find JDKs that are enabled *even if* the org.gradle.java.installations.auto-detect property
+        // is set to false, including a JAVA_HOME installation supplier. Many/most people have JAVA_HOME
+        // set, so this tends to add another manual JDK, which is the one thing we don't want to happen.
+
+        // Unfortunately, this means we must change the set of default installed suppliers. The easiest
+        // way to do this is to just set the Set<InstallationLocation> on the Installations class, which
+        // also allows us to verify that we set the installation locations before anything else has read it.
+        // By setting our own set of installation locations, none of the extra Gradle ones are added.
+
+        JavaInstallationRegistry javaInstallationRegistry =
+                ((GradleInternal) getGradle()).getServices().get(JavaInstallationRegistry.class);
+        try {
+            Field installationsField = DefaultJavaInstallationRegistry.class.getDeclaredField("installations");
+            installationsField.setAccessible(true);
+            Object installations = installationsField.get(javaInstallationRegistry);
+
+            Field locationsField = installations.getClass().getDeclaredField("locations");
+            locationsField.setAccessible(true);
+
+            if (locationsField.get(installations) != null) {
+                throw new IllegalStateException("gradle-jdks was trying to set the list JDK installation locations "
+                        + "known to Gradle (using reflection), but the set of locations had already been populated. "
+                        + "This means another piece of code had initialised the set of locations and read them, "
+                        + "potentially reading incorrect data. Either gradle-jdks needs to be updated to support this "
+                        + "new version of Gradle, or whatever is reading the JDKs so early needs to come after the "
+                        + "gradle-jdks toolchain settings plugin is applied.");
+            }
+
+            locationsField.set(installations, installedJdkPaths);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(
+                    "gradle-jdks was trying to set the list JDK installation locations known to Gradle (using"
+                            + " reflection), but something went wrong. If Gradle has been upgraded gradle-jdks likely"
+                            + " needs changes to support this newer version of Gradle.",
+                    e);
+        }
     }
 
     /**
@@ -115,8 +166,17 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         // so we're unlikely to need to worry about auto-removing it — we just fail with a clear error.
         validateGradlePropertyNotSet(settings, "org.gradle.java.installations.paths");
 
-        // TODO(gradle-jdks): Also ban org.gradle.java.installations.fromEnv once circle-templates
-        // stops rendering it for java-library-oss and docker-image templates.
+        // org.gradle.java.installations.fromEnv and org.gradle.java.installations.auto-detect do not have any
+        // effect since we reflectively set the set of known JDK installation locations in this plugin, which
+        // means the results of these InstallationSuppliers are not used. However, we still ensure that auto-detect
+        // at least is set to false so that when `./gradlew javaToolchains` is run, it does not confusingly say:
+        // + Options
+        //     | Auto-detection:     Enabled
+        // when it actually has no effect.
+
+        // We ensure org.gradle.java.installations.auto-detect is disabled too as Gradle will try to auto-install
+        // a JDK from some random location, not using gradle-jdks, if it can't find one, rather than failing and
+        // getting the user to set up gradle-jdks properly.
 
         // auto-detect and auto-download must be false, but we defer validation to whenReady so that
         // setupJdks (which writes these properties) can bypass it. We use taskGraph.whenReady rather
