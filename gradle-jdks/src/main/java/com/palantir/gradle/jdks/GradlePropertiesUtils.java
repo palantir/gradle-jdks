@@ -17,7 +17,6 @@
 package com.palantir.gradle.jdks;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,7 +27,7 @@ import one.util.streamex.StreamEx;
 /** Utility for ensuring required gradle-jdks toolchain properties exist in a properties file. */
 final class GradlePropertiesUtils {
 
-    private static final Map<String, String> REQUIRED_PROPERTIES = ImmutableMap.of(
+    private static final Map<String, String> REQUIRED_PROPERTIES = Map.of(
             "org.gradle.java.installations.auto-detect", "false",
             "org.gradle.java.installations.auto-download", "false");
 
