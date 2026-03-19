@@ -29,9 +29,11 @@ class GradlePropertiesUtilsTest {
         @Test
         void appends_missing_properties_to_empty_string() {
             String result = GradlePropertiesUtils.ensureProperties("");
-            assertThat(result)
-                    .contains("org.gradle.java.installations.auto-detect=false")
-                    .contains("org.gradle.java.installations.auto-download=false");
+            assertThat(result).isEqualTo("""
+
+                org.gradle.java.installations.auto-detect=false
+                org.gradle.java.installations.auto-download=false
+                """);
         }
 
         @Test
@@ -66,10 +68,15 @@ class GradlePropertiesUtilsTest {
                 ! another comment style
                 """;
             String result = GradlePropertiesUtils.ensureProperties(input);
-            assertThat(result)
-                    .startsWith(input)
-                    .contains("org.gradle.java.installations.auto-detect=false")
-                    .contains("org.gradle.java.installations.auto-download=false");
+            assertThat(result).isEqualTo("""
+                # This is a comment
+                some.other.property=value
+
+                ! another comment style
+
+                org.gradle.java.installations.auto-detect=false
+                org.gradle.java.installations.auto-download=false
+                """);
         }
 
         @Test
@@ -99,10 +106,11 @@ class GradlePropertiesUtilsTest {
             String result = GradlePropertiesUtils.ensureProperties(input);
             assertThat(result)
                     .as("existing property kept in place, missing one appended")
-                    .startsWith("""
-                        org.gradle.java.installations.auto-detect=false
-                        """)
-                    .contains("org.gradle.java.installations.auto-download=false");
+                    .isEqualTo("""
+                            org.gradle.java.installations.auto-detect=false
+
+                            org.gradle.java.installations.auto-download=false
+                            """);
         }
 
         @Test
@@ -137,9 +145,10 @@ class GradlePropertiesUtilsTest {
             assertThat(result)
                     .as("appending a property should also add a trailing newline")
                     .isEqualTo("""
-                        org.gradle.java.installations.auto-detect=false
-                        org.gradle.java.installations.auto-download=false
-                        """);
+                            org.gradle.java.installations.auto-detect=false
+                            org.gradle.java.installations.auto-download=false
+                            """)
+                    .endsWith("\n");
         }
     }
 
