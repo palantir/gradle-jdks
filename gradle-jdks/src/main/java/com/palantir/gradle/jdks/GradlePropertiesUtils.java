@@ -20,7 +20,6 @@ import com.google.common.base.Splitter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import one.util.streamex.EntryStream;
 import one.util.streamex.StreamEx;
 
@@ -55,7 +54,7 @@ final class GradlePropertiesUtils {
                 .mapKeyValue((key, value) -> key + "=" + value)
                 .toList();
 
-        String result = StreamEx.of(updatedLines).append(missingEntries).collect(Collectors.joining("\n"));
+        String result = StreamEx.of(updatedLines).append(missingEntries).joining("\n");
 
         if (!missingEntries.isEmpty() && !result.endsWith("\n")) {
             result += "\n";
