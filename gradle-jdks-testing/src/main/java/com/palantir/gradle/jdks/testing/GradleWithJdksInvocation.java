@@ -34,10 +34,7 @@ record GradleWithJdksInvocation(
         try {
             setupInvocation.buildsSuccessfully();
         } catch (UnexpectedBuildFailure e) {
-            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")
-                    || e.getMessage().contains("ToolchainProvisioningException:")) {
-                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
-            }
+            throwIfGradleToolchainNotFoundError(e.getBuildResult().getOutput());
             throw e;
         }
         try {
@@ -46,9 +43,7 @@ record GradleWithJdksInvocation(
             markSetupComplete.run();
             return result;
         } catch (UnexpectedBuildFailure e) {
-            if (e.getMessage().contains("ToolchainProvisioningException:")) {
-                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
-            }
+            throwIfGradleToolchainNotFoundError(e.getBuildResult().getOutput());
             throw e;
         }
     }
