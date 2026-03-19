@@ -107,10 +107,10 @@ class GradlePropertiesUtilsTest {
             assertThat(result)
                     .as("existing property kept in place, missing one appended")
                     .isEqualTo("""
-                            org.gradle.java.installations.auto-detect=false
+                        org.gradle.java.installations.auto-detect=false
 
-                            org.gradle.java.installations.auto-download=false
-                            """);
+                        org.gradle.java.installations.auto-download=false
+                        """);
         }
 
         @Test
@@ -145,9 +145,9 @@ class GradlePropertiesUtilsTest {
             assertThat(result)
                     .as("appending a property should also add a trailing newline")
                     .isEqualTo("""
-                            org.gradle.java.installations.auto-detect=false
-                            org.gradle.java.installations.auto-download=false
-                            """)
+                        org.gradle.java.installations.auto-detect=false
+                        org.gradle.java.installations.auto-download=false
+                        """)
                     .endsWith("\n");
         }
     }
