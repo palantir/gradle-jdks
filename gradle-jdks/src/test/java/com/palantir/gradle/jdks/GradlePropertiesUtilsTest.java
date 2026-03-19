@@ -30,8 +30,8 @@ class GradlePropertiesUtilsTest {
         void appends_missing_properties_to_empty_string() {
             String result = GradlePropertiesUtils.ensureProperties("");
             assertThat(result).isEqualTo("""
-                org.gradle.java.installations.auto-detect=false
                 org.gradle.java.installations.auto-download=false
+                org.gradle.java.installations.auto-detect=false
                 """);
         }
 
@@ -72,8 +72,8 @@ class GradlePropertiesUtilsTest {
                 some.other.property=value
 
                 ! another comment style
-                org.gradle.java.installations.auto-detect=false
                 org.gradle.java.installations.auto-download=false
+                org.gradle.java.installations.auto-detect=false
                 """);
         }
 
