@@ -138,6 +138,12 @@ class ToolchainJdksSettingsPluginTest {
 
         @Nested
         class SetupJdksBypass {
+            @Test
+            void ensureGradleJdkProperties_bypasses_auto_detect_validation(GradleInvoker gradle) {
+                InvocationResult result =
+                        gradle.withArgs("ensureGradleJdkProperties").buildsSuccessfully();
+                result.assertThat().task(":ensureGradleJdkProperties").succeeded();
+            }
 
             @Test
             void setupJdks_bypasses_auto_detect_validation(GradleInvoker gradle) {

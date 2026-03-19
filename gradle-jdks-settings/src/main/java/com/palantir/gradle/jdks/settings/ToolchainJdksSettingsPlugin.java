@@ -178,13 +178,17 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         // a JDK from some random location, not using gradle-jdks, if it can't find one, rather than failing and
         // getting the user to set up gradle-jdks properly.
 
-        // auto-detect and auto-download must be false, but we defer validation to whenReady so that
-        // setupJdks (which writes these properties) can bypass it. We use taskGraph.whenReady rather
-        // than checking getStartParameter().getTaskNames() so that the bypass also works when
-        // setupJdks is a transitive dependency of the requested task.
+        // auto-detect and auto-download must be false. We enforce this in plugin code rather than a task so
+        // the check cannot be easily disabled.
+        // But there is a problem here: the ensureGradleJdkProperties fixes the properties, but if the properties
+        // are currently failing, we will never be able to run the task as the check will fail before any tasks
+        // are run.
+        // To fix, we do the validation in taskGraph.whenReady, so that if :ensureGradleJdkProperties is going
+        // to be run, we do not check the properties. This also means we don't check when running
+        // `./gradlew setupJdks`, because it depends on :ensureGradleJdkProperties, so that ends up on the task graph.
         settings.getGradle().getTaskGraph().whenReady(taskGraph -> {
             boolean hasSetupJdks = taskGraph.getAllTasks().stream()
-                    .anyMatch(task -> task.getPath().equals(":setupJdks"));
+                    .anyMatch(task -> task.getPath().equals(":ensureGradleJdkProperties"));
             if (hasSetupJdks) {
                 return;
             }
