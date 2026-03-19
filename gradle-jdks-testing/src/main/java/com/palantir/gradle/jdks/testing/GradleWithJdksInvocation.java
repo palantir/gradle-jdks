@@ -58,24 +58,22 @@ record GradleWithJdksInvocation(
         try {
             setupInvocation.buildsSuccessfully();
         } catch (UnexpectedBuildFailure e) {
-            if (gradleToolchainNotFoundError(e.getBuildResult().getOutput())) {
-                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
-            }
+            throwIfGradleToolchainNotFoundError(e.getBuildResult().getOutput());
             return InvocationResult.from(e);
         }
         InvocationResult result = tasksInvocation.get().buildsWithFailure();
-        if (gradleToolchainNotFoundError(result.output())) {
-            throw new JdkSetupFailureException(result.output());
-        }
+        throwIfGradleToolchainNotFoundError(result.output());
         // only mark the setup complete if no JDK related error is thrown
         markSetupComplete.run();
         return result;
     }
 
-    private static boolean gradleToolchainNotFoundError(String output) {
+    private static void throwIfGradleToolchainNotFoundError(String output) {
         String exceptionForGradle8_8 = "NoToolchainAvailableException:";
         String exceptionForOtherGradle = "ToolchainProvisioningException:";
 
-        return output.contains(exceptionForGradle8_8) || output.contains(exceptionForOtherGradle);
+        if (output.contains(exceptionForGradle8_8) || output.contains(exceptionForOtherGradle)) {
+            throw new JdkSetupFailureException(output);
+        }
     }
 }
