@@ -69,10 +69,13 @@ record GradleWithJdksInvocation(
     }
 
     private static void throwIfGradleToolchainNotFoundError(String output) {
-        String exceptionForGradle8_8 = "NoToolchainAvailableException:";
+        String exceptionFromGradleJdks = "com.palantir.gradle.jdks.setup.JdkSetupFailureException:";
+        String exceptionForGradle8Point8 = "NoToolchainAvailableException:";
         String exceptionForOtherGradle = "ToolchainProvisioningException:";
 
-        if (output.contains(exceptionForGradle8_8) || output.contains(exceptionForOtherGradle)) {
+        if (output.contains(exceptionFromGradleJdks)
+                || output.contains(exceptionForGradle8Point8)
+                || output.contains(exceptionForOtherGradle)) {
             throw new JdkSetupFailureException(output);
         }
     }
