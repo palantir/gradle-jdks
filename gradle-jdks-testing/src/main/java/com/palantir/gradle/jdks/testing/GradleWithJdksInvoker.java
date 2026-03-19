@@ -84,7 +84,7 @@ final class GradleWithJdksInvoker implements GradleInvoker {
                     .mapMulti(Optional<Path>::ifPresent)
                     .findFirst()
                     .orElseThrow(() -> new JdkSetupFailureException(
-                            "Failed to set up JDK automanagement: failed to retrieve the gradle daemon" + " jdk path"));
+                            "Failed to set up JDK automanagement: failed to retrieve the gradle daemon jdk path"));
         } catch (IOException e) {
             throw new JdkSetupFailureException(
                     "Failed to set up JDK automanagement: failed to retrieve the gradle daemon jdk path", e);
