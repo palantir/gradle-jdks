@@ -174,7 +174,7 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
         //     | Auto-detection:     Enabled
         // when it actually has no effect.
 
-        // We ensure org.gradle.java.installations.auto-detect is disabled too as Gradle will try to auto-install
+        // We ensure org.gradle.java.installations.auto-download is disabled too as Gradle will try to auto-install
         // a JDK from some random location, not using gradle-jdks, if it can't find one, rather than failing and
         // getting the user to set up gradle-jdks properly.
 

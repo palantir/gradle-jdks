@@ -27,8 +27,8 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 /**
- * Ensures that gradle.properties contains the required toolchain properties for gradle-jdks.
- * Specifically, sets auto-detect and auto-download to false so that Gradle only uses JDKs
+ * Ensures that {@code gradle.properties} contains the required toolchain properties for gradle-jdks.
+ * Specifically, sets {@code auto-detect} and {@code auto-download} to {@code false} so that Gradle only uses JDKs
  * configured by the gradle-jdks plugin.
  */
 public abstract class EnsureGradlePropertiesTask extends DefaultTask {
