@@ -30,7 +30,6 @@ class GradlePropertiesUtilsTest {
         void appends_missing_properties_to_empty_string() {
             String result = GradlePropertiesUtils.ensureProperties("");
             assertThat(result).isEqualTo("""
-
                 org.gradle.java.installations.auto-detect=false
                 org.gradle.java.installations.auto-download=false
                 """);
@@ -73,7 +72,6 @@ class GradlePropertiesUtilsTest {
                 some.other.property=value
 
                 ! another comment style
-
                 org.gradle.java.installations.auto-detect=false
                 org.gradle.java.installations.auto-download=false
                 """);
@@ -108,7 +106,6 @@ class GradlePropertiesUtilsTest {
                     .as("existing property kept in place, missing one appended")
                     .isEqualTo("""
                         org.gradle.java.installations.auto-detect=false
-
                         org.gradle.java.installations.auto-download=false
                         """);
         }

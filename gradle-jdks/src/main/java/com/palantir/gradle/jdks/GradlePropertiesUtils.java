@@ -54,9 +54,19 @@ final class GradlePropertiesUtils {
                 .mapKeyValue((key, value) -> key + "=" + value)
                 .toList();
 
-        String result = StreamEx.of(updatedLines).append(missingEntries).joining("\n");
+        // If the input ended with a newline, Splitter produces a trailing empty element.
+        // Drop it before appending so we don't get a blank line before the new entries.
+        boolean endsWithNewline =
+                !updatedLines.isEmpty() && updatedLines.get(updatedLines.size() - 1).isEmpty();
+        StreamEx<String> base = endsWithNewline
+                ? StreamEx.of(updatedLines.subList(0, updatedLines.size() - 1))
+                : StreamEx.of(updatedLines);
 
-        if (!missingEntries.isEmpty() && !result.endsWith("\n")) {
+        String result = base.append(missingEntries).joining("\n");
+
+        boolean appendedEntries = !missingEntries.isEmpty();
+        boolean shouldEndWithNewline = endsWithNewline || appendedEntries;
+        if (shouldEndWithNewline && !result.endsWith("\n")) {
             result += "\n";
         }
         return result;
