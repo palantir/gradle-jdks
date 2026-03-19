@@ -1,4 +1,6 @@
 major-versions:
   8: 8.14.3
   9: 9.4.0
-extra-versions: []
+extra-versions:
+  # The minimum supported version
+  - 8.8

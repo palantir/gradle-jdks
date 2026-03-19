@@ -424,7 +424,7 @@ class GradleJdkToolchainsIntegrationTest {
                 .isInstanceOf(JdkSetupFailureException.class)
                 .hasMessageContaining("Cannot find a Java installation on your machine")
                 .hasMessageContaining("languageVersion=15")
-                .hasMessageContaining("Toolchain auto-provisioning is not enabled")
+                .hasMessageContaining("auto-provisioning is not enabled")
                 .hasMessageContaining(
                         "Gradle JDK Auto-management is enabled but the java versions=[15] are not configured.");
     }
