@@ -133,7 +133,7 @@ class GradleJdkToolchainsIntegrationTest {
 
         assertThat(TestResources.getDetectedBy(toolchainsResult.output()))
                 .as("detected by pattern contains gradle-jdks source")
-                .allMatch(a -> a.matches("gradle-jdks: .*"));
+                .allMatch(line -> line.matches("gradle-jdks: .*"));
 
         InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
 
