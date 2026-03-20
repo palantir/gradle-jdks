@@ -58,8 +58,8 @@ final class GradlePropertiesUtils {
 
         // If the input ended with a newline, Splitter produces a trailing empty element.
         // Drop it before appending so we don't get a blank line before the new entries.
-        boolean endsWithNewline =
-                !updatedLines.isEmpty() && updatedLines.get(updatedLines.size() - 1).isEmpty();
+        boolean endsWithNewline = !updatedLines.isEmpty()
+                && updatedLines.get(updatedLines.size() - 1).isEmpty();
         StreamEx<String> base = endsWithNewline
                 ? StreamEx.of(updatedLines.subList(0, updatedLines.size() - 1))
                 : StreamEx.of(updatedLines);
