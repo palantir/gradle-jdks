@@ -2,11 +2,19 @@
 
 aopalliance:aopalliance:1.0 (1 constraints: 170a83ac)
 
-com.fasterxml.jackson.core:jackson-annotations:2.21 (3 constraints: d0258a42)
+com.fasterxml.jackson.core:jackson-annotations:2.21 (5 constraints: 1953843f)
 
-com.fasterxml.jackson.core:jackson-core:2.21.1 (1 constraints: 86123421)
+com.fasterxml.jackson.core:jackson-core:2.21.1 (4 constraints: 8856df02)
 
-com.fasterxml.jackson.core:jackson-databind:2.21.1 (2 constraints: 0c1a2811)
+com.fasterxml.jackson.core:jackson-databind:2.21.1 (5 constraints: 0e5eb0bf)
+
+com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.21.1 (1 constraints: a51a8b21)
+
+com.fasterxml.jackson.datatype:jackson-datatype-guava:2.21.1 (1 constraints: a51a8b21)
+
+com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.21.1 (1 constraints: a51a8b21)
+
+com.fasterxml.woodstox:woodstox-core:7.1.1 (1 constraints: 3d174926)
 
 com.github.ben-manes.caffeine:caffeine:3.2.3 (2 constraints: ce16f62b)
 
@@ -14,7 +22,7 @@ com.google.errorprone:error_prone_annotations:2.47.0 (3 constraints: b51f9553)
 
 com.google.guava:failureaccess:1.0.3 (2 constraints: f3154f13)
 
-com.google.guava:guava:33.5.0-jre (8 constraints: c1a3499c)
+com.google.guava:guava:33.5.0-jre (8 constraints: 519f78e1)
 
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 constraints: bd17c918)
 
@@ -28,7 +36,7 @@ com.palantir.baseline:gradle-baseline-java:5.53.0 (1 constraints: 3f055a3b)
 
 com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions:1.9.0 (2 constraints: c716552c)
 
-com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.3.0 (1 constraints: 0505f435)
+com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.8.0 (1 constraints: 0a050336)
 
 com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.66.0 (1 constraints: 3e05493b)
 
@@ -113,6 +121,8 @@ org.codehaus.plexus:plexus-interpolation:1.26 (3 constraints: 7b2bf0f5)
 org.codehaus.plexus:plexus-sec-dispatcher:2.0 (1 constraints: 5c100b99)
 
 org.codehaus.plexus:plexus-utils:3.5.1 (11 constraints: 3fa89966)
+
+org.codehaus.woodstox:stax2-api:4.2.2 (2 constraints: 6a278bd2)
 
 org.eclipse.sisu:org.eclipse.sisu.inject:0.3.5 (3 constraints: 852caa93)
 
