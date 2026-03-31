@@ -28,27 +28,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
-import org.gradle.api.internal.properties.GradleProperties;
-import org.gradle.api.internal.provider.DefaultProviderFactory;
-import org.gradle.api.internal.provider.DefaultValueSourceProviderFactory;
+import org.gradle.api.internal.GradleInternal;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.Nested;
-import org.gradle.initialization.DefaultSettings;
+import org.gradle.internal.jvm.inspection.DefaultJavaInstallationRegistry;
+import org.gradle.internal.jvm.inspection.JavaInstallationRegistry;
+import org.gradle.jvm.toolchain.internal.InstallationLocation;
 import org.gradle.util.GradleVersion;
 
 /**
@@ -91,86 +88,138 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
                     + " ./gradlew setupJdks to set up the JDKs.");
             return;
         }
+        validateToolchainProperties(settings);
+
         // Forces the installation of the configured jdks if they are not installed. Fixes the case when a user doesn't
         // have the Intellij plugin installed and some jdks are missing.
-        getOrInstallJdkPaths(rootProjectDir, gradleUserHomeDir, gradleJdksLocalDirectory, os);
-        ProviderFactory providerFactory =
-                ((DefaultSettings) settings).getServices().get(ProviderFactory.class);
-        if (!(providerFactory instanceof DefaultProviderFactory)) {
-            throw new RuntimeException(String.format(
-                    "Expected providerFactory to be of type '%s' but was '%s'.",
-                    ProviderFactory.class.getCanonicalName(),
-                    providerFactory.getClass().getCanonicalName()));
-        }
-        DefaultProviderFactory defaultProviderFactory = (DefaultProviderFactory) providerFactory;
-        try {
-            Field valueSourceProviderFactory =
-                    DefaultProviderFactory.class.getDeclaredField("valueSourceProviderFactory");
-            valueSourceProviderFactory.setAccessible(true);
+        List<Path> installedJdkPaths =
+                getOrInstallJdkPaths(rootProjectDir, gradleUserHomeDir, gradleJdksLocalDirectory, os);
 
-            DefaultValueSourceProviderFactory defaultValueSourceProviderFactory =
-                    (DefaultValueSourceProviderFactory) valueSourceProviderFactory.get(defaultProviderFactory);
-            Field field = DefaultValueSourceProviderFactory.class.getDeclaredField("gradleProperties");
-            field.setAccessible(true);
-            GradleProperties originalGradleProperties = (GradleProperties) field.get(defaultValueSourceProviderFactory);
-            GradleProperties ourGradleProperties = (GradleProperties) Proxy.newProxyInstance(
-                    GradleProperties.class.getClassLoader(),
-                    new Class[] {GradleProperties.class},
-                    new GradlePropertiesInvocationHandler(
-                            rootProjectDir, gradleUserHomeDir, gradleJdksLocalDirectory, originalGradleProperties, os));
-            field.set(defaultValueSourceProviderFactory, ourGradleProperties);
+        reflectivelySetInstallationLocations(installedJdkPaths.stream()
+                .map(jdkPath ->
+                        InstallationLocation.userDefined(jdkPath.toFile(), "gradle-jdks: " + jdkPath.getFileName()))
+                .collect(Collectors.toSet()));
+    }
+
+    private void reflectivelySetInstallationLocations(Set<InstallationLocation> installedJdkPaths) {
+        // A core tenet in the design of gradle-jdks is the *only* JDKs that Gradle should be able to
+        // access are those JDKs installed by gradle-jdks. This is very important. If Gradle has access to
+        // other JDKs on a machine, say a 17 JDK installed by the user, it may use this, the build works
+        // on that machine but then *fails* on machine where the user has not manually installed a 17 JDK.
+        // This defeats the purpose of gradle-jdks: JDKs should be entirely managed, no users should have
+        // to manually install JDKs. If the right JDKs are found on one machine, the right JDKs should be
+        // installed by gradle-jdks on another machine. Additionally, manually installed JDKs may not have
+        // certificates set up properly, or be the exact version we expect.
+
+        // Unfortunately, this necessitates some reflection hackery to enforce. Originally when trying to
+        // support Gradle 9, we were using the JavaInstallationRegistry#addInstallation method to merely
+        // add the JDKs installed by gradle-jdks. However, in Gradle 9 they added a number of new ways
+        // to find JDKs that are enabled *even if* the org.gradle.java.installations.auto-detect property
+        // is set to false, including a JAVA_HOME installation supplier. Many/most people have JAVA_HOME
+        // set, so this tends to add another manual JDK, which is the one thing we don't want to happen.
+
+        // Unfortunately, this means we must change the set of default installed suppliers. The easiest
+        // way to do this is to just set the Set<InstallationLocation> on the Installations class, which
+        // also allows us to verify that we set the installation locations before anything else has read it.
+        // By setting our own set of installation locations, none of the extra Gradle ones are added.
+
+        JavaInstallationRegistry javaInstallationRegistry =
+                ((GradleInternal) getGradle()).getServices().get(JavaInstallationRegistry.class);
+        try {
+            Field installationsField = DefaultJavaInstallationRegistry.class.getDeclaredField("installations");
+            installationsField.setAccessible(true);
+            Object installations = installationsField.get(javaInstallationRegistry);
+
+            Field locationsField = installations.getClass().getDeclaredField("locations");
+            locationsField.setAccessible(true);
+
+            if (locationsField.get(installations) != null) {
+                throw new IllegalStateException("gradle-jdks was trying to set the list JDK installation locations "
+                        + "known to Gradle (using reflection), but the set of locations had already been populated. "
+                        + "This means another piece of code had initialised the set of locations and read them, "
+                        + "potentially reading incorrect data. Either gradle-jdks needs to be updated to support this "
+                        + "new version of Gradle, or whatever is reading the JDKs so early needs to come after the "
+                        + "gradle-jdks toolchain settings plugin is applied.");
+            }
+
+            locationsField.set(installations, installedJdkPaths);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to update the Gradle JDK properties using reflection", e);
+            throw new RuntimeException(
+                    "gradle-jdks was trying to set the list JDK installation locations known to Gradle (using"
+                            + " reflection), but something went wrong. If Gradle has been upgraded gradle-jdks likely"
+                            + " needs changes to support this newer version of Gradle.",
+                    e);
         }
     }
 
-    private static class GradlePropertiesInvocationHandler implements InvocationHandler {
-        private final GradleProperties originalGradleProperties;
-        private final Path gradleJdksLocalDirectory;
-        private final Path rootProjectDir;
-        private final Path gradleUserHomeDirectory;
-        private final OperatingSystem operatingSystem;
+    /**
+     * Validates that Gradle toolchain properties are configured correctly. The whole point of gradle-jdks is that
+     * builds use the exact JDKs specified in the build configuration. Properties that allow external overrides
+     * (auto-detect, auto-download, installations.paths) would defeat this by making builds behave differently
+     * on different machines.
+     *
+     * @see <a href="https://docs.gradle.org/9.4.0/userguide/toolchains.html">Gradle Toolchains documentation</a>
+     */
+    private static void validateToolchainProperties(Settings settings) {
+        // installations.paths must never be set — it adds externally-specified JDK paths that bypass gradle-jdks.
+        // This is typically passed via -P rather than gradle.properties (since it requires absolute paths),
+        // so we're unlikely to need to worry about auto-removing it — we just fail with a clear error.
+        validateGradlePropertyNotSet(settings, "org.gradle.java.installations.paths");
 
-        GradlePropertiesInvocationHandler(
-                Path rootProjectDir,
-                Path gradleUserHomeDirectory,
-                Path gradleJdksLocalDirectory,
-                GradleProperties originalGradleProperties,
-                OperatingSystem operatingSystem) {
-            this.rootProjectDir = rootProjectDir;
-            this.gradleUserHomeDirectory = gradleUserHomeDirectory;
-            this.gradleJdksLocalDirectory = gradleJdksLocalDirectory;
-            this.originalGradleProperties = originalGradleProperties;
-            this.operatingSystem = operatingSystem;
-        }
+        // org.gradle.java.installations.fromEnv and org.gradle.java.installations.auto-detect do not have any
+        // effect since we reflectively set the set of known JDK installation locations in this plugin, which
+        // means the results of these InstallationSuppliers are not used. However, we still ensure that auto-detect
+        // at least is set to false so that when `./gradlew javaToolchains` is run, it does not confusingly say:
+        // + Options
+        //     | Auto-detection:     Enabled
+        // when it actually has no effect.
 
-        @Override
-        public Object invoke(Object _proxy, Method method, Object[] args) throws Throwable {
-            // see: https://github.com/gradle/gradle/blob/4bd1b3d3fc3f31db5a26eecb416a165b8cc36082/subprojects/core-api/
-            // src/main/java/org/gradle/api/internal/properties/GradleProperties.java#L28
-            if (method.getName().equals("find") && args.length == 1) {
-                List<Path> installedLocalToolchains = getOrInstallJdkPaths(
-                        rootProjectDir, gradleUserHomeDirectory, gradleJdksLocalDirectory, operatingSystem);
-                String onlyArg = (String) args[0];
-                if (onlyArg.equals("org.gradle.java.installations.auto-detect")
-                        || onlyArg.equals("org.gradle.java.installations.auto-download")) {
-                    return "false";
-                }
-                if (onlyArg.equals("org.gradle.java.installations.paths")) {
-                    return installedLocalToolchains.stream()
-                            .map(Path::toAbsolutePath)
-                            .map(Path::toString)
-                            .collect(Collectors.joining(","));
-                }
+        // We ensure org.gradle.java.installations.auto-download is disabled too as Gradle will try to auto-install
+        // a JDK from some random location, not using gradle-jdks, if it can't find one, rather than failing and
+        // getting the user to set up gradle-jdks properly.
+
+        // auto-detect and auto-download must be false. We enforce this in plugin code rather than a task so
+        // the check cannot be easily disabled.
+        // But there is a problem here: the ensureGradleJdkProperties fixes the properties, but if the properties
+        // are currently failing, we will never be able to run the task as the check will fail before any tasks
+        // are run.
+        // To fix, we do the validation in taskGraph.whenReady, so that if :ensureGradleJdkProperties is going
+        // to be run, we do not check the properties. This also means we don't check when running
+        // `./gradlew setupJdks`, because it depends on :ensureGradleJdkProperties, so that ends up on the task graph.
+        settings.getGradle().getTaskGraph().whenReady(taskGraph -> {
+            boolean hasSetupJdks = taskGraph.getAllTasks().stream()
+                    .anyMatch(task -> task.getPath().equals(":ensureGradleJdkProperties"));
+            if (hasSetupJdks) {
+                return;
             }
-            try {
-                return GradleProperties.class
-                        .getDeclaredMethod(method.getName(), method.getParameterTypes())
-                        .invoke(originalGradleProperties, args);
-            } catch (InvocationTargetException e) {
-                throw e.getCause();
-            }
+            // auto-detect scans the filesystem for JDK installations, adding non-deterministic candidates.
+            validateGradleProperty(settings, "org.gradle.java.installations.auto-detect", "false");
+            // auto-download lets Gradle download JDKs on its own, bypassing the managed set.
+            validateGradleProperty(settings, "org.gradle.java.installations.auto-download", "false");
+        });
+    }
+
+    private static void validateGradleProperty(Settings settings, String propertyName, String expectedValue) {
+        Optional<String> actualValue = Optional.ofNullable(
+                settings.getProviders().gradleProperty(propertyName).getOrNull());
+        if (!actualValue.map(expectedValue::equals).orElse(false)) {
+            throw new RuntimeException(String.format(
+                    "gradle-jdks requires %s=%s but found '%s',"
+                            + " as it would override the JDKs configured by the plugin."
+                            + " Run ./gradlew setupJdks to configure this automatically.",
+                    propertyName, expectedValue, actualValue.orElse("<not set>")));
         }
+    }
+
+    private static void validateGradlePropertyNotSet(Settings settings, String propertyName) {
+        Optional<String> actualValue = Optional.ofNullable(
+                settings.getProviders().gradleProperty(propertyName).getOrNull());
+        actualValue.ifPresent(value -> {
+            throw new RuntimeException(String.format(
+                    "gradle-jdks does not allow %s to be set, as it would override the JDKs"
+                            + " configured by the plugin. Found '%s'.",
+                    propertyName, value));
+        });
     }
 
     private static List<Path> getOrInstallJdkPaths(

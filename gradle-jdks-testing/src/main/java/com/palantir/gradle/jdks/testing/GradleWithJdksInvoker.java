@@ -84,7 +84,7 @@ final class GradleWithJdksInvoker implements GradleInvoker {
                     .mapMulti(Optional<Path>::ifPresent)
                     .findFirst()
                     .orElseThrow(() -> new JdkSetupFailureException(
-                            "Failed to set up JDK automanagement: failed to retrieve the gradle daemon" + " jdk path"));
+                            "Failed to set up JDK automanagement: failed to retrieve the gradle daemon jdk path"));
         } catch (IOException e) {
             throw new JdkSetupFailureException(
                     "Failed to set up JDK automanagement: failed to retrieve the gradle daemon jdk path", e);
@@ -102,6 +102,8 @@ final class GradleWithJdksInvoker implements GradleInvoker {
 
     private static void setupOrCheckRootProject(RootProject rootProject) {
         rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
+        rootProject.gradlePropertiesFile().setProperty("org.gradle.java.installations.auto-detect", "false");
+        rootProject.gradlePropertiesFile().setProperty("org.gradle.java.installations.auto-download", "false");
         rootProject.buildGradle().plugins().add("java");
         rootProject.buildGradle().plugins().add("com.palantir.jdks");
         rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");

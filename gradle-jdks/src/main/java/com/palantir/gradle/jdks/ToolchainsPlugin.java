@@ -28,13 +28,16 @@ import com.palantir.platform.GradleOperatingSystem;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Set;
+import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.wrapper.Wrapper;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
@@ -47,6 +50,15 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
 
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
+
+    @Nested
+    protected abstract EnvironmentVariables getEnvironmentVariables();
+
+    @Inject
+    protected abstract TaskContainer getTasks();
+
+    @Inject
+    protected abstract ProjectLayout getLayout();
 
     @Override
     public final void apply(Project rootProject) {
@@ -174,11 +186,27 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
                 .named(LifecycleBasePlugin.CHECK_TASK_NAME)
                 .configure(check -> check.dependsOn(checkJdksLifecycle));
 
-        EnvironmentVariables environmentVariables = rootProject.getObjects().newInstance(EnvironmentVariables.class);
+        registerSetupJdksTasks(generateGradleJdkConfigs, wrapperPatcherTask, checkJdksLifecycle);
+    }
 
-        rootProject.getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
+    @SuppressWarnings("TaskDependsOn")
+    private void registerSetupJdksTasks(
+            TaskProvider<GenerateGradleJdksConfigsTask> generateGradleJdkConfigs,
+            TaskProvider<GradleWrapperPatcher> wrapperPatcherTask,
+            TaskProvider<Task> checkJdksLifecycle) {
+        TaskProvider<EnsureGradlePropertiesTask> ensureGradleProperties = getTasks()
+                .register("ensureGradleJdkProperties", EnsureGradlePropertiesTask.class, task -> {
+                    task.setDescription(
+                            "Ensures gradle.properties has auto-detect and auto-download disabled for gradle-jdks.");
+                    task.setGroup(GRADLE_JDK_GROUP);
+                    task.getGradlePropertiesFile()
+                            .set(getLayout().getProjectDirectory().file("gradle.properties"));
+                });
+
+        getTasks().register("setupJdks", SetupJdksTask.class, setupJdksTask -> {
             setupJdksTask.setDescription("Configures the gradle JDK setup.");
             setupJdksTask.setGroup(GRADLE_JDK_GROUP);
+            setupJdksTask.dependsOn(ensureGradleProperties);
             setupJdksTask
                     .getGradleJdksSetupScript()
                     .fileProvider(generateGradleJdkConfigs.map(task -> task.getOutputGradleDirectory()
@@ -186,7 +214,7 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
                             .get()
                             .getAsFile()));
 
-            if (!environmentVariables.isInTestMode().get()) {
+            if (!getEnvironmentVariables().isInTestMode().get()) {
                 setupJdksTask
                         .getGradlewScript()
                         .fileProvider(wrapperPatcherTask.map(
@@ -194,7 +222,7 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
             }
         });
 
-        rootProject.getTasks().named("javaToolchains").configure(task -> {
+        getTasks().named("javaToolchains").configure(task -> {
             task.mustRunAfter(checkJdksLifecycle);
         });
     }

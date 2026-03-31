@@ -34,10 +34,7 @@ record GradleWithJdksInvocation(
         try {
             setupInvocation.buildsSuccessfully();
         } catch (UnexpectedBuildFailure e) {
-            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")
-                    || e.getMessage().contains("ToolchainProvisioningException:")) {
-                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
-            }
+            throwIfGradleToolchainNotFoundError(e.getBuildResult().getOutput());
             throw e;
         }
         try {
@@ -46,9 +43,7 @@ record GradleWithJdksInvocation(
             markSetupComplete.run();
             return result;
         } catch (UnexpectedBuildFailure e) {
-            if (e.getMessage().contains("ToolchainProvisioningException:")) {
-                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
-            }
+            throwIfGradleToolchainNotFoundError(e.getBuildResult().getOutput());
             throw e;
         }
     }
@@ -58,18 +53,25 @@ record GradleWithJdksInvocation(
         try {
             setupInvocation.buildsSuccessfully();
         } catch (UnexpectedBuildFailure e) {
-            if (e.getMessage().contains("com.palantir.gradle.jdks.setup.JdkSetupFailureException:")
-                    || e.getMessage().contains("ToolchainProvisioningException:")) {
-                throw new JdkSetupFailureException(e.getBuildResult().getOutput());
-            }
+            throwIfGradleToolchainNotFoundError(e.getBuildResult().getOutput());
             return InvocationResult.from(e);
         }
         InvocationResult result = tasksInvocation.get().buildsWithFailure();
-        if (result.output().contains("ToolchainProvisioningException:")) {
-            throw new JdkSetupFailureException(result.output());
-        }
+        throwIfGradleToolchainNotFoundError(result.output());
         // only mark the setup complete if no JDK related error is thrown
         markSetupComplete.run();
         return result;
+    }
+
+    private static void throwIfGradleToolchainNotFoundError(String output) {
+        String exceptionFromGradleJdks = "com.palantir.gradle.jdks.setup.JdkSetupFailureException:";
+        String exceptionForGradle8Point8 = "NoToolchainAvailableException:";
+        String exceptionForOtherGradle = "ToolchainProvisioningException:";
+
+        if (output.contains(exceptionFromGradleJdks)
+                || output.contains(exceptionForGradle8Point8)
+                || output.contains(exceptionForOtherGradle)) {
+            throw new JdkSetupFailureException(output);
+        }
     }
 }

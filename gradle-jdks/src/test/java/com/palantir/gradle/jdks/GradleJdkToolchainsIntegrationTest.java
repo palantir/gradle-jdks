@@ -126,13 +126,14 @@ class GradleJdkToolchainsIntegrationTest {
                 .contains("Auto-detection:     Disabled")
                 .contains("Auto-download:      Disabled");
         assertThat(TestResources.getDiscoveredLocations(toolchainsResult.output()))
+                .as("all discovered JDK locations are managed by gradle-jdks")
                 .allMatch(discoveredPath -> TestResources.HARDCODED_JDKS.jdks().stream()
                         .map(Jdk::toFileName)
                         .anyMatch(discoveredPath::contains));
 
         assertThat(TestResources.getDetectedBy(toolchainsResult.output()))
-                .as("detected by pattern contains installations.paths or Current JVM")
-                .allMatch(a -> a.matches("Gradle property 'org\\.gradle\\.java\\.installations\\.paths'|Current JVM"));
+                .as("detected by pattern contains gradle-jdks source")
+                .allMatch(line -> line.matches("gradle-jdks: .*"));
 
         InvocationResult gradleHomeResult = gradle.withArgs("printGradleHome").buildsSuccessfully();
 
@@ -423,7 +424,7 @@ class GradleJdkToolchainsIntegrationTest {
                 .isInstanceOf(JdkSetupFailureException.class)
                 .hasMessageContaining("Cannot find a Java installation on your machine")
                 .hasMessageContaining("languageVersion=15")
-                .hasMessageContaining("Toolchain auto-provisioning is not enabled")
+                .hasMessageContaining("auto-provisioning is not enabled")
                 .hasMessageContaining(
                         "Gradle JDK Auto-management is enabled but the java versions=[15] are not configured.");
     }

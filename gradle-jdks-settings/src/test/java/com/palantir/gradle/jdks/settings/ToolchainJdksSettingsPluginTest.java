@@ -22,7 +22,6 @@ import com.palantir.gradle.jdks.settings.TestDecorators.WithGradleUserHomeInBuil
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
-import com.palantir.gradle.testing.junit.AdditionallyRunWithGradle;
 import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
@@ -31,22 +30,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
 @DisabledConfigurationCache
-@AdditionallyRunWithGradle(
-        value = {"8.5", "8.8"},
-        reason = "testing for the different gradle versions to make sure the reflection in the settings plugin works")
 class ToolchainJdksSettingsPluginTest {
 
     private static final String OS = OperatingSystem.get().uiName();
     private static final String ARCH = CurrentArch.get().uiName();
 
-    @Test
-    @WithGradleUserHomeInBuildDir
-    void non_existing_jdks_are_installed_by_the_settings_plugin(GradleInvoker gradle, RootProject rootProject)
-            throws IOException {
+    @BeforeEach
+    void setup(RootProject rootProject) {
         rootProject.buildGradle().plugins().add("java").add("com.palantir.jdks");
         rootProject.buildGradle().append("""
             jdks {
@@ -54,8 +50,13 @@ class ToolchainJdksSettingsPluginTest {
                 daemonTarget = '17'
             }
             """, TestResources.JDK_17.toJdkExtension());
-
         rootProject.gradlePropertiesFile().setProperty("palantir.jdk.setup.enabled", "true");
+    }
+
+    @Test
+    @WithGradleUserHomeInBuildDir
+    void non_existing_jdks_are_installed_by_the_settings_plugin(GradleInvoker gradle, RootProject rootProject)
+            throws IOException {
         gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
 
         Path installationDir = rootProject.buildDir().path().resolve("tmp").resolve("gradle-jdks");
@@ -71,6 +72,8 @@ class ToolchainJdksSettingsPluginTest {
                     """, installationDir, TestResources.JDK_17.toFileName()));
 
         rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
+        rootProject.gradlePropertiesFile().setProperty("org.gradle.java.installations.auto-detect", "false");
+        rootProject.gradlePropertiesFile().setProperty("org.gradle.java.installations.auto-download", "false");
         InvocationResult toolchainsResult = gradle.withArgs("javaToolchains").buildsSuccessfully();
         toolchainsResult
                 .assertThat()
@@ -103,5 +106,66 @@ class ToolchainJdksSettingsPluginTest {
         assertThat(installationDir.resolve(newJdkPath))
                 .as("new JDK path was created after jdk path change")
                 .exists();
+    }
+
+    @Nested
+    class AutoPropertyValidation {
+
+        @BeforeEach
+        void setup(GradleInvoker gradle, RootProject rootProject) {
+            rootProject.settingsGradle().plugins().add("com.palantir.jdks.settings");
+            gradle.withArgs("generateGradleJdkConfigs").buildsSuccessfully();
+        }
+
+        @Test
+        void fails_when_auto_detect_is_not_disabled_in_gradle_properties(GradleInvoker gradle) {
+            gradle.withArgs("javaToolchains")
+                    .buildsWithFailure()
+                    .assertThat()
+                    .output()
+                    .contains("gradle-jdks requires org.gradle.java.installations.auto-detect=false "
+                            + "but found '<not set>'");
+        }
+
+        @Test
+        void fails_when_installations_paths_is_set(GradleInvoker gradle, RootProject rootProject) {
+            rootProject.gradlePropertiesFile().setProperty("org.gradle.java.installations.paths", "/some/jdk/path");
+            gradle.withArgs("help")
+                    .buildsWithFailure()
+                    .assertThat()
+                    .output()
+                    .contains("gradle-jdks does not allow org.gradle.java.installations.paths to be set");
+        }
+
+        @Nested
+        class SetupJdksBypass {
+            @Test
+            void ensureGradleJdkProperties_bypasses_auto_detect_validation(GradleInvoker gradle) {
+                InvocationResult result =
+                        gradle.withArgs("ensureGradleJdkProperties").buildsSuccessfully();
+                result.assertThat().task(":ensureGradleJdkProperties").succeeded();
+            }
+
+            @Test
+            void setupJdks_bypasses_auto_detect_validation(GradleInvoker gradle) {
+                InvocationResult result = gradle.withArgs("setupJdks").buildsSuccessfully();
+                result.assertThat().task(":setupJdks").succeeded();
+                result.assertThat().task(":ensureGradleJdkProperties").succeeded();
+            }
+
+            @Test
+            void task_depending_on_setupJdks_also_bypasses_auto_detect_validation(
+                    GradleInvoker gradle, RootProject rootProject) {
+                rootProject.buildGradle().append("""
+                    tasks.register('mySetup') {
+                        dependsOn 'setupJdks'
+                    }
+                    """);
+
+                InvocationResult result = gradle.withArgs("mySetup").buildsSuccessfully();
+                result.assertThat().task(":setupJdks").succeeded();
+                result.assertThat().task(":mySetup").succeeded();
+            }
+        }
     }
 }
