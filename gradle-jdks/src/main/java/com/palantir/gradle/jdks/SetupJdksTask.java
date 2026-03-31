@@ -81,7 +81,13 @@ public abstract class SetupJdksTask extends DefaultTask {
         }
 
         runCommandWithFailureHandling(
-                List.of(getGradlewScript().get().getAsFile().getAbsolutePath(), "-q", "javaToolchains", "--stacktrace"),
+                List.of(
+                        getGradlewScript().get().getAsFile().getAbsolutePath(),
+                        "-q",
+                        "javaToolchains",
+                        "--stacktrace",
+                        // Running with --no-scan to stop Excavator producing scans for this execution
+                        "--no-scan"),
                 output -> {
                     if (output.contains("UnsupportedClassVersionError")) {
                         throw new JdkSetupFailureException(
