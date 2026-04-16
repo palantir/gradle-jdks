@@ -18,11 +18,11 @@ com.fasterxml.woodstox:woodstox-core:7.1.1 (1 constraints: 3d174926)
 
 com.github.ben-manes.caffeine:caffeine:3.2.3 (2 constraints: ce16f62b)
 
-com.google.errorprone:error_prone_annotations:2.47.0 (3 constraints: b51f9553)
+com.google.errorprone:error_prone_annotations:2.47.0 (3 constraints: bb1fa753)
 
 com.google.guava:failureaccess:1.0.3 (2 constraints: f3154f13)
 
-com.google.guava:guava:33.5.0-jre (8 constraints: 519f78e1)
+com.google.guava:guava:33.6.0-jre (8 constraints: 529f2ce3)
 
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 constraints: bd17c918)
 
