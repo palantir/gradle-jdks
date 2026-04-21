@@ -14,7 +14,7 @@ commons-io:commons-io = 2.21.0
 org.slf4j:* = 2.0.17
 org.apache.commons:commons-compress = 1.28.0
 org.ow2.asm:asm = 9.9.1
-com.palantir.gradle.failure-reports:* = 1.9.0
+com.palantir.gradle.failure-reports:* = 1.18.0
 com.palantir.gradle.idea-configuration:gradle-idea-configuration = 0.8.0
 
 # dependency-upgrader:OFF
