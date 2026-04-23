@@ -62,7 +62,7 @@ com.palantir.javaformat:palantir-java-format-spi:1.1.0 (2 constraints: 2b273bdb)
 
 commons-codec:commons-codec:1.19.0 (1 constraints: a40f8887)
 
-commons-io:commons-io:2.21.0 (4 constraints: 634345e2)
+commons-io:commons-io:2.22.0 (4 constraints: 6443f7e2)
 
 commons-lang:commons-lang:2.6 (1 constraints: 6311bad1)
 
