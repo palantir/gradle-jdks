@@ -63,7 +63,6 @@ public abstract class ToolchainJdksSettingsPlugin implements Plugin<Settings> {
     @Inject
     protected abstract Gradle getGradle();
 
-    @SuppressWarnings("for-rollout:PatternMatchingInstanceof")
     @Override
     public final void apply(Settings settings) {
         OperatingSystem os = getOperatingSystem().getOperatingSystem().get();
