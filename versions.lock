@@ -16,9 +16,9 @@ com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.21.1 (1 constraints: a51a
 
 com.fasterxml.woodstox:woodstox-core:7.1.1 (1 constraints: 3d174926)
 
-com.github.ben-manes.caffeine:caffeine:3.2.3 (2 constraints: ce16f62b)
+com.github.ben-manes.caffeine:caffeine:3.2.4 (2 constraints: cf162a2c)
 
-com.google.errorprone:error_prone_annotations:2.47.0 (3 constraints: bb1fa753)
+com.google.errorprone:error_prone_annotations:2.49.0 (3 constraints: c11f7954)
 
 com.google.guava:failureaccess:1.0.3 (2 constraints: f3154f13)
 
