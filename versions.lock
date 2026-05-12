@@ -6,7 +6,7 @@ com.fasterxml.jackson.core:jackson-annotations:2.21 (5 constraints: 1953843f)
 
 com.fasterxml.jackson.core:jackson-core:2.21.1 (4 constraints: 8856df02)
 
-com.fasterxml.jackson.core:jackson-databind:2.21.1 (5 constraints: 0e5eb0bf)
+com.fasterxml.jackson.core:jackson-databind:2.21.1 (5 constraints: 0f5eb3bf)
 
 com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.21.1 (2 constraints: d7358945)
 
@@ -50,7 +50,7 @@ com.palantir.gradle.utils:exec:0.24.0 (2 constraints: 68141d97)
 
 com.palantir.gradle.utils:lazily-configured-mapping:0.24.0 (2 constraints: f116393a)
 
-com.palantir.gradle.utils:platform:0.24.0 (2 constraints: 0a1a1a11)
+com.palantir.gradle.utils:platform:0.24.0 (2 constraints: 0d1a2311)
 
 com.palantir.gradle.utils:providers:0.24.0 (1 constraints: 710de031)
 
@@ -164,7 +164,7 @@ cglib:cglib-nodep:3.2.2 (1 constraints: 490ded24)
 
 com.netflix.nebula:nebula-test:10.6.2 (2 constraints: d61de72d)
 
-com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.26.0 (1 constraints: 3a05393b)
+com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.27.0 (1 constraints: 3b053c3b)
 
 com.palantir.gradle.plugintesting:configuration-cache-spec:0.71.0 (1 constraints: 3a053e3b)
 
