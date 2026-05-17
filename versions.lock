@@ -136,9 +136,9 @@ org.eclipse.sisu:org.eclipse.sisu.inject:0.3.5 (3 constraints: 852caa93)
 
 org.eclipse.sisu:org.eclipse.sisu.plexus:0.3.5 (2 constraints: 141abc34)
 
-org.immutables:serial:2.12.1 (1 constraints: 3805363b)
+org.immutables:serial:2.12.2 (1 constraints: 3905373b)
 
-org.immutables:value:2.12.1 (1 constraints: 3805363b)
+org.immutables:value:2.12.2 (1 constraints: 3905373b)
 
 org.jetbrains:annotations:26.1.0 (1 constraints: d81910df)
 
