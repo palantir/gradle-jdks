@@ -22,7 +22,7 @@ com.google.errorprone:error_prone_annotations:2.49.0 (3 constraints: c11f7954)
 
 com.google.guava:failureaccess:1.0.3 (2 constraints: f3154f13)
 
-com.google.guava:guava:33.6.0-jre (9 constraints: f9bb306e)
+com.google.guava:guava:33.6.0-jre (10 constraints: 31cfd20b)
 
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 constraints: bd17c918)
 
@@ -44,17 +44,19 @@ com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.72.0 (1 constrai
 
 com.palantir.gradle.plugintesting:plugin-testing-core:0.72.0 (2 constraints: 121f788d)
 
-com.palantir.gradle.utils:environment-variables:0.24.0 (1 constraints: 3805333b)
+com.palantir.gradle.utils:environment-variables:0.24.0-33-g473a4f7.dirty (1 constraints: 890a40c4)
 
-com.palantir.gradle.utils:exec:0.24.0 (2 constraints: 68141d97)
+com.palantir.gradle.utils:exec:0.24.0-33-g473a4f7.dirty (2 constraints: 0a1f7104)
 
-com.palantir.gradle.utils:lazily-configured-mapping:0.24.0 (2 constraints: f116393a)
+com.palantir.gradle.utils:gradlew-patcher:0.24.0-33-g473a4f7.dirty (1 constraints: 890a40c4)
 
-com.palantir.gradle.utils:platform:0.24.0 (2 constraints: 0d1a2311)
+com.palantir.gradle.utils:lazily-configured-mapping:0.24.0-33-g473a4f7.dirty (2 constraints: 421c78d2)
 
-com.palantir.gradle.utils:providers:0.24.0 (1 constraints: 710de031)
+com.palantir.gradle.utils:platform:0.24.0-33-g473a4f7.dirty (2 constraints: 5e1fead3)
 
-com.palantir.gradle.utils:safe-exec-commandline:0.24.0 (1 constraints: 710de031)
+com.palantir.gradle.utils:providers:0.24.0-33-g473a4f7.dirty (1 constraints: c212fe4e)
+
+com.palantir.gradle.utils:safe-exec-commandline:0.24.0-33-g473a4f7.dirty (1 constraints: c212fe4e)
 
 com.palantir.javaformat:gradle-palantir-java-format:1.1.0 (1 constraints: bb11f8f4)
 

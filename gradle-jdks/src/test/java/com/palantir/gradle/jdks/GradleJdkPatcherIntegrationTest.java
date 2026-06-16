@@ -62,7 +62,7 @@ class GradleJdkPatcherIntegrationTest {
         void successfully_generates_gradle_jdk_setup_files(GradleInvoker gradle, RootProject rootProject) {
             InvocationResult result = gradle.withArgs("wrapper").buildsSuccessfully();
 
-            result.assertThat().task(":wrapperJdkPatcher").succeeded();
+            result.assertThat().task(":patchGradlewWrapper").succeeded();
 
             rootProject
                     .file("gradlew")
@@ -107,11 +107,11 @@ class GradleJdkPatcherIntegrationTest {
 
             InvocationResult checkResult = gradle.withArgs("check").buildsSuccessfully();
             checkResult.assertThat().task(":checkGradleJdkConfigs").succeeded();
-            checkResult.assertThat().task(":checkWrapperJdkPatcher").succeeded();
+            checkResult.assertThat().task(":checkGradlewWrapper").succeeded();
 
             InvocationResult secondCheckResult = gradle.withArgs("check").buildsSuccessfully();
             secondCheckResult.assertThat().task(":checkGradleJdkConfigs").upToDate();
-            secondCheckResult.assertThat().task(":checkWrapperJdkPatcher").upToDate();
+            secondCheckResult.assertThat().task(":checkGradlewWrapper").upToDate();
         }
 
         @Test
@@ -155,7 +155,7 @@ class GradleJdkPatcherIntegrationTest {
         InvocationResult result = gradle.withArgs("setupJdks").buildsWithFailure();
 
         result.assertThat().task(":generateGradleJdkConfigs").failed();
-        result.assertThat().task(":wrapperJdkPatcher").notOnTaskGraph();
+        result.assertThat().task(":patchGradlewWrapper").notOnTaskGraph();
         result.assertThat().output().contains("No JDKs were configured for the gradle setup");
     }
 
@@ -163,7 +163,7 @@ class GradleJdkPatcherIntegrationTest {
     void no_gradle_wrapper_patch_if_jdk_setup_not_enabled(GradleInvoker gradle, RootProject rootProject) {
         InvocationResult output = gradle.withArgs("wrapper").buildsSuccessfully();
 
-        assertThat(output).task(":wrapperJdkPatcher").notOnTaskGraph();
+        assertThat(output).task(":patchGradlewWrapper").notOnTaskGraph();
         rootProject
                 .file("gradlew")
                 .assertThat()

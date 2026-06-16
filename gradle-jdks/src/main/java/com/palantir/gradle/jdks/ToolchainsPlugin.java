@@ -24,6 +24,9 @@ import com.palantir.gradle.ideaconfiguration.IdeaConfigurationPlugin;
 import com.palantir.gradle.jdks.enablement.GradleJdksEnablement;
 import com.palantir.gradle.jdks.flow.ToolchainFailureFlowActionsPlugin;
 import com.palantir.gradle.utils.environmentvariables.EnvironmentVariables;
+import com.palantir.gradle.utils.gradlewpatcher.WrapperPatcherExtension;
+import com.palantir.gradle.utils.gradlewpatcher.WrapperPatcherPlugin;
+import com.palantir.gradle.utils.gradlewpatcher.WrapperPatcherTask;
 import com.palantir.platform.GradleOperatingSystem;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -39,11 +42,11 @@ import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.api.tasks.wrapper.Wrapper;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.gradle.util.GradleVersion;
 
+@SuppressWarnings("for-rollout:TaskDependsOn")
 public abstract class ToolchainsPlugin implements Plugin<Project> {
 
     private static final String GRADLE_JDK_GROUP = "Gradle JDK";
@@ -116,8 +119,6 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
             }
         });
 
-        TaskProvider<Wrapper> wrapperTask = rootProject.getTasks().named("wrapper", Wrapper.class);
-
         TaskProvider<GenerateGradleJdksConfigsTask> generateGradleJdkConfigs = rootProject
                 .getTasks()
                 .register("generateGradleJdkConfigs", GenerateGradleJdksConfigsTask.class, task -> {
@@ -151,34 +152,36 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
             task.getCaCerts().putAll(jdksExtension.getCaCerts());
         });
 
-        @SuppressWarnings("for-rollout:TaskDependsOn")
-        TaskProvider<GradleWrapperPatcher> wrapperPatcherTask = rootProject
-                .getTasks()
-                .register("wrapperJdkPatcher", GradleWrapperPatcher.class, task -> {
-                    task.getGenerate().set(true);
-                    task.dependsOn(generateGradleJdkConfigs);
-                });
-        TaskProvider<GradleWrapperPatcher> checkWrapperPatcherTask = rootProject
-                .getTasks()
-                .register("checkWrapperJdkPatcher", GradleWrapperPatcher.class, task -> {
-                    task.getGenerate().set(false);
+        rootProject.getPlugins().apply(WrapperPatcherPlugin.class);
+
+        rootProject
+                .getExtensions()
+                .getByType(WrapperPatcherExtension.class)
+                .patch("gradle-jdks", "Gradle JDK setup", patch -> {
+                    patch.getContent().set("""
+                        # !! Contents within this block are managed by 'palantir/gradle-jdks' !!
+                        if [ -f gradle/gradle-jdks-setup.sh ]; then
+                            if ! . gradle/gradle-jdks-setup.sh; then
+                                echo "Failed to set up JDK, running gradle/gradle-jdks-setup.sh failed with non-zero exit code" >&2
+                                exit 1
+                            fi
+                            # Setting JAVA_HOME to the gradle daemon to make sure gradlew uses this jdk for `JAVACMD`
+                            JAVA_HOME="$GRADLE_DAEMON_JDK"
+                        fi
+                        """);
                 });
 
-        rootProject.getTasks().withType(GradleWrapperPatcher.class).configureEach(task -> {
-            task.getOriginalGradlewScript()
-                    .fileProvider(rootProject.provider(() -> wrapperTask.get().getScriptFile()));
-            task.getBuildDir().set(task.getTemporaryDir());
-            task.getPatchedGradlewScript()
-                    .set(rootProject.file(rootProject.getRootDir().toPath().resolve("gradlew")));
-        });
-        wrapperTask.configure(task -> {
-            task.finalizedBy(wrapperPatcherTask);
-        });
+        TaskProvider<WrapperPatcherTask> patchTask =
+                rootProject.getTasks().named("patchGradlewWrapper", WrapperPatcherTask.class);
+        patchTask.configure(task -> task.dependsOn(generateGradleJdkConfigs));
+
+        TaskProvider<WrapperPatcherTask> checkTask =
+                rootProject.getTasks().named("checkGradlewWrapper", WrapperPatcherTask.class);
 
         TaskProvider<Task> checkJdksLifecycle = rootProject.getTasks().register("checkGradleJdks", Task.class, task -> {
             task.setDescription("Lifecycle task that checks the Gradle JDK configurations.");
             task.setGroup(GRADLE_JDK_GROUP);
-            task.dependsOn(checkGradleJdkConfigs, checkWrapperPatcherTask);
+            task.dependsOn(checkGradleJdkConfigs, checkTask);
         });
 
         rootProject
@@ -186,13 +189,13 @@ public abstract class ToolchainsPlugin implements Plugin<Project> {
                 .named(LifecycleBasePlugin.CHECK_TASK_NAME)
                 .configure(check -> check.dependsOn(checkJdksLifecycle));
 
-        registerSetupJdksTasks(generateGradleJdkConfigs, wrapperPatcherTask, checkJdksLifecycle);
+        registerSetupJdksTasks(generateGradleJdkConfigs, patchTask, checkJdksLifecycle);
     }
 
     @SuppressWarnings("TaskDependsOn")
     private void registerSetupJdksTasks(
             TaskProvider<GenerateGradleJdksConfigsTask> generateGradleJdkConfigs,
-            TaskProvider<GradleWrapperPatcher> wrapperPatcherTask,
+            TaskProvider<WrapperPatcherTask> wrapperPatcherTask,
             TaskProvider<Task> checkJdksLifecycle) {
         TaskProvider<EnsureGradlePropertiesTask> ensureGradleProperties = getTasks()
                 .register("ensureGradleJdkProperties", EnsureGradlePropertiesTask.class, task -> {

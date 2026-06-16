@@ -205,11 +205,11 @@ The new workflow is set up by [ToolchainsPlugin](../gradle-jdks/src/main/java/co
 The plugin won't apply the `baseline-java-versions` plugin anymore, allowing for the configuration of the Java Toolchains as described in the [Gradle docs ](https://docs.gradle.org/current/userguide/toolchains.html)
 
 The plugin registers the following tasks:
-- `wrapperJdkPatcher` - finalizes the `wrapper` task such that everytime `./gradlew` file is updated, it will also be patched
-- `checkWrapperJdkPatcher` - checks that the `./gradlew` script contains the expected JDKs setup patch
+- `patchGradlewWrapper` - finalizes the `wrapper` task such that everytime `./gradlew` file is updated, it will also be patched
+- `checkGradlewWrapperJdk` - checks that the `./gradlew` script contains the expected JDKs setup patch
 - `generateGradleJdkConfigs` - generates the [`gradle/` configurations](#gradle-jdk-configuration-directory-structure) required for running the JDKs setup
 - `checkGradleJdkConfigs` - checks that all the `gradle/` configurations are up-to-date. E.g. if the `jdks-latest` plugin is updated, we need to make sure the `gradle/jdks` files reflect the jdk versions.
-- `setupJdks` - task that triggers `wrapperJdkPatcher` and `generateGradleJdkConfigs` and runs the patched `./gradlew` script.
+- `setupJdks` - task that triggers `patchGradlewWrapper` and `generateGradleJdkConfigs` and runs the patched `./gradlew` script.
 
 
 ## Using a new java version
