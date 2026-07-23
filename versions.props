@@ -23,7 +23,7 @@ com.palantir.baseline:* = 5.53.0
 
 # test dependencies
 com.palantir.gradle.jdks:* = 0.79.0
-com.palantir.gradle.jdkslatest:* = 0.29.0
+com.palantir.gradle.jdkslatest:* = 0.30.0
 
 # conflict resolution
 com.google.code.findbugs:jsr305 = 3.0.2

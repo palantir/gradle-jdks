@@ -164,7 +164,7 @@ cglib:cglib-nodep:3.2.2 (1 constraints: 490ded24)
 
 com.netflix.nebula:nebula-test:12.1.0 (2 constraints: d11d8c2c)
 
-com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.29.0 (1 constraints: 3d05423b)
+com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.30.0 (1 constraints: 35052b3b)
 
 com.palantir.gradle.plugintesting:configuration-cache-spec:0.74.0 (1 constraints: 3d05473b)
 
