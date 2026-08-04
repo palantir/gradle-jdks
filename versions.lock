@@ -2,19 +2,19 @@
 
 aopalliance:aopalliance:1.0 (1 constraints: 170a83ac)
 
-com.fasterxml.jackson.core:jackson-annotations:2.21 (5 constraints: 1953843f)
+com.fasterxml.jackson.core:jackson-annotations:2.22 (5 constraints: 1d539841)
 
-com.fasterxml.jackson.core:jackson-core:2.21.4 (4 constraints: 94565607)
+com.fasterxml.jackson.core:jackson-core:2.22.1 (4 constraints: 8c566404)
 
-com.fasterxml.jackson.core:jackson-databind:2.21.4 (5 constraints: 1e5ef1c6)
+com.fasterxml.jackson.core:jackson-databind:2.22.1 (5 constraints: 165e27c2)
 
-com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.21.4 (2 constraints: d7358945)
+com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.22.1 (2 constraints: d7358945)
 
-com.fasterxml.jackson.datatype:jackson-datatype-guava:2.21.4 (1 constraints: a51a8b21)
+com.fasterxml.jackson.datatype:jackson-datatype-guava:2.22.1 (1 constraints: a51a8b21)
 
-com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.21.4 (1 constraints: a51a8b21)
+com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.22.1 (1 constraints: a51a8b21)
 
-com.fasterxml.woodstox:woodstox-core:7.1.1 (1 constraints: 3d174926)
+com.fasterxml.woodstox:woodstox-core:7.2.0 (1 constraints: 3d174b26)
 
 com.github.ben-manes.caffeine:caffeine:3.2.4 (2 constraints: cf162a2c)
 
@@ -130,7 +130,7 @@ org.codehaus.plexus:plexus-sec-dispatcher:2.0 (1 constraints: 5c100b99)
 
 org.codehaus.plexus:plexus-utils:3.5.1 (11 constraints: 3fa89966)
 
-org.codehaus.woodstox:stax2-api:4.2.2 (2 constraints: 6a278bd2)
+org.codehaus.woodstox:stax2-api:4.3.0 (2 constraints: 682760d2)
 
 org.eclipse.sisu:org.eclipse.sisu.inject:0.3.5 (3 constraints: 852caa93)
 
