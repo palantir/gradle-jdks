@@ -50,7 +50,7 @@ com.palantir.gradle.utils:exec:0.27.0 (2 constraints: 6e14b397)
 
 com.palantir.gradle.utils:lazily-configured-mapping:0.27.0 (2 constraints: f416db3a)
 
-com.palantir.gradle.utils:platform:0.27.0 (2 constraints: 121ae311)
+com.palantir.gradle.utils:platform:0.27.0 (2 constraints: 131ae611)
 
 com.palantir.gradle.utils:providers:0.27.0 (1 constraints: 740de931)
 
@@ -164,7 +164,7 @@ cglib:cglib-nodep:3.2.2 (1 constraints: 490ded24)
 
 com.netflix.nebula:nebula-test:12.1.0 (2 constraints: d11d8c2c)
 
-com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.31.0 (1 constraints: 36052e3b)
+com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.32.0 (1 constraints: 3705313b)
 
 com.palantir.gradle.plugintesting:configuration-cache-spec:0.75.0 (1 constraints: 3e054a3b)
 
