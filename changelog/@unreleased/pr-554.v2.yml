@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Add support for Eclipse Temurin JDKs
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/554
