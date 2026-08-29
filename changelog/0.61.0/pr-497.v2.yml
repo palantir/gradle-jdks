@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Support graal jdk automanagement installations
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/497

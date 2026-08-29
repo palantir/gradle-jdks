@@ -1,6 +1,0 @@
-type: improvement
-improvement:
-  description: Allow `palantir-gradle-jdks` idea plugin dependency configuration via
-    `idea-configuration plugin`
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/536

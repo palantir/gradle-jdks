@@ -1,6 +1,0 @@
-type: fix
-fix:
-  description: Fix ABI break for `isGradleJdkSetupEnabled` by readding the deleted
-    `isGradleJdkSetupEnabled(Path)` method
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/577
