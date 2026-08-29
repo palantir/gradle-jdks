@@ -1,5 +1,0 @@
-type: fix
-fix:
-  description: Disable Gradle JDK Automanagement workflow when running on mingw
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/534

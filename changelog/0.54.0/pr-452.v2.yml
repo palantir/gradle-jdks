@@ -1,6 +1,0 @@
-type: fix
-fix:
-  description: '[Fix] JDK is successfully installed if bin/java or sentinel files
-    exist'
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/452

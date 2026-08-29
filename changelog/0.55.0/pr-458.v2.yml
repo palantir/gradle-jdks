@@ -1,5 +1,0 @@
-type: fix
-fix:
-  description: Remove noisy output that "JDK installation X was already configured".
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/458

@@ -1,5 +1,0 @@
-type: fix
-fix:
-  description: Gradle JDK Automanagements writes output to stderr
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/461

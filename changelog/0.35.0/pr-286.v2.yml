@@ -1,6 +1,0 @@
-type: feature
-feature:
-  description: Allow specifying different versions of JDKs per operating system and
-    architecture
-  links:
-  - https://github.com/palantir/gradle-jdks/pull/286
