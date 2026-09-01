@@ -25,12 +25,14 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 /**
  * Ensures that {@code gradle.properties} contains the required toolchain properties for gradle-jdks.
  * Specifically, sets {@code auto-detect} and {@code auto-download} to {@code false} so that Gradle only uses JDKs
  * configured by the gradle-jdks plugin.
  */
+@DisableCachingByDefault(because = "Not opting into build caching; explicit opt-out is required by Gradle 9.7")
 public abstract class EnsureGradlePropertiesTask extends DefaultTask {
 
     @OutputFile
