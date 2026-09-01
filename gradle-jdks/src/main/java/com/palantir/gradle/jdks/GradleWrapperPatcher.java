@@ -38,7 +38,9 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
+@DisableCachingByDefault(because = "Not opting into build caching; explicit opt-out is required by Gradle 9.7")
 public abstract class GradleWrapperPatcher extends DefaultTask {
 
     private static final Logger log = Logging.getLogger(GradleWrapperPatcher.class);
