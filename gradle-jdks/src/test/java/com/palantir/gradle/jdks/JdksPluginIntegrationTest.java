@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test;
 @DisabledConfigurationCache("initial migration")
 class JdksPluginIntegrationTest {
 
-    @SuppressWarnings("for-rollout:OrphanedFormatString")
     @BeforeEach
     void setup(RootProject rootProject, SubProject subproject) {
         rootProject.buildGradle().plugins().add("com.palantir.jdks");
