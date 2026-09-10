@@ -39,7 +39,6 @@ import java.util.stream.Stream;
 
 public final class GradleJdksConfigsUtils {
 
-    @SuppressWarnings("for-rollout:PatternMatchingInstanceof")
     public static Path copyResourceToPath(Path targetDir, String resourceName) {
         try {
             URL installJdksResource =

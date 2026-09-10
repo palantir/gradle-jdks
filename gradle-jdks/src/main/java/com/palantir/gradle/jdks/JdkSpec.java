@@ -31,7 +31,6 @@ public interface JdkSpec {
     CaCerts caCerts();
 
     default String consistentShortHash() {
-        @SuppressWarnings("for-rollout:StringConcatToTextBlock")
         String infoBlock = String.format(
                 String.join("\n", "Distribution: %s", "Version: %s", "Os: %s", "Arch: %s", "CaCerts: %s"),
                 distributionName().uiName(),
