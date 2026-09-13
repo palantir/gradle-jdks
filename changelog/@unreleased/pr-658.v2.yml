@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Avoid UnsupportedOperationException when setting POSIX permissions on non-POSIX filesystems.
+  links:
+  - https://github.com/palantir/gradle-jdks/pull/658
