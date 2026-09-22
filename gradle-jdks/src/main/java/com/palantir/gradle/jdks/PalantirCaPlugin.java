@@ -27,6 +27,7 @@ public final class PalantirCaPlugin implements Plugin<Project> {
     private Project rootProject;
     private PalantirCaExtension extension;
 
+    @SuppressWarnings("for-rollout:ReferenceEquality")
     @Override
     public void apply(Project possibleRootProject) {
         if (possibleRootProject.getRootProject() != possibleRootProject) {
