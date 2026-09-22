@@ -34,6 +34,7 @@ public abstract class JdksPlugin implements Plugin<Project> {
     @Nested
     protected abstract GradleOperatingSystem getOperatingSystem();
 
+    @SuppressWarnings("for-rollout:ReferenceEquality")
     @Override
     public final void apply(Project rootProject) {
         if (rootProject.getRootProject() != rootProject) {
