@@ -72,12 +72,11 @@ public final class TestResources {
         }
 
         public String toFileName() {
-            String suffix =
-                    switch (OperatingSystem.get()) {
-                        case LINUX_MUSL -> "-musl";
-                        case LINUX_GLIBC -> "-glibc";
-                        case WINDOWS, MACOS -> "";
-                    };
+            String suffix = switch (OperatingSystem.get()) {
+                case LINUX_MUSL -> "-musl";
+                case LINUX_GLIBC -> "-glibc";
+                case WINDOWS, MACOS -> "";
+            };
             return String.format("%s-%s%s", distribution, version, suffix);
         }
     }
