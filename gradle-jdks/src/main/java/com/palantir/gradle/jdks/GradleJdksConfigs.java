@@ -39,12 +39,14 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.work.DisableCachingByDefault;
 
 /**
  * Abstracts the actions that need to be applied on the generated `gradle/` files.
  * The two tasks {@link CheckGradleJdksConfigsTask} and {@link GenerateGradleJdksConfigsTask} need to either check the
  * validity of the already generated gradle files or generate the gradle files.
  */
+@DisableCachingByDefault(because = "Not opting into build caching; explicit opt-out is required by Gradle 9.7")
 public abstract class GradleJdksConfigs extends DefaultTask {
 
     public static final String GRADLE_JDKS_SETUP_JAR = "gradle-jdks-setup.jar";
