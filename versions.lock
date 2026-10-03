@@ -40,9 +40,9 @@ com.palantir.gradle.failure-reports:gradle-failure-reports-exceptions:1.18.0 (2 
 
 com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.8.0 (1 constraints: 0a050336)
 
-com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.77.0 (1 constraints: 4005503b)
+com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.78.0 (1 constraints: 4105533b)
 
-com.palantir.gradle.plugintesting:plugin-testing-core:0.77.0 (2 constraints: 1c1ff98e)
+com.palantir.gradle.plugintesting:plugin-testing-core:0.78.0 (2 constraints: 1e1f468f)
 
 com.palantir.gradle.utils:environment-variables:0.30.0 (1 constraints: 35052b3b)
 
@@ -166,9 +166,9 @@ com.netflix.nebula:nebula-test:12.1.0 (2 constraints: cb1d802c)
 
 com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.35.0 (1 constraints: 3a053a3b)
 
-com.palantir.gradle.plugintesting:configuration-cache-spec:0.77.0 (1 constraints: 4005503b)
+com.palantir.gradle.plugintesting:configuration-cache-spec:0.78.0 (1 constraints: 4105533b)
 
-com.palantir.gradle.plugintesting:discover-tests-cli:0.77.0 (1 constraints: 4005503b)
+com.palantir.gradle.plugintesting:discover-tests-cli:0.78.0 (1 constraints: 4105533b)
 
 info.picocli:picocli:4.7.7 (1 constraints: 2816dcdd)
 
