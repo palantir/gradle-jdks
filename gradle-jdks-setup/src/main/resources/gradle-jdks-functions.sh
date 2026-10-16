@@ -117,10 +117,59 @@ is_arch_os_supported() {
   return 0 # true
 }
 
+# Runs in the background (see install_and_setup_jdks), so on failure it writes a message and exits
+# non-zero instead of calling `die`, which deletes the shared TMP_WORK_DIR that sibling jobs use
+install_single_jdk() {
+  distribution_local_path=$1
+  distribution_url=$2
+  scripts_dir=$3
+  jdk_installation_directory="$GRADLE_JDKS_HOME"/"$distribution_local_path"
+
+  in_progress_dir="$TMP_WORK_DIR/$distribution_local_path.in-progress"
+  mkdir -p "$in_progress_dir"
+  cd "$in_progress_dir" || { write "failed to change dir to $in_progress_dir"; exit 1; }
+  if command -v curl > /dev/null 2>&1; then
+    write "Using curl to download $distribution_url"
+    case "$distribution_url" in
+      *.zip)
+        distribution_name=${distribution_url##*/}
+        curl -L -C - "$distribution_url" -o "$distribution_name"
+        tar -xzf "$distribution_name"
+        ;;
+      *)
+        curl -L -C - "$distribution_url" | tar -xzf -
+        ;;
+    esac
+  elif command -v wget > /dev/null 2>&1; then
+    write "Using wget to download $distribution_url"
+    case "$distribution_url" in
+      *.zip)
+        distribution_name=${distribution_url##*/}
+        wget -c "$distribution_url" -O "$distribution_name"
+        tar -xzf "$distribution_name"
+        ;;
+      *)
+        wget -qO- -c "$distribution_url" | tar -xzf -
+        ;;
+    esac
+  else
+    write "ERROR: Neither curl nor wget are installed, Could not set up JAVA_HOME"
+    exit 1
+  fi
+
+  java_home=$(get_java_home "$in_progress_dir")
+  "$java_home"/bin/java -cp "$scripts_dir"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" || { write "Failed to set up JDK $jdk_installation_directory"; exit 1; }
+  write "Successfully installed JDK distribution in $jdk_installation_directory"
+}
+
 install_and_setup_jdks() {
   gradle_dir=$1
   scripts_dir=${2:-"$1"}
 
+  # read_value calls `die` on missing metadata, and `die` deletes the shared TMP_WORK_DIR, so do all
+  # of the die-able work here before any background install job starts
+  jdks_to_install="$TMP_WORK_DIR/jdks-to-install"
+  : > "$jdks_to_install"
   for dir in "$gradle_dir"/jdks/*/; do
     major_version_dir=${dir%*/}
     major_version=${major_version_dir##*/}
@@ -139,42 +188,23 @@ install_and_setup_jdks() {
     else
       continue
     fi
-    # Download and extract the distribution into a temporary directory
-    in_progress_dir="$TMP_WORK_DIR/$distribution_local_path.in-progress"
-    mkdir -p "$in_progress_dir"
-    cd "$in_progress_dir" || die "failed to change dir to $in_progress_dir"
-    if command -v curl > /dev/null 2>&1; then
-      write "Using curl to download $distribution_url"
-      case "$distribution_url" in
-        *.zip)
-          distribution_name=${distribution_url##*/}
-          curl -L -C - "$distribution_url" -o "$distribution_name"
-          tar -xzf "$distribution_name"
-          ;;
-        *)
-          curl -L -C - "$distribution_url" | tar -xzf -
-          ;;
-      esac
-    elif command -v wget > /dev/null 2>&1; then
-      write "Using wget to download $distribution_url"
-      case "$distribution_url" in
-        *.zip)
-          distribution_name=${distribution_url##*/}
-          wget -c "$distribution_url" -O "$distribution_name"
-          tar -xzf "$distribution_name"
-          ;;
-        *)
-          wget -qO- -c "$distribution_url" | tar -xzf -
-          ;;
-      esac
-    else
-      die "ERROR: Neither curl nor wget are installed, Could not set up JAVA_HOME"
-    fi
-    cd - > /dev/null || die "failed to change dir to old pwd: $OLDPWD"
-
-    # Finding the java_home
-    java_home=$(get_java_home "$in_progress_dir")
-    "$java_home"/bin/java -cp "$scripts_dir"/gradle-jdks-setup.jar com.palantir.gradle.jdks.setup.GradleJdkInstallationSetup jdkSetup "$jdk_installation_directory" || die "Failed to set up JDK $jdk_installation_directory"
-    write "Successfully installed JDK distribution in $jdk_installation_directory"
+    # local-path and download-url never contain whitespace
+    echo "$distribution_local_path $distribution_url" >> "$jdks_to_install"
   done
+
+  jdk_install_pids=""
+  while read -r distribution_local_path distribution_url; do
+    install_single_jdk "$distribution_local_path" "$distribution_url" "$scripts_dir" &
+    jdk_install_pids="$jdk_install_pids $!"
+  done < "$jdks_to_install"
+
+  jdk_install_failed=0
+  for jdk_install_pid in $jdk_install_pids; do
+    if ! wait "$jdk_install_pid"; then
+      jdk_install_failed=1
+    fi
+  done
+  if [ "$jdk_install_failed" -ne 0 ]; then
+    die "ERROR: Failed to install one or more Gradle JDK distributions"
+  fi
 }
