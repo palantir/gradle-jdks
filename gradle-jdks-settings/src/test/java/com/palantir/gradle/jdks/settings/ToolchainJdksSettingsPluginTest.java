@@ -22,7 +22,6 @@ import com.palantir.gradle.jdks.settings.TestDecorators.WithGradleUserHomeInBuil
 import com.palantir.gradle.jdks.setup.common.CurrentArch;
 import com.palantir.gradle.testing.execution.GradleInvoker;
 import com.palantir.gradle.testing.execution.InvocationResult;
-import com.palantir.gradle.testing.junit.DisabledConfigurationCache;
 import com.palantir.gradle.testing.junit.GradlePluginTests;
 import com.palantir.gradle.testing.project.RootProject;
 import com.palantir.platform.OperatingSystem;
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @GradlePluginTests
-@DisabledConfigurationCache
 class ToolchainJdksSettingsPluginTest {
 
     private static final String OS = OperatingSystem.get().uiName();
