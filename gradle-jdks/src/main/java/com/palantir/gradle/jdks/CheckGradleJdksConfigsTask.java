@@ -32,7 +32,9 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.work.DisableCachingByDefault;
 
+@DisableCachingByDefault(because = "Not opting into build caching; explicit opt-out is required by Gradle 9.7")
 public abstract class CheckGradleJdksConfigsTask extends GradleJdksConfigs {
 
     @InputDirectory
