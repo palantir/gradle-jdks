@@ -44,17 +44,17 @@ com.palantir.gradle.plugintesting:gradle-plugin-testing-junit:0.80.0 (1 constrai
 
 com.palantir.gradle.plugintesting:plugin-testing-core:0.80.0 (2 constraints: 101f2d8d)
 
-com.palantir.gradle.utils:environment-variables:0.30.0 (1 constraints: 35052b3b)
+com.palantir.gradle.utils:environment-variables:0.31.0 (1 constraints: 36052e3b)
 
-com.palantir.gradle.utils:exec:0.30.0 (2 constraints: 62148996)
+com.palantir.gradle.utils:exec:0.31.0 (2 constraints: 6414bb96)
 
-com.palantir.gradle.utils:lazily-configured-mapping:0.30.0 (2 constraints: ee169839)
+com.palantir.gradle.utils:lazily-configured-mapping:0.31.0 (2 constraints: ef16ce39)
 
-com.palantir.gradle.utils:platform:0.30.0 (2 constraints: 071a6210)
+com.palantir.gradle.utils:platform:0.31.0 (2 constraints: 081aa010)
 
-com.palantir.gradle.utils:providers:0.30.0 (1 constraints: 6e0dd831)
+com.palantir.gradle.utils:providers:0.31.0 (1 constraints: 6f0ddb31)
 
-com.palantir.gradle.utils:safe-exec-commandline:0.30.0 (1 constraints: 6e0dd831)
+com.palantir.gradle.utils:safe-exec-commandline:0.31.0 (1 constraints: 6f0ddb31)
 
 com.palantir.javaformat:gradle-palantir-java-format:1.1.0 (1 constraints: bb11f8f4)
 
