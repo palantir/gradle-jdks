@@ -51,6 +51,22 @@ public class GradleJdkInstallationSetupIntegrationTest {
     private Path workingDir;
 
     @Test
+    public void cleanup_removes_temporary_directory_from_environment() throws IOException, InterruptedException {
+        String temporaryDirectory = runCommandWithZeroExitCode(
+                List.of(
+                        "sh",
+                        "-c",
+                        ". \"$1\"; printf '%s' \"$TMP_WORK_DIR\"; cleanup; sh -c 'test -z \"${TMP_WORK_DIR+x}\"'",
+                        "cleanup-test",
+                        Path.of("../gradle-jdks-setup/src/main/resources/gradle-jdks-functions.sh")
+                                .toAbsolutePath()
+                                .toString()),
+                Map.of("GRADLE_USER_HOME", workingDir.toString(), "TMPDIR", workingDir.toString()));
+
+        assertThat(Path.of(temporaryDirectory)).doesNotExist();
+    }
+
+    @Test
     public void can_setup_jdks_centos_using_wget() throws IOException, InterruptedException {
         setupGradleDirectoryStructure(OperatingSystem.LINUX_GLIBC);
         dockerBuildAndRunTestingScript("centos:7", "/bin/bash", DO_NOT_INSTALL_CURL, false, true);
