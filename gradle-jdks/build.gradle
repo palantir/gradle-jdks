@@ -63,7 +63,7 @@ gradlePlugin {
             displayName = 'Palantir CA for gradle-jdks'
             description = 'Includes the Palantir CA from the system truststore'
             implementationClass = 'com.palantir.gradle.jdks.PalantirCaPlugin'
-            tags.addAll("java", "jdks", "palantir ca")
+            tags.addAll("java", "jdks", "palantir-ca")
         }
     }
     website = 'https://github.com/palantir/gradle-jdks'
