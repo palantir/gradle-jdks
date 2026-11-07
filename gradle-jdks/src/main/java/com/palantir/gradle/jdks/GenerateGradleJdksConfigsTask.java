@@ -36,7 +36,9 @@ import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.work.DisableCachingByDefault;
 
+@DisableCachingByDefault(because = "Not opting into build caching; explicit opt-out is required by Gradle 9.7")
 public abstract class GenerateGradleJdksConfigsTask extends GradleJdksConfigs {
 
     private static final Logger log = Logging.getLogger(GenerateGradleJdksConfigsTask.class);
