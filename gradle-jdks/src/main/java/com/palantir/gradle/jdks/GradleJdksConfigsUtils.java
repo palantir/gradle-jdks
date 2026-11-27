@@ -100,6 +100,9 @@ public final class GradleJdksConfigsUtils {
     }
 
     public static void setExecuteFilePermissions(Path path) {
+        if (!path.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+            return;
+        }
         try {
             Set<PosixFilePermission> perms = Files.getPosixFilePermissions(path);
             perms.addAll(Set.of(
