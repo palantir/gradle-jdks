@@ -34,21 +34,27 @@ import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
+import org.gradle.work.DisableCachingByDefault;
 
 /**
  * Actually triggering the patched `./gradlew` script (that configures and installs the JDKs) and runs `javaToolchains`
  * to output the JDKs that Gradle will use.
  */
+@DisableCachingByDefault(because = "Not opting into build caching; explicit opt-out is required by Gradle 9.7")
 public abstract class SetupJdksTask extends DefaultTask {
 
     private static final Logger logger = Logging.getLogger(SetupJdksTask.class);
 
+    @PathSensitive(PathSensitivity.ABSOLUTE)
     @InputFile
     public abstract RegularFileProperty getGradleJdksSetupScript();
 
+    @PathSensitive(PathSensitivity.ABSOLUTE)
     @Optional
     @InputFile
     public abstract RegularFileProperty getGradlewScript();
